@@ -481,6 +481,9 @@ function renderCommittee(data) {
     
     const isAdmin = sessionStorage.getItem('adminMode') === 'true';
     
+    // Generic Human Avatar SVG in base64
+    const defaultAvatar = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23cccccc'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E";
+    
     let html = '';
     data.forEach((category, cIdx) => {
         // Only show category header if we aren't already filtered to a single category
@@ -530,7 +533,7 @@ function renderCommittee(data) {
                         ${isAdmin ? `<button class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2" style="z-index: 10;" onclick="event.stopPropagation(); deleteMem(${cIdx}, ${mIdx})">🗑️</button>` : ''}
                         
                         <div class="mb-4">
-                            <img src="${member.photo || 'css/fig.png'}" alt="${member.name}" style="width: 180px; height: 180px; border-radius: 50%; object-fit: cover; border: 4px solid #fff; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+                            <img src="${member.photo || defaultAvatar}" onerror="this.src='${defaultAvatar}'" alt="${member.name}" style="width: 180px; height: 180px; border-radius: 50%; object-fit: cover; border: 4px solid #fff; box-shadow: 0 5px 15px rgba(0,0,0,0.1); background-color: #fff;">
                         </div>
                         
                         <h2 class="fw-bold mb-2" style="color: #005582;">${member.name || 'Name'}</h2>
@@ -552,7 +555,7 @@ function renderCommittee(data) {
                             ${isAdmin ? `<button class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2" style="z-index: 10;" onclick="event.stopPropagation(); deleteMem(${cIdx}, ${mIdx})">🗑️</button>` : ''}
                             
                             <div class="text-center pt-4">
-                                <img src="${member.photo || 'css/fig.png'}" alt="${member.name}" style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 4px solid #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                                <img src="${member.photo || defaultAvatar}" onerror="this.src='${defaultAvatar}'" alt="${member.name}" style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 4px solid #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.1); background-color: #fff;">
                             </div>
                             
                             <div class="grid-card-body pt-3 pb-4 px-4 text-center">
