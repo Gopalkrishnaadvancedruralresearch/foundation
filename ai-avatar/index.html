@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AI Mentor Avatar</title>
+</head>
+<body bgcolor="#0b0f19" text="#ffffff">
+
+<center>
+  <br>
+  <!-- Custom Avatar Display -->
+  <table border="3" cellpadding="6" bgcolor="#111827">
+    <tr>
+      <td align="center">
+        <!-- Replace avatar.png with your image file name -->
+        <img id="avatarImg" src="avatar.png" width="160" height="160" alt="Mentor Avatar" border="2">
+        <br>
+        <b id="avatarStatus"><font color="#38bdf8">STATUS: READY</font></b>
+      </td>
+    </tr>
+  </table>
+
+  <br>
+
+  <!-- Speech and Output Bubble -->
+  <table width="90%" border="1" cellpadding="12" bgcolor="#1e293b">
+    <tr>
+      <td>
+        <b id="statusTag"><font color="#38bdf8">AI MENTOR OUTPUT:</font></b>
+        <p id="speechOutputText">Select your discipline, enter your name, and click generate to get your project roadmap.</p>
+        <button id="lockBtn" onclick="lockCurrentProject()" style="display:none;">🔒 Lock This Project (No Duplicates)</button>
+      </td>
+    </tr>
+  </table>
+
+  <br>
+
+  <!-- Interactive Input Form -->
+  <table width="90%" border="0" cellpadding="8" bgcolor="#111827">
+    <tr>
+      <td align="right"><b>Student Name:</b></td>
+      <td><input type="text" id="studentName" placeholder="Enter student name" size="30"></td>
+    </tr>
+    <tr>
+      <td align="right"><b>Discipline / Branch:</b></td>
+      <td>
+        <select id="branchSelect">
+          <option value="Civil Engineering">Civil Engineering</option>
+          <option value="Mechanical Engineering">Mechanical Engineering</option>
+          <option value="Electrical & Electronics (EEE)">Electrical & Electronics (EEE)</option>
+          <option value="Electronics & Comm (ECE)">Electronics & Comm (ECE)</option>
+          <option value="Computer Science (CSE/IT)">Computer Science (CSE/IT)</option>
+          <option value="Robotics & AI">Robotics & AI</option>
+          <option value="Zoology & Wildlife">Zoology & Wildlife</option>
+          <option value="Botany & Agriculture">Botany & Plant Science</option>
+          <option value="Biotechnology & Genetics">Biotechnology & Genetics</option>
+          <option value="Business Management (MBA)">Business Management / MBA</option>
+          <option value="Finance & Economics">Finance & Economics</option>
+          <option value="Physics & Smart Materials">Physics & Smart Materials</option>
+        </select>
+      </td>
+    </tr>
+    <tr>
+      <td align="right"><b>Topic Interest:</b></td>
+      <td><input type="text" id="studentInterest" placeholder="e.g. Sensors, AI, Solar" size="30"></td>
+    </tr>
+    <tr>
+      <td colspan="2" align="center">
+        <br>
+        <button onclick="generateAndSpeak()"><b>🚀 Speak &amp; Generate Project</b></button>
+      </td>
+    </tr>
+  </table>
+
+  <br>
+
+  <!-- Claimed Topic Ledger -->
+  <table width="90%" border="1" cellpadding="8" bgcolor="#0f172a">
+    <tr>
+      <td>
+        <b><font color="#4ade80">LOCKED TOPIC REGISTRY (No Duplicates Today)</font></b>
+        <ol id="ledgerList">
+          <li><em>No topics assigned yet.</em></li>
+        </ol>
+      </td>
+    </tr>
+  </table>
+  <br>
+</center>
+
+<script>
+  const projectDatabase = {
+    "Civil Engineering": [
+      { title: "Browser-Based Synthetic Concrete Crack Predictor", tool: "Google Colab + Kaggle Concrete Dataset", time: "4 Weeks" },
+      { title: "Physics-Informed Real-Time Thermal Drift Estimator for Bridge Sensors", tool: "Google Colab + OpenSeesPy", time: "4 Weeks" }
+    ],
+    "Mechanical Engineering": [
+      { title: "Cloud CFD Drag Optimization for Low-Emission Vehicle Spoiler", tool: "SimScale Free + Google Colab", time: "4 Weeks" },
+      { title: "Acoustic Vibration Anomaly Classifier for Industrial Bearings", tool: "NASA Bearing Dataset + Edge Impulse Web", time: "3 Weeks" }
+    ],
+    "Electrical & Electronics (EEE)": [
+      { title: "Virtual Microgrid Solar Load Balancer on Cloud Simulator", tool: "Wokwi Simulator + ESP32 Web", time: "4 Weeks" },
+      { title: "AI Transformer Core Temperature Forecaster Using Weather Feeds", tool: "Google Colab + Scikit-Learn", time: "3 Weeks" }
+    ],
+    "Electronics & Comm (ECE)": [
+      { title: "TinyML Edge Vibration Signal Filter on Virtual Microcontroller", tool: "Wokwi Browser Simulator + Edge Impulse", time: "4 Weeks" }
+    ],
+    "Computer Science (CSE/IT)": [
+      { title: "Automated Code Vulnerability Fixer via Fine-Tuned Small Model", tool: "Hugging Face Spaces + Streamlit Cloud", time: "4 Weeks" }
+    ],
+    "Robotics & AI": [
+      { title: "Vision-Guided Obstacle Avoidance Simulator on Web Browser", tool: "Wokwi + Web Serial API", time: "4 Weeks" }
+    ],
+    "Zoology & Wildlife": [
+      { title: "Acoustic Bio-Diversity Classifier for Bird and Bat Calls", tool: "Xeno-Canto Open Audio + Google Colab", time: "4 Weeks" }
+    ],
+    "Botany & Agriculture": [
+      { title: "Multi-Spectral Leaf Disease Segmenter", tool: "PlantVillage Dataset + Google Colab", time: "4 Weeks" }
+    ],
+    "Biotechnology & Genetics": [
+      { title: "CRISPR Off-Target Cut Site Predictor", tool: "NCBI Open API + PyTorch Colab", time: "4 Weeks" }
+    ],
+    "Business Management (MBA)": [
+      { title: "Predictive Dynamic Pricing Agent for E-Commerce", tool: "Google Sheets + Python Streamlit", time: "3 Weeks" }
+    ],
+    "Finance & Economics": [
+      { title: "NLP Sentiment Impact Forecaster on Market Indices", tool: "Yahoo Finance API + Hugging Face", time: "4 Weeks" }
+    ],
+    "Physics & Smart Materials": [
+      { title: "Piezoelectric Impedance Peak Shift Anomaly Detector", tool: "Google Colab + Python SciPy", time: "4 Weeks" }
+    ]
+  };
+
+  let claimedLedger = [];
+  let currentProposedTitle = "";
+  let currentStudentName = "";
+  let currentBranch = "";
+
+  function speakText(text) {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.0;
+
+      utterance.onstart = function() {
+        document.getElementById('avatarStatus').innerHTML = '<font color="#facc15">STATUS: SPEAKING...</font>';
+      };
+      utterance.onend = function() {
+        document.getElementById('avatarStatus').innerHTML = '<font color="#38bdf8">STATUS: READY</font>';
+      };
+      window.speechSynthesis.speak(utterance);
+    }
+  }
+
+  function generateAndSpeak() {
+    const name = document.getElementById('studentName').value.trim() || "Student";
+    const branch = document.getElementById('branchSelect').value;
+    const interest = document.getElementById('studentInterest').value.trim();
+
+    currentStudentName = name;
+    currentBranch = branch;
+
+    const availablePool = projectDatabase[branch] || projectDatabase["Computer Science (CSE/IT)"];
+    const unallocated = availablePool.filter(p => !claimedLedger.some(item => item.title === p.title));
+
+    if (unallocated.length === 0) {
+      const fallbackTitle = "Custom AI Optimization Protocol for " + (interest || branch);
+      currentProposedTitle = fallbackTitle;
+      const speech = "Hello " + name + "! All standard topics in " + branch + " are already locked. Here is a custom roadmap: " + fallbackTitle;
+      document.getElementById('speechOutputText').innerHTML = "<b>" + fallbackTitle + "</b><br><br>• <b>Free Tools:</b> Google Colab<br>• <b>Timeline:</b> 4 Weeks";
+      document.getElementById('lockBtn').style.display = "inline-block";
+      speakText(speech);
+      return;
+    }
+
+    const selected = unallocated[0];
+    currentProposedTitle = selected.title;
+
+    document.getElementById('speechOutputText').innerHTML = "<b>" + selected.title + "</b><br><br>• <b>Free Tools:</b> " + selected.tool + "<br>• <b>Timeline:</b> " + selected.time;
+    document.getElementById('lockBtn').style.display = "inline-block";
+
+    const speechMessage = "Hello " + name + "! For " + branch + ", your recommended project is: " + selected.title + ". You can build this completely free using " + selected.tool + ". Click the button to lock this topic!";
+    speakText(speechMessage);
+  }
+
+  function lockCurrentProject() {
+    if (!currentProposedTitle) return;
+
+    claimedLedger.push({
+      student: currentStudentName,
+      branch: currentBranch,
+      title: currentProposedTitle
+    });
+
+    const ledgerList = document.getElementById('ledgerList');
+    ledgerList.innerHTML = claimedLedger.map(item => "<li><b>" + item.title + "</b> — <em>" + item.student + " (" + item.branch + ")</em></li>").join('');
+
+    document.getElementById('lockBtn').style.display = "none";
+    document.getElementById('speechOutputText').innerHTML = "✅ <b>Project Officially Locked!</b><br><br>'" + currentProposedTitle + "' has been assigned to " + currentStudentName + ".";
+
+    speakText("Confirmed! " + currentProposedTitle + " is now locked for " + currentStudentName + ". Next student please step forward!");
+    currentProposedTitle = "";
+  }
+</script>
+
+</body>
+</html>
