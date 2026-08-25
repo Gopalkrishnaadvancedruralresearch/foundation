@@ -1,0 +1,273 @@
+background-color: #0d131f;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .readout-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .readout-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--accent-green-bright);
+            font-family: monospace;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .workbench-grid {
+                grid-template-columns: 1fr;
+            }
+            .readouts {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Top Info Section -->
+        <header class="header">
+            <h1>GARR Foundation — Digital Logic & AC/DC Circuits Virtual Lab</h1>
+            <div class="subtitle">Open-Source Engineering Education Suite</div>
+        </header>
+
+        <div class="grid-container">
+            <div class="card highlight">
+                <div>
+                    <div class="card-label green">Module 01</div>
+                    <div class="card-title">Digital Logic Gates</div>
+                    <div class="card-description">Interactive truth tables, logic state verification, and gate combinations for AND, OR, NOT, NAND, NOR, and XOR setups.</div>
+                </div>
+            </div>
+            <div class="card">
+                <div>
+                    <div class="card-label orange">Module 02</div>
+                    <div class="card-title">DC Network Theorems</div>
+                    <div class="card-description">Verification of Ohm's Law, Kirchhoff's Laws (KCL/KVL), and Thevenin/Norton equivalent network models.</div>
+                </div>
+            </div>
+            <div class="card">
+                <div>
+                    <div class="card-label orange">Module 03</div>
+                    <div class="card-title">AC Transient Analysis</div>
+                    <div class="card-description">Waveform generator for RLC circuits, phase angle measurement, and resonance frequency observation.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Experiments Section -->
+        <section class="experiments-section">
+            <h2 class="experiments-title">Lab Modules & Experiments</h2>
+            <p class="experiments-intro">Select a laboratory experiment setup below to load signal visualizations and real-time parameters into the virtual workbench:</p>
+            <ul class="experiments-list">
+                <li><strong>Experiment 1:</strong> Logic Gate Verification — Simulate inputs A & B to evaluate state outputs and propagation timing.</li>
+                <li><strong>Experiment 2:</strong> RC Circuit Charging/Discharging — Observe time constants ($\tau = RC$) across step input signals.</li>
+                <li><strong>Experiment 3:</strong> AC Sinusoidal Waveform Synthesis — Measure peak-to-peak voltage ($V_{pp}$), frequency ($f$), and phase shift ($\phi$).</li>
+            </ul>
+        </section>
+
+        <!-- Virtual Lab Workbench Section -->
+        <section class="lab-workspace">
+            <div class="lab-title">
+                <span>Interactive Workbench</span>
+                <span style="font-size: 0.85rem; color: var(--accent-green-bright);">● Signal Active</span>
+            </div>
+            
+            <div class="workbench-grid">
+                <!-- Controls Panel -->
+                <div class="controls-panel">
+                    <div class="panel-group">
+                        <label for="signal-type">Signal Type</label>
+                        <select id="signal-type">
+                            <option value="sine">Sinusoidal (AC)</option>
+                            <option value="square">Square Wave (Digital)</option>
+                            <option value="triangular">Triangular Wave</option>
+                        </select>
+                    </div>
+
+                    <div class="panel-group">
+                        <label for="freq-slider">Frequency: <span id="freq-val">50</span> Hz</label>
+                        <input type="range" id="freq-slider" min="1" max="100" value="50">
+                    </div>
+
+                    <div class="panel-group">
+                        <label for="amp-slider">Amplitude: <span id="amp-val">5</span> V</label>
+                        <input type="range" id="amp-slider" min="1" max="10" value="5">
+                    </div>
+
+                    <button class="btn" id="toggle-btn">Stop Simulation</button>
+                    <button class="btn btn-audio" id="audio-btn">Enable Audio Probe</button>
+                </div>
+
+                <!-- Display Panel -->
+                <div class="display-panel">
+                    <div class="canvas-container">
+                        <canvas id="oscilloscope"></canvas>
+                    </div>
+
+                    <div class="readouts">
+                        <div class="readout-box">
+                            <div class="readout-label">Peak Voltage</div>
+                            <div class="readout-value" id="readout-vpeak">5.00 V</div>
+                        </div>
+                        <div class="readout-box">
+                            <div class="readout-label">RMS Voltage</div>
+                            <div class="readout-value" id="readout-vrms">3.54 V</div>
+                        </div>
+                        <div class="readout-box">
+                            <div class="readout-label">Frequency</div>
+                            <div class="readout-value" id="readout-freq">50.0 Hz</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer class="footer">
+            <p>Gopalkrishna Advanced Rural Research Foundation — Open Educational Resources Platform</p>
+        </footer>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('oscilloscope');
+        const ctx = canvas.getContext('2d');
+        const freqSlider = document.getElementById('freq-slider');
+        const ampSlider = document.getElementById('amp-slider');
+        const signalTypeSelect = document.getElementById('signal-type');
+        const toggleBtn = document.getElementById('toggle-btn');
+        
+        const freqVal = document.getElementById('freq-val');
+        const ampVal = document.getElementById('amp-val');
+        const readoutVpeak = document.getElementById('readout-vpeak');
+        const readoutVrms = document.getElementById('readout-vrms');
+        const readoutFreq = document.getElementById('readout-freq');
+
+        let isRunning = true;
+        let animationId;
+        let phase = 0;
+
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = 320;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function drawGrid() {
+            ctx.strokeStyle = '#1f293d';
+            ctx.lineWidth = 1;
+
+            const gridSpacing = 40;
+            for (let x = 0; x < canvas.width; x += gridSpacing) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y < canvas.height; y += gridSpacing) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+
+            // Center lines
+            ctx.strokeStyle = '#374151';
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height / 2);
+            ctx.lineTo(canvas.width, canvas.height / 2);
+            ctx.moveTo(canvas.width / 2, 0);
+            ctx.lineTo(canvas.width / 2, canvas.height);
+            ctx.stroke();
+        }
+
+        function drawWaveform() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawGrid();
+
+            if (!isRunning) return;
+
+            const freq = parseFloat(freqSlider.value);
+            const amp = parseFloat(ampSlider.value);
+            const signalType = signalTypeSelect.value;
+            const centerY = canvas.height / 2;
+            const ampPixels = (amp / 10) * (canvas.height / 2 - 20);
+
+            ctx.strokeStyle = '#00ff66';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+
+            for (let x = 0; x < canvas.width; x++) {
+                const t = (x / canvas.width) * (freq / 10) + phase;
+                let y = centerY;
+
+                if (signalType === 'sine') {
+                    y = centerY - Math.sin(t * Math.PI * 2) * ampPixels;
+                } else if (signalType === 'square') {
+                    y = centerY - (Math.sin(t * Math.PI * 2) >= 0 ? 1 : -1) * ampPixels;
+                } else if (signalType === 'triangular') {
+                    y = centerY - (Math.asin(Math.sin(t * Math.PI * 2)) / (Math.PI / 2)) * ampPixels;
+                }
+
+                if (x === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+
+            ctx.stroke();
+            phase += 0.02;
+        }
+
+        function updateReadouts() {
+            const freq = parseFloat(freqSlider.value);
+            const amp = parseFloat(ampSlider.value);
+            const signalType = signalTypeSelect.value;
+
+            freqVal.textContent = freq;
+            ampVal.textContent = amp;
+            readoutVpeak.textContent = amp.toFixed(2) + ' V';
+            readoutFreq.textContent = freq.toFixed(1) + ' Hz';
+
+            let vrms = amp / Math.sqrt(2);
+            if (signalType === 'square') vrms = amp;
+            if (signalType === 'triangular') vrms = amp / Math.sqrt(3);
+
+            readoutVrms.textContent = vrms.toFixed(2) + ' V';
+        }
+
+        function loop() {
+            drawWaveform();
+            animationId = requestAnimationFrame(loop);
+        }
+
+        freqSlider.addEventListener('input', updateReadouts);
+        ampSlider.addEventListener('input', updateReadouts);
+        signalTypeSelect.addEventListener('change', updateReadouts);
+
+        toggleBtn.addEventListener('click', () => {
+            isRunning = !isRunning;
+            toggleBtn.textContent = isRunning ? 'Stop Simulation' : 'Start Simulation';
+            toggleBtn.style.backgroundColor = isRunning ? 'var(--accent-blue)' : 'var(--accent-orange)';
+        });
+
+        updateReadouts();
+        loop();
+    </script>
+</body>
+</html>
