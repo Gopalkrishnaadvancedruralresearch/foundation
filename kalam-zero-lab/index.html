@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PID Controller Tuning Lab | Dr. APJ Abdul Kalam Lab</title>
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --panel-bg: #1e293b;
+      --text-main: #f8fafc;
+      --accent-blue: #38bdf8;
+      --accent-green: #22c55e;
+      --border-color: #334155;
+    }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    header {
+      background-color: var(--panel-bg);
+      padding: 1rem 2rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.25rem;
+      color: var(--accent-blue);
+    }
+    header p {
+      margin: 0;
+      font-size: 0.85rem;
+      color: #94a3b8;
+    }
+    .container {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 1rem;
+      padding: 1rem;
+      flex: 1;
+    }
+    @media (max-width: 850px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+    }
+    .controls-panel {
+      background-color: var(--panel-bg);
+      padding: 1.25rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+    }
+    .control-group {
+      margin-bottom: 1.25rem;
+    }
+    .control-group label {
+      display: flex;
+      justify-content: space-between;
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-bottom: 0.4rem;
+    }
+    .control-group input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent-blue);
+    }
+    .plot-panel {
+      background-color: var(--panel-bg);
+      padding: 1rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+    }
+    #plot {
+      width: 100%;
+      height: 450px;
+    }
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+    .metric-card {
+      background-color: var(--bg-color);
+      padding: 0.75rem;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      text-align: center;
+    }
+    .metric-card .val {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: var(--accent-green);
+    }
+    .metric-card .lbl {
+      font-size: 0.75rem;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div>
+      <h1>PID Controller Tuning Lab</h1>
+      <p>GARR Foundation — Dr. APJ Abdul Kalam ZERO RESEARCH FUNDING Lab</p>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="controls-panel">
+      <h3>Control Parameters</h3>
+      
+      <div class="control-group">
+        <label>Proportional Gain (Kp): <span id="kp-val">2.0</span></label>
+        <input type="range" id="kp" min="0" max="10" step="0.1" value="2.0">
+      </div>
+
+      <div class="control-group">
+        <label>Integral Gain (Ki): <span id="ki-val">0.5</span></label>
+        <input type="range" id="ki" min="0" max="5" step="0.05" value="0.5">
+      </div>
+
+      <div class="control-group">
+        <label>Derivative Gain (Kd): <span id="kd-val">1.0</span></label>
+        <input type="range" id="kd" min="0" max="5" step="0.05" value="1.0">
+      </div>
+
+      <div class="control-group">
+        <label>Setpoint (Target): <span id="sp-val">1.0</span></label>
+        <input type="range" id="sp" min="0.5" max="2.0" step="0.1" value="1.0">
+      </div>
+    </div>
+
+    <div class="plot-panel">
+      <div id="plot"></div>
+      
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="val" id="overshoot-val">0%</div>
+          <div class="lbl">Peak Overshoot</div>
+        </div>
+        <div class="metric-card">
+          <div class="val" id="rise-val">0s</div>
+          <div class="lbl">Rise Time (10%-90%)</div>
+        </div>
+        <div class="metric-card">
+          <div class="val" id="settling-val">0s</div>
+          <div class="lbl">Settling Time (2%)</div>
+        </div>
+        <div class="metric-card">
+          <div class="val" id="error-val">0</div>
+          <div class="lbl">Steady-State Error</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const dt = 0.01;
+    const totalTime = 10;
+    const steps = Math.floor(totalTime / dt);
+
+    function simulatePID(Kp, Ki, Kd, setpoint) {
+      let time = [];
+      let output = [];
+      let target = [];
+
+      let position = 0;
+      let velocity = 0;
+      let integral = 0;
+      let prevError = 0;
+
+      // System physical parameters (Mass = 1.0kg, Damping = 0.5)
+      const mass = 1.0;
+      const friction = 0.5;
+
+      let peakVal = 0;
+      let riseStart = null;
+      let riseEnd = null;
+      let settlingTime = totalTime;
+
+      for (let i = 0; i < steps; i++) {
+        let t = i * dt;
+        let error = setpoint - position;
+        
+        integral += error * dt;
+        let derivative = (error - prevError) / dt;
+        let controlSignal = (Kp * error) + (Ki * integral) + (Kd * derivative);
+
+        // System dynamics simulation (Newton's 2nd Law)
+        let acceleration = (controlSignal - friction * velocity) / mass;
+        velocity += acceleration * dt;
+        position += velocity * dt;
+
+        prevError = error;
+
+        time.push(t);
+        output.push(position);
+        target.push(setpoint);
+
+        if (position > peakVal) peakVal = position;
+
+        if (riseStart === null && position >= setpoint * 0.1) riseStart = t;
+        if (riseEnd === null && position >= setpoint * 0.9) riseEnd = t;
+
+        if (Math.abs(position - setpoint) > setpoint * 0.02) {
+          settlingTime = t;
+        }
+      }
+
+      let overshoot = setpoint > 0 ? Math.max(0, ((peakVal - setpoint) / setpoint) * 100) : 0;
+      let riseTime = (riseStart !== null && riseEnd !== null) ? (riseEnd - riseStart) : 0;
+      let ssError = Math.abs(setpoint - output[output.length - 1]);
+
+      return { time, output, target, overshoot, riseTime, settlingTime, ssError };
+    }
+
+    function updateApp() {
+      let Kp = parseFloat(document.getElementById('kp').value);
+      let Ki = parseFloat(document.getElementById('ki').value);
+      let Kd = parseFloat(document.getElementById('kd').value);
+      let setpoint = parseFloat(document.getElementById('sp').value);
+
+      document.getElementById('kp-val').innerText = Kp.toFixed(1);
+      document.getElementById('ki-val').innerText = Ki.toFixed(2);
+      document.getElementById('kd-val').innerText = Kd.toFixed(2);
+      document.getElementById('sp-val').innerText = setpoint.toFixed(1);
+
+      let data = simulatePID(Kp, Ki, Kd, setpoint);
+
+      document.getElementById('overshoot-val').innerText = data.overshoot.toFixed(1) + '%';
+      document.getElementById('rise-val').innerText = data.riseTime.toFixed(2) + 's';
+      document.getElementById('settling-val').innerText = data.settlingTime.toFixed(2) + 's';
+      document.getElementById('error-val').innerText = data.ssError.toFixed(3);
+
+      let traceOutput = {
+        x: data.time,
+        y: data.output,
+        mode: 'lines',
+        name: 'System Output y(t)',
+        line: { color: '#38bdf8', width: 2.5 }
+      };
+
+      let traceTarget = {
+        x: data.time,
+        y: data.target,
+        mode: 'lines',
+        name: 'Setpoint Target',
+        line: { color: '#ef4444', width: 1.5, dash: 'dash' }
+      };
+
+      let layout = {
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        margin: { l: 50, r: 20, t: 30, b: 40 },
+        xaxis: { title: 'Time (s)', gridcolor: '#334155', color: '#f8fafc' },
+        yaxis: { title: 'Amplitude', gridcolor: '#334155', color: '#f8fafc' },
+        legend: { x: 0.7, y: 0.1, font: { color: '#f8fafc' } }
+      };
+
+      Plotly.react('plot', [traceOutput, traceTarget], layout, { responsive: true, displayModeBar: false });
+    }
+
+    document.querySelectorAll('input[type=range]').forEach(input => {
+      input.addEventListener('input', updateApp);
+    });
+
+    updateApp();
+  </script>
+</body>
+</html>
