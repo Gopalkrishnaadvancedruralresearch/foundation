@@ -3,15 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PID Controller Tuning Lab | Dr. APJ Abdul Kalam Lab</title>
+  <title>PID Controller Tuning Lab | GARR Foundation</title>
   <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
   <style>
     :root {
       --bg-color: #0f172a;
       --panel-bg: #1e293b;
       --text-main: #f8fafc;
+      --text-muted: #94a3b8;
       --accent-blue: #38bdf8;
       --accent-green: #22c55e;
+      --accent-red: #ef4444;
+      --accent-gold: #f59e0b;
       --border-color: #334155;
     }
     body {
@@ -19,38 +22,86 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background-color: var(--bg-color);
       color: var(--text-main);
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
+      line-height: 1.6;
     }
     header {
       background-color: var(--panel-bg);
-      padding: 1rem 2rem;
+      padding: 1.5rem 2rem;
       border-bottom: 1px solid var(--border-color);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
+      text-align: center;
     }
     header h1 {
       margin: 0;
-      font-size: 1.25rem;
+      font-size: 1.8rem;
       color: var(--accent-blue);
+      letter-spacing: 0.5px;
     }
-    header p {
+    header .subhead-1 {
+      margin: 0.3rem 0 0.2rem 0;
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+    header .subhead-2 {
       margin: 0;
-      font-size: 0.85rem;
-      color: #94a3b8;
+      font-size: 0.9rem;
+      color: var(--accent-green);
+      font-weight: 500;
     }
-    .container {
+    
+    /* Cost & Deployment Banner */
+    .cost-banner {
+      background: linear-gradient(135deg, #1e1b4b 0%, #311b92 100%);
+      border-bottom: 2px solid var(--accent-gold);
+      padding: 1rem 2rem;
+      color: #f8fafc;
+    }
+    .cost-banner-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      align-items: center;
+    }
+    .cost-card {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+    }
+    .cost-card .label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--accent-gold);
+      font-weight: 700;
+    }
+    .cost-card .value {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #ffffff;
+      margin-top: 0.2rem;
+    }
+    .cost-card .subtext {
+      font-size: 0.8rem;
+      color: #cbd5e1;
+      margin-top: 0.1rem;
+    }
+
+    .main-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1.5rem;
+    }
+    .viz-grid {
       display: grid;
       grid-template-columns: 320px 1fr;
-      gap: 1rem;
-      padding: 1rem;
-      flex: 1;
+      gap: 1.25rem;
+      margin-bottom: 2rem;
     }
     @media (max-width: 850px) {
-      .container {
+      .viz-grid {
         grid-template-columns: 1fr;
       }
     }
@@ -59,6 +110,12 @@
       padding: 1.25rem;
       border-radius: 8px;
       border: 1px solid var(--border-color);
+    }
+    .controls-panel h3 {
+      margin-top: 0;
+      margin-bottom: 1rem;
+      font-size: 1.1rem;
+      color: var(--accent-blue);
     }
     .control-group {
       margin-bottom: 1.25rem;
@@ -84,7 +141,7 @@
     }
     #plot {
       width: 100%;
-      height: 450px;
+      height: 420px;
     }
     .metrics-grid {
       display: grid;
@@ -106,66 +163,212 @@
     }
     .metric-card .lbl {
       font-size: 0.75rem;
-      color: #94a3b8;
+      color: var(--text-muted);
+    }
+    
+    /* Documentation Sections */
+    .doc-section {
+      background-color: var(--panel-bg);
+      padding: 1.75rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      margin-bottom: 1.5rem;
+    }
+    .doc-section h2 {
+      margin-top: 0;
+      color: var(--accent-blue);
+      font-size: 1.4rem;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0.5rem;
+    }
+    .doc-section h3 {
+      color: var(--accent-green);
+      font-size: 1.15rem;
+      margin-top: 1.25rem;
+    }
+    .doc-section p, .doc-section li {
+      color: #cbd5e1;
+      font-size: 0.95rem;
+    }
+    .doc-section ul, .doc-section ol {
+      padding-left: 1.25rem;
+    }
+    .doc-section li {
+      margin-bottom: 0.5rem;
+    }
+    .badge-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+    .badge {
+      background-color: var(--bg-color);
+      border: 1px solid var(--accent-blue);
+      color: var(--accent-blue);
+      padding: 0.3rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 500;
     }
   </style>
 </head>
 <body>
 
   <header>
-    <div>
-      <h1>PID Controller Tuning Lab</h1>
-      <p>GARR Foundation — Dr. APJ Abdul Kalam ZERO RESEARCH FUNDING Lab</p>
-    </div>
+    <h1>PID Controller Tuning Lab</h1>
+    <div class="subhead-1">GARR Foundation — Dr. APJ Abdul Kalam ZERO RESEARCH FUNDING Lab</div>
+    <div class="subhead-2">ENGINEERING STREAMS: Electrical, Electronics, Mechanical, Instrumentation, Chemical, Aerospace, Robotics</div>
   </header>
 
-  <div class="container">
-    <div class="controls-panel">
-      <h3>Control Parameters</h3>
-      
-      <div class="control-group">
-        <label>Proportional Gain (Kp): <span id="kp-val">2.0</span></label>
-        <input type="range" id="kp" min="0" max="10" step="0.1" value="2.0">
+  <!-- Physical Lab Hardware Cost & Deployment Banner -->
+  <div class="cost-banner">
+    <div class="cost-banner-content">
+      <div class="cost-card">
+        <div class="label">Physical Hardware Equivalent</div>
+        <div class="value">Rotary Inverted Pendulum / Motor Testbed</div>
+        <div class="subtext">Coupled motor-generator & servo control trainer</div>
+      </div>
+      <div class="cost-card">
+        <div class="label">IIT / IISc Physical Setup Cost</div>
+        <div class="value">₹5,000,0 to ₹1,500,000 (₹5L - ₹15L)</div>
+        <div class="subtext">Requires dedicated lab space, maintenance & hardware controllers</div>
+      </div>
+      <div class="cost-card">
+        <div class="label">Indian Institutes Physical Deployment</div>
+        <div class="value">IIT Bombay, IIT Madras, IIT Kharagpur, IISc Bengaluru</div>
+        <div class="subtext">Control Systems & Mechatronics Research Labs</div>
+      </div>
+      <div class="cost-card">
+        <div class="label">Kalam Lab Online Replacement Cost</div>
+        <div class="value" style="color: var(--accent-green);">₹0 (100% Free Open-Source)</div>
+        <div class="subtext">Runs in browser on any smartphone or budget PC</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="main-container">
+    
+    <!-- Visualization & Control Section -->
+    <div class="viz-grid">
+      <div class="controls-panel">
+        <h3>Control Parameters</h3>
+        
+        <div class="control-group">
+          <label>Proportional Gain (Kp): <span id="kp-val">2.0</span></label>
+          <input type="range" id="kp" min="0" max="10" step="0.1" value="2.0">
+        </div>
+
+        <div class="control-group">
+          <label>Integral Gain (Ki): <span id="ki-val">0.5</span></label>
+          <input type="range" id="ki" min="0" max="5" step="0.05" value="0.5">
+        </div>
+
+        <div class="control-group">
+          <label>Derivative Gain (Kd): <span id="kd-val">1.0</span></label>
+          <input type="range" id="kd" min="0" max="5" step="0.05" value="1.0">
+        </div>
+
+        <div class="control-group">
+          <label>Setpoint (Target): <span id="sp-val">1.0</span></label>
+          <input type="range" id="sp" min="0.5" max="2.0" step="0.1" value="1.0">
+        </div>
       </div>
 
-      <div class="control-group">
-        <label>Integral Gain (Ki): <span id="ki-val">0.5</span></label>
-        <input type="range" id="ki" min="0" max="5" step="0.05" value="0.5">
-      </div>
-
-      <div class="control-group">
-        <label>Derivative Gain (Kd): <span id="kd-val">1.0</span></label>
-        <input type="range" id="kd" min="0" max="5" step="0.05" value="1.0">
-      </div>
-
-      <div class="control-group">
-        <label>Setpoint (Target): <span id="sp-val">1.0</span></label>
-        <input type="range" id="sp" min="0.5" max="2.0" step="0.1" value="1.0">
+      <div class="plot-panel">
+        <div id="plot"></div>
+        
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="val" id="overshoot-val">0%</div>
+            <div class="lbl">Peak Overshoot</div>
+          </div>
+          <div class="metric-card">
+            <div class="val" id="rise-val">0s</div>
+            <div class="lbl">Rise Time (10%-90%)</div>
+          </div>
+          <div class="metric-card">
+            <div class="val" id="settling-val">0s</div>
+            <div class="lbl">Settling Time (2%)</div>
+          </div>
+          <div class="metric-card">
+            <div class="val" id="error-val">0</div>
+            <div class="lbl">Steady-State Error</div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="plot-panel">
-      <div id="plot"></div>
+    <!-- Documentation & Educational Content Below Visualization -->
+    <div class="doc-section">
+      <h2>How to Use the PID Tuning Lab</h2>
+      <p>A Proportional-Integral-Derivative (PID) controller is the most common control loop algorithm used in modern automation (from cruise control in cars to drone flight stabilization and temperature management in industrial furnaces).</p>
+      <p>In this interactive lab, your goal is to make the <strong>System Output (y(t), blue line)</strong> quickly reach and lock onto the <strong>Setpoint Target (red dashed line)</strong> with minimum oscillation and zero offset.</p>
+    </div>
+
+    <div class="doc-section">
+      <h2>Understanding the 3 Control Knobs</h2>
+      <p>Adjust the sliders in the interface to see how each parameter changes system dynamics in real time:</p>
       
-      <div class="metrics-grid">
-        <div class="metric-card">
-          <div class="val" id="overshoot-val">0%</div>
-          <div class="lbl">Peak Overshoot</div>
-        </div>
-        <div class="metric-card">
-          <div class="val" id="rise-val">0s</div>
-          <div class="lbl">Rise Time (10%-90%)</div>
-        </div>
-        <div class="metric-card">
-          <div class="val" id="settling-val">0s</div>
-          <div class="lbl">Settling Time (2%)</div>
-        </div>
-        <div class="metric-card">
-          <div class="val" id="error-val">0</div>
-          <div class="lbl">Steady-State Error</div>
-        </div>
+      <h3>1. Proportional Gain (K<sub>p</sub>) — The Present Error Controller</h3>
+      <ul>
+        <li><strong>How it works:</strong> Drives the system based on current error magnitude (&nbsp;<em>Error = Setpoint − Position</em>&nbsp;).</li>
+        <li><strong>What to observe:</strong> Increasing K<sub>p</sub> makes the system respond faster, but setting it too high causes severe overshoot and violent oscillations.</li>
+      </ul>
+
+      <h3>2. Integral Gain (K<sub>i</sub>) — The Past Error Corrector</h3>
+      <ul>
+        <li><strong>How it works:</strong> Accumulates historical error over time.</li>
+        <li><strong>What to observe:</strong> K<sub>p</sub> alone often leaves a small gap between the target and actual position (steady-state error). Raising K<sub>i</sub> eliminates this residual offset, pulling the blue line directly onto the red target line. Setting K<sub>i</sub> too high leads to "windup" and instability.</li>
+      </ul>
+
+      <h3>3. Derivative Gain (K<sub>d</sub>) — The Future Trajectory Predictor</h3>
+      <ul>
+        <li><strong>How it works:</strong> Dampens the system by looking at the rate of change of error.</li>
+        <li><strong>What to observe:</strong> Acts like an electronic shock absorber. Increasing K<sub>d</sub> reduces peak overshoot and smooths out rapid oscillations caused by high K<sub>p</sub>.</li>
+      </ul>
+    </div>
+
+    <div class="doc-section">
+      <h2>Step-by-Step Tuning Guide (Ziegler-Nichols Manual Approach)</h2>
+      <p>To tune the simulated system effectively, test this standard engineering procedure:</p>
+      <ol>
+        <li><strong>Isolate K<sub>p</sub>:</strong> Set K<sub>i</sub> = 0 and K<sub>d</sub> = 0. Slowly increase K<sub>p</sub> until the system responds quickly without bursting into sustained, violent oscillations.</li>
+        <li><strong>Add K<sub>d</sub> to Damp Oscillations:</strong> Gradually raise K<sub>d</sub>. You will notice the overshoot shrink and the output curve smooth out.</li>
+        <li><strong>Add K<sub>i</sub> for Zero Steady-State Error:</strong> Increase K<sub>i</sub> slightly (e.g., 0.2 − 0.5) to pull the blue line directly onto the red setpoint line, eliminating remaining offset.</li>
+      </ol>
+    </div>
+
+    <div class="doc-section">
+      <h2>Why This Interactive Lab is Valuable for Engineering Students</h2>
+      <ul>
+        <li><strong>Replaces Multi-Lakh Physical Hardware:</strong> Premier institutes use physical rotary inverted pendulums or motor control benches costing ₹5 Lakhs to ₹15 Lakhs to teach control theory. This web tool delivers identical mathematical behavior (100% free) using client-side differential equation solving.</li>
+        <li><strong>Bridges Theory and Intuition:</strong> Students often learn PID through complex Laplace transforms <code>H(s) = K<sub>p</sub> + (K<sub>i</sub> / s) + K<sub>d</sub>s</code>. By manipulating live sliders, abstract calculus transforms into immediate physical visual feedback.</li>
+        <li><strong>Direct Metrics Tracking:</strong> Automatically calculates key control metrics used in industry:
+          <ul>
+            <li><strong>Peak Overshoot (%):</strong> Maximum percentage the system exceeds the target.</li>
+            <li><strong>Rise Time (s):</strong> Time taken to go from 10% to 90% of the target.</li>
+            <li><strong>Settling Time (s):</strong> Time taken to stabilize within 2% of the setpoint.</li>
+            <li><strong>Steady-State Error:</strong> Final offset between position and target.</li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+
+    <div class="doc-section">
+      <h2>Target Engineering Streams</h2>
+      <p>This lab provides practical experience for students across several engineering departments:</p>
+      <div class="badge-grid">
+        <span class="badge">Electrical & Electronics (EEE)</span>
+        <span class="badge">Electronics & Communication (ECE)</span>
+        <span class="badge">Mechanical Engineering</span>
+        <span class="badge">Instrumentation & Control (ICE)</span>
+        <span class="badge">Chemical Engineering (Process Control)</span>
+        <span class="badge">Aerospace Engineering</span>
+        <span class="badge">Robotics & Mechatronics</span>
       </div>
     </div>
+
   </div>
 
   <script>
@@ -265,10 +468,10 @@
       let layout = {
         paper_bgcolor: 'rgba(0,0,0,0)',
         plot_bgcolor: 'rgba(0,0,0,0)',
-        margin: { l: 50, r: 20, t: 30, b: 40 },
+        margin: { l: 50, r: 20, t: 20, b: 40 },
         xaxis: { title: 'Time (s)', gridcolor: '#334155', color: '#f8fafc' },
         yaxis: { title: 'Amplitude', gridcolor: '#334155', color: '#f8fafc' },
-        legend: { x: 0.7, y: 0.1, font: { color: '#f8fafc' } }
+        legend: { x: 0.65, y: 0.15, font: { color: '#f8fafc' } }
       };
 
       Plotly.react('plot', [traceOutput, traceTarget], layout, { responsive: true, displayModeBar: false });
