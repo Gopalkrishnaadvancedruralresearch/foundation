@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Interactive PID Controller Laboratory</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-color: #f8fafc;
+            --text-dim: #94a3b8;
+            --primary: #38bdf8;
+            --accent: #f43f5e;
+            --border: #334155;
+            --pv-color: #38bdf8;
+            --sp-color: #f59e0b;
+            --cv-color: #10b981;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background: var(--bg-color); color: var(--text-color); padding: 20px; line-height: 1.5; }
+        
+        .container { max-width: 1400px; margin: 0 auto; display: grid; grid-template-columns: 360px 1fr; gap: 20px; }
+        
+        .panel { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+        h1 { font-size: 1.5rem; margin-bottom: 5px; color: var(--primary); }
+        h2 { font-size: 1.1rem; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 8px; color: #e2e8f0; }
+        
+        .control-group { margin-bottom: 15px; }
+        .control-label { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 5px; color: var(--text-dim); }
+        .control-label span.val { color: var(--text-color); font-weight: bold; }
+        
+        input[type="range"] { width: 100%; accent-color: var(--primary); cursor: pointer; }
+        
+        .toggle-group { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+        .toggle-label { font-size: 0.85rem; color: var(--text-dim); }
+        
+        /* Switch styling */
+        .switch { position: relative; display: inline-block; width: 44px; height: 22px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #475569; transition: .3s; border-radius: 22px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--primary); }
+        input:checked + .slider:before { transform: translateX(22px); }
+
+        .btn-group { display: flex; gap: 10px; margin-top: 15px; }
+        button { flex: 1; padding: 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+        .btn-primary { background: var(--primary); color: #0f172a; }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-danger { background: var(--accent); color: white; }
+        .btn-danger:hover { opacity: 0.9; }
+
+        .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+        .metric-card { background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border); border-radius: 8px; padding: 12px; text-align: center; }
+        .metric-title { font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; }
+        .metric-value { font-size: 1.25rem; font-weight: bold; margin-top: 4px; color: var(--primary); }
+
+        canvas { width: 100%; height: 320px; background: #090d16; border-radius: 8px; border: 1px solid var(--border); display: block; margin-bottom: 15px; }
+        
+        .legend { display: flex; gap: 20px; font-size: 0.85rem; justify-content: center; }
+        .legend-item { display: flex; align-items: center; gap: 6px; }
+        .legend-color { width: 12px; height: 12px; border-radius: 2px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Left Controls Panel -->
+    <div class="panel">
+        <h1>PID Lab Controls</h1>
+        <p style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 20px;">Advanced Interactive Control System</p>
+        
+        <h2>Target & Disturbances</h2>
+        <div class="control-group">
+            <div class="control-label">Setpoint (SP) <span class="val" id="val-sp">50</span></div>
+            <input type="range" id="sp" min="0" max="100" value="50">
+        </div>
+        <div class="control-group">
+            <div class="control-label">Sensor Noise <span class="val" id="val-noise">0.0</span></div>
+            <input type="range" id="noise" min="0" max="5" step="0.1" value="0">
+        </div>
+        
+        <h2>Gains</h2>
+        <div class="control-group">
+            <div class="control-label">Proportional (Kp) <span class="val" id="val-kp">2.0</span></div>
+            <input type="range" id="kp" min="0" max="10" step="0.1" value="2.0">
+        </div>
+        <div class="control-group">
+            <div class="control-label">Integral (Ki) <span class="val" id="val-ki">0.5</span></div>
+            <input type="range" id="ki" min="0" max="5" step="0.05" value="0.5">
+        </div>
+        <div class="control-group">
+            <div class="control-label">Derivative (Kd) <span class="val" id="val-kd">0.2</span></div>
+            <input type="range" id="kd" min="0" max="2" step="0.02" value="0.2">
+        </div>
+        <div class="control-group">
+            <div class="control-label">Feedforward (Kff) <span class="val" id="val-kff">0.0</span></div>
+            <input type="range" id="kff" min="0" max="2" step="0.1" value="0.0">
+        </div>
+
+        <h2>Advanced Features</h2>
+        <div class="toggle-group">
+            <span class="toggle-label">Anti-Windup (Clamping)</span>
+            <label class="switch"><input type="checkbox" id="antiWindup" checked><span class="slider"></span></label>
+        </div>
+        <div class="toggle-group">
+            <span class="toggle-label">Derivative on Measurement</span>
+            <label class="switch"><input type="checkbox" id="derivOnMeas" checked><span class="slider"></span></label>
+        </div>
+        <div class="toggle-group">
+            <span class="toggle-label">Derivative Low-Pass Filter</span>
+            <label class="switch"><input type="checkbox" id="derivFilter" checked><span class="slider"></span></label>
+        </div>
+        <div class="toggle-group">
+            <span class="toggle-label">Gain Scheduling</span>
+            <label class="switch"><input type="checkbox" id="gainSched"><span class="slider"></span></label>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn-danger" id="btn-disturb">Inject Load</button>
+            <button class="btn-primary" id="btn-reset">Reset</button>
+        </div>
+    </div>
+
+    <!-- Right Visualization & Analytics Panel -->
+    <div class="panel">
+        <h2>System Performance Metrics</h2>
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-title">IAE (Absolute Error)</div>
+                <div class="metric-value" id="m-iae">0.00</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-title">ITAE (Time-Weighted)</div>
+                <div class="metric-value" id="m-itae">0.00</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-title">Peak Overshoot</div>
+                <div class="metric-value" id="m-overshoot">0.0%</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-title">Actuator Output</div>
+                <div class="metric-value" id="m-cv">0.0%</div>
+            </div>
+        </div>
+
+        <h2>Process Variable (PV) vs Setpoint (SP)</h2>
+        <canvas id="canvasPV"></canvas>
+
+        <h2>Control Variable (CV Output Breakdown)</h2>
+        <canvas id="canvasCV"></canvas>
+
+        <div class="legend">
+            <div class="legend-item"><div class="legend-color" style="background: var(--sp-color);"></div> Setpoint (SP)</div>
+            <div class="legend-item"><div class="legend-color" style="background: var(--pv-color);"></div> Process Variable (PV)</div>
+            <div class="legend-item"><div class="legend-color" style="background: var(--cv-color);"></div> Control Variable (CV)</div>
+            <div class="legend-item"><div class="legend-color" style="background: #a855f7;"></div> Term Contributions (P/I/D)</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // State variables
+    const dt = 0.05; // 50ms sample period
+    let time = 0;
+    
+    // Plant state (First-Order Lag Process)
+    let pv = 0;
+    let pvUnfiltered = 0;
+    let plantVel = 0;
+    let disturbance = 0;
+    
+    // PID state
+    let integral = 0;
+    let lastPv = 0;
+    let lastError = 0;
+    let filterState = 0;
+    let peakPv = 0;
+    let initialSp = 50;
+
+    // Analytics metrics
+    let iae = 0;
+    let itae = 0;
+
+    // Visual buffers
+    const maxDataLength = 200;
+    let history = { time: [], sp: [], pv: [], cv: [], pTerm: [], iTerm: [], dTerm: [] };
+
+    // Canvas setup
+    const cvsPV = document.getElementById('canvasPV');
+    const ctxPV = cvsPV.getContext('2d');
+    const cvsCV = document.getElementById('canvasCV');
+    const ctxCV = cvsCV.getContext('2d');
+
+    function resizeCanvas(canvas) {
+        canvas.width = canvas.clientWidth;
+        canvas.height = canvas.clientHeight;
+    }
+    resizeCanvas(cvsPV);
+    resizeCanvas(cvsCV);
+    window.addEventListener('resize', () => { resizeCanvas(cvsPV); resizeCanvas(cvsCV); });
+
+    // UI elements binding
+    const inputs = ['sp', 'kp', 'ki', 'kd', 'kff', 'noise'];
+    inputs.forEach(id => {
+        document.getElementById(id).addEventListener('input', (e) => {
+            document.getElementById(`val-${id}`).innerText = parseFloat(e.target.value).toFixed(1);
+        });
+    });
+
+    document.getElementById('btn-reset').onclick = resetSimulation;
+    document.getElementById('btn-disturb').onclick = () => { disturbance += 25; };
+
+    function resetSimulation() {
+        time = 0; pv = 0; plantVel = 0; integral = 0; lastPv = 0; lastError = 0;
+        filterState = 0; disturbance = 0; iae = 0; itae = 0; peakPv = 0;
+        history = { time: [], sp: [], pv: [], cv: [], pTerm: [], iTerm: [], dTerm: [] };
+    }
+
+    // Main Control & Physics Loop
+    function stepSimulation() {
+        // Read Parameters
+        let sp = parseFloat(document.getElementById('sp').value);
+        let kp = parseFloat(document.getElementById('kp').value);
+        let ki = parseFloat(document.getElementById('ki').value);
+        let kd = parseFloat(document.getElementById('kd').value);
+        let kff = parseFloat(document.getElementById('kff').value);
+        let noiseLevel = parseFloat(document.getElementById('noise').value);
+        
+        let useAntiWindup = document.getElementById('antiWindup').checked;
+        let useDerivMeas = document.getElementById('derivOnMeas').checked;
+        let useFilter = document.getElementById('derivFilter').checked;
+        let useGainSched = document.getElementById('gainSched').checked;
+
+        // Add Noise to Measurement
+        let noisyPv = pv + (Math.random() - 0.5) * noiseLevel * 2;
+        let error = sp - noisyPv;
+
+        // 1. Gain Scheduling (Adapt Kp dynamically if error > 20)
+        if (useGainSched && Math.abs(error) > 20) {
+            kp *= 1.8; // Aggressive gain when far from setpoint
+        }
+
+        // 2. Proportional Term
+        let pTerm = kp * error;
+
+        // 3. Derivative Term (Derivative-on-Measurement & Filter)
+        let dInput = useDerivMeas ? (noisyPv - lastPv) : -(error - lastError);
+        let rawDerivative = dInput / dt;
+        
+        // Low-pass filter: H(s) = 1 / (tau*s + 1) where tau = 0.1s
+        let dTerm = 0;
+        if (useFilter) {
+            filterState += (rawDerivative - filterState) * (dt / (0.1 + dt));
+            dTerm = -kd * filterState;
+        } else {
+            dTerm = -kd * rawDerivative;
+        }
+
+        // 4. Feedforward Term
+        let ffTerm = kff * (sp * 0.8); // Estimate steady-state gain
+
+        // Tentative Control Signal
+        let cvUnclamped = pTerm + integral + dTerm + ffTerm;
+        
+        // Output Saturation Limits [-100, 100]
+        let cv = Math.max(-100, Math.min(100, cvUnclamped));
+
+        // 5. Anti-Windup Integration (Clamping Method)
+        let iTerm = integral;
+        let isSaturated = (cvUnclamped !== cv);
+        let sameSign = (error * cvUnclamped) > 0;
+
+        if (!useAntiWindup || !(isSaturated && sameSign)) {
+            integral += ki * error * dt;
+        }
+
+        // 6. Physics Plant Simulation (First Order System with Inertia)
+        // d2PV/dt2 + a*dPV/dt = b*CV
+        let plantAccel = (cv * 1.2 - plantVel * 0.8 + disturbance) * 2;
+        plantVel += plantAccel * dt;
+        pv += plantVel * dt;
+        
+        if (pv < 0) { pv = 0; plantVel = 0; } // Hard floor constraint
+        
+        // Decay Disturbance over time
+        disturbance *= 0.95;
+
+        // Metrics Computation
+        iae += Math.abs(error) * dt;
+        itae += time * Math.abs(error) * dt;
+        if (pv > peakPv) peakPv = pv;
+        let overshoot = Math.max(0, ((peakPv - sp) / (sp || 1)) * 100);
+
+        // Update State
+        lastPv = noisyPv;
+        lastError = error;
+        time += dt;
+
+        // Update Data History
+        history.time.push(time);
+        history.sp.push(sp);
+        history.pv.push(pv);
+        history.cv.push(cv);
+        history.pTerm.push(pTerm);
+        history.iTerm.push(iTerm);
+        history.dTerm.push(dTerm);
+
+        if (history.time.length > maxDataLength) {
+            Object.keys(history).forEach(k => history[k].shift());
+        }
+
+        // Render UI Text
+        document.getElementById('m-iae').innerText = iae.toFixed(1);
+        document.getElementById('m-itae').innerText = itae.toFixed(1);
+        document.getElementById('m-overshoot').innerText = overshoot.toFixed(1) + '%';
+        document.getElementById('m-cv').innerText = cv.toFixed(1) + '%';
+
+        // Draw Plots
+        drawPlot(ctxPV, [
+            { data: history.sp, color: '#f59e0b', width: 2 },
+            { data: history.pv, color: '#38bdf8', width: 2 }
+        ], 0, 100);
+
+        drawPlot(ctxCV, [
+            { data: history.cv, color: '#10b981', width: 2 },
+            { data: history.pTerm, color: '#ef4444', width: 1 },
+            { data: history.iTerm, color: '#3b82f6', width: 1 },
+            { data: history.dTerm, color: '#a855f7', width: 1 }
+        ], -100, 100);
+    }
+
+    // Generic Graph Plotting Function
+    function drawPlot(ctx, seriesList, minY, maxY) {
+        const w = ctx.canvas.width;
+        const h = ctx.canvas.height;
+        ctx.clearRect(0, 0, w, h);
+
+        // Draw grid
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 1;
+        for (let y = 0; y <= h; y += h / 4) {
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+        }
+
+        seriesList.forEach(series => {
+            if (series.data.length < 2) return;
+            ctx.strokeStyle = series.color;
+            ctx.lineWidth = series.width;
+            ctx.beginPath();
+
+            const stepX = w / (maxDataLength - 1);
+            series.data.forEach((val, idx) => {
+                const x = idx * stepX;
+                const normalizedY = (val - minY) / (maxY - minY);
+                const y = h - (normalizedY * h);
+                if (idx === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+        });
+    }
+
+    // Run Engine at 20Hz
+    setInterval(stepSimulation, dt * 1000);
+</script>
+
+</body>
+</html>
