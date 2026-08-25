@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced Interactive PID Controller Laboratory</title>
+    <title>Advanced Thermal PID Laboratory</title>
     <style>
         :root {
             --bg-color: #0f172a;
@@ -56,7 +56,7 @@
         .metric-title { font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; }
         .metric-value { font-size: 1.25rem; font-weight: bold; margin-top: 4px; color: var(--primary); }
 
-        canvas { width: 100%; height: 320px; background: #090d16; border-radius: 8px; border: 1px solid var(--border); display: block; margin-bottom: 15px; }
+        canvas { width: 100%; height: 280px; background: #090d16; border-radius: 8px; border: 1px solid var(--border); display: block; margin-bottom: 15px; }
         
         .legend { display: flex; gap: 20px; font-size: 0.85rem; justify-content: center; }
         .legend-item { display: flex; align-items: center; gap: 6px; }
@@ -68,13 +68,13 @@
 <div class="container">
     <!-- Left Controls Panel -->
     <div class="panel">
-        <h1>PID Lab Controls</h1>
-        <p style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 20px;">Advanced Interactive Control System</p>
+        <h1>Thermal Control Lab</h1>
+        <p style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 20px;">Advanced Thermal Chamber PID Simulation</p>
         
         <h2>Target & Disturbances</h2>
         <div class="control-group">
-            <div class="control-label">Setpoint (SP) <span class="val" id="val-sp">50</span></div>
-            <input type="range" id="sp" min="0" max="100" value="50">
+            <div class="control-label">Target Temp (SP) <span class="val" id="val-sp">50.0 °C</span></div>
+            <input type="range" id="sp" min="20" max="100" value="50">
         </div>
         <div class="control-group">
             <div class="control-label">Sensor Noise <span class="val" id="val-noise">0.0</span></div>
@@ -118,7 +118,7 @@
         </div>
 
         <div class="btn-group">
-            <button class="btn-danger" id="btn-disturb">Inject Load</button>
+            <button class="btn-danger" id="btn-disturb">Cooling Shock</button>
             <button class="btn-primary" id="btn-reset">Reset</button>
         </div>
     </div>
@@ -140,54 +140,64 @@
                 <div class="metric-value" id="m-overshoot">0.0%</div>
             </div>
             <div class="metric-card">
-                <div class="metric-title">Actuator Output</div>
+                <div class="metric-title">Heater Power (CV)</div>
                 <div class="metric-value" id="m-cv">0.0%</div>
             </div>
         </div>
 
-        <h2>Process Variable (PV) vs Setpoint (SP)</h2>
+        <!-- Thermal Visual Bar -->
+        <div style="margin-bottom: 15px; background: #090d16; padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
+            <div style="display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 8px;">
+                <span>Current Temp (PV): <span id="temp-pv-text" style="color: var(--primary);">20.0°C</span></span>
+                <span>Target: <span id="temp-sp-text" style="color: var(--sp-color);">50.0°C</span></span>
+            </div>
+            <div style="width: 100%; height: 24px; background: #1e293b; border-radius: 12px; overflow: hidden; position: relative;">
+                <div id="temp-fill-bar" style="width: 20%; height: 100%; background: linear-gradient(90deg, #3b82f6, #f43f5e); transition: width 0.1s linear;"></div>
+            </div>
+        </div>
+
+        <h2>Thermal Chamber Simulation (°C vs Setpoint)</h2>
         <canvas id="canvasPV"></canvas>
 
-        <h2>Control Variable (CV Output Breakdown)</h2>
+        <h2>Control Signal (Heater Power % & Terms)</h2>
         <canvas id="canvasCV"></canvas>
 
         <div class="legend">
-            <div class="legend-item"><div class="legend-color" style="background: var(--sp-color);"></div> Setpoint (SP)</div>
-            <div class="legend-item"><div class="legend-color" style="background: var(--pv-color);"></div> Process Variable (PV)</div>
-            <div class="legend-item"><div class="legend-color" style="background: var(--cv-color);"></div> Control Variable (CV)</div>
+            <div class="legend-item"><div class="legend-color" style="background: var(--sp-color);"></div> Target (°C)</div>
+            <div class="legend-item"><div class="legend-color" style="background: var(--pv-color);"></div> Chamber Temp (°C)</div>
+            <div class="legend-item"><div class="legend-color" style="background: var(--cv-color);"></div> Heater Output (%)</div>
             <div class="legend-item"><div class="legend-color" style="background: #a855f7;"></div> Term Contributions (P/I/D)</div>
         </div>
     </div>
 </div>
 
 <script>
-    // State variables
-    const dt = 0.05; // 50ms sample period
+    // System Constants
+    const dt = 0.05; // 50ms sample loop
+    const ambientTemp = 20.0; // Room baseline in °C
     let time = 0;
     
-    // Plant state (First-Order Lag Process)
-    let pv = 0;
-    let pvUnfiltered = 0;
+    // Physical Thermal Plant State
+    let pv = ambientTemp;
     let plantVel = 0;
     let disturbance = 0;
     
-    // PID state
+    // PID State
     let integral = 0;
-    let lastPv = 0;
+    let lastPv = ambientTemp;
     let lastError = 0;
     let filterState = 0;
-    let peakPv = 0;
-    let initialSp = 50;
+    let peakPv = ambientTemp;
 
-    // Analytics metrics
+    // Analytics Metrics
     let iae = 0;
     let itae = 0;
 
-    // Visual buffers
+    // Plotting Buffers
     const maxDataLength = 200;
     let history = { time: [], sp: [], pv: [], cv: [], pTerm: [], iTerm: [], dTerm: [] };
 
-    // Canvas setup
+    // Canvas Binding
     const cvsPV = document.getElementById('canvasPV');
     const ctxPV = cvsPV.getContext('2d');
     const cvsCV = document.getElementById('canvasCV');
@@ -201,20 +211,22 @@
     resizeCanvas(cvsCV);
     window.addEventListener('resize', () => { resizeCanvas(cvsPV); resizeCanvas(cvsCV); });
 
-    // UI elements binding
+    // Slider Controls Binding
     const inputs = ['sp', 'kp', 'ki', 'kd', 'kff', 'noise'];
     inputs.forEach(id => {
         document.getElementById(id).addEventListener('input', (e) => {
-            document.getElementById(`val-${id}`).innerText = parseFloat(e.target.value).toFixed(1);
+            let val = parseFloat(e.target.value).toFixed(1);
+            if (id === 'sp') val += ' °C';
+            document.getElementById(`val-${id}`).innerText = val;
         });
     });
 
     document.getElementById('btn-reset').onclick = resetSimulation;
-    document.getElementById('btn-disturb').onclick = () => { disturbance += 25; };
+    document.getElementById('btn-disturb').onclick = () => { disturbance -= 15; }; // Instant thermal drop
 
     function resetSimulation() {
-        time = 0; pv = 0; plantVel = 0; integral = 0; lastPv = 0; lastError = 0;
-        filterState = 0; disturbance = 0; iae = 0; itae = 0; peakPv = 0;
+        time = 0; pv = ambientTemp; plantVel = 0; integral = 0; lastPv = ambientTemp; lastError = 0;
+        filterState = 0; disturbance = 0; iae = 0; itae = 0; peakPv = ambientTemp;
         history = { time: [], sp: [], pv: [], cv: [], pTerm: [], iTerm: [], dTerm: [] };
     }
 
@@ -233,13 +245,13 @@
         let useFilter = document.getElementById('derivFilter').checked;
         let useGainSched = document.getElementById('gainSched').checked;
 
-        // Add Noise to Measurement
+        // Add Noise to Temperature Sensor
         let noisyPv = pv + (Math.random() - 0.5) * noiseLevel * 2;
         let error = sp - noisyPv;
 
-        // 1. Gain Scheduling (Adapt Kp dynamically if error > 20)
-        if (useGainSched && Math.abs(error) > 20) {
-            kp *= 1.8; // Aggressive gain when far from setpoint
+        // 1. Gain Scheduling (Boost Kp if temperature error > 15°C)
+        if (useGainSched && Math.abs(error) > 15) {
+            kp *= 1.8;
         }
 
         // 2. Proportional Term
@@ -249,7 +261,7 @@
         let dInput = useDerivMeas ? (noisyPv - lastPv) : -(error - lastError);
         let rawDerivative = dInput / dt;
         
-        // Low-pass filter: H(s) = 1 / (tau*s + 1) where tau = 0.1s
+        // Low-pass filter for noisy thermal readings
         let dTerm = 0;
         if (useFilter) {
             filterState += (rawDerivative - filterState) * (dt / (0.1 + dt));
@@ -258,14 +270,14 @@
             dTerm = -kd * rawDerivative;
         }
 
-        // 4. Feedforward Term
-        let ffTerm = kff * (sp * 0.8); // Estimate steady-state gain
+        // 4. Feedforward Term (Offset ambient cooling loss)
+        let ffTerm = kff * ((sp - ambientTemp) * 0.5);
 
-        // Tentative Control Signal
+        // Tentative Heater Output Calculation
         let cvUnclamped = pTerm + integral + dTerm + ffTerm;
         
-        // Output Saturation Limits [-100, 100]
-        let cv = Math.max(-100, Math.min(100, cvUnclamped));
+        // Output Saturation Limits [0% to 100% Heater Power]
+        let cv = Math.max(0, Math.min(100, cvUnclamped));
 
         // 5. Anti-Windup Integration (Clamping Method)
         let iTerm = integral;
@@ -276,29 +288,35 @@
             integral += ki * error * dt;
         }
 
-        // 6. Physics Plant Simulation (First Order System with Inertia)
-        // d2PV/dt2 + a*dPV/dt = b*CV
-        let plantAccel = (cv * 1.2 - plantVel * 0.8 + disturbance) * 2;
-        plantVel += plantAccel * dt;
+        // 6. Thermal Chamber Physics Model (Heater Input vs Ambient Loss)
+        let heatInput = cv * 0.6; // Heating power rate
+        let heatLoss = (pv - ambientTemp) * 0.12; // Thermal dissipation to ambient room
+        let netHeat = heatInput - heatLoss + disturbance;
+
+        plantVel += netHeat * dt;
         pv += plantVel * dt;
         
-        if (pv < 0) { pv = 0; plantVel = 0; } // Hard floor constraint
+        // Thermal Floor (Cannot cool below ambient room temperature)
+        if (pv < ambientTemp) { 
+            pv = ambientTemp; 
+            plantVel = 0; 
+        }
         
         // Decay Disturbance over time
         disturbance *= 0.95;
 
-        // Metrics Computation
+        // Performance Metrics
         iae += Math.abs(error) * dt;
         itae += time * Math.abs(error) * dt;
         if (pv > peakPv) peakPv = pv;
-        let overshoot = Math.max(0, ((peakPv - sp) / (sp || 1)) * 100);
+        let overshoot = Math.max(0, ((peakPv - sp) / (sp - ambientTemp || 1)) * 100);
 
         // Update State
         lastPv = noisyPv;
         lastError = error;
         time += dt;
 
-        // Update Data History
+        // Log Data History
         history.time.push(time);
         history.sp.push(sp);
         history.pv.push(pv);
@@ -311,13 +329,17 @@
             Object.keys(history).forEach(k => history[k].shift());
         }
 
-        // Render UI Text
+        // Update UI Text & Visual Bar
         document.getElementById('m-iae').innerText = iae.toFixed(1);
         document.getElementById('m-itae').innerText = itae.toFixed(1);
         document.getElementById('m-overshoot').innerText = overshoot.toFixed(1) + '%';
         document.getElementById('m-cv').innerText = cv.toFixed(1) + '%';
 
-        // Draw Plots
+        document.getElementById('temp-pv-text').innerText = pv.toFixed(1) + '°C';
+        document.getElementById('temp-sp-text').innerText = sp.toFixed(1) + '°C';
+        document.getElementById('temp-fill-bar').style.width = Math.min(100, Math.max(0, pv)) + '%';
+
+        // Render Graphs
         drawPlot(ctxPV, [
             { data: history.sp, color: '#f59e0b', width: 2 },
             { data: history.pv, color: '#38bdf8', width: 2 }
@@ -328,16 +350,16 @@
             { data: history.pTerm, color: '#ef4444', width: 1 },
             { data: history.iTerm, color: '#3b82f6', width: 1 },
             { data: history.dTerm, color: '#a855f7', width: 1 }
-        ], -100, 100);
+        ], -20, 100);
     }
 
-    // Generic Graph Plotting Function
+    // Generic Graph Plotting Engine
     function drawPlot(ctx, seriesList, minY, maxY) {
         const w = ctx.canvas.width;
         const h = ctx.canvas.height;
         ctx.clearRect(0, 0, w, h);
 
-        // Draw grid
+        // Draw background grid lines
         ctx.strokeStyle = '#1e293b';
         ctx.lineWidth = 1;
         for (let y = 0; y <= h; y += h / 4) {
@@ -362,7 +384,7 @@
         });
     }
 
-    // Run Engine at 20Hz
+    // Run Engine Loop
     setInterval(stepSimulation, dt * 1000);
 </script>
 
