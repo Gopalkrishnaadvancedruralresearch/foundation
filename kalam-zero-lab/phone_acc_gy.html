@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GARRF Virtual Lab: SHM Vibration Sensing</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 20px; max-width: 600px; margin: auto; background-color: #f4f4f9; }
+        .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        h1, h2, h3 { color: #333; text-align: center; }
+        .data-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; text-align: center; }
+        .data-box { background: #eef2f5; padding: 10px; border-radius: 5px; font-weight: bold; font-family: monospace; font-size: 1.1em;}
+        
+        .controls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        select, button { padding: 15px; border: none; border-radius: 5px; font-size: 16px; font-weight: bold; }
+        select { background: #fff; border: 1px solid #ccc; cursor: pointer; }
+        button { cursor: pointer; color: white; width: 100%; }
+        
+        #initBtn { background-color: #17a2b8; margin-bottom: 15px; }
+        #recordBtn { background-color: #28a745; }
+        #recordBtn:disabled { background-color: #8fce9e; cursor: not-allowed; }
+        #stopBtn { background-color: #dc3545; }
+        #stopBtn:disabled { background-color: #e4979e; cursor: not-allowed; }
+        #saveBtn { background-color: #ffc107; color: #333; display: none; margin-top: 15px; }
+        
+        #status { text-align: center; font-size: 16px; font-weight: bold; color: #0056b3; margin-bottom: 15px; }
+        .recording-pulse { color: #dc3545 !important; animation: blinker 1s linear infinite; }
+        @keyframes blinker { 50% { opacity: 0; } }
+    </style>
+</head>
+<body>
+
+    <h1>SHM Duo-System</h1>
+    <p id="status">System Ready. Please initialize sensors.</p>
+
+    <button id="initBtn">1. Initialize Sensors</button>
+
+    <div class="card">
+        <div class="controls-grid">
+            <select id="durationSelect">
+                <option value="0">Continuous</option>
+                <option value="60000">1 Minute</option>
+                <option value="120000">2 Minutes</option>
+                <option value="300000">5 Minutes</option>
+            </select>
+            <button id="recordBtn" disabled>RECORD</button>
+        </div>
+        <button id="stopBtn" disabled>STOP</button>
+        <button id="saveBtn">Save Experiment Data (Excel)</button>
+    </div>
+
+    <div class="card">
+        <h3>Live Accelerometer (m/s²)</h3>
+        <div class="data-grid">
+            <div class="data-box">X:<br><span id="accX">0.00</span></div>
+            <div class="data-box">Y:<br><span id="accY">0.00</span></div>
+            <div class="data-box">Z:<br><span id="accZ">0.00</span></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Live Gyroscope (deg/s)</h3>
+        <div class="data-grid">
+            <div class="data-box">X:<br><span id="gyrX">0.00</span></div>
+            <div class="data-box">Y:<br><span id="gyrY">0.00</span></div>
+            <div class="data-box">Z:<br><span id="gyrZ">0.00</span></div>
+        </div>
+    </div>
+
+    <script>
+        let currentData = { ax: 0, ay: 0, az: 0, gx: 0, gy: 0, gz: 0 };
+        let recordedData = [];
+        let isRecording = false;
+        let stopTimeout = null;
+        let sensorsInitialized = false;
+
+        const updateHTML = (id, val) => document.getElementById(id).innerText = (val || 0).toFixed(3);
+        const statusEl = document.getElementById('status');
+        const recordBtn = document.getElementById('recordBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const saveBtn = document.getElementById('saveBtn');
+        const durationSelect = document.getElementById('durationSelect');
+
+        // Capture motion and update live windows
+        function handleMotion(event) {
+            currentData.ax = event.accelerationIncludingGravity.x;
+            currentData.ay = event.accelerationIncludingGravity.y;
+            currentData.az = event.accelerationIncludingGravity.z;
+            
+            if (event.rotationRate) {
+                currentData.gx = event.rotationRate.alpha;
+                currentData.gy = event.rotationRate.beta;
+                currentData.gz = event.rotationRate.gamma;
+            }
+
+            // Always update live windows
+            updateHTML('accX', currentData.ax);
+            updateHTML('accY', currentData.ay);
+            updateHTML('accZ', currentData.az);
+            updateHTML('gyrX', currentData.gx);
+            updateHTML('gyrY', currentData.gy);
+            updateHTML('gyrZ', currentData.gz);
+
+            // If recording is active, push to array
+            if (isRecording) {
+                recordedData.push({
+                    time: new Date().toISOString(),
+                    ...currentData
+                });
+            }
+        }
+
+        // Initialize Sensors (Requires user click for iOS security)
+        document.getElementById('initBtn').addEventListener('click', async () => {
+            if (typeof DeviceMotionEvent.requestPermission === 'function') {
+                try {
+                    const permission = await DeviceMotionEvent.requestPermission();
+                    if (permission === 'granted') {
+                        startLiveSensors();
+                    } else {
+                        statusEl.innerText = "Sensor permission denied.";
+                    }
+                } catch (error) {
+                    console.error(error);
+                }
+            } else {
+                startLiveSensors();
+            }
+        });
+
+        function startLiveSensors() {
+            window.addEventListener('devicemotion', handleMotion);
+            sensorsInitialized = true;
+            statusEl.innerText = "Sensors Active. Ready to record.";
+            document.getElementById('initBtn').style.display = 'none';
+            recordBtn.disabled = false;
+        }
+
+        // Record Button Logic
+        recordBtn.addEventListener('click', () => {
+            if (!sensorsInitialized) return;
+            
+            recordedData = []; // Clear previous data
+            isRecording = true;
+            recordBtn.disabled = true;
+            stopBtn.disabled = false;
+            saveBtn.style.display = 'none';
+            durationSelect.disabled = true;
+            
+            statusEl.innerText = "🔴 RECORDING IN PROGRESS...";
+            statusEl.classList.add("recording-pulse");
+
+            const durationMs = parseInt(durationSelect.value);
+            if (durationMs > 0) {
+                stopTimeout = setTimeout(finishRecording, durationMs);
+            }
+        });
+
+        // Stop Button Logic (Manual Stop)
+        stopBtn.addEventListener('click', () => {
+            if (stopTimeout) clearTimeout(stopTimeout);
+            finishRecording();
+        });
+
+        // Finish Recording Function
+        function finishRecording() {
+            isRecording = false;
+            recordBtn.disabled = false;
+            stopBtn.disabled = true;
+            durationSelect.disabled = false;
+            
+            statusEl.classList.remove("recording-pulse");
+            statusEl.innerText = `Experiment Finished. ${recordedData.length} data points captured.`;
+            
+            // Show the save button so the user explicitly chooses to download
+            if (recordedData.length > 0) {
+                saveBtn.style.display = 'block';
+            }
+        }
+
+        // Save Data to Excel (CSV)
+        saveBtn.addEventListener('click', () => {
+            let csvContent = "Timestamp,Accel_X,Accel_Y,Accel_Z,Gyro_X,Gyro_Y,Gyro_Z\n";
+            recordedData.forEach(row => {
+                csvContent += `${row.time},${row.ax},${row.ay},${row.az},${row.gx},${row.gy},${row.gz}\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "GARRF_SHM_Experiment.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            statusEl.innerText = "Data saved to your device's documents/downloads.";
+        });
+    </script>
+</body>
+</html>
