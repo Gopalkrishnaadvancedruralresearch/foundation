@@ -20,7 +20,7 @@ footer{max-width:1500px;margin:auto;padding:22px;text-align:center;border-top:1p
 </style>
 </head>
 <body>
-<header><div class="top"><div class="logo">G<br><small>ARRF</small></div><div class="title"><h1>GARRF PZT Structural Health Monitoring Laboratory</h1><div>PIEZOELECTRIC (PZT) • EMI • GUIDED WAVES • LIVE VIRTUAL EXPERIMENT</div></div><div class="badge">FREE RURAL ENGINEERING EDUCATION</div></div></header>
+<header><div class="top"><div class="logo">G<br><small>ARRF</small></div><div class="title"><h1>GARRF PZT Structural Health Monitoring Laboratory</h1><div>PIEZOELECTRIC (PZT) • EMI • GUIDED WAVES • LIVE VIRTUAL EXPERIMENT</div></div><div class="badge">FREE RURAL ENGINEERING EDUCATION</div><button id="helpBtn" class="ghost" style="margin-left:8px;padding:9px 12px">HELP</button></div></header>
 <main>
 <section class="hero">
 <h2>Advanced Structural Health Monitoring — brought to rural students</h2>
@@ -36,16 +36,16 @@ footer{max-width:1500px;margin:auto;padding:22px;text-align:center;border-top:1p
 <label>PZT X position: <b id="xv">50%</b></label><input id="px" type="range" min="8" max="92" value="50">
 <label>PZT Y position: <b id="yv">50%</b></label><input id="py" type="range" min="20" max="80" value="50">
 <label>Excitation frequency: <b id="fv">70 kHz</b></label><input id="freq" type="range" min="10" max="150" value="70">
-<label>Excitation type</label><div class="radios"><label><input name="exc" type="radio" value="sine" checked>Sine</label><label><input name="exc" type="radio" value="sweep">Sweep</label><label><input name="exc" type="radio" value="pulse">Pulse</label></div>
+<label>Excitation type</label><div class="radios"><label><input name="exc" type="radio" value="sine" checked>Sine</label><label><input name="exc" type="radio" value="sweep">Sweep</label><label><input name="exc" type="radio" value="pulse">Pulse</label></div><label>Monitoring duration</label><select id="duration"><option value="60">1 minute</option><option value="120">2 minutes</option><option value="300">5 minutes</option></select><div class="callout" id="timerBox"><b>Monitoring:</b> Not started<br><b>Purpose:</b> Establish a healthy baseline or observe a simulated damage signature.</div>
 
 <div class="section"><h3>PART 2 — SIMULATED DAMAGE</h3>
 <label>Condition</label><select id="damage"><option value="healthy">Healthy</option><option value="crack">Crack</option><option value="debond">Debonding</option><option value="loose">Loosened connection</option><option value="stiff">Local stiffness reduction</option></select>
-<label>Severity: <b id="sv">35%</b></label><input id="sev" type="range" min="5" max="90" value="35">
+<label>Severity: <b id="sv">N/A — Healthy</b></label><input id="sev" type="range" min="5" max="90" value="35" disabled>
 <div class="buttons"><button id="start" class="primary">START</button><button id="stop" class="danger">STOP</button><button id="reset" class="ghost">RESET</button><button id="download" class="ghost">DOWNLOAD CSV</button></div>
 </div>
 
 <div class="section"><h3>Experiment concept</h3><div class="explain">Electrical excitation drives the PZT. The bonded patch creates mechanical waves in the structure. A defect changes propagation, reflection, scattering and the sensed electrical response. The same simulated response is sent to Part 4.</div></div>
-<div class="section"><h3>PART 5 — ARJUN AI</h3><button id="arjun" class="primary" style="width:100%">CONNECT TO ARJUN AI</button><div class="callout">Future GARRF AI layer for PZT/EMI, guided waves, FFT features and damage diagnosis.</div></div>
+<div class="section"><h3>EXPERIMENT SESSION</h3><div class="explain">Run <b>Healthy</b> first for the selected monitoring duration. Then select a damage condition, choose severity, and run again. The session retains the Healthy → Damaged workflow for ARJUN.</div><div class="metrics"><div class="metric"><small>HEALTHY CAPTURE</small><strong id="healthyTime">0 s</strong></div><div class="metric"><small>DAMAGED CAPTURE</small><strong id="damagedTime">0 s</strong></div></div></div><div class="section"><h3>PART 5 — ARJUN AI</h3><button id="arjun" class="primary" style="width:100%">CONNECT TO ARJUN AI</button><div class="callout">Future GARRF AI layer for PZT/EMI, guided waves, FFT features and damage diagnosis.</div></div>
 </aside>
 
 <section class="card stage">
@@ -81,8 +81,9 @@ let running=false,raf=0,t=0,drag=false,buffer=[],records=[];
 function fit(c,ctx){const r=c.getBoundingClientRect(),d=devicePixelRatio||1;c.width=Math.max(1,r.width*d);c.height=Math.max(1,r.height*d);ctx.setTransform(d,0,0,d,0,0);return[r.width,r.height]}
 function P(){return{type:type.value,px:+px.value,py:+py.value,f:+freq.value,dmg:damage.value,sev:+sev.value,exc:document.querySelector('input[name="exc"]:checked').value}}
 function df(p){return p.dmg==="healthy"?0:p.sev/100}
+function updateSeverityState(){const healthy=damage.value==="healthy";sev.disabled=healthy;sv.textContent=healthy?"N/A — Healthy":sev.value+"%";}
 function addLog(s){const e=document.createElement("div");e.textContent=new Date().toLocaleTimeString()+" — "+s;log.prepend(e)}
-function labels(){xv.textContent=px.value+"%";yv.textContent=py.value+"%";fv.textContent=freq.value+" kHz";sv.textContent=sev.value+"%";drawStructure()}
+function labels(){xv.textContent=px.value+"%";yv.textContent=py.value+"%";fv.textContent=freq.value+" kHz";updateSeverityState();drawStructure()}
 function geometry(){const r=S.getBoundingClientRect(),p=P(),plate=p.type==="Plate";return{w:r.width,h:r.height,bx:r.width*.09,by:plate?r.height*.18:r.height*.40,bw:r.width*.82,bh:plate?r.height*.64:r.height*.20}}
 
 function drawStructure(){
@@ -163,9 +164,11 @@ function calc(){
  result.innerHTML=di<.15?"<b>Healthy structure</b><br>Live response is close to the healthy reference.":"<b>⚠ "+p.dmg+" indicated</b><br>Live damage indicator DI = "+di.toFixed(3)+". Examine waveform and FFT changes.";
  return{...p,rms:r,corr,emi,di}
 }
+function updateSessionDisplay(){const dur=+$("duration").value;const elapsed=running?Math.min(dur,Math.floor((performance.now()-sessionStart)/1000)):stageSeconds;const remain=Math.max(0,dur-elapsed);$("timerBox").innerHTML="<b>Monitoring:</b> "+(running?"LIVE":"STOPPED")+"<br><b>Stage:</b> "+(P().dmg==="healthy"?"Healthy baseline":"Damaged condition")+"<br><b>Elapsed:</b> "+elapsed+" s / "+dur+" s<br><b>Remaining:</b> "+remain+" s";$("healthyTime").textContent=healthySeconds+" s";$("damagedTime").textContent=damagedSeconds+" s"}
+function finishStage(){if(!running)return;running=false;cancelAnimationFrame(raf);stageSeconds=Math.min(+$("duration").value,Math.floor((performance.now()-sessionStart)/1000));if(P().dmg==="healthy")healthySeconds=stageSeconds;else damagedSeconds=stageSeconds;status.textContent="● STAGE COMPLETE";status.style.color="#42e0a0";addLog((P().dmg==="healthy"?"HEALTHY":"DAMAGED")+" monitoring complete — "+stageSeconds+" seconds captured");updateSessionDisplay();drawStructure();drawWave();drawFFT();calc()}
 function tick(){
  if(!running)return;
- t++;
+ t++;updateSessionDisplay();
  drawStructure();
  acquire();
  drawWave();
@@ -176,18 +179,19 @@ function tick(){
  raf=requestAnimationFrame(tick)
 }
 
-$("start").addEventListener("click",()=>{if(running)return;running=true;status.textContent="● LIVE ACQUISITION";status.style.color="#22d8ff";addLog("START — PZT excitation and synchronized signal acquisition");tick()});
-$("stop").addEventListener("click",()=>{running=false;cancelAnimationFrame(raf);status.textContent="● STOPPED / FROZEN";status.style.color="#ff6078";addLog("STOP — waveform and FFT frozen")});
-$("reset").addEventListener("click",()=>{running=false;cancelAnimationFrame(raf);t=0;buffer=[];records=[];damage.value="healthy";sev.value=35;status.textContent="● READY";status.style.color="#42e0a0";labels();drawStructure();drawWave();drawFFT();calc();addLog("RESET — healthy baseline restored")});
+$("start").addEventListener("click",()=>{if(running)return;running=true;sessionStart=performance.now();stageSeconds=0;clearTimeout(autoStopTimer);autoStopTimer=setTimeout(finishStage,+$("duration").value*1000);status.textContent="● LIVE ACQUISITION";status.style.color="#22d8ff";addLog("START — PZT excitation and synchronized signal acquisition");tick()});
+$("stop").addEventListener("click",()=>{if(running){stageSeconds=Math.min(+$("duration").value,Math.floor((performance.now()-sessionStart)/1000));if(P().dmg==="healthy")healthySeconds=stageSeconds;else damagedSeconds=stageSeconds}running=false;clearTimeout(autoStopTimer);cancelAnimationFrame(raf);updateSessionDisplay();status.textContent="● STOPPED / FROZEN";status.style.color="#ff6078";addLog("STOP — waveform and FFT frozen")});
+$("reset").addEventListener("click",()=>{running=false;cancelAnimationFrame(raf);t=0;buffer=[];records=[];healthySeconds=0;damagedSeconds=0;stageSeconds=0;clearTimeout(autoStopTimer);damage.value="healthy";sev.value=35;status.textContent="● READY";status.style.color="#42e0a0";labels();updateSessionDisplay();drawStructure();drawWave();drawFFT();calc();addLog("RESET — healthy baseline restored")});
 $("download").addEventListener("click",()=>{const rows=["timestamp,structure,frequency_khz,excitation,damage,severity,pzt_x,pzt_y,rms,correlation,emi_index,damage_index"];const rs=records.length?records:[calc()];rs.forEach(r=>rows.push([r.timestamp||new Date().toISOString(),r.type,r.f,r.exc,r.dmg,r.sev,r.px,r.py,r.rms,r.corr,r.emi,r.di].join(",")));const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([rows.join("\n")],{type:"text/csv"}));a.download="GARRF_PZT_SHM_Live_Experiment.csv";a.click();addLog("CSV — live experiment data exported")});
-$("arjun").addEventListener("click",()=>{addLog("ARJUN — integration point selected");alert("ARJUN AI integration point ready. Future version: AI-assisted PZT/EMI and guided-wave diagnosis.")});
+$("helpBtn").addEventListener("click",()=>{const a=document.createElement("a");a.href="help_shm.pdf";a.target="_blank";a.rel="noopener";a.click();addLog("HELP — opening help_shm.pdf")});
+$("arjun").addEventListener("click",()=>{const p=P(),payload={schema:"GARRF_ARJUN_EXPERIMENT",version:"1.0",source:"GARRF_VIRTUAL_LAB",is_simulated:true,monitoring_duration_seconds:+$("duration").value,healthy_capture_seconds:healthySeconds,damaged_capture_seconds:damagedSeconds,structure:p.type,pzt:{x_percent:p.px,y_percent:p.py},excitation:{frequency_khz:p.f,type:p.exc},condition:{reference:"healthy",current:p.dmg,severity_percent:p.dmg==="healthy"?null:p.sev},signal:{waveform:buffer.slice(-1536)},features:calc()||{},note:"Simulated GARRF virtual-lab experiment. Severity is a simulation parameter, not a measured physical crack percentage."};const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}));a.download="GARRF_ARJUN_Experiment.json";a.click();addLog("ARJUN — experiment package created")});
 
-[px,py,freq,damage,sev,type].forEach(e=>{e.addEventListener("input",labels);e.addEventListener("change",labels)});
+[px,py,freq,damage,sev,type].forEach(e=>{e.addEventListener("input",labels);e.addEventListener("change",labels)});$("duration").addEventListener("change",updateSessionDisplay);
 S.addEventListener("pointerdown",e=>{const r=S.getBoundingClientRect(),g=geometry(),p=P(),x=g.bx+g.bw*p.px/100,y=g.by+g.bh*p.py/100;if(Math.abs(e.clientX-r.left-x)<48&&Math.abs(e.clientY-r.top-y)<40){drag=true;S.setPointerCapture(e.pointerId)}});
 S.addEventListener("pointermove",e=>{if(!drag)return;const r=S.getBoundingClientRect(),g=geometry();px.value=Math.max(8,Math.min(92,Math.round((e.clientX-r.left-g.bx)/g.bw*100)));py.value=Math.max(20,Math.min(80,Math.round((e.clientY-r.top-g.by)/g.bh*100)));labels()});
 S.addEventListener("pointerup",()=>drag=false);S.addEventListener("pointercancel",()=>drag=false);
 window.addEventListener("resize",()=>{drawStructure();drawWave();drawFFT()});
-labels();drawStructure();drawWave();drawFFT();calc();
+labels();updateSessionDisplay();drawStructure();drawWave();drawFFT();calc();
 })();
 </script>
 </body>
