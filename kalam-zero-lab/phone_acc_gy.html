@@ -1,201 +1,1173 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GARRF Virtual Lab: SHM Vibration Sensing</title>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 20px; max-width: 600px; margin: auto; background-color: #f4f4f9; }
-        .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        h1, h2, h3 { color: #333; text-align: center; }
-        .data-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; text-align: center; }
-        .data-box { background: #eef2f5; padding: 10px; border-radius: 5px; font-weight: bold; font-family: monospace; font-size: 1.1em;}
-        
-        .controls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-        select, button { padding: 15px; border: none; border-radius: 5px; font-size: 16px; font-weight: bold; }
-        select { background: #fff; border: 1px solid #ccc; cursor: pointer; }
-        button { cursor: pointer; color: white; width: 100%; }
-        
-        #initBtn { background-color: #17a2b8; margin-bottom: 15px; }
-        #recordBtn { background-color: #28a745; }
-        #recordBtn:disabled { background-color: #8fce9e; cursor: not-allowed; }
-        #stopBtn { background-color: #dc3545; }
-        #stopBtn:disabled { background-color: #e4979e; cursor: not-allowed; }
-        #saveBtn { background-color: #ffc107; color: #333; display: none; margin-top: 15px; }
-        
-        #status { text-align: center; font-size: 16px; font-weight: bold; color: #0056b3; margin-bottom: 15px; }
-        .recording-pulse { color: #dc3545 !important; animation: blinker 1s linear infinite; }
-        @keyframes blinker { 50% { opacity: 0; } }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>GARRF Virtual SHM Laboratory | Vibration Sensing</title>
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+        background:
+            linear-gradient(135deg, #eef4f8 0%, #f8fafc 50%, #eaf2f7 100%);
+        color: #1f2937;
+        padding: 18px;
+    }
+
+    .container {
+        max-width: 760px;
+        margin: auto;
+    }
+
+    /* ================= HEADER ================= */
+
+    .header {
+        background: linear-gradient(135deg, #063970, #0b5e91);
+        color: white;
+        border-radius: 18px;
+        padding: 22px 18px;
+        text-align: center;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        margin-bottom: 18px;
+    }
+
+    .logo {
+        width: 82px;
+        height: 82px;
+        object-fit: contain;
+        background: white;
+        border-radius: 50%;
+        padding: 6px;
+        margin-bottom: 10px;
+    }
+
+    .header h1 {
+        margin: 5px 0;
+        font-size: 1.55rem;
+        line-height: 1.25;
+    }
+
+    .header h2 {
+        margin: 5px 0;
+        font-size: 1rem;
+        font-weight: 500;
+        opacity: 0.95;
+    }
+
+    .header p {
+        margin: 8px 0 0;
+        font-size: 0.82rem;
+        opacity: 0.85;
+    }
+
+    /* ================= LAB TITLE ================= */
+
+    .lab-title {
+        text-align: center;
+        margin: 20px 0 12px;
+    }
+
+    .lab-title h2 {
+        margin: 0;
+        color: #063970;
+        font-size: 1.35rem;
+    }
+
+    .lab-title p {
+        margin: 5px 0;
+        color: #64748b;
+        font-size: 0.9rem;
+    }
+
+    /* ================= CARDS ================= */
+
+    .card {
+        background: rgba(255,255,255,0.97);
+        padding: 18px;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(15,23,42,0.08);
+        margin-bottom: 17px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .card h3 {
+        margin: 0 0 14px;
+        color: #063970;
+        text-align: center;
+        font-size: 1.05rem;
+    }
+
+    /* ================= STATUS ================= */
+
+    #status {
+        text-align: center;
+        font-weight: 700;
+        color: #075985;
+        background: #e0f2fe;
+        border-radius: 10px;
+        padding: 11px;
+        margin-bottom: 15px;
+        font-size: 0.92rem;
+    }
+
+    .recording-pulse {
+        color: #991b1b !important;
+        background: #fee2e2 !important;
+        animation: blinker 1s linear infinite;
+    }
+
+    @keyframes blinker {
+        50% {
+            opacity: 0.55;
+        }
+    }
+
+    /* ================= EXPERIMENT INFO ================= */
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
+    .info-box {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 11px;
+    }
+
+    .info-box label {
+        display: block;
+        font-size: 0.72rem;
+        color: #64748b;
+        margin-bottom: 4px;
+        font-weight: 600;
+    }
+
+    .info-box input,
+    .info-box select {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #cbd5e1;
+        border-radius: 7px;
+        font-size: 0.9rem;
+        background: white;
+    }
+
+    /* ================= BUTTONS ================= */
+
+    button,
+    select {
+        font-family: inherit;
+    }
+
+    button {
+        border: none;
+        border-radius: 9px;
+        padding: 14px;
+        font-size: 15px;
+        font-weight: 700;
+        cursor: pointer;
+        width: 100%;
+        transition: 0.2s;
+    }
+
+    button:active {
+        transform: scale(0.98);
+    }
+
+    button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    #initBtn {
+        background: #0e7490;
+        color: white;
+        margin-bottom: 17px;
+        box-shadow: 0 4px 10px rgba(14,116,144,0.25);
+    }
+
+    #recordBtn {
+        background: #15803d;
+        color: white;
+    }
+
+    #stopBtn {
+        background: #dc2626;
+        color: white;
+        margin-top: 10px;
+    }
+
+    #saveBtn {
+        background: #f59e0b;
+        color: #111827;
+        display: none;
+        margin-top: 12px;
+    }
+
+    .controls-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
+    .duration-label {
+        font-size: 0.75rem;
+        color: #64748b;
+        margin-bottom: 5px;
+        display: block;
+        font-weight: 600;
+    }
+
+    #durationSelect {
+        width: 100%;
+        padding: 14px;
+        border: 1px solid #cbd5e1;
+        border-radius: 9px;
+        font-size: 15px;
+        background: white;
+    }
+
+    /* ================= LIVE SENSOR ================= */
+
+    .sensor-heading {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+
+    .sensor-heading h3 {
+        margin: 0;
+    }
+
+    .sensor-badge {
+        font-size: 0.68rem;
+        padding: 5px 8px;
+        background: #dcfce7;
+        color: #166534;
+        border-radius: 20px;
+        font-weight: 700;
+    }
+
+    .data-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 9px;
+    }
+
+    .data-box {
+        background: linear-gradient(145deg, #f1f5f9, #e8eef4);
+        border: 1px solid #dbe4ec;
+        padding: 13px 5px;
+        border-radius: 10px;
+        text-align: center;
+        font-family: monospace;
+        font-size: 0.85rem;
+        color: #475569;
+    }
+
+    .data-value {
+        display: block;
+        margin-top: 5px;
+        color: #0f172a;
+        font-size: 1.15rem;
+        font-weight: 800;
+    }
+
+    /* ================= RESEARCH NOTE ================= */
+
+    .research-note {
+        background: #eff6ff;
+        border-left: 4px solid #2563eb;
+        padding: 13px;
+        border-radius: 8px;
+        font-size: 0.82rem;
+        line-height: 1.5;
+        color: #334155;
+    }
+
+    /* ================= FOOTER ================= */
+
+    footer {
+        text-align: center;
+        margin-top: 25px;
+        padding: 18px 8px;
+        color: #64748b;
+        font-size: 0.75rem;
+    }
+
+    footer strong {
+        color: #063970;
+    }
+
+    .footer-line {
+        margin-top: 5px;
+    }
+
+    /* ================= MOBILE ================= */
+
+    @media (max-width: 520px) {
+
+        body {
+            padding: 10px;
+        }
+
+        .header {
+            padding: 18px 12px;
+        }
+
+        .logo {
+            width: 70px;
+            height: 70px;
+        }
+
+        .header h1 {
+            font-size: 1.25rem;
+        }
+
+        .header h2 {
+            font-size: 0.85rem;
+        }
+
+        .controls-grid,
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .data-box {
+            padding: 11px 3px;
+        }
+
+        .data-value {
+            font-size: 1rem;
+        }
+    }
+</style>
+
 </head>
+
 <body>
 
-    <h1>SHM Duo-System</h1>
-    <p id="status">System Ready. Please initialize sensors.</p>
+<div class="container">
 
-    <button id="initBtn">1. Initialize Sensors</button>
+```
+<!-- ================= GARRF HEADER ================= -->
 
-    <div class="card">
-        <div class="controls-grid">
-            <select id="durationSelect">
-                <option value="0">Continuous</option>
-                <option value="60000">1 Minute</option>
-                <option value="120000">2 Minutes</option>
-                <option value="300000">5 Minutes</option>
+<div class="header">
+
+    <img
+        src="https://garrf.in/images/logo.jpeg"
+        class="logo"
+        alt="GARRF Logo"
+        onerror="this.style.display='none';"
+    >
+
+    <h1>Gopalkrishna Advanced Rural Research Foundation</h1>
+
+    <h2>GARRF Virtual Research Laboratory</h2>
+
+    <p>
+        Science • Engineering • Artificial Intelligence • Rural Innovation
+    </p>
+
+</div>
+
+<!-- ================= LAB TITLE ================= -->
+
+<div class="lab-title">
+
+    <h2>SHM Duo-System</h2>
+
+    <p>
+        Mobile-Based Vibration & Motion Sensing Laboratory
+    </p>
+
+</div>
+
+<!-- ================= STATUS ================= -->
+
+<div id="status">
+    System Ready. Please initialize the mobile sensors.
+</div>
+
+<!-- ================= INITIALIZATION ================= -->
+
+<button id="initBtn">
+    1. INITIALIZE SENSORS
+</button>
+
+<!-- ================= EXPERIMENT INFORMATION ================= -->
+
+<div class="card">
+
+    <h3>Experiment Information</h3>
+
+    <div class="info-grid">
+
+        <div class="info-box">
+            <label>Experiment / Structure</label>
+            <input
+                type="text"
+                id="experimentName"
+                placeholder="e.g. Beam Vibration Test"
+            >
+        </div>
+
+        <div class="info-box">
+            <label>Researcher / Student</label>
+            <input
+                type="text"
+                id="researcherName"
+                placeholder="Enter name"
+            >
+        </div>
+
+    </div>
+
+    <div style="height:10px;"></div>
+
+    <div class="info-grid">
+
+        <div class="info-box">
+            <label>Sensor Location</label>
+            <input
+                type="text"
+                id="sensorLocation"
+                placeholder="e.g. Mid-span"
+            >
+        </div>
+
+        <div class="info-box">
+            <label>Test Type</label>
+
+            <select id="testType">
+
+                <option value="Ambient Vibration">
+                    Ambient Vibration
+                </option>
+
+                <option value="Free Vibration">
+                    Free Vibration
+                </option>
+
+                <option value="Forced Vibration">
+                    Forced Vibration
+                </option>
+
+                <option value="Impact Test">
+                    Impact Test
+                </option>
+
+                <option value="Other">
+                    Other
+                </option>
+
             </select>
-            <button id="recordBtn" disabled>RECORD</button>
+
         </div>
-        <button id="stopBtn" disabled>STOP</button>
-        <button id="saveBtn">Save Experiment Data (Excel)</button>
+
     </div>
 
-    <div class="card">
-        <h3>Live Accelerometer (m/s²)</h3>
-        <div class="data-grid">
-            <div class="data-box">X:<br><span id="accX">0.00</span></div>
-            <div class="data-box">Y:<br><span id="accY">0.00</span></div>
-            <div class="data-box">Z:<br><span id="accZ">0.00</span></div>
+</div>
+
+<!-- ================= RECORDING ================= -->
+
+<div class="card">
+
+    <h3>Experiment Control</h3>
+
+    <div class="controls-grid">
+
+        <div>
+
+            <label class="duration-label">
+                Recording Duration
+            </label>
+
+            <select id="durationSelect">
+
+                <option value="0">
+                    Continuous
+                </option>
+
+                <option value="10000">
+                    10 Seconds
+                </option>
+
+                <option value="30000">
+                    30 Seconds
+                </option>
+
+                <option value="60000">
+                    1 Minute
+                </option>
+
+                <option value="120000">
+                    2 Minutes
+                </option>
+
+                <option value="300000">
+                    5 Minutes
+                </option>
+
+            </select>
+
         </div>
+
+        <div style="display:flex;align-items:end;">
+
+            <button id="recordBtn" disabled>
+                🔴 RECORD
+            </button>
+
+        </div>
+
     </div>
 
-    <div class="card">
-        <h3>Live Gyroscope (deg/s)</h3>
-        <div class="data-grid">
-            <div class="data-box">X:<br><span id="gyrX">0.00</span></div>
-            <div class="data-box">Y:<br><span id="gyrY">0.00</span></div>
-            <div class="data-box">Z:<br><span id="gyrZ">0.00</span></div>
-        </div>
+    <button id="stopBtn" disabled>
+        ⏹ STOP EXPERIMENT
+    </button>
+
+    <button id="saveBtn">
+        📊 SAVE EXPERIMENT DATA
+    </button>
+
+</div>
+
+<!-- ================= ACCELEROMETER ================= -->
+
+<div class="card">
+
+    <div class="sensor-heading">
+
+        <h3>Live Accelerometer</h3>
+
+        <span class="sensor-badge">
+            m/s²
+        </span>
+
     </div>
 
-    <script>
-        let currentData = { ax: 0, ay: 0, az: 0, gx: 0, gy: 0, gz: 0 };
-        let recordedData = [];
-        let isRecording = false;
-        let stopTimeout = null;
-        let sensorsInitialized = false;
+    <div class="data-grid">
 
-        const updateHTML = (id, val) => document.getElementById(id).innerText = (val || 0).toFixed(3);
-        const statusEl = document.getElementById('status');
-        const recordBtn = document.getElementById('recordBtn');
-        const stopBtn = document.getElementById('stopBtn');
-        const saveBtn = document.getElementById('saveBtn');
-        const durationSelect = document.getElementById('durationSelect');
+        <div class="data-box">
+            X
+            <span class="data-value" id="accX">
+                0.000
+            </span>
+        </div>
 
-        // Capture motion and update live windows
-        function handleMotion(event) {
-            currentData.ax = event.accelerationIncludingGravity.x;
-            currentData.ay = event.accelerationIncludingGravity.y;
-            currentData.az = event.accelerationIncludingGravity.z;
-            
-            if (event.rotationRate) {
-                currentData.gx = event.rotationRate.alpha;
-                currentData.gy = event.rotationRate.beta;
-                currentData.gz = event.rotationRate.gamma;
-            }
+        <div class="data-box">
+            Y
+            <span class="data-value" id="accY">
+                0.000
+            </span>
+        </div>
 
-            // Always update live windows
-            updateHTML('accX', currentData.ax);
-            updateHTML('accY', currentData.ay);
-            updateHTML('accZ', currentData.az);
-            updateHTML('gyrX', currentData.gx);
-            updateHTML('gyrY', currentData.gy);
-            updateHTML('gyrZ', currentData.gz);
+        <div class="data-box">
+            Z
+            <span class="data-value" id="accZ">
+                0.000
+            </span>
+        </div>
 
-            // If recording is active, push to array
-            if (isRecording) {
-                recordedData.push({
-                    time: new Date().toISOString(),
-                    ...currentData
-                });
-            }
-        }
+    </div>
 
-        // Initialize Sensors (Requires user click for iOS security)
-        document.getElementById('initBtn').addEventListener('click', async () => {
-            if (typeof DeviceMotionEvent.requestPermission === 'function') {
+</div>
+
+<!-- ================= GYROSCOPE ================= -->
+
+<div class="card">
+
+    <div class="sensor-heading">
+
+        <h3>Live Gyroscope</h3>
+
+        <span class="sensor-badge">
+            deg/s
+        </span>
+
+    </div>
+
+    <div class="data-grid">
+
+        <div class="data-box">
+            X
+            <span class="data-value" id="gyrX">
+                0.000
+            </span>
+        </div>
+
+        <div class="data-box">
+            Y
+            <span class="data-value" id="gyrY">
+                0.000
+            </span>
+        </div>
+
+        <div class="data-box">
+            Z
+            <span class="data-value" id="gyrZ">
+                0.000
+            </span>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- ================= RESEARCH NOTE ================= -->
+
+<div class="card">
+
+    <h3>GARRF Research Note</h3>
+
+    <div class="research-note">
+
+        This Virtual SHM Laboratory uses the smartphone's built-in
+        <strong>accelerometer and gyroscope</strong> to capture
+        vibration and motion data.
+
+        The recorded data can be used for preliminary
+        <strong>Structural Health Monitoring (SHM)</strong>,
+        vibration analysis, modal studies, educational demonstrations,
+        and AI-assisted research.
+
+        <br><br>
+
+        <strong>Important:</strong>
+        Smartphone sensors are intended for experimental and educational
+        research. They should not be treated as certified structural
+        monitoring instruments without appropriate calibration and
+        validation.
+
+    </div>
+
+</div>
+
+<!-- ================= FOOTER ================= -->
+
+<footer>
+
+    <strong>Gopalkrishna Advanced Rural Research Foundation (GARRF)</strong>
+
+    <div class="footer-line">
+        Virtual Research Laboratory • Structural Health Monitoring
+    </div>
+
+    <div class="footer-line">
+        Advancing Science, Engineering, AI & Rural Research
+    </div>
+
+</footer>
+```
+
+</div>
+
+<script>
+
+/* ============================================================
+   GARRF VIRTUAL SHM LABORATORY
+   Mobile Accelerometer + Gyroscope Acquisition
+   ============================================================ */
+
+let currentData = {
+    ax: 0,
+    ay: 0,
+    az: 0,
+    gx: 0,
+    gy: 0,
+    gz: 0
+};
+
+let recordedData = [];
+
+let isRecording = false;
+
+let stopTimeout = null;
+
+let sensorsInitialized = false;
+
+
+/* ================= ELEMENTS ================= */
+
+const statusEl =
+    document.getElementById("status");
+
+const recordBtn =
+    document.getElementById("recordBtn");
+
+const stopBtn =
+    document.getElementById("stopBtn");
+
+const saveBtn =
+    document.getElementById("saveBtn");
+
+const durationSelect =
+    document.getElementById("durationSelect");
+
+
+/* ================= DISPLAY ================= */
+
+function updateHTML(id, val) {
+
+    const element =
+        document.getElementById(id);
+
+    if (
+        val === null ||
+        val === undefined ||
+        Number.isNaN(val)
+    ) {
+        val = 0;
+    }
+
+    element.innerText =
+        Number(val).toFixed(3);
+}
+
+
+/* ================= MOTION SENSOR ================= */
+
+function handleMotion(event) {
+
+    const acc =
+        event.accelerationIncludingGravity;
+
+    if (acc) {
+
+        currentData.ax =
+            acc.x || 0;
+
+        currentData.ay =
+            acc.y || 0;
+
+        currentData.az =
+            acc.z || 0;
+    }
+
+
+    const rotation =
+        event.rotationRate;
+
+    if (rotation) {
+
+        currentData.gx =
+            rotation.alpha || 0;
+
+        currentData.gy =
+            rotation.beta || 0;
+
+        currentData.gz =
+            rotation.gamma || 0;
+    }
+
+
+    /* Update live display */
+
+    updateHTML(
+        "accX",
+        currentData.ax
+    );
+
+    updateHTML(
+        "accY",
+        currentData.ay
+    );
+
+    updateHTML(
+        "accZ",
+        currentData.az
+    );
+
+    updateHTML(
+        "gyrX",
+        currentData.gx
+    );
+
+    updateHTML(
+        "gyrY",
+        currentData.gy
+    );
+
+    updateHTML(
+        "gyrZ",
+        currentData.gz
+    );
+
+
+    /* Record data */
+
+    if (isRecording) {
+
+        recordedData.push({
+
+            time:
+                new Date().toISOString(),
+
+            ax:
+                currentData.ax,
+
+            ay:
+                currentData.ay,
+
+            az:
+                currentData.az,
+
+            gx:
+                currentData.gx,
+
+            gy:
+                currentData.gy,
+
+            gz:
+                currentData.gz
+        });
+    }
+}
+
+
+/* ================= INITIALIZE ================= */
+
+document
+    .getElementById("initBtn")
+    .addEventListener(
+        "click",
+        async function () {
+
+            if (
+                typeof DeviceMotionEvent !==
+                "undefined" &&
+                typeof DeviceMotionEvent.requestPermission ===
+                "function"
+            ) {
+
                 try {
-                    const permission = await DeviceMotionEvent.requestPermission();
-                    if (permission === 'granted') {
+
+                    const permission =
+                        await DeviceMotionEvent
+                        .requestPermission();
+
+                    if (
+                        permission === "granted"
+                    ) {
+
                         startLiveSensors();
+
                     } else {
-                        statusEl.innerText = "Sensor permission denied.";
+
+                        statusEl.innerText =
+                            "Sensor permission denied. Please allow Motion & Orientation access.";
                     }
+
                 } catch (error) {
+
                     console.error(error);
+
+                    statusEl.innerText =
+                        "Unable to initialize motion sensors.";
                 }
+
             } else {
+
                 startLiveSensors();
             }
-        });
+        }
+    );
 
-        function startLiveSensors() {
-            window.addEventListener('devicemotion', handleMotion);
-            sensorsInitialized = true;
-            statusEl.innerText = "Sensors Active. Ready to record.";
-            document.getElementById('initBtn').style.display = 'none';
-            recordBtn.disabled = false;
+
+/* ================= START SENSORS ================= */
+
+function startLiveSensors() {
+
+    window.addEventListener(
+        "devicemotion",
+        handleMotion
+    );
+
+    sensorsInitialized = true;
+
+    statusEl.innerText =
+        "Sensors Active. Ready to perform the SHM experiment.";
+
+    document
+        .getElementById("initBtn")
+        .style.display = "none";
+
+    recordBtn.disabled = false;
+}
+
+
+/* ================= RECORD ================= */
+
+recordBtn.addEventListener(
+    "click",
+    function () {
+
+        if (!sensorsInitialized)
+            return;
+
+
+        recordedData = [];
+
+        isRecording = true;
+
+        recordBtn.disabled = true;
+
+        stopBtn.disabled = false;
+
+        saveBtn.style.display = "none";
+
+        durationSelect.disabled = true;
+
+
+        statusEl.innerText =
+            "🔴 RECORDING IN PROGRESS — SHM DATA ACQUISITION";
+
+        statusEl.classList.add(
+            "recording-pulse"
+        );
+
+
+        const durationMs =
+            parseInt(
+                durationSelect.value
+            );
+
+
+        if (durationMs > 0) {
+
+            stopTimeout =
+                setTimeout(
+                    finishRecording,
+                    durationMs
+                );
+        }
+    }
+);
+
+
+/* ================= STOP ================= */
+
+stopBtn.addEventListener(
+    "click",
+    function () {
+
+        if (stopTimeout) {
+
+            clearTimeout(
+                stopTimeout
+            );
+
+            stopTimeout = null;
         }
 
-        // Record Button Logic
-        recordBtn.addEventListener('click', () => {
-            if (!sensorsInitialized) return;
-            
-            recordedData = []; // Clear previous data
-            isRecording = true;
-            recordBtn.disabled = true;
-            stopBtn.disabled = false;
-            saveBtn.style.display = 'none';
-            durationSelect.disabled = true;
-            
-            statusEl.innerText = "🔴 RECORDING IN PROGRESS...";
-            statusEl.classList.add("recording-pulse");
+        finishRecording();
+    }
+);
 
-            const durationMs = parseInt(durationSelect.value);
-            if (durationMs > 0) {
-                stopTimeout = setTimeout(finishRecording, durationMs);
-            }
-        });
 
-        // Stop Button Logic (Manual Stop)
-        stopBtn.addEventListener('click', () => {
-            if (stopTimeout) clearTimeout(stopTimeout);
-            finishRecording();
-        });
+/* ================= FINISH ================= */
 
-        // Finish Recording Function
-        function finishRecording() {
-            isRecording = false;
-            recordBtn.disabled = false;
-            stopBtn.disabled = true;
-            durationSelect.disabled = false;
-            
-            statusEl.classList.remove("recording-pulse");
-            statusEl.innerText = `Experiment Finished. ${recordedData.length} data points captured.`;
-            
-            // Show the save button so the user explicitly chooses to download
-            if (recordedData.length > 0) {
-                saveBtn.style.display = 'block';
-            }
+function finishRecording() {
+
+    isRecording = false;
+
+    recordBtn.disabled = false;
+
+    stopBtn.disabled = true;
+
+    durationSelect.disabled = false;
+
+    statusEl.classList.remove(
+        "recording-pulse"
+    );
+
+
+    statusEl.innerText =
+        `Experiment Finished — ${recordedData.length} sensor samples captured.`;
+
+
+    if (
+        recordedData.length > 0
+    ) {
+
+        saveBtn.style.display =
+            "block";
+    }
+}
+
+
+/* ================= SAVE DATA ================= */
+
+saveBtn.addEventListener(
+    "click",
+    function () {
+
+        if (
+            recordedData.length === 0
+        ) {
+
+            alert(
+                "No experiment data available."
+            );
+
+            return;
         }
 
-        // Save Data to Excel (CSV)
-        saveBtn.addEventListener('click', () => {
-            let csvContent = "Timestamp,Accel_X,Accel_Y,Accel_Z,Gyro_X,Gyro_Y,Gyro_Z\n";
-            recordedData.forEach(row => {
-                csvContent += `${row.time},${row.ax},${row.ay},${row.az},${row.gx},${row.gy},${row.gz}\n`;
-            });
 
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a");
-            const url = URL.createObjectURL(blob);
-            link.setAttribute("href", url);
-            link.setAttribute("download", "GARRF_SHM_Experiment.csv");
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            statusEl.innerText = "Data saved to your device's documents/downloads.";
-        });
-    </script>
+        const experimentName =
+            document
+            .getElementById(
+                "experimentName"
+            )
+            .value ||
+            "GARRF_SHM_Experiment";
+
+
+        const researcherName =
+            document
+            .getElementById(
+                "researcherName"
+            )
+            .value ||
+            "Not Specified";
+
+
+        const sensorLocation =
+            document
+            .getElementById(
+                "sensorLocation"
+            )
+            .value ||
+            "Not Specified";
+
+
+        const testType =
+            document
+            .getElementById(
+                "testType"
+            )
+            .value;
+
+
+        /* ================= CSV HEADER ================= */
+
+        let csvContent =
+            "GARRF VIRTUAL SHM LABORATORY\n";
+
+        csvContent +=
+            "Gopalkrishna Advanced Rural Research Foundation\n";
+
+        csvContent +=
+            `Experiment,${experimentName}\n`;
+
+        csvContent +=
+            `Researcher,${researcherName}\n`;
+
+        csvContent +=
+            `Sensor Location,${sensorLocation}\n`;
+
+        csvContent +=
+            `Test Type,${testType}\n`;
+
+        csvContent +=
+            `Recording Date,${new Date().toISOString()}\n`;
+
+        csvContent += "\n";
+
+        csvContent +=
+            "Timestamp,Accel_X_m_s2,Accel_Y_m_s2,Accel_Z_m_s2,Gyro_X_deg_s,Gyro_Y_deg_s,Gyro_Z_deg_s\n";
+
+
+        /* ================= DATA ================= */
+
+        recordedData.forEach(
+            function (row) {
+
+                csvContent +=
+                    `${row.time},` +
+                    `${row.ax},` +
+                    `${row.ay},` +
+                    `${row.az},` +
+                    `${row.gx},` +
+                    `${row.gy},` +
+                    `${row.gz}\n`;
+            }
+        );
+
+
+        /* ================= DOWNLOAD ================= */
+
+        const blob =
+            new Blob(
+                [csvContent],
+                {
+                    type:
+                        "text/csv;charset=utf-8;"
+                }
+            );
+
+
+        const link =
+            document.createElement(
+                "a"
+            );
+
+
+        const url =
+            URL.createObjectURL(
+                blob
+            );
+
+
+        link.href = url;
+
+
+        const safeName =
+            experimentName
+            .replace(
+                /[^a-z0-9]/gi,
+                "_"
+            );
+
+
+        link.download =
+            `GARRF_SHM_${safeName}.csv`;
+
+
+        document
+            .body
+            .appendChild(link);
+
+
+        link.click();
+
+
+        document
+            .body
+            .removeChild(link);
+
+
+        URL.revokeObjectURL(url);
+
+
+        statusEl.innerText =
+            "✓ Experiment data exported successfully.";
+    }
+);
+
+</script>
+
 </body>
 </html>
