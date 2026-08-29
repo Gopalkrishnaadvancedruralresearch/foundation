@@ -250,15 +250,6 @@
         th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
         th { background: #f1f5f9; color: var(--text-heading); }
 
-        .experiment-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 15px;
-        }
-        .exp-card { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 15px; }
-        .exp-card h4 { color: var(--text-heading); font-size: 0.95rem; margin-bottom: 6px; }
-        .exp-card p { font-size: 0.85rem; color: #475569; }
-
         footer { text-align: center; padding: 20px; color: #64748b; font-size: 0.8rem; border-top: 1px solid var(--border); }
     </style>
 </head>
@@ -299,7 +290,7 @@
         <div class="utm-grid">
             <div>
                 <h3 style="color: #0284c7; font-size: 1.2rem; margin-bottom: 8px;">Vertical Floor-Standing UTM Console</h3>
-                <p style="font-size: 0.9rem; color: #475569; margin-bottom: 12px;">Evaluates material-level axial behavior under tensile stress, necking, and ultimate fracture.</p>
+                <p style="font-size: 0.9rem; color: #475569; margin-bottom: 12px;">Evaluates material-level axial behavior under tensile stress, necking, and ultimate fracture at a clear instructional speed.</p>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
                     <div>
                         <label style="color:#334155; font-size:0.75rem;">SELECT MATERIAL</label>
@@ -401,44 +392,68 @@
         let matKey = document.getElementById('utmMaterial').value;
         let diameter = parseFloat(document.getElementById('utmDiameter').value);
         let mat = materialData[matKey];
-        let centerX = w / 2, baseY = 240, maxStretch = 70 * mat.ductilityFactor, stretch = utmProgress * maxStretch;
+        
+        let centerX = w / 2;
+        let baseY = 240; // Fixed bottom fixture baseline
+        let maxStretch = 55 * mat.ductilityFactor;
+        let stretch = utmProgress * maxStretch;
 
+        // Draw machine side columns
         utmCtx.strokeStyle = '#475569'; utmCtx.lineWidth = 6;
         utmCtx.beginPath();
         utmCtx.moveTo(centerX - 70, 20); utmCtx.lineTo(centerX - 70, 300);
         utmCtx.moveTo(centerX + 70, 20); utmCtx.lineTo(centerX + 70, 300);
         utmCtx.stroke();
 
+        // Base plate
         utmCtx.fillStyle = '#334155';
         utmCtx.fillRect(centerX - 90, 290, 180, 18);
-        let currentCrossheadY = 55 - stretch;
+        
+        // Upper moving crosshead position
+        let currentCrossheadY = 70 - stretch; 
         utmCtx.fillRect(centerX - 80, currentCrossheadY - 12, 160, 18);
 
+        // Grips
         utmCtx.fillStyle = '#64748b';
-        utmCtx.fillRect(centerX - 18, currentCrossheadY + 6, 36, 24);
-        utmCtx.fillRect(centerX - 18, baseY - 24, 36, 24);
+        utmCtx.fillRect(centerX - 18, currentCrossheadY + 6, 36, 24); // Upper grip
+        utmCtx.fillRect(centerX - 18, baseY - 24, 36, 24);           // Lower grip
 
-        let specLength = 110 + stretch;
+        // Specimen spanning dynamically between upper grip bottom and lower grip top (Zero gap)
+        let specTopY = currentCrossheadY + 30;
+        let specBottomY = baseY - 24;
+        let specHeight = specBottomY - specTopY;
+
         let baseThick = diameter * 1.5;
-        let specThick = Math.max(4, baseThick - (utmProgress > 0.5 ? (utmProgress - 0.5) * 30 * (4 / diameter) : 0));
+        let specThick = Math.max(4, baseThick - (utmProgress > 0.5 ? (utmProgress - 0.5) * 28 * (4 / diameter) : 0));
 
         utmCtx.fillStyle = utmProgress >= 1 ? '#ef4444' : mat.color;
-        utmCtx.fillRect(centerX - specThick/2, currentCrossheadY + 30, specThick, specLength);
+        
+        if (utmProgress >= 1.15) {
+            // Fracture state: split specimen into upper and lower halves with a gap
+            let halfH = specHeight / 2 - 6;
+            utmCtx.fillRect(centerX - specThick/2, specTopY, specThick, halfH);
+            utmCtx.fillRect(centerX - specThick/2, specTopY + halfH + 12, specThick, halfH);
+        } else {
+            utmCtx.fillRect(centerX - specThick/2, specTopY, specThick, specHeight);
+        }
 
+        // Load calculation
         let currentLoad = Math.min(mat.ultimate * (diameter / 10) * (utmProgress > 0.7 ? (1.3 - utmProgress) : utmProgress * 1.4), mat.ultimate * 1.5);
         if (utmProgress >= 1) currentLoad = 0;
 
-        if (utmProgress >= 1) {
+        if (utmProgress >= 1.15) {
             utmCtx.fillStyle = '#fde047'; utmCtx.font = 'bold 12px sans-serif';
             utmCtx.fillText(`FRACTURE! (${mat.name})`, centerX - 75, 18);
         } else {
             utmCtx.fillStyle = '#ffffff'; utmCtx.font = '11px sans-serif';
             utmCtx.fillText(`Material: ${mat.name} | Dia: ${diameter}mm`, 15, 18);
-            utmCtx.fillText(`Strain: ${(utmProgress * 0.2).toFixed(3)} | Load: ${currentLoad.toFixed(1)} kN`, 15, 312);
+            utmCtx.fillText(`Strain: ${(utmProgress * 0.18).toFixed(3)} | Load: ${currentLoad.toFixed(1)} kN`, 15, 312);
         }
 
-        utmProgress += 0.007;
-        if (utmProgress > 1.3) utmProgress = 0;
+        // Slower instructional speed (0.0018 increment per frame)
+        utmProgress += 0.0018;
+        if (utmProgress > 1.5) utmProgress = 0;
+        
         requestAnimationFrame(animateUTM);
     }
     animateUTM();
