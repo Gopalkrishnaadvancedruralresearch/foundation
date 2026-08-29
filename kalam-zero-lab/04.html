@@ -1,0 +1,2607 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>GARRF Virtual Lab — Experiment 04 | RC Charging & Discharging</title>
+
+<style>
+
+:root{
+    --blue:#0b4f8a;
+    --dark:#062b4c;
+    --green:#138a4b;
+    --orange:#ef8b22;
+    --red:#c62828;
+    --purple:#6842a5;
+    --light:#f4f8fb;
+    --border:#cdd9e3;
+    --text:#17324d;
+    --shadow:0 8px 24px rgba(0,0,0,.10);
+}
+
+*{
+    box-sizing:border-box;
+}
+
+body{
+    margin:0;
+    font-family:Arial,Helvetica,sans-serif;
+    background:linear-gradient(135deg,#eef7fc,#ffffff);
+    color:var(--text);
+}
+
+header{
+    background:linear-gradient(135deg,#06345b,#0b6599);
+    color:white;
+    padding:22px 15px;
+    text-align:center;
+    box-shadow:var(--shadow);
+}
+
+.logo{
+    width:82px;
+    height:82px;
+    object-fit:contain;
+    border-radius:50%;
+    background:white;
+    padding:5px;
+}
+
+header h1{
+    margin:8px 0 4px;
+    font-size:clamp(22px,4vw,34px);
+}
+
+header h2{
+    margin:4px 0;
+    font-size:clamp(16px,3vw,22px);
+    font-weight:normal;
+}
+
+header p{
+    margin:8px 0;
+    font-size:14px;
+}
+
+.container{
+    width:min(1200px,94%);
+    margin:22px auto 50px;
+}
+
+.card{
+    background:white;
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:20px;
+    margin-bottom:20px;
+    box-shadow:var(--shadow);
+}
+
+.card h2{
+    margin-top:0;
+    color:var(--blue);
+}
+
+.card h3{
+    color:var(--dark);
+}
+
+.badge{
+    display:inline-block;
+    padding:7px 13px;
+    border-radius:20px;
+    background:#e5f4fb;
+    color:#07537d;
+    font-size:13px;
+    font-weight:bold;
+    margin:3px;
+}
+
+.objective{
+    background:#edf8f1;
+    border-left:6px solid var(--green);
+    padding:15px;
+    border-radius:8px;
+}
+
+.warning{
+    background:#fff7e8;
+    border-left:6px solid var(--orange);
+    padding:15px;
+    border-radius:8px;
+}
+
+.controls{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:15px;
+}
+
+.control-box{
+    background:#f7fafc;
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:15px;
+}
+
+label{
+    display:block;
+    font-weight:bold;
+    margin-bottom:7px;
+}
+
+input[type=range]{
+    width:100%;
+}
+
+select{
+    width:100%;
+    padding:10px;
+    border:1px solid #b8c7d3;
+    border-radius:8px;
+    font-size:15px;
+}
+
+.value{
+    color:var(--blue);
+    font-weight:bold;
+}
+
+button{
+    border:0;
+    border-radius:9px;
+    padding:12px 18px;
+    margin:5px;
+    cursor:pointer;
+    font-weight:bold;
+    font-size:14px;
+    transition:.2s;
+}
+
+button:hover{
+    transform:translateY(-1px);
+    box-shadow:0 5px 12px rgba(0,0,0,.15);
+}
+
+.primary{
+    background:var(--blue);
+    color:white;
+}
+
+.green{
+    background:var(--green);
+    color:white;
+}
+
+.orange{
+    background:var(--orange);
+    color:white;
+}
+
+.red{
+    background:var(--red);
+    color:white;
+}
+
+.dark{
+    background:#18384f;
+    color:white;
+}
+
+.center{
+    text-align:center;
+}
+
+.status{
+    padding:12px;
+    border-radius:10px;
+    background:#eaf7ef;
+    color:#116a39;
+    font-weight:bold;
+    text-align:center;
+    margin-top:12px;
+}
+
+.formula{
+    background:#f1f7fb;
+    border:1px solid #c8dce8;
+    border-radius:10px;
+    padding:13px;
+    margin:10px 0;
+    font-family:Georgia,serif;
+    text-align:center;
+    font-size:18px;
+}
+
+.circuit-area{
+    background:#f9fbfd;
+    border:2px solid #d6e2ea;
+    border-radius:15px;
+    padding:12px;
+    overflow:auto;
+}
+
+svg{
+    width:100%;
+    min-width:700px;
+    min-height:330px;
+}
+
+.wire{
+    stroke:#18384f;
+    stroke-width:5;
+    fill:none;
+}
+
+.live-wire{
+    stroke:#0a9b54;
+    stroke-width:6;
+    fill:none;
+    stroke-dasharray:14 8;
+    animation:flow 1s linear infinite;
+}
+
+@keyframes flow{
+    to{
+        stroke-dashoffset:-22;
+    }
+}
+
+.resistor{
+    fill:#f5d28c;
+    stroke:#714b16;
+    stroke-width:2;
+}
+
+.component-text{
+    font-size:15px;
+    font-weight:bold;
+    fill:#17324d;
+}
+
+.meter{
+    fill:white;
+    stroke:#0b4f8a;
+    stroke-width:3;
+}
+
+.meter-text{
+    font-size:13px;
+    font-weight:bold;
+    fill:#0b4f8a;
+}
+
+.capacitor{
+    stroke:#6842a5;
+    stroke-width:7;
+}
+
+.results{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+    gap:12px;
+}
+
+.result{
+    background:#f5f9fc;
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:15px;
+    text-align:center;
+}
+
+.result strong{
+    display:block;
+    font-size:19px;
+    color:var(--blue);
+    margin-top:6px;
+}
+
+.graph-container{
+    background:#ffffff;
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:10px;
+    overflow:hidden;
+}
+
+canvas{
+    width:100%;
+    height:380px;
+    display:block;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:10px;
+}
+
+th,td{
+    border:1px solid #cbd7df;
+    padding:10px;
+    text-align:center;
+}
+
+th{
+    background:#e9f3f9;
+    color:#073d64;
+}
+
+tr:nth-child(even){
+    background:#f8fbfd;
+}
+
+.conclusion{
+    background:#eef9f1;
+    border:2px solid #b9dfc4;
+    border-radius:12px;
+    padding:18px;
+    line-height:1.65;
+}
+
+.quiz-question{
+    background:#f7fafc;
+    padding:15px;
+    border:1px solid var(--border);
+    border-radius:10px;
+    margin-bottom:14px;
+}
+
+.quiz-question label{
+    font-weight:normal;
+    margin:8px 0;
+}
+
+.chitti{
+    background:linear-gradient(135deg,#071d31,#0b5278);
+    color:white;
+    border-radius:16px;
+    padding:22px;
+    box-shadow:var(--shadow);
+}
+
+.chitti h2,
+.chitti h3{
+    color:white;
+}
+
+.chitti-tip{
+    background:rgba(255,255,255,.10);
+    border:1px solid rgba(255,255,255,.2);
+    border-radius:10px;
+    padding:15px;
+}
+
+.progress{
+    height:12px;
+    background:#dce7ee;
+    border-radius:20px;
+    overflow:hidden;
+}
+
+.progress-bar{
+    height:100%;
+    width:0%;
+    background:#0b8d50;
+    transition:.3s;
+}
+
+.small{
+    font-size:13px;
+    color:#607789;
+}
+
+@media(max-width:650px){
+
+    .card{
+        padding:15px;
+    }
+
+    button{
+        width:100%;
+        margin:5px 0;
+    }
+
+    table{
+        font-size:12px;
+    }
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<header>
+
+<img
+src="https://garrf.in/images/logo.jpeg"
+alt="GARRF Logo"
+class="logo">
+
+<h1>
+GopalKrishna Advanced Rural Research Foundation
+</h1>
+
+<h2>
+GARRF Virtual Engineering & Electronics Laboratory
+</h2>
+
+<p>
+KALAM ZERO RESEARCH FUNDING LAB
+</p>
+
+<div>
+
+<span class="badge">
+EXPERIMENT 04
+</span>
+
+<span class="badge">
+RC CIRCUIT
+</span>
+
+<span class="badge">
+CHARGING & DISCHARGING
+</span>
+
+<span class="badge">
+VIRTUAL LAB
+</span>
+
+</div>
+
+</header>
+
+<div class="container">
+
+<!-- INTRODUCTION -->
+
+<section class="card">
+
+<h2>
+⚡ Experiment 04 — RC Charging & Discharging
+</h2>
+
+<p>
+A resistor-capacitor (RC) circuit is one of the simplest
+circuits in which electrical behaviour changes with time.
+It is fundamental to timing circuits, filters, sensors,
+signal processing and electronics.
+</p>
+
+<div class="objective">
+
+<strong>
+🎯 Experiment Objective
+</strong>
+
+<p>
+To study the charging and discharging behaviour of a capacitor
+through a resistor and determine the circuit time constant.
+</p>
+
+</div>
+
+<div class="warning">
+
+<strong>
+👨‍🎓 Student Challenge
+</strong>
+
+<p>
+Do not simply watch the graph.
+Before running the experiment, predict:
+</p>
+
+<ul>
+
+<li>
+Will the capacitor voltage rise linearly or exponentially?
+</li>
+
+<li>
+What happens to charging current with time?
+</li>
+
+<li>
+What happens if resistance is increased?
+</li>
+
+<li>
+What happens if capacitance is increased?
+</li>
+
+</ul>
+
+</div>
+
+</section>
+
+<!-- THEORY -->
+
+<section class="card">
+
+<h2>
+📚 1. Theory
+</h2>
+
+<h3>
+RC Time Constant
+</h3>
+
+<p>
+The time constant of an RC circuit is:
+</p>
+
+<div class="formula">
+
+τ = RC
+
+</div>
+
+<p>
+where:
+</p>
+
+<ul>
+
+<li>
+R = resistance in ohms
+</li>
+
+<li>
+C = capacitance in farads
+</li>
+
+<li>
+τ = time constant in seconds
+</li>
+
+</ul>
+
+<h3>
+Charging Equation
+</h3>
+
+<p>
+When a capacitor is charged from a DC source:
+</p>
+
+<div class="formula">
+
+# V<sub>C</sub>(t)
+
+V<sub>S</sub>
+(1 − e<sup>−t/RC</sup>)
+
+</div>
+
+<p>
+The charging current is:
+</p>
+
+<div class="formula">
+
+# I(t)
+
+(V<sub>S</sub>/R)
+e<sup>−t/RC</sup>
+
+</div>
+
+<h3>
+Discharging Equation
+</h3>
+
+<p>
+When the source is removed and the capacitor discharges:
+</p>
+
+<div class="formula">
+
+# V<sub>C</sub>(t)
+
+V<sub>0</sub>
+e<sup>−t/RC</sup>
+
+</div>
+
+<h3>
+Important Observation</h3>
+
+<p>
+
+At approximately:
+
+<strong>t = τ</strong>
+
+the capacitor reaches about:
+
+<strong>63.2%</strong>
+
+of its final charging voltage.
+
+During discharge, the voltage falls to about:
+
+<strong>36.8%</strong>
+
+of its initial value.
+
+</p>
+
+</section>
+
+<!-- CONTROLS -->
+
+<section class="card">
+
+<h2>
+🧩 2. Configure the RC Circuit
+</h2>
+
+<div class="controls">
+
+<div class="control-box">
+
+<label>
+Operating Mode
+</label>
+
+<select
+id="mode"
+onchange="resetSimulation()">
+
+<option value="charge">
+Charging
+</option>
+
+<option value="discharge">
+Discharging
+</option>
+
+</select>
+
+</div>
+
+<div class="control-box">
+
+<label>
+
+Supply / Initial Voltage:
+
+<span
+id="voltageValue"
+class="value">
+12 V </span>
+
+</label>
+
+<input
+type="range"
+id="voltage"
+min="1"
+max="24"
+step="1"
+value="12"
+oninput="updateParameters()">
+
+</div>
+
+<div class="control-box">
+
+<label>
+
+Resistance:
+
+<span
+id="resistanceValue"
+class="value">
+1 kΩ </span>
+
+</label>
+
+<input
+type="range"
+id="resistance"
+min="100"
+max="10000"
+step="100"
+value="1000"
+oninput="updateParameters()">
+
+</div>
+
+<div class="control-box">
+
+<label>
+
+Capacitance:
+
+<span
+id="capacitanceValue"
+class="value">
+100 µF </span>
+
+</label>
+
+<input
+type="range"
+id="capacitance"
+min="10"
+max="1000"
+step="10"
+value="100"
+oninput="updateParameters()">
+
+</div>
+
+</div>
+
+<div class="center">
+
+<button
+class="green"
+onclick="startSimulation()">
+
+▶ START
+
+</button>
+
+<button
+class="orange"
+onclick="pauseSimulation()">
+
+⏸ PAUSE
+
+</button>
+
+<button
+class="primary"
+onclick="resetSimulation()">
+
+↺ RESET
+
+</button>
+
+</div>
+
+<div
+id="status"
+class="status">
+
+🟢 Ready. Set the values and start the experiment.
+
+</div>
+
+</section>
+
+<!-- CIRCUIT -->
+
+<section class="card">
+
+<h2>
+🔌 3. Virtual RC Circuit
+</h2>
+
+<div class="circuit-area">
+
+<svg
+id="circuitSVG"
+viewBox="0 0 1000 380"
+preserveAspectRatio="xMidYMid meet"> </svg>
+
+</div>
+
+</section>
+
+<!-- RESULTS -->
+
+<section class="card">
+
+<h2>
+📊 4. Live Measurement Panel
+</h2>
+
+<div class="results">
+
+<div class="result">
+
+Time
+
+<strong id="timeDisplay">
+0.00 s
+</strong>
+
+</div>
+
+<div class="result">
+
+Capacitor Voltage
+
+<strong id="vcDisplay">
+0.00 V
+</strong>
+
+</div>
+
+<div class="result">
+
+Current
+
+<strong id="currentDisplay">
+0.00 mA
+</strong>
+
+</div>
+
+<div class="result">
+
+Time Constant
+
+<strong id="tauDisplay">
+0.100 s
+</strong>
+
+</div>
+
+<div class="result">
+
+Final Voltage
+
+<strong id="finalVoltageDisplay">
+12.00 V
+</strong>
+
+</div>
+
+</div>
+
+</section>
+
+<!-- GRAPH -->
+
+<section class="card">
+
+<h2>
+📈 5. Capacitor Voltage vs Time
+</h2>
+
+<div class="graph-container">
+
+<canvas id="graph"></canvas>
+
+</div>
+
+<p class="small">
+
+The curve is generated directly from the RC equations.
+During charging the voltage approaches the supply voltage;
+during discharging it approaches zero.
+
+</p>
+
+</section>
+
+<!-- TIME CONSTANT -->
+
+<section class="card">
+
+<h2>
+⏱ 6. Time Constant Analysis
+</h2>
+
+<div id="tauAnalysis">
+
+Run the experiment to analyse the time constant.
+
+</div>
+
+</section>
+
+<!-- OBSERVATION -->
+
+<section class="card">
+
+<h2>
+📝 7. Student Observation Record
+</h2>
+
+<p>
+Run the experiment, pause at selected times and record the
+capacitor voltage.
+</p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>
+Trial
+</th>
+
+<th>
+Mode
+</th>
+
+<th>
+R
+</th>
+
+<th>
+C
+</th>
+
+<th>
+τ
+</th>
+
+<th>
+Time
+</th>
+
+<th>
+V<sub>C</sub>
+</th>
+
+<th>
+Current
+</th>
+
+</tr>
+
+</thead>
+
+<tbody
+id="observationTable">
+</tbody>
+
+</table>
+
+<div class="center">
+
+<button
+class="green"
+onclick="addObservation()">
+
+* ADD OBSERVATION
+
+</button>
+
+<button
+class="red"
+onclick="clearObservations()">
+
+CLEAR OBSERVATIONS
+
+</button>
+
+</div>
+
+</section>
+
+<!-- ANALYSIS -->
+
+<section class="card">
+
+<h2>
+🔬 8. Engineering Analysis
+</h2>
+
+<div id="analysis">
+
+<p>
+Start the experiment to generate the analysis.
+</p>
+
+</div>
+
+</section>
+
+<!-- CONCLUSION -->
+
+<section class="card">
+
+<h2>
+🎓 9. Experiment Conclusion
+</h2>
+
+<div
+class="conclusion"
+id="conclusion">
+
+Complete the experiment to generate the conclusion.
+
+</div>
+
+</section>
+
+<!-- QUIZ -->
+
+<section class="card">
+
+<h2>
+❓ 10. Student Quiz
+</h2>
+
+<div class="quiz-question">
+
+<strong>
+Q1. The time constant of an RC circuit is:
+</strong>
+
+<label>
+<input
+type="radio"
+name="q1"
+value="a">
+
+R/C
+
+</label>
+
+<label>
+<input
+type="radio"
+name="q1"
+value="b">
+
+RC
+
+</label>
+
+<label>
+<input
+type="radio"
+name="q1"
+value="c">
+
+R+C
+
+</label>
+
+</div>
+
+<div class="quiz-question">
+
+<strong>
+Q2. After one time constant during charging,
+the capacitor voltage is approximately:
+</strong>
+
+<label>
+<input
+type="radio"
+name="q2"
+value="a">
+
+36.8%
+
+</label>
+
+<label>
+<input
+type="radio"
+name="q2"
+value="b">
+
+50%
+
+</label>
+
+<label>
+<input
+type="radio"
+name="q2"
+value="c">
+
+63.2%
+
+</label>
+
+</div>
+
+<div class="quiz-question">
+
+<strong>
+Q3. Increasing R while keeping C constant will:
+</strong>
+
+<label>
+<input
+type="radio"
+name="q3"
+value="a">
+
+Decrease τ
+
+</label>
+
+<label>
+<input
+type="radio"
+name="q3"
+value="b">
+
+Increase τ
+
+</label>
+
+<label>
+<input
+type="radio"
+name="q3"
+value="c">
+
+Make τ zero
+
+</label>
+
+</div>
+
+<div class="quiz-question">
+
+<strong>
+Q4. During capacitor charging, the current:
+</strong>
+
+<label>
+<input
+type="radio"
+name="q4"
+value="a">
+
+Increases continuously
+
+</label>
+
+<label>
+<input
+type="radio"
+name="q4"
+value="b">
+
+Remains constant
+
+</label>
+
+<label>
+<input
+type="radio"
+name="q4"
+value="c">
+
+Decreases with time
+
+</label>
+
+</div>
+
+<div class="center">
+
+<button
+class="green"
+onclick="checkQuiz()">
+
+CHECK QUIZ
+
+</button>
+
+</div>
+
+<div id="quizResult"></div>
+
+</section>
+
+<!-- CHITTI -->
+
+<section class="card chitti">
+
+<h2>
+🤖 CHITTI
+</h2>
+
+<h3>
+GARRF Robotics & Engineering AI Mentor
+</h3>
+
+<p>
+Need help understanding the RC circuit?
+CHITTI can guide you through the experiment.
+</p>
+
+<div class="chitti-tip">
+
+<strong>
+💡 Try asking:
+</strong>
+
+<p>
+"Why does capacitor voltage rise exponentially?"
+</p>
+
+<p>
+"What does the RC time constant mean physically?"
+</p>
+
+<p>
+"What happens if I double the resistance?"
+</p>
+
+<p>
+"Why does charging current decrease?"
+</p>
+
+</div>
+
+<div class="center">
+
+<button
+class="orange"
+onclick="askChitti()">
+
+🤖 ASK CHITTI
+
+</button>
+
+</div>
+
+</section>
+
+<!-- PROCEDURE -->
+
+<section class="card">
+
+<h2>
+👨‍🎓 How to Perform Experiment 04
+</h2>
+
+<ol>
+
+<li>
+Select <strong>Charging</strong>.
+</li>
+
+<li>
+Set the supply voltage.
+</li>
+
+<li>
+Choose R and C.
+</li>
+
+<li>
+Calculate the expected time constant:
+<strong>τ = RC</strong>.
+</li>
+
+<li>
+Press <strong>START</strong>.
+</li>
+
+<li>
+Observe the capacitor voltage curve.
+</li>
+
+<li>
+Observe the charging current.
+</li>
+
+<li>
+Pause the experiment at different times.
+</li>
+
+<li>
+Record your observations.
+</li>
+
+<li>
+Repeat the experiment with different R and C values.
+</li>
+
+<li>
+Select <strong>Discharging</strong> and repeat.
+</li>
+
+<li>
+Complete the quiz.
+</li>
+
+</ol>
+
+<div class="objective">
+
+<strong>
+⭐ Engineering Thinking Challenge
+</strong>
+
+<p>
+Can you predict the capacitor voltage at
+<strong>t = τ</strong>,
+<strong>t = 2τ</strong> and
+<strong>t = 5τ</strong>
+before looking at the graph?
+</p>
+
+</div>
+
+</section>
+
+</div>
+
+<footer
+style="
+background:#062b4c;
+color:white;
+text-align:center;
+padding:25px 15px;
+font-size:13px;
+">
+
+<img
+src="https://garrf.in/images/logo.jpeg"
+alt="GARRF"
+style="
+width:55px;
+height:55px;
+border-radius:50%;
+background:white;
+padding:4px;
+">
+
+<p>
+<strong>
+GopalKrishna Advanced Rural Research Foundation
+</strong>
+</p>
+
+<p>
+Research • Innovation • Education • Advanced Rural Development
+</p>
+
+<p>
+KALAM ZERO RESEARCH FUNDING LAB
+</p>
+
+<p>
+© 2026 GARRF. All Rights Reserved.
+</p>
+
+</footer>
+
+<script>
+
+
+/* ==========================================
+   GLOBAL VARIABLES
+========================================== */
+
+let running = false;
+
+let startTime = 0;
+
+let elapsed = 0;
+
+let animationFrame = null;
+
+let observationCount = 0;
+
+let dataPoints = [];
+
+
+/* ==========================================
+   GET PARAMETERS
+========================================== */
+
+function getParameters(){
+
+    return {
+
+        mode:
+        document.getElementById("mode").value,
+
+        V:
+        parseFloat(
+            document.getElementById("voltage").value
+        ),
+
+        R:
+        parseFloat(
+            document.getElementById("resistance").value
+        ),
+
+        C:
+        parseFloat(
+            document.getElementById("capacitance").value
+        ) * 0.000001
+
+    };
+
+}
+
+
+/* ==========================================
+   FORMAT
+========================================== */
+
+function formatResistance(R){
+
+    if(R>=1000){
+
+        return (
+            R/1000
+        ).toFixed(2)+" kΩ";
+
+    }
+
+    return R.toFixed(0)+" Ω";
+
+}
+
+
+function formatCapacitance(C){
+
+    return (
+        C*1000000
+    ).toFixed(0)+" µF";
+
+}
+
+
+function formatCurrent(I){
+
+    if(Math.abs(I)<0.001){
+
+        return (
+            I*1000000
+        ).toFixed(2)+" µA";
+
+    }
+
+    return (
+        I*1000
+    ).toFixed(2)+" mA";
+
+}
+
+
+/* ==========================================
+   PARAMETERS UPDATE
+========================================== */
+
+function updateParameters(){
+
+    const p=getParameters();
+
+    const tau=p.R*p.C;
+
+    document.getElementById(
+        "voltageValue"
+    ).textContent=
+        p.V+" V";
+
+    document.getElementById(
+        "resistanceValue"
+    ).textContent=
+        formatResistance(p.R);
+
+    document.getElementById(
+        "capacitanceValue"
+    ).textContent=
+        formatCapacitance(p.C);
+
+    document.getElementById(
+        "tauDisplay"
+    ).textContent=
+        tau.toFixed(4)+" s";
+
+    document.getElementById(
+        "finalVoltageDisplay"
+    ).textContent=
+        p.V.toFixed(2)+" V";
+
+    drawCircuit(p);
+
+    updateTauAnalysis(p);
+
+}
+
+
+/* ==========================================
+   CIRCUIT
+========================================== */
+
+function drawCircuit(p){
+
+    const svg=
+        document.getElementById(
+            "circuitSVG"
+        );
+
+    const modeText=
+        p.mode==="charge"
+        ? "CHARGING"
+        : "DISCHARGING";
+
+    svg.innerHTML=`
+
+    <text
+        x="500"
+        y="35"
+        text-anchor="middle"
+        class="component-text"
+        style="font-size:22px;">
+
+        RC ${modeText} CIRCUIT
+
+    </text>
+
+
+    <!-- SOURCE -->
+
+    <line
+        x1="120"
+        y1="110"
+        x2="120"
+        y2="285"
+        class="wire"/>
+
+    <line
+        x1="98"
+        y1="170"
+        x2="142"
+        y2="170"
+        stroke="#c62828"
+        stroke-width="8"/>
+
+    <line
+        x1="105"
+        y1="235"
+        x2="135"
+        y2="235"
+        stroke="#18384f"
+        stroke-width="8"/>
+
+    <text
+        x="75"
+        y="210"
+        class="component-text">
+
+        ${p.V} V
+
+    </text>
+
+
+    <!-- TOP WIRE -->
+
+    <line
+        x1="120"
+        y1="110"
+        x2="280"
+        y2="110"
+        class="live-wire"/>
+
+
+    <!-- RESISTOR -->
+
+    <polyline
+        points="
+        280,110
+        295,90
+        315,130
+        335,90
+        355,130
+        375,90
+        395,130
+        415,110"
+        class="resistor"/>
+
+    <text
+        x="350"
+        y="72"
+        text-anchor="middle"
+        class="component-text">
+
+        R = ${formatResistance(p.R)}
+
+    </text>
+
+
+    <!-- WIRE -->
+
+    <line
+        x1="415"
+        y1="110"
+        x2="570"
+        y2="110"
+        class="live-wire"/>
+
+
+    <!-- CAPACITOR -->
+
+    <line
+        x1="570"
+        y1="75"
+        x2="570"
+        y2="145"
+        class="capacitor"/>
+
+    <line
+        x1="610"
+        y1="75"
+        x2="610"
+        y2="145"
+        class="capacitor"/>
+
+    <text
+        x="590"
+        y="170"
+        text-anchor="middle"
+        class="component-text">
+
+        C = ${formatCapacitance(p.C)}
+
+    </text>
+
+
+    <!-- RETURN -->
+
+    <line
+        x1="610"
+        y1="110"
+        x2="820"
+        y2="110"
+        class="wire"/>
+
+    <line
+        x1="820"
+        y1="110"
+        x2="820"
+        y2="285"
+        class="wire"/>
+
+    <line
+        x1="820"
+        y1="285"
+        x2="120"
+        y2="285"
+        class="live-wire"/>
+
+
+    <!-- VOLTAGE METER -->
+
+    <circle
+        cx="590"
+        cy="250"
+        r="45"
+        class="meter"/>
+
+    <text
+        x="590"
+        y="245"
+        text-anchor="middle"
+        class="meter-text">
+
+        Vc
+
+    </text>
+
+    <text
+        id="svgVoltage"
+        x="590"
+        y="265"
+        text-anchor="middle"
+        class="meter-text">
+
+        0.00 V
+
+    </text>
+
+
+    <!-- CURRENT -->
+
+    <text
+        id="svgCurrent"
+        x="450"
+        y="100"
+        text-anchor="middle"
+        class="component-text">
+
+        I = 0.00 mA
+
+    </text>
+
+    `;
+
+}
+
+
+/* ==========================================
+   CALCULATE CAPACITOR VOLTAGE
+========================================== */
+
+function calculateAtTime(t){
+
+    const p=getParameters();
+
+    const tau=p.R*p.C;
+
+    let vc;
+
+    let current;
+
+    if(p.mode==="charge"){
+
+        vc=
+            p.V *
+            (
+                1-
+                Math.exp(-t/tau)
+            );
+
+        current=
+            (
+                p.V-vc
+            )/p.R;
+
+    }
+
+    else{
+
+        /*
+        For discharge the initial voltage
+        is the selected voltage.
+        */
+
+        vc=
+            p.V *
+            Math.exp(-t/tau);
+
+        current=
+            -vc/p.R;
+
+    }
+
+    return {
+
+        vc,
+        current,
+        tau
+
+    };
+
+}
+
+
+/* ==========================================
+   START
+========================================== */
+
+function startSimulation(){
+
+    if(running)
+        return;
+
+    running=true;
+
+    startTime=
+        performance.now()-
+        elapsed*1000;
+
+    document.getElementById(
+        "status"
+    ).textContent=
+        "🟢 Simulation running — observe the capacitor voltage.";
+
+    animate();
+
+}
+
+
+/* ==========================================
+   ANIMATION
+========================================== */
+
+function animate(){
+
+    if(!running)
+        return;
+
+    const now=
+        performance.now();
+
+    elapsed=
+        (now-startTime)/1000;
+
+    const result=
+        calculateAtTime(elapsed);
+
+    updateLiveDisplay(
+        elapsed,
+        result
+    );
+
+    dataPoints.push({
+
+        t:elapsed,
+        v:result.vc
+
+    });
+
+    /*
+    Keep data manageable.
+    */
+
+    if(dataPoints.length>3000){
+
+        dataPoints.shift();
+
+    }
+
+    drawGraph();
+
+    /*
+    Stop naturally around 6 time constants.
+    */
+
+    if(elapsed>=result.tau*6){
+
+        running=false;
+
+        elapsed=result.tau*6;
+
+        const finalResult=
+            calculateAtTime(elapsed);
+
+        updateLiveDisplay(
+            elapsed,
+            finalResult
+        );
+
+        document.getElementById(
+            "status"
+        ).textContent=
+            "🟢 Simulation reached approximately 6τ — capacitor is near steady state.";
+
+        return;
+
+    }
+
+    animationFrame=
+        requestAnimationFrame(
+            animate
+        );
+
+}
+
+
+/* ==========================================
+   PAUSE
+========================================== */
+
+function pauseSimulation(){
+
+    running=false;
+
+    if(animationFrame){
+
+        cancelAnimationFrame(
+            animationFrame
+        );
+
+    }
+
+    document.getElementById(
+        "status"
+    ).textContent=
+        "⏸ Simulation paused.";
+
+}
+
+
+/* ==========================================
+   RESET
+========================================== */
+
+function resetSimulation(){
+
+    running=false;
+
+    elapsed=0;
+
+    dataPoints=[];
+
+    if(animationFrame){
+
+        cancelAnimationFrame(
+            animationFrame
+        );
+
+    }
+
+    updateParameters();
+
+    const initial=
+        calculateAtTime(0);
+
+    updateLiveDisplay(
+        0,
+        initial
+    );
+
+    drawGraph();
+
+    document.getElementById(
+        "status"
+    ).textContent=
+        "🟢 Reset complete. Ready for a new experiment.";
+
+}
+
+
+/* ==========================================
+   LIVE DISPLAY
+========================================== */
+
+function updateLiveDisplay(t,result){
+
+    document.getElementById(
+        "timeDisplay"
+    ).textContent=
+        t.toFixed(3)+" s";
+
+    document.getElementById(
+        "vcDisplay"
+    ).textContent=
+        result.vc.toFixed(3)+" V";
+
+    document.getElementById(
+        "currentDisplay"
+    ).textContent=
+        formatCurrent(result.current);
+
+    const svgVoltage=
+        document.getElementById(
+            "svgVoltage"
+        );
+
+    if(svgVoltage){
+
+        svgVoltage.textContent=
+            result.vc.toFixed(2)+" V";
+
+    }
+
+    const svgCurrent=
+        document.getElementById(
+            "svgCurrent"
+        );
+
+    if(svgCurrent){
+
+        svgCurrent.textContent=
+            "I = "+
+            formatCurrent(
+                result.current
+            );
+
+    }
+
+}
+
+
+/* ==========================================
+   GRAPH
+========================================== */
+
+function drawGraph(){
+
+    const canvas=
+        document.getElementById(
+            "graph"
+        );
+
+    const rect=
+        canvas.getBoundingClientRect();
+
+    const dpr=
+        window.devicePixelRatio || 1;
+
+    canvas.width=
+        rect.width*dpr;
+
+    canvas.height=
+        rect.height*dpr;
+
+    const ctx=
+        canvas.getContext("2d");
+
+    ctx.scale(dpr,dpr);
+
+    const W=rect.width;
+
+    const H=rect.height;
+
+    ctx.clearRect(
+        0,
+        0,
+        W,
+        H
+    );
+
+
+    const p=getParameters();
+
+    const tau=p.R*p.C;
+
+    const maxTime=
+        Math.max(
+            tau*6,
+            0.1
+        );
+
+    const marginLeft=55;
+
+    const marginRight=20;
+
+    const marginTop=25;
+
+    const marginBottom=45;
+
+    const plotW=
+        W-marginLeft-marginRight;
+
+    const plotH=
+        H-marginTop-marginBottom;
+
+
+    /*
+    Background
+    */
+
+    ctx.fillStyle="#ffffff";
+
+    ctx.fillRect(
+        0,
+        0,
+        W,
+        H
+    );
+
+
+    /*
+    Grid
+    */
+
+    ctx.strokeStyle="#dbe4ea";
+
+    ctx.lineWidth=1;
+
+    for(let i=0;i<=5;i++){
+
+        const y=
+            marginTop+
+            plotH-
+            (i/5)*plotH;
+
+        ctx.beginPath();
+
+        ctx.moveTo(
+            marginLeft,
+            y
+        );
+
+        ctx.lineTo(
+            marginLeft+plotW,
+            y
+        );
+
+        ctx.stroke();
+
+        ctx.fillStyle="#536b7b";
+
+        ctx.font="12px Arial";
+
+        ctx.fillText(
+            (
+                p.V*i/5
+            ).toFixed(1)+" V",
+            8,
+            y+4
+        );
+
+    }
+
+
+    for(let i=0;i<=6;i++){
+
+        const x=
+            marginLeft+
+            (i/6)*plotW;
+
+        ctx.beginPath();
+
+        ctx.moveTo(
+            x,
+            marginTop
+        );
+
+        ctx.lineTo(
+            x,
+            marginTop+plotH
+        );
+
+        ctx.stroke();
+
+        ctx.fillStyle="#536b7b";
+
+        ctx.fillText(
+            (
+                maxTime*i/6
+            ).toFixed(2)+" s",
+            x-15,
+            H-18
+        );
+
+    }
+
+
+    /*
+    Axes
+    */
+
+    ctx.strokeStyle="#17324d";
+
+    ctx.lineWidth=2;
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        marginLeft,
+        marginTop
+    );
+
+    ctx.lineTo(
+        marginLeft,
+        marginTop+plotH
+    );
+
+    ctx.lineTo(
+        marginLeft+plotW,
+        marginTop+plotH
+    );
+
+    ctx.stroke();
+
+
+    /*
+    Theoretical curve
+    */
+
+    ctx.strokeStyle="#6842a5";
+
+    ctx.lineWidth=3;
+
+    ctx.beginPath();
+
+    for(let i=0;i<=300;i++){
+
+        const t=
+            maxTime*i/300;
+
+        const result=
+            calculateAtTime(t);
+
+        const x=
+            marginLeft+
+            (t/maxTime)*plotW;
+
+        const y=
+            marginTop+
+            plotH-
+            (result.vc/p.V)*plotH;
+
+        if(i===0)
+            ctx.moveTo(x,y);
+        else
+            ctx.lineTo(x,y);
+
+    }
+
+    ctx.stroke();
+
+
+    /*
+    Experimental/live points
+    */
+
+    if(dataPoints.length>0){
+
+        ctx.fillStyle="#138a4b";
+
+        for(
+            let i=0;
+            i<dataPoints.length;
+            i+=Math.max(
+                1,
+                Math.floor(
+                    dataPoints.length/250
+                )
+            )
+        ){
+
+            const point=
+                dataPoints[i];
+
+            const x=
+                marginLeft+
+                (point.t/maxTime)*plotW;
+
+            const y=
+                marginTop+
+                plotH-
+                (point.v/p.V)*plotH;
+
+            if(
+                x>=marginLeft &&
+                x<=marginLeft+plotW
+            ){
+
+                ctx.beginPath();
+
+                ctx.arc(
+                    x,
+                    y,
+                    2,
+                    0,
+                    Math.PI*2
+                );
+
+                ctx.fill();
+
+            }
+
+        }
+
+    }
+
+
+    /*
+    τ marker
+    */
+
+    const tauX=
+        marginLeft+
+        (tau/maxTime)*plotW;
+
+    ctx.setLineDash([6,6]);
+
+    ctx.strokeStyle="#ef8b22";
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        tauX,
+        marginTop
+    );
+
+    ctx.lineTo(
+        tauX,
+        marginTop+plotH
+    );
+
+    ctx.stroke();
+
+    ctx.setLineDash([]);
+
+    ctx.fillStyle="#ef8b22";
+
+    ctx.font="bold 12px Arial";
+
+    ctx.fillText(
+        "τ",
+        tauX+5,
+        marginTop+18
+    );
+
+
+    /*
+    Labels
+    */
+
+    ctx.fillStyle="#17324d";
+
+    ctx.font="bold 13px Arial";
+
+    ctx.fillText(
+        "Capacitor Voltage Vc",
+        marginLeft+5,
+        16
+    );
+
+    ctx.fillText(
+        "Time",
+        marginLeft+plotW-35,
+        H-5
+    );
+
+}
+
+
+/* ==========================================
+   TIME CONSTANT ANALYSIS
+========================================== */
+
+function updateTauAnalysis(p){
+
+    const tau=
+        p.R*p.C;
+
+    const t63=
+        tau;
+
+    const t95=
+        3*tau;
+
+    const t99=
+        5*tau;
+
+    document.getElementById(
+        "tauAnalysis"
+    ).innerHTML=`
+
+    <p>
+
+    For the selected values:
+
+    <strong>
+    R = ${formatResistance(p.R)}
+    </strong>
+
+    and
+
+    <strong>
+    C = ${formatCapacitance(p.C)}
+    </strong>.
+
+    </p>
+
+    <div class="formula">
+
+    τ = RC = <strong>${tau.toFixed(4)} s</strong>
+
+    </div>
+
+    <p>
+
+    During charging approximately:
+
+    </p>
+
+    <ul>
+
+    <li>
+    1τ → 63.2% of final voltage
+    </li>
+
+    <li>
+    3τ → approximately 95.0%
+    </li>
+
+    <li>
+    5τ → approximately 99.3%
+    </li>
+
+    </ul>
+
+    <p>
+
+    Therefore, approximately
+    <strong>${t63.toFixed(4)} s</strong>
+    is required to reach 63.2%,
+    <strong>${t95.toFixed(4)} s</strong>
+    to reach about 95%,
+    and
+    <strong>${t99.toFixed(4)} s</strong>
+    to approach 99%.
+
+    </p>
+
+    `;
+
+}
+
+
+/* ==========================================
+   OBSERVATION
+========================================== */
+
+function addObservation(){
+
+    const p=getParameters();
+
+    const result=
+        calculateAtTime(elapsed);
+
+    observationCount++;
+
+    const row=
+        document.createElement("tr");
+
+    row.innerHTML=`
+
+    <td>
+    ${observationCount}
+    </td>
+
+    <td>
+    ${p.mode==="charge"
+        ? "Charging"
+        : "Discharging"}
+    </td>
+
+    <td>
+    ${formatResistance(p.R)}
+    </td>
+
+    <td>
+    ${formatCapacitance(p.C)}
+    </td>
+
+    <td>
+    ${result.tau.toFixed(4)} s
+    </td>
+
+    <td>
+    ${elapsed.toFixed(3)} s
+    </td>
+
+    <td>
+    ${result.vc.toFixed(3)} V
+    </td>
+
+    <td>
+    ${formatCurrent(result.current)}
+    </td>
+
+    `;
+
+    document
+    .getElementById(
+        "observationTable"
+    )
+    .appendChild(row);
+
+
+    document.getElementById(
+        "progressBar"
+    )?.style;
+
+
+}
+
+
+function clearObservations(){
+
+    document.getElementById(
+        "observationTable"
+    ).innerHTML="";
+
+    observationCount=0;
+
+}
+
+
+/* ==========================================
+   QUIZ
+========================================== */
+
+function checkQuiz(){
+
+    const answers={
+
+        q1:"b",
+        q2:"c",
+        q3:"b",
+        q4:"c"
+
+    };
+
+    let score=0;
+
+    for(
+        const q in answers
+    ){
+
+        const selected=
+            document.querySelector(
+                `input[name="${q}"]:checked`
+            );
+
+        if(
+            selected &&
+            selected.value===answers[q]
+        ){
+
+            score++;
+
+        }
+
+    }
+
+
+    document.getElementById(
+        "quizResult"
+    ).innerHTML=`
+
+    <div class="${
+        score===4
+        ? "status"
+        : "warning"
+    }">
+
+    🎓 Quiz Score:
+    <strong>${score}/4</strong>
+
+    <br><br>
+
+    ${
+        score===4
+        ?
+        "Excellent! You understand RC charging, discharging and the time constant."
+        :
+        "Good attempt. Review the RC theory and try again."
+    }
+
+    </div>
+
+    `;
+
+}
+
+
+/* ==========================================
+   CHITTI
+========================================== */
+
+function askChitti(){
+
+    window.open(
+        "https://garrf.in/robotics.html",
+        "_blank",
+        "noopener,noreferrer"
+    );
+
+}
+
+
+/* ==========================================
+   WINDOW RESIZE
+========================================== */
+
+window.addEventListener(
+    "resize",
+    drawGraph
+);
+
+
+/* ==========================================
+   INITIALIZE
+========================================== */
+
+updateParameters();
+
+drawGraph();
+
+</script>
+
+</body>
+</html>
