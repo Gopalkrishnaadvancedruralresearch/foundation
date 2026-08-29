@@ -165,8 +165,13 @@
             cursor: pointer;
             margin-top: 10px;
             font-size: 0.9rem;
+            margin-right: 5px;
         }
         .btn-control:hover { background: var(--accent-hover); }
+        .btn-danger { background: #ef4444; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-success { background: #22c55e; }
+        .btn-success:hover { background: #16a34a; }
 
         .btn-magic {
             background: #2563eb;
@@ -334,7 +339,7 @@
     <div class="cost-grid">
         <div class="cost-card traditional">
             <div class="cost-title">Traditional Physical Lab</div>
-            <div class="cost-val">₹4,50,00,000+</div>
+            <div class="cost-val">₹4.5 Crores+</div>
             <div style="font-size: 0.85rem; color:#64748b; margin-top:8px;">Requires heavy machinery, hydraulic actuators, and specialized metal test specimens.</div>
         </div>
         <div class="cost-card highlight">
@@ -352,7 +357,7 @@
         <div class="utm-grid">
             <div>
                 <h3 style="color: #0284c7; font-size: 1.2rem; margin-bottom: 8px;">Vertical Floor-Standing UTM Console</h3>
-                <p style="font-size: 0.9rem; color: #475569; margin-bottom: 12px;">Real-time tensile stretching observation displaying live axial load, strain elongation, and ultimate tensile stress telemetry.</p>
+                <p style="font-size: 0.9rem; color: #475569; margin-bottom: 12px;">Real-time tensile stretching observation displaying live axial load, strain elongation, and ultimate tensile stress telemetry. Pause at any point to analyze fluctuating readings and resume seamlessly.</p>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
                     <div>
                         <label style="color:#334155; font-size:0.75rem;">SELECT MATERIAL</label>
@@ -373,7 +378,10 @@
                         </select>
                     </div>
                 </div>
-                <button class="btn-control" onclick="resetUTM()">Restart Vertical Test</button>
+                <div>
+                    <button class="btn-control btn-danger" id="utmPauseBtn" onclick="togglePauseUTM()">⏸ Pause / Inspect</button>
+                    <button class="btn-control btn-success" onclick="resetUTM()">🔄 Restart Test</button>
+                </div>
             </div>
             <div>
                 <div class="canvas-container">
@@ -531,8 +539,30 @@
     const utmCanvas = document.getElementById('utmCanvas');
     const utmCtx = utmCanvas.getContext('2d');
     let utmProgress = 0;
+    let utmPaused = false;
 
-    function resetUTM() { utmProgress = 0; }
+    function resetUTM() { 
+        utmProgress = 0; 
+        utmPaused = false;
+        document.getElementById('utmPauseBtn').innerText = "⏸ Pause / Inspect";
+        document.getElementById('utmPauseBtn').className = "btn-control btn-danger";
+    }
+
+    function togglePauseUTM() {
+        utmPaused = !utmPaused;
+        const btn = document.getElementById('utmPauseBtn');
+        if (utmPaused) {
+            btn.innerText = "▶ Resume Test";
+            btn.className = "btn-control btn-success";
+            document.getElementById('utmStatusVal').innerText = "Paused (Inspecting)";
+            document.getElementById('utmStatusVal').style.color = "#f59e0b";
+        } else {
+            btn.innerText = "⏸ Pause / Inspect";
+            btn.className = "btn-control btn-danger";
+            document.getElementById('utmStatusVal').innerText = "Running";
+            document.getElementById('utmStatusVal').style.color = "#2563eb";
+        }
+    }
 
     function animateUTM() {
         if (!utmCanvas || !utmCtx) return;
@@ -586,10 +616,11 @@
             utmCtx.fillRect(centerX - specThick/2, specTopY, specThick, specHeight);
         }
 
-        // Calculations & Telemetry Update
+        // Calculations & Telemetry Update with slight random fluctuation when running for realism
         let area = Math.PI * Math.pow(diameter / 2, 2); // mm^2
         let peakLoad = mat.ultimate * (diameter / 10) * 1.2;
-        let currentLoad = utmProgress >= 1 ? 0 : Math.min(peakLoad, mat.ultimate * (diameter / 10) * utmProgress * 1.2);
+        let noise = utmPaused ? 0 : (Math.random() - 0.5) * 0.4;
+        let currentLoad = utmProgress >= 1 ? 0 : Math.min(peakLoad, (mat.ultimate * (diameter / 10) * utmProgress * 1.2) + noise);
         let currentStrain = utmProgress * 0.15;
         let currentStress = (currentLoad * 1000) / area; // MPa
 
@@ -603,13 +634,15 @@
             document.getElementById('utmStatusVal').style.color = "#ef4444";
             utmCtx.fillStyle = '#fde047'; utmCtx.font = 'bold 13px sans-serif';
             utmCtx.fillText(`FRACTURE! Peak: ${peakLoad.toFixed(1)} kN`, centerX - 90, 15);
-        } else {
-            document.getElementById('utmStatusVal').innerText = "Loading...";
-            document.getElementById('utmStatusVal').style.color = "#2563eb";
+        } else if (utmPaused) {
+            utmCtx.fillStyle = '#f59e0b'; utmCtx.font = 'bold 13px sans-serif';
+            utmCtx.fillText(`-- PAUSED FOR INSPECTION --`, centerX - 100, 15);
         }
 
-        utmProgress += 0.0010;
-        if (utmProgress > 1.5) utmProgress = 0;
+        if (!utmPaused) {
+            utmProgress += 0.0010;
+            if (utmProgress > 1.5) utmProgress = 0;
+        }
         
         requestAnimationFrame(animateUTM);
     }
