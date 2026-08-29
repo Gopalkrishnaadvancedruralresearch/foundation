@@ -54,15 +54,13 @@
             gap: 20px;
         }
 
-        .garrf-logo-svg {
-            width: 75px;
-            height: 75px;
+        .garrf-logo-img {
+            width: 70px;
+            height: 70px;
+            object-fit: contain;
             background: white;
-            border-radius: 12px;
-            padding: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            border-radius: 10px;
+            padding: 4px;
         }
 
         .garrf-text h1 {
@@ -258,7 +256,6 @@
         }
         th { background: #f1f5f9; color: var(--text-heading); }
 
-        /* Questions Accordion / List Styling */
         .question-list {
             display: flex;
             flex-direction: column;
@@ -296,14 +293,10 @@
 <body>
 
 <div class="container">
-    <!-- Header with Robust Inline SVG Logo -->
+    <!-- Header with logo.jpeg -->
     <header class="garrf-banner">
         <div class="garrf-brand">
-            <div class="garrf-logo-svg">
-                <svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#0f172a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-                </svg>
-            </div>
+            <img src="logo.jpeg" alt="GARRF Logo" class="garrf-logo-img" onerror="this.style.display='none'">
             <div class="garrf-text">
                 <h1>Gopalkrishna Advanced Rural Research Foundation</h1>
                 <div class="garrf-subtitle"><strong>GARRF</strong> &bull; Virtual Engineering Laboratory Manual</div>
@@ -325,16 +318,16 @@
         <div class="cost-card highlight">
             <div class="cost-title">Kalam Zero Lab Engine</div>
             <div class="cost-val">₹0</div>
-            <div style="font-size: 0.85rem; color:#166534; margin-top:8px;">Select custom material alloys and standard specimen dimensions to perform instant virtual tensile and structural tests.</div>
+            <div style="font-size: 0.85rem; color:#166534; margin-top:8px;">Select custom material alloys and standard specimen dimensions to perform instant vertical tensile tests.</div>
         </div>
     </div>
 
-    <!-- UTM Material Testing Showcase -->
+    <!-- Vertical UTM Material Testing Showcase -->
     <div class="utm-showcase">
         <div class="utm-grid">
             <div>
-                <h3 style="color: #38bdf8; font-size: 1.3rem; margin-bottom: 10px;">Real-Time UTM Material Testing Console</h3>
-                <p style="font-size: 0.9rem; color: #cbd5e1; margin-bottom: 12px;">Choose your test specimen material (Steel, Aluminum, Brass, Copper, Gold) and standard dimensions below. Watch how different crystalline structures exhibit distinct yield points, elongation rates, and necking behavior prior to fracture.</p>
+                <h3 style="color: #38bdf8; font-size: 1.3rem; margin-bottom: 10px;">Vertical Floor-Standing UTM Console</h3>
+                <p style="font-size: 0.9rem; color: #cbd5e1; margin-bottom: 12px;">Experience a vertical load-frame setup. Select specimen material (Steel, Aluminum, Brass, Copper, Gold) and standard dimensions. Watch the upper crosshead pull upward vertically to simulate actual tensile stress, necking, and fracture behavior.</p>
                 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
                     <div>
@@ -357,10 +350,10 @@
                     </div>
                 </div>
 
-                <button class="btn-control" onclick="resetUTM()">Start / Restart Tensile Test</button>
+                <button class="btn-control" onclick="resetUTM()">Start / Restart Vertical Test</button>
             </div>
             <div class="canvas-container">
-                <canvas id="utmCanvas" width="500" height="200"></canvas>
+                <canvas id="utmCanvas" width="400" height="300"></canvas>
             </div>
         </div>
     </div>
@@ -544,23 +537,38 @@
         let mat = materialData[matKey];
 
         let centerX = w / 2;
-        let baseLength = 160;
-        let maxStretch = 70 * mat.ductilityFactor;
-        let stretch = utmProgress * maxStretch; 
+        let baseY = 210; // Lower fixed grip position
+        let baseHeight = 110; // Original specimen length
+        let maxStretch = 60 * mat.ductilityFactor;
+        let stretch = utmProgress * maxStretch;
 
-        // Draw Grips
-        utmCtx.fillStyle = '#475569';
-        utmCtx.fillRect(centerX - baseLength/2 - 20, 50, 20, 100); // Left Grip
-        utmCtx.fillRect(centerX + baseLength/2 + stretch, 50, 20, 100); // Right Grip
+        // Draw Vertical UTM Columns / Frame
+        utmCtx.strokeStyle = '#475569';
+        utmCtx.lineWidth = 6;
+        utmCtx.beginPath();
+        utmCtx.moveTo(centerX - 60, 30); utmCtx.lineTo(centerX - 60, 270); // Left Column
+        utmCtx.moveTo(centerX + 60, 30); utmCtx.lineTo(centerX + 60, 270); // Right Column
+        utmCtx.stroke();
+
+        // Draw Base Plate & Top Crosshead
+        utmCtx.fillStyle = '#334155';
+        utmCtx.fillRect(centerX - 80, 265, 160, 15); // Base
+        let currentCrossheadY = 70 - stretch; // Crosshead moves UPWARDS vertically during tension
+        utmCtx.fillRect(centerX - 70, currentCrossheadY - 10, 140, 15); // Movable Crosshead
+
+        // Grips
+        utmCtx.fillStyle = '#64748b';
+        utmCtx.fillRect(centerX - 15, currentCrossheadY + 5, 30, 20); // Upper Grip
+        utmCtx.fillRect(centerX - 15, baseY - 20, 30, 20); // Lower Grip
 
         // Specimen metrics scaled by diameter selection
-        let specLength = baseLength + stretch;
-        let baseHeight = diameter * 1.2;
-        let specHeight = Math.max(3, baseHeight - (utmProgress > 0.5 ? (utmProgress - 0.5) * 30 * (3 / diameter) : 0));
+        let specLength = baseHeight + stretch;
+        let baseThick = diameter * 1.2;
+        let specThick = Math.max(3, baseThick - (utmProgress > 0.5 ? (utmProgress - 0.5) * 25 * (3 / diameter) : 0));
 
-        // Draw Specimen Body
+        // Draw Vertical Specimen Body
         utmCtx.fillStyle = utmProgress >= 1 ? '#ef4444' : mat.color;
-        utmCtx.fillRect(centerX - baseLength/2, 100 - specHeight/2, specLength, specHeight);
+        utmCtx.fillRect(centerX - specThick/2, currentCrossheadY + 25, specThick, specLength);
 
         // Calculate simulated live stress based on material limits
         let currentLoad = Math.min(mat.ultimate * (diameter / 10) * (utmProgress > 0.7 ? (1.3 - utmProgress) : utmProgress * 1.4), mat.ultimate * 1.5);
@@ -568,15 +576,15 @@
 
         // Render Status / Fracture overlay
         if (utmProgress >= 1) {
-            utmCtx.clearRect(centerX - 4, 75, 8, 50);
+            utmCtx.clearRect(centerX - specThick/2 - 2, currentCrossheadY + 25 + specLength/2 - 5, specThick + 4, 10);
             utmCtx.fillStyle = '#fde047';
             utmCtx.font = 'bold 11px sans-serif';
-            utmCtx.fillText(`FRACTURE! (${mat.name} - UTS Reached)`, centerX - 120, 25);
+            utmCtx.fillText(`FRACTURE! (${mat.name})`, centerX - 70, 20);
         } else {
             utmCtx.fillStyle = '#ffffff';
-            utmCtx.font = '11px sans-serif';
-            utmCtx.fillText(`Material: ${mat.name} | Dia: ${diameter}mm`, 20, 30);
-            utmCtx.fillText(`Strain: ${(utmProgress * 0.2).toFixed(3)} | Load: ${currentLoad.toFixed(1)} kN`, 20, 180);
+            utmCtx.font = '10px sans-serif';
+            utmCtx.fillText(`Material: ${mat.name} | Dia: ${diameter}mm`, 15, 20);
+            utmCtx.fillText(`Strain: ${(utmProgress * 0.2).toFixed(3)} | Load: ${currentLoad.toFixed(1)} kN`, 15, 290);
         }
 
         utmProgress += 0.007;
