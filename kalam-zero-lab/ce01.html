@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GARRF STRUCTURA - Beam Bending Lab</title>
+    <style>
+        :root {
+            --primary: #003366;
+            --secondary: #0066cc;
+            --bg: #f4f7f6;
+            --text: #333;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px 40px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        header {
+            text-align: center;
+            border-bottom: 3px solid var(--primary);
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+        header h1 { color: var(--primary); margin: 0; }
+        header p { color: #666; font-style: italic; margin: 5px 0 0 0; }
+        
+        .section-title {
+            background: var(--primary);
+            color: white;
+            padding: 8px 15px;
+            margin-top: 30px;
+            border-radius: 4px;
+            font-size: 1.1em;
+        }
+        
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        
+        .control-panel, .measurements {
+            background: #e9f0f5;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #b3cce6;
+        }
+        
+        label { display: block; margin-top: 10px; font-weight: bold; }
+        input[type="range"] { width: 100%; }
+        
+        canvas {
+            background: white;
+            border: 1px solid #ccc;
+            width: 100%;
+            height: 250px;
+            margin-top: 10px;
+        }
+        
+        .btn-group { text-align: center; margin-top: 30px; }
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 4px;
+            margin: 0 10px;
+            transition: 0.3s;
+        }
+        button:hover { background: var(--secondary); }
+        
+        /* Print Styles for Lab Report */
+        @media print {
+            body { background: white; }
+            .container { box-shadow: none; max-width: 100%; padding: 0; }
+            .control-panel, button { display: none; }
+            .measurements { border: none; background: transparent; }
+            .report-header { display: block !important; text-align: center; margin-bottom: 20px;}
+        }
+        .report-header { display: none; }
+        .student-info { margin-bottom: 15px; }
+        .student-info input { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="report-header">
+        <h2>GARRF Virtual Engineering University</h2>
+        <h3>Official Laboratory Report</h3>
+    </div>
+
+    <header>
+        <h1>🏗️ GARRF STRUCTURA</h1>
+        <p>Zero Research Funding Lab | Open-Access Virtual Experimentation</p>
+    </header>
+
+    <div class="student-info">
+        <label>Student Name / ID:</label>
+        <input type="text" id="studentName" placeholder="Enter your name for the report...">
+    </div>
+
+    <div class="section-title">1. LAB OBJECTIVE</div>
+    <p>To analyze the Shear Force (SFD), Bending Moment (BMD), and support reactions of a simply supported beam subjected to a point load. Students will observe how load magnitude and position affect structural stress.</p>
+
+    <div class="grid-2">
+        <div>
+            <div class="section-title">2. CONTROLS / INPUTS</div>
+            <div class="control-panel">
+                <label>Beam Span (L): <span id="valL">10</span> m</label>
+                <input type="range" id="inputL" min="2" max="20" step="1" value="10">
+
+                <label>Point Load (P): <span id="valP">50</span> kN</label>
+                <input type="range" id="inputP" min="10" max="200" step="5" value="50">
+
+                <label>Load Position from Left (a): <span id="valA">5</span> m</label>
+                <input type="range" id="inputA" min="0" max="10" step="0.5" value="5">
+            </div>
+        </div>
+
+        <div>
+            <div class="section-title">3. MEASUREMENTS & RESULTS</div>
+            <div class="measurements">
+                <p><strong>Reaction at Left Support (Ra):</strong> <span id="outRa">25.00</span> kN</p>
+                <p><strong>Reaction at Right Support (Rb):</strong> <span id="outRb">25.00</span> kN</p>
+                <p><strong>Maximum Bending Moment (M_max):</strong> <span id="outMmax">125.00</span> kNm</p>
+                <p><strong>Max Shear Force (V_max):</strong> <span id="outVmax">25.00</span> kN</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="section-title">4. VIRTUAL EQUIPMENT & LIVE SIMULATION</div>
+    <canvas id="beamCanvas"></canvas>
+
+    <div class="section-title">5. GRAPH / ANALYSIS (SFD & BMD)</div>
+    <canvas id="graphCanvas"></canvas>
+
+    <div class="section-title">6. ENGINEERING CHALLENGE</div>
+    <p><strong>Task:</strong> Adjust the load position (a) to exactly L/4. What is the mathematical relationship between Ra and Rb at this point? Document your findings in the conclusion below.</p>
+    <textarea style="width:100%; height:80px; margin-top:10px; padding:10px; box-sizing:border-box;" placeholder="Enter your engineering conclusions here..."></textarea>
+
+    <div class="btn-group">
+        <button onclick="exportCSV()">⬇ Download CSV Data</button>
+        <button onclick="window.print()">📄 Generate Lab Report</button>
+    </div>
+</div>
+
+<script>
+    // Get DOM Elements
+    const inputL = document.getElementById('inputL');
+    const inputP = document.getElementById('inputP');
+    const inputA = document.getElementById('inputA');
+    
+    const valL = document.getElementById('valL');
+    const valP = document.getElementById('valP');
+    const valA = document.getElementById('valA');
+
+    const outRa = document.getElementById('outRa');
+    const outRb = document.getElementById('outRb');
+    const outMmax = document.getElementById('outMmax');
+    const outVmax = document.getElementById('outVmax');
+
+    const beamCanvas = document.getElementById('beamCanvas');
+    const beamCtx = beamCanvas.getContext('2d');
+    const graphCanvas = document.getElementById('graphCanvas');
+    const graphCtx = graphCanvas.getContext('2d');
+
+    // Resize canvas to match display size
+    function resizeCanvas() {
+        beamCanvas.width = beamCanvas.clientWidth;
+        beamCanvas.height = beamCanvas.clientHeight;
+        graphCanvas.width = graphCanvas.clientWidth;
+        graphCanvas.height = graphCanvas.clientHeight;
+        updateSimulation();
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    // Event Listeners for controls
+    inputL.addEventListener('input', () => {
+        inputA.max = inputL.value;
+        if(parseFloat(inputA.value) > parseFloat(inputL.value)) inputA.value = inputL.value;
+        updateSimulation();
+    });
+    inputP.addEventListener('input', updateSimulation);
+    inputA.addEventListener('input', updateSimulation);
+
+    function updateSimulation() {
+        // Read values
+        const L = parseFloat(inputL.value);
+        const P = parseFloat(inputP.value);
+        const a = parseFloat(inputA.value);
+        const b = L - a;
+
+        // Update Labels
+        valL.innerText = L;
+        valP.innerText = P;
+        valA.innerText = a;
+
+        // Calculations
+        const Ra = (P * b) / L;
+        const Rb = (P * a) / L;
+        const Mmax = (P * a * b) / L;
+        const Vmax = Math.max(Ra, Rb);
+
+        // Update Outputs
+        outRa.innerText = Ra.toFixed(2);
+        outRb.innerText = Rb.toFixed(2);
+        outMmax.innerText = Mmax.toFixed(2);
+        outVmax.innerText = Vmax.toFixed(2);
+
+        drawBeam(L, P, a, Ra, Rb);
+        drawGraphs(L, a, Ra, Rb, Mmax);
+    }
+
+    function drawBeam(L, P, a, Ra, Rb) {
+        const w = beamCanvas.width;
+        const h = beamCanvas.height;
+        beamCtx.clearRect(0, 0, w, h);
+
+        const margin = 50;
+        const drawLen = w - 2 * margin;
+        const scaleX = drawLen / L;
+        const beamY = h / 2;
+
+        // Draw Beam
+        beamCtx.fillStyle = '#ccc';
+        beamCtx.fillRect(margin, beamY - 10, drawLen, 20);
+        beamCtx.strokeRect(margin, beamY - 10, drawLen, 20);
+
+        // Draw Supports
+        beamCtx.fillStyle = '#003366';
+        beamCtx.beginPath();
+        beamCtx.moveTo(margin, beamY + 10);
+        beamCtx.lineTo(margin - 10, beamY + 30);
+        beamCtx.lineTo(margin + 10, beamY + 30);
+        beamCtx.fill();
+
+        beamCtx.beginPath();
+        beamCtx.moveTo(margin + drawLen, beamY + 10);
+        beamCtx.lineTo(margin + drawLen - 10, beamY + 30);
+        beamCtx.lineTo(margin + drawLen + 10, beamY + 30);
+        beamCtx.fill();
+
+        // Draw Load (P)
+        const loadX = margin + (a * scaleX);
+        beamCtx.strokeStyle = 'red';
+        beamCtx.lineWidth = 3;
+        beamCtx.beginPath();
+        beamCtx.moveTo(loadX, beamY - 60);
+        beamCtx.lineTo(loadX, beamY - 10);
+        beamCtx.stroke();
+        
+        // Arrow head
+        beamCtx.fillStyle = 'red';
+        beamCtx.beginPath();
+        beamCtx.moveTo(loadX, beamY - 10);
+        beamCtx.lineTo(loadX - 5, beamY - 20);
+        beamCtx.lineTo(loadX + 5, beamY - 20);
+        beamCtx.fill();
+
+        // Draw text
+        beamCtx.fillStyle = 'black';
+        beamCtx.font = "14px Arial";
+        beamCtx.fillText(`P = ${P} kN`, loadX - 30, beamY - 70);
+        beamCtx.fillText(`Ra = ${Ra.toFixed(1)}`, margin - 20, beamY + 50);
+        beamCtx.fillText(`Rb = ${Rb.toFixed(1)}`, margin + drawLen - 20, beamY + 50);
+    }
+
+    function drawGraphs(L, a, Ra, Rb, Mmax) {
+        const w = graphCanvas.width;
+        const h = graphCanvas.height;
+        graphCtx.clearRect(0, 0, w, h);
+
+        const margin = 50;
+        const drawLen = w - 2 * margin;
+        const scaleX = drawLen / L;
+        
+        // Split canvas vertically for SFD and BMD
+        const midY_SFD = h * 0.25;
+        const midY_BMD = h * 0.75;
+
+        // Draw Base Lines
+        graphCtx.strokeStyle = '#999';
+        graphCtx.lineWidth = 1;
+        graphCtx.beginPath();
+        graphCtx.moveTo(margin, midY_SFD); graphCtx.lineTo(margin + drawLen, midY_SFD);
+        graphCtx.moveTo(margin, midY_BMD); graphCtx.lineTo(margin + drawLen, midY_BMD);
+        graphCtx.stroke();
+
+        const loadX = margin + (a * scaleX);
+
+        // --- Draw SFD ---
+        const maxV = Math.max(Ra, Rb);
+        const scaleV = (h * 0.15) / (maxV || 1);
+        
+        graphCtx.fillStyle = 'rgba(0, 102, 204, 0.3)';
+        graphCtx.strokeStyle = '#0066cc';
+        graphCtx.lineWidth = 2;
+        
+        graphCtx.beginPath();
+        graphCtx.moveTo(margin, midY_SFD);
+        graphCtx.lineTo(margin, midY_SFD - (Ra * scaleV));
+        graphCtx.lineTo(loadX, midY_SFD - (Ra * scaleV));
+        graphCtx.lineTo(loadX, midY_SFD + (Rb * scaleV));
+        graphCtx.lineTo(margin + drawLen, midY_SFD + (Rb * scaleV));
+        graphCtx.lineTo(margin + drawLen, midY_SFD);
+        graphCtx.fill();
+        graphCtx.stroke();
+
+        graphCtx.fillStyle = 'black';
+        graphCtx.fillText("SFD", margin - 40, midY_SFD);
+
+        // --- Draw BMD ---
+        const scaleM = (h * 0.2) / (Mmax || 1);
+        
+        graphCtx.fillStyle = 'rgba(204, 0, 0, 0.3)';
+        graphCtx.strokeStyle = '#cc0000';
+        
+        graphCtx.beginPath();
+        graphCtx.moveTo(margin, midY_BMD);
+        graphCtx.lineTo(loadX, midY_BMD - (Mmax * scaleM));
+        graphCtx.lineTo(margin + drawLen, midY_BMD);
+        graphCtx.fill();
+        graphCtx.stroke();
+
+        graphCtx.fillStyle = 'black';
+        graphCtx.fillText("BMD", margin - 40, midY_BMD);
+        graphCtx.fillText(`Mmax = ${Mmax.toFixed(1)}`, loadX - 30, midY_BMD - (Mmax * scaleM) - 10);
+    }
+
+    function exportCSV() {
+        const student = document.getElementById('studentName').value || "Anonymous";
+        const csvContent = `data:text/csv;charset=utf-8,Student Name,Length(m),Load(kN),Position_a(m),Ra(kN),Rb(kN),Mmax(kNm)\n${student},${inputL.value},${inputP.value},${inputA.value},${outRa.innerText},${outRb.innerText},${outMmax.innerText}`;
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "GARRF_STRUCTURA_Data.csv");
+        document.body.appendChild(link);
+        link.click();
+    }
+
+    // Initialize
+    setTimeout(resizeCanvas, 100);
+</script>
+
+</body>
+</html>
