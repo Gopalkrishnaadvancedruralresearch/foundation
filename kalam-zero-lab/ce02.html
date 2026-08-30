@@ -241,7 +241,7 @@
 <div class="container">
     <header class="garrf-banner">
         <div class="garrf-brand">
-            <img src="logo.jpeg" alt="GARRF Logo" class="logo-img" onerror="this.style.display='none'">
+            <img src="logo.jpeg" alt="GARRF Logo" class="logo-img" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'70\' height=\'70\'><rect width=\'70\' height=\'70\' fill=\'%232563eb\'/><text x=\'35\' y=\'42\' fill=\'white\' font-size=\'16\' font-weight=\'bold\' text-anchor=\'middle\'>GARRF</text></svg>';">
             <div class="garrf-text">
                 <h1>Gopalkrishna Advanced Rural Research Foundation</h1>
                 <div class="garrf-subtitle"><strong>GARRF</strong> &bull; Virtual Engineering Laboratory Manual</div>
@@ -266,6 +266,7 @@
         </div>
     </div>
 
+    <!-- PART 1: MOHR'S CIRCLE & STRESS TRANSFORMATION -->
     <div class="section-header mohr-theme">
         <span>Part 1: Biaxial Stress State & Mohr's Circle Graphical Transformation</span>
     </div>
@@ -299,6 +300,7 @@
         </div>
     </div>
 
+    <!-- PART 2: ADVANCED BEAM BENDING & DEFLECTION -->
     <div class="section-header beam-theme">
         <span>Part 2: Advanced Beam Bending, Shear Force & Bending Moment Diagnostics</span>
     </div>
@@ -463,4 +465,82 @@
         let w = canvas.width, h = canvas.height;
         ctx.clearRect(0, 0, w, h);
 
-        const margin = 40,
+        const margin = 40, width = w - 2 * margin;
+        
+        // 1. Beam & Supports
+        let yBeam = 50;
+        ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.moveTo(margin, yBeam); ctx.lineTo(margin + width, yBeam); ctx.stroke();
+
+        ctx.fillStyle = '#ffffff'; ctx.font = '11px sans-serif';
+        ctx.fillText("1. Beam Structure (L = " + span + "m)", margin, yBeam - 15);
+
+        // Supports
+        ctx.fillStyle = '#64748b';
+        ctx.beginPath(); ctx.moveTo(margin, yBeam); ctx.lineTo(margin - 8, yBeam + 12); ctx.lineTo(margin + 8, yBeam + 12); ctx.closePath(); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(margin + width, yBeam); ctx.lineTo(margin + width - 8, yBeam + 12); ctx.lineTo(margin + width + 8, yBeam + 12); ctx.closePath(); ctx.fill();
+
+        if (type === 'point') {
+            let cx = margin + width / 2;
+            ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(cx, yBeam - 30); ctx.lineTo(cx, yBeam); ctx.stroke();
+            ctx.fillStyle = '#fde047'; ctx.fillText("↓ P", cx - 10, yBeam - 35);
+        } else {
+            ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2;
+            for (let i = 0; i <= 10; i++) {
+                let px = margin + (width / 10) * i;
+                ctx.beginPath(); ctx.moveTo(px, yBeam - 20); ctx.lineTo(px, yBeam); ctx.stroke();
+            }
+            ctx.fillStyle = '#fde047'; ctx.fillText("↓ UDL (w)", margin + width / 2 - 25, yBeam - 25);
+        }
+
+        // 2. Shear Force Diagram (SFD)
+        let ySFD = 175;
+        ctx.fillStyle = '#94a3b8'; ctx.fillText("2. Shear Force Diagram (SFD)", margin, ySFD - 35);
+        ctx.strokeStyle = '#475569'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(margin, ySFD); ctx.lineTo(margin + width, ySFD); ctx.stroke();
+
+        ctx.strokeStyle = '#22c55e'; ctx.fillStyle = 'rgba(34, 197, 94, 0.15)'; ctx.lineWidth = 2;
+        ctx.beginPath();
+        if (type === 'point') {
+            let halfW = width / 2;
+            ctx.moveTo(margin, ySFD);
+            ctx.lineTo(margin, ySFD - 30);
+            ctx.lineTo(margin + halfW, ySFD - 30);
+            ctx.lineTo(margin + halfW, ySFD + 30);
+            ctx.lineTo(margin + width, ySFD + 30);
+            ctx.lineTo(margin + width, ySFD);
+        } else {
+            ctx.moveTo(margin, ySFD);
+            ctx.lineTo(margin, ySFD - 35);
+            ctx.lineTo(margin + width, ySFD + 35);
+            ctx.lineTo(margin + width, ySFD);
+        }
+        ctx.closePath(); ctx.stroke(); ctx.fill();
+
+        // 3. Bending Moment Diagram (BMD)
+        let yBMD = 295;
+        ctx.fillStyle = '#94a3b8'; ctx.fillText("3. Bending Moment Diagram (BMD)", margin, yBMD - 35);
+        ctx.strokeStyle = '#475569'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(margin, yBMD); ctx.lineTo(margin + width, yBMD); ctx.stroke();
+
+        ctx.strokeStyle = '#a855f7'; ctx.fillStyle = 'rgba(168, 85, 247, 0.15)'; ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(margin, yBMD);
+        if (type === 'point') {
+            ctx.lineTo(margin + width / 2, yBMD - 45);
+        } else {
+            ctx.quadraticCurveTo(margin + width / 2, yBMD - 55, margin + width, yBMD);
+        }
+        ctx.lineTo(margin + width, yBMD);
+        ctx.closePath(); ctx.stroke(); ctx.fill();
+    }
+
+    // Auto-initialize simulation on load
+    window.onload = function() {
+        updateMohr();
+        updateBeam();
+    };
+</script>
+</body>
+</html>
