@@ -214,6 +214,7 @@
             background: #020617;
             border-radius: 8px;
             overflow: hidden;
+            position: relative;
         }
 
         canvas { display: block; width: 100%; height: auto; }
@@ -243,8 +244,10 @@
             margin-top: 15px;
             font-size: 1rem;
             box-shadow: 0 4px 6px rgba(37, 99, 235, 0.3);
+            transition: transform 0.1s, background 0.2s;
         }
         .btn-magic:hover { background: #1d4ed8; }
+        .btn-magic:active { transform: scale(0.98); }
 
         .panel {
             background: var(--card-bg);
@@ -270,6 +273,35 @@
             border-radius: 0 8px 8px 0;
             font-size: 0.9rem;
         }
+
+        .quiz-container {
+            background: #f1f5f9;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            border: 1px solid var(--border);
+        }
+
+        .quiz-question {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-heading);
+            font-size: 0.9rem;
+        }
+
+        .quiz-options label {
+            display: block;
+            background: white;
+            padding: 6px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            margin-bottom: 5px;
+            cursor: pointer;
+            font-weight: normal;
+            font-size: 0.85rem;
+        }
+
+        .quiz-options label:hover { background: #f8fafc; }
 
         footer { text-align: center; padding: 20px; color: #64748b; font-size: 0.8rem; border-top: 1px solid var(--border); }
     </style>
@@ -300,7 +332,7 @@
         <div class="cost-card highlight">
             <div class="cost-title">Kalam Zero Lab Engine</div>
             <div class="cost-val">₹0</div>
-            <div style="font-size: 0.85rem; color:#166534; margin-top:8px;">Unified interactive web suite covering advanced structural mechanics, dynamics, and plastic analysis.</div>
+            <div style="font-size: 0.85rem; color:#166534; margin-top:8px;">Unified interactive web suite covering advanced structural mechanics, dynamics, and plastic analysis with live simulation triggers.</div>
         </div>
     </div>
 
@@ -333,7 +365,7 @@
                     <label>Panel Span Length (L): <span class="range-val" id="spanVal">4 m</span></label>
                     <input type="range" id="spanSlider" min="2" max="8" value="4" oninput="updateTruss()">
                 </div>
-                <button class="btn-magic" type="button" onclick="updateTruss()">⚙️ Solve Joint Equilibriums</button>
+                <button class="btn-magic" type="button" onclick="triggerSimulationAnimation('ce03')">⚙️ Run Joint Equilibrium Simulation</button>
             </div>
             <div>
                 <div class="panel-title" style="margin-top: 5px;">Color-Coded Member Force Diagram</div>
@@ -367,7 +399,7 @@
                     <label>Outer Diameter (d<sub>o</sub>): <span class="range-val" id="diaVal">100 mm</span></label>
                     <input type="range" id="diaSlider" min="50" max="200" value="100" oninput="updateTorsion()">
                 </div>
-                <button class="btn-magic" type="button" onclick="updateTorsion()">🔄 Compute Torsional Stress</button>
+                <button class="btn-magic" type="button" onclick="triggerSimulationAnimation('ce04')">🔄 Run Torsional Shear Simulation</button>
             </div>
             <div>
                 <div class="panel-title" style="margin-top: 5px;">Shear Stress Distribution & Twist</div>
@@ -403,7 +435,7 @@
                     <label>Moment of Inertia (I): <span class="range-val" id="inertiaVal">120 cm⁴</span></label>
                     <input type="range" id="inertiaSlider" min="20" max="500" value="120" oninput="updateBuckling()">
                 </div>
-                <button class="btn-magic" type="button" onclick="updateBuckling()">📐 Compute Critical Buckling</button>
+                <button class="btn-magic" type="button" onclick="triggerSimulationAnimation('ce05')">📐 Run Buckling Deflection Simulation</button>
             </div>
             <div>
                 <div class="panel-title" style="margin-top: 5px;">Buckling Deflection Curve</div>
@@ -438,7 +470,7 @@
                     <label>Total Span (L): <span class="range-val" id="ildSpanVal">10 m</span></label>
                     <input type="range" id="ildSpanSlider" min="4" max="15" value="10" oninput="updateILD()">
                 </div>
-                <button class="btn-magic" type="button" onclick="updateILD()">📈 Plot Influence Line</button>
+                <button class="btn-magic" type="button" onclick="triggerSimulationAnimation('ce06')">📈 Run Moving Load ILD Simulation</button>
             </div>
             <div>
                 <div class="panel-title" style="margin-top: 5px;">Influence Line Diagram (ILD)</div>
@@ -469,7 +501,7 @@
                     <label>Damping Ratio (&zeta;): <span class="range-val" id="dynDampVal">0.05 (5%)</span></label>
                     <input type="range" id="dynDampSlider" min="0" max="0.30" step="0.01" value="0.05" oninput="updateSDOF()">
                 </div>
-                <button class="btn-magic" type="button" onclick="updateSDOF()">⚡ Simulate Time History</button>
+                <button class="btn-magic" type="button" onclick="triggerSimulationAnimation('ce07')">⚡ Run Damped Vibration Simulation</button>
             </div>
             <div>
                 <div class="panel-title" style="margin-top: 5px;">Damped Free Vibration Response</div>
@@ -503,7 +535,7 @@
                     <label>Yield Stress (f<sub>y</sub>): <span class="range-val" id="fyVal">250 MPa</span></label>
                     <input type="range" id="fySlider" min="200" max="400" step="10" value="250" oninput="updatePlastic()">
                 </div>
-                <button class="btn-magic" type="button" onclick="updatePlastic()">🏗️ Calculate Collapse Load</button>
+                <button class="btn-magic" type="button" onclick="triggerSimulationAnimation('ce08')">🏗️ Run Plastic Mechanism Simulation</button>
             </div>
             <div>
                 <div class="panel-title" style="margin-top: 5px;">Plastic Hinge Formation & Mechanism</div>
@@ -518,9 +550,42 @@
     </div>
 
     <div class="panel">
-        <div class="panel-title">Theoretical Overview & Engineering Significance</div>
-        <div class="theory-box">
-            <strong>Unified Structural Suite (CE03-CE08):</strong> This integrated browser engine spans determinate truss analysis, torsional mechanics, column stability, moving load influence lines, structural dynamics, and ultimate plastic collapse limit state design.
+        <div class="panel-title">Student Assessment & Conceptual Viva Questions (CE03 - CE08)</div>
+        
+        <div class="quiz-container">
+            <div class="quiz-question">Q1. (CE03 Truss) In the Method of Joints, what is the maximum number of independent equilibrium equations available at a pin joint in a 2D planar truss?</div>
+            <div class="quiz-options">
+                <label><input type="radio" name="q1" value="a"> A) 1 equation ($\sum F = 0$)</label>
+                <label><input type="radio" name="q1" value="b" onclick="alert('Correct! At each pin joint in a 2D plane, two equilibrium equations are available: sum of forces in x ($\sum F_x = 0$) and sum of forces in y ($\sum F_y = 0$).')"> B) 2 equations ($\sum F_x = 0, \sum F_y = 0$) (Correct)</label>
+                <label><input type="radio" name="q1" value="c"> C) 3 equations ($\sum F_x, \sum F_y, \sum M = 0$)</label>
+            </div>
+        </div>
+
+        <div class="quiz-container">
+            <div class="quiz-question">Q2. (CE04 Torsion) How does the maximum shear stress vary along the radial distance $r$ from the center of a solid circular shaft under pure torsion?</div>
+            <div class="quiz-options">
+                <label><input type="radio" name="q2" value="a" onclick="alert('Correct! Shear stress varies linearly from zero at the center (neutral axis) to a maximum value at the outer surface ($\tau = Tr / J$).')"> A) Varies linearly from zero at the center to maximum at the outer surface (Correct)</label>
+                <label><input type="radio" name="q2" value="b"> B) Is constant across the entire cross-section</label>
+                <label><input type="radio" name="q2" value="c"> C) Concentrates entirely at the center core</label>
+            </div>
+        </div>
+
+        <div class="quiz-container">
+            <div class="quiz-question">Q3. (CE05 Buckling) If a structural column has both ends fixed against rotation and translation, what is its effective length factor $K$?</div>
+            <div class="quiz-options">
+                <label><input type="radio" name="q3" value="a"> A) K = 1.0 (Pinned-Pinned)</label>
+                <label><input type="radio" name="q3" value="b"> B) K = 2.0 (Fixed-Free)</label>
+                <label><input type="radio" name="q3" value="c" onclick="alert('Correct! For fixed-fixed end conditions, the inflection points occur closer together, yielding an effective length factor of K = 0.5.')"> C) K = 0.5 (Fixed-Fixed) (Correct)</label>
+            </div>
+        </div>
+
+        <div class="quiz-container">
+            <div class="quiz-question">Q4. (CE07 Dynamics) What physical phenomenon occurs in a single degree of freedom (SDOF) structural system when the damping ratio $\zeta$ exceeds 1.0 ($\zeta > 1$)?</div>
+            <div class="quiz-options">
+                <label><input type="radio" name="q4" value="a" onclick="alert('Correct! When damping is supercritical ($\zeta > 1$), the system returns to equilibrium without oscillating, decaying exponentially instead.')"> A) Overdamped motion with no oscillation (Correct)</label>
+                <label><input type="radio" name="q4" value="b"> B) Undamped infinite resonance</label>
+                <label><input type="radio" name="q4" value="c"> C) Harmonic sustained vibration</label>
+            </div>
         </div>
     </div>
 
@@ -537,13 +602,45 @@
         event.target.classList.add('active');
         document.getElementById(id).classList.add('active');
 
-        // Trigger respective render
         if(id === 'ce03') updateTruss();
         if(id === 'ce04') updateTorsion();
         if(id === 'ce05') updateBuckling();
         if(id === 'ce06') updateILD();
         if(id === 'ce07') updateSDOF();
         if(id === 'ce08') updatePlastic();
+    }
+
+    // Animation trigger for BLUE buttons
+    function triggerSimulationAnimation(moduleId) {
+        let canvasId = '';
+        if(moduleId === 'ce03') canvasId = 'trussCanvas';
+        if(moduleId === 'ce04') canvasId = 'torsionCanvas';
+        if(moduleId === 'ce05') canvasId = 'bucklingCanvas';
+        if(moduleId === 'ce06') canvasId = 'ildCanvas';
+        if(moduleId === 'ce07') canvasId = 'sdofCanvas';
+        if(moduleId === 'ce08') canvasId = 'plasticCanvas';
+
+        let canvas = document.getElementById(canvasId);
+        if(!canvas) return;
+        let ctx = canvas.getContext('2d');
+
+        // Quick flash animation effect
+        let count = 0;
+        let interval = setInterval(() => {
+            ctx.fillStyle = count % 2 === 0 ? 'rgba(37, 99, 235, 0.2)' : 'rgba(2, 6, 23, 1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            count++;
+            if(count > 5) {
+                clearInterval(interval);
+                // Re-render original static module state
+                if(moduleId === 'ce03') updateTruss();
+                if(moduleId === 'ce04') updateTorsion();
+                if(moduleId === 'ce05') updateBuckling();
+                if(moduleId === 'ce06') updateILD();
+                if(moduleId === 'ce07') updateSDOF();
+                if(moduleId === 'ce08') updatePlastic();
+            }
+        }, 80);
     }
 
     // --- CE03 Logic ---
@@ -586,6 +683,7 @@
             ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(n.x, n.y, 6, 0, 2 * Math.PI); ctx.fill();
             ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 2; ctx.stroke();
         });
+        ctx.fillStyle = '#fde047'; ctx.font = '11px sans-serif'; ctx.fillText("↓ Joint Equilibrium Active", margin, 40);
     }
 
     // --- CE04 Logic ---
@@ -597,10 +695,10 @@
         document.getElementById('torqueVal').innerText = torque + " kN·m";
         document.getElementById('diaVal').innerText = dia + " mm";
 
-        let c = dia / 2000; // in meters
+        let c = dia / 2000;
         let J = type === 'solid' ? (Math.PI * Math.pow(2*c, 4)) / 32 : (Math.PI * (Math.pow(2*c, 4) - Math.pow(1.6*c, 4))) / 32;
-        let tauMax = (torque * 1000 * c) / J / 1e6; // MPa
-        let theta = (torque * 1000 * 2.0) / (79e9 * J); // rad/m
+        let tauMax = (torque * 1000 * c) / J / 1e6;
+        let theta = (torque * 1000 * 2.0) / (79e9 * J);
 
         document.getElementById('tauShaftVal').innerText = tauMax.toFixed(1) + " MPa";
         document.getElementById('twistVal').innerText = (theta * 180 / Math.PI).toFixed(2) + " °/m";
@@ -611,7 +709,6 @@
         let ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Draw shaft cross section
         ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 3;
         ctx.beginPath(); ctx.arc(275, 190, 80, 0, 2 * Math.PI); ctx.stroke();
         if (type === 'hollow') {
@@ -626,14 +723,14 @@
     function updateBuckling() {
         let K = parseFloat(document.getElementById('endCond').value);
         let L = parseFloat(document.getElementById('colLenSlider').value);
-        let I = parseFloat(document.getElementById('inertiaSlider').value) * 1e-8; // m^4
+        let I = parseFloat(document.getElementById('inertiaSlider').value) * 1e-8;
 
         document.getElementById('colLenVal').innerText = L + " m";
         document.getElementById('inertiaVal').innerText = (I * 1e8).toFixed(0) + " cm⁴";
 
-        let E = 200e9; // Steel
+        let E = 200e9;
         let L_eff = K * L;
-        let P_cr = (Math.PI * Math.PI * E * I) / (L_eff * L_eff) / 1000; // kN
+        let P_cr = (Math.PI * Math.PI * E * I) / (L_eff * L_eff) / 1000;
 
         document.getElementById('pCrVal').innerText = P_cr.toFixed(1) + " kN";
         document.getElementById('srVal').innerText = (120 * K).toFixed(1);
@@ -644,7 +741,6 @@
         let ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Draw buckling deflection wave
         ctx.strokeStyle = '#a855f7'; ctx.lineWidth = 3;
         ctx.beginPath(); ctx.moveTo(275, 60);
         ctx.quadraticCurveTo(275 + 40 * K, 190, 275, 320);
@@ -672,7 +768,6 @@
         let ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Draw ILD line
         ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.moveTo(50, 250); ctx.lineTo(500, 250); ctx.stroke();
         ctx.strokeStyle = '#22c55e'; ctx.lineWidth = 3;
@@ -710,7 +805,6 @@
         let ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Draw decay curve
         ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2;
         ctx.beginPath();
         for(let x = 50; x <= 500; x++) {
@@ -725,14 +819,14 @@
 
     // --- CE08 Logic ---
     function updatePlastic() {
-        let zp = parseFloat(document.getElementById('zpSlider').value) * 1e-6; // m^3
-        let fy = parseFloat(document.getElementById('fySlider').value) * 1e6; // Pa
+        let zp = parseFloat(document.getElementById('zpSlider').value) * 1e-6;
+        let fy = parseFloat(document.getElementById('fySlider').value) * 1e6;
         let type = document.getElementById('beamCollType').value;
 
         document.getElementById('zpVal').innerText = (zp * 1e6).toFixed(0) + " cm³";
         document.getElementById('fyVal').innerText = (fy / 1e6) + " MPa";
 
-        let Mp = zp * fy / 1000; // kN·m
+        let Mp = zp * fy / 1000;
         let Pu = type === 'pinCenter' ? (4 * Mp / 4.0) : (8 * Mp / 4.0);
 
         document.getElementById('mpVal').innerText = Mp.toFixed(1) + " kN·m";
@@ -744,7 +838,6 @@
         let ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Draw collapse mechanism hinges
         ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 4;
         ctx.beginPath(); ctx.moveTo(50, 200); ctx.lineTo(275, 120); ctx.lineTo(500, 200); ctx.stroke();
         
