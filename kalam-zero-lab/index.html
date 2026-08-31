@@ -285,10 +285,11 @@ footer{padding:34px 0;background:#064f36;color:#d8ece3;font-size:11px}.foot{disp
 <section id="experiments">
  <div class="wrap">
   <div class="section-head">
-   <div class="eyebrow">125+ EXPERIMENT ECOSYSTEM</div>
+   <div class="eyebrow">LIVE GARRF EXPERIMENT CATALOGUE</div>
    <h2>Start Working Today</h2>
-   <p class="lead">Search the experiment catalogue below. Existing GARRF experiment pages open directly in the same folder.</p>
+   <p class="lead">This catalogue reads the actual experiment pages in this folder. Titles and descriptions are taken from the live experiment HTML — not invented here.</p>
   </div>
+  <div id="catalogue-note" style="margin:-10px 0 18px;color:#61766f;font-size:11px;text-align:center">🔄 Reading actual experiment pages from the same GARRF folder…</div>
   <div class="labtools">
    <input id="search" type="search" placeholder="Search experiment number or topic…">
    <select id="filter"><option value="all">All experiments</option><option value="core">01–25 • Core</option><option value="advanced">26–75 • Advanced</option><option value="specialized">76–125+ • Specialized</option></select>
@@ -378,38 +379,128 @@ footer{padding:34px 0;background:#064f36;color:#d8ece3;font-size:11px}.foot{disp
 </footer>
 
 <script>
-const special={
- 1:["Experiment 01 — Baseline Signal Acquisition","Baseline signal acquisition and validation."],
- 2:["Experiment 02 — Parameter Logging","Secondary parameter logging and metric scaling."],
- 3:["Experiment 03 — Sensor Calibration","Sensor calibration and signal-to-noise analysis."],
- 4:["Experiment 04 — Structural Vibration","Structural vibration harmonic response."],
- 5:["Experiment 05 — Piezoelectric Transducer","Piezoelectric transducer load response."],
- 26:["Experiment 26 — Finite Element Testing","Finite element mesh density convergence testing."],
- 27:["Experiment 27 — Damping Identification","Damping coefficient identification in cantilever systems."],
- 76:["Experiment 76 — Microcontroller & PWM","Microcontroller sensor integration and PWM motor logic."],
- 100:["Experiment 100 — Smart Material Actuation","Smart material actuation and feedback loop tuning."],
- 125:["Experiment 125 — Master Integration","Master integration sandbox and telemetry analysis."]
-};
-function series(n){return n<=25?"core":n<=75?"advanced":"specialized"}
-function filename(n){return n<=25?String(n).padStart(2,"0")+".html":n+".html"}
-function info(n){
- if(special[n]) return special[n];
- return ["Experiment "+String(n).padStart(2,"0"),n<=25?"Core engineering experimentation module.":n<=75?"Advanced structural, dynamic testing and control module.":"Specialized engineering, AI, robotics, smart-materials or research module."]
+/*
+  LIVE EXPERIMENT CATALOGUE
+  -------------------------
+  The portal does NOT invent experiment names/descriptions.
+  It reads the actual experiment HTML files from this same folder.
+  Therefore the catalogue stays synchronized with the experiments
+  that are really present on the GARRF server.
+
+  Supported naming:
+    01.html ... 09.html
+    10.html ... 124.html
+    125+.html
+*/
+const experimentCandidates = [
+  ...Array.from({length:9}, (_,i)=>String(i+1).padStart(2,"0")+".html"),
+  ...Array.from({length:116}, (_,i)=>String(i+10)+".html"),
+  "125+.html"
+];
+
+const grid = document.getElementById("experimentsGrid");
+const searchBox = document.getElementById("search");
+const filterBox = document.getElementById("filter");
+let experiments = [];
+
+function categoryFor(n){
+  if(n<=25) return "core";
+  if(n<=75) return "advanced";
+  return "specialized";
 }
-const all=Array.from({length:125},(_,i)=>i+1);
+function categoryLabel(c){
+  return c==="core" ? "CORE • 01–25" :
+         c==="advanced" ? "ADVANCED • 26–75" :
+         "SPECIALIZED • 76–125+";
+}
+function numberFromFile(file){
+  if(file==="125+.html") return 125;
+  return parseInt(file.replace(".html",""),10);
+}
+function cleanText(s){
+  return (s||"").replace(/\s+/g," ").replace(/[|]/g," ").trim();
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+}
+
+async function readExperiment(file){
+  try{
+    const response = await fetch(file,{cache:"no-store"});
+    if(!response.ok) return null;
+    const text = await response.text();
+    const doc = new DOMParser().parseFromString(text,"text/html");
+
+    const title = cleanText(doc.querySelector("title")?.textContent);
+    const headings = [...doc.querySelectorAll("h1,h2,h3")].map(x=>cleanText(x.textContent)).filter(Boolean);
+
+    // Prefer the first meaningful heading, but avoid generic site labels.
+    const bad = /^(garrf|home|menu|experiment setup|part [0-9]|live|ready|start|stop|reset)$/i;
+    const heading = headings.find(x=>!bad.test(x) && x.length>4) || title || ("Experiment "+file);
+
+    let description = "";
+    const meta = doc.querySelector('meta[name="description"]')?.getAttribute("content");
+    if(meta) description = cleanText(meta);
+
+    if(!description){
+      const paragraphs = [...doc.querySelectorAll("main p,p")].map(x=>cleanText(x.textContent))
+        .filter(x=>x.length>35 && !/copyright|garrf is|developed by/i.test(x));
+      description = paragraphs[0] || "Open the experiment to view its objective, procedure, simulation and results.";
+    }
+
+    const n=numberFromFile(file);
+    return {
+      n,file,title:heading,description,
+      category:categoryFor(n)
+    };
+  }catch(e){
+    return null;
+  }
+}
+
 function render(){
- const q=document.getElementById("search").value.trim().toLowerCase();
- const f=document.getElementById("filter").value;
- const list=all.filter(n=>(f==="all"||series(n)===f)&&(!q||(info(n)[0]+" "+info(n)[1]+" "+n).toLowerCase().includes(q)));
- document.getElementById("experimentsGrid").innerHTML=list.map(n=>{
-   const d=info(n);
-   const tag=series(n)==="core"?"CORE":series(n)==="advanced"?"ADVANCED":"SPECIALIZED";
-   return `<article class="exp"><span class="no">#${String(n).padStart(3,"0")}</span><span class="badge">${tag}</span><h3>${d[0]}</h3><p>${d[1]}</p><a class="link" href="${filename(n)}">LAUNCH EXPERIMENT →</a></article>`;
- }).join("") || '<div class="card" style="grid-column:1/-1">No matching experiment found. Try another search.</div>';
+  const q=searchBox.value.trim().toLowerCase();
+  const f=filterBox.value;
+  const list=experiments.filter(x=>
+    (f==="all" || x.category===f) &&
+    (!q || `${x.n} ${x.title} ${x.description}`.toLowerCase().includes(q))
+  );
+
+  grid.innerHTML=list.map(x=>`
+    <article class="exp">
+      <span class="no">#${String(x.n).padStart(3,"0")}</span>
+      <span class="badge">${categoryLabel(x.category)}</span>
+      <h3>${escapeHtml(x.title)}</h3>
+      <p>${escapeHtml(x.description)}</p>
+      <a class="link" href="${encodeURI(x.file)}">LAUNCH EXPERIMENT →</a>
+    </article>
+  `).join("") || '<div class="card" style="grid-column:1/-1">No matching live experiment found.</div>';
 }
-document.getElementById("search").addEventListener("input",render);
-document.getElementById("filter").addEventListener("change",render);
-render();
+
+async function loadLiveCatalogue(){
+  grid.innerHTML='<div class="card" style="grid-column:1/-1;text-align:center">Loading live GARRF experiments…</div>';
+
+  // Load in small batches so the browser is not flooded with requests.
+  const loaded=[];
+  for(let i=0;i<experimentCandidates.length;i+=12){
+    const batch=experimentCandidates.slice(i,i+12);
+    const results=await Promise.all(batch.map(readExperiment));
+    results.filter(Boolean).forEach(x=>loaded.push(x));
+  }
+
+  experiments=loaded.sort((a,b)=>a.n-b.n);
+  const note=document.getElementById("catalogue-note");
+  if(note) note.innerHTML=`✓ ${experiments.length} live experiment page${experiments.length===1?"":"s"} found in this folder.`;
+  render();
+
+  if(!experiments.length){
+    grid.innerHTML='<div class="card" style="grid-column:1/-1;text-align:center"><h3>No experiment pages could be read.</h3><p>Please ensure the experiment HTML files are in the same folder as this index.html.</p></div>';
+  }
+}
+
+searchBox.addEventListener("input",render);
+filterBox.addEventListener("change",render);
+loadLiveCatalogue();
 </script>
 </body>
 </html>
