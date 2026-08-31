@@ -145,6 +145,32 @@ footer{padding:34px 0;background:#064f36;color:#d8ece3;font-size:11px}.foot{disp
 .exp h3{font-size:15px;line-height:1.35;color:var(--green);margin:8px 0 9px}
 .exp p{font-size:11.5px;line-height:1.5;color:#526b65;margin:0 0 12px}
 
+
+/* ===== STUDENT-FRIENDLY CATALOGUE LOADING BAR ===== */
+.catalogue-loading{background:#f7fbf9;border-bottom:1px solid #d9e9e2;min-height:42px;display:flex;align-items:center}
+.catalogue-loading-inner{width:min(1180px,94%);margin:auto;display:flex;align-items:center;gap:10px;font-size:10px;color:#58716a;min-height:42px}
+.catalogue-loading strong{font-size:10px;color:#075b3e;letter-spacing:.4px;white-space:nowrap}
+.loading-dot{width:8px;height:8px;border-radius:50%;background:#0a9650;box-shadow:0 0 0 5px #e1f3e9;flex:0 0 auto;animation:pulse 1.3s infinite}
+.loading-track{height:6px;background:#e4eee9;border-radius:99px;overflow:hidden;flex:1;min-width:120px;margin-left:5px}
+.loading-progress{height:100%;width:4%;background:linear-gradient(90deg,#0a9650,#1764a8);border-radius:99px;transition:width .25s ease}
+@keyframes pulse{50%{opacity:.45;transform:scale(.82)}}
+
+.catalogue-note{margin:0 0 16px;text-align:center;color:#61766f;font-size:11px}
+.catalogue-wait{grid-column:1/-1;min-height:190px;border:1px solid var(--line);border-radius:15px;background:#fff;box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;gap:8px}
+.catalogue-wait .wait-icon{font-size:30px;margin-bottom:3px}
+.catalogue-wait strong{color:var(--green);font-size:15px}
+.catalogue-wait span{max-width:600px;color:var(--muted);font-size:11px;line-height:1.5}
+.catalogue-tools-bottom{margin:26px 0 0;padding:18px 20px 20px;border-top:1px solid #dceae5;background:#f8fbfa;border-radius:15px}
+.tool-label{font-size:10px;font-weight:950;letter-spacing:.8px;color:#075b3e;margin:0 0 9px}
+.catalogue-tools-bottom .labtools{margin:0}
+.catalogue-tools-bottom input{min-height:48px}
+.catalogue-tools-bottom select{min-height:48px}
+@media(max-width:650px){
+ .catalogue-loading-inner{gap:7px}.catalogue-loading-inner strong{display:none}
+ .loading-track{min-width:90px}
+ .catalogue-tools-bottom{padding:15px}
+}
+
 </style>
 
 <style>
@@ -222,6 +248,15 @@ footer{padding:34px 0;background:#064f36;color:#d8ece3;font-size:11px}.foot{disp
   </nav>
 </header>
 
+<div class="catalogue-loading" id="catalogue-loading" aria-live="polite">
+  <div class="catalogue-loading-inner">
+    <span class="loading-dot"></span>
+    <strong>VIRTUAL EXPERIMENT CATALOGUE</strong>
+    <span id="loading-text">Preparing experiments…</span>
+    <div class="loading-track"><div id="loading-progress" class="loading-progress"></div></div>
+  </div>
+</div>
+
 <div class="tricolor"></div>
 
 <main>
@@ -293,12 +328,24 @@ footer{padding:34px 0;background:#064f36;color:#d8ece3;font-size:11px}.foot{disp
    <h2>Start Working Today</h2>
    <p class="lead">Real experiment pages • concise student-friendly titles • no repeated institutional branding</p>
   </div>
-  <div id="catalogue-note" style="margin:-10px 0 18px;color:#61766f;font-size:11px;text-align:center">🔄 Reading actual experiment pages from the same GARRF folder…</div>
-  <div class="labtools">
-   <input id="search" type="search" placeholder="Search experiment number or topic…">
-   <select id="filter"><option value="all">All experiments</option><option value="core">01–25 • Core</option><option value="advanced">26–75 • Advanced</option><option value="specialized">76–125+ • Specialized</option></select>
+
+  <div id="catalogue-note" class="catalogue-note">Preparing the real experiment pages…</div>
+
+  <div id="experimentsGrid" class="experiments">
+    <div class="catalogue-wait">
+      <div class="wait-icon">🧪</div>
+      <strong>Loading the experiment catalogue</strong>
+      <span>The experiments are being read from the GARRF folder. You can continue exploring the learning paths while the catalogue loads.</span>
+    </div>
   </div>
-  <div id="experimentsGrid" class="experiments"></div>
+
+  <div class="catalogue-tools-bottom" aria-label="Experiment search and filter">
+   <div class="tool-label">FIND AN EXPERIMENT</div>
+   <div class="labtools">
+    <input id="search" type="search" placeholder="Search experiment number or topic…">
+    <select id="filter"><option value="all">All experiments</option><option value="core">01–25 • Core</option><option value="advanced">26–75 • Advanced</option><option value="specialized">76–125+ • Specialized</option></select>
+   </div>
+  </div>
  </div>
 </section>
 
@@ -533,23 +580,42 @@ function render(){
 }
 
 async function loadLiveCatalogue(){
-  grid.innerHTML='<div class="card" style="grid-column:1/-1;text-align:center">Loading live GARRF experiments…</div>';
+  const progress=document.getElementById("loading-progress");
+  const loadingText=document.getElementById("loading-text");
+  const note=document.getElementById("catalogue-note");
+
+  // Show a real progress bar immediately. Students always see feedback.
+  const total=experimentCandidates.length;
+  let completed=0;
+  const loaded=[];
+
+  function updateProgress(){
+    const pct=Math.max(3,Math.round((completed/total)*100));
+    if(progress) progress.style.width=pct+"%";
+    if(loadingText) loadingText.textContent=`Checking experiment pages… ${completed} of ${total}`;
+    if(note) note.textContent=`Reading actual experiment pages from this GARRF folder… ${completed}/${total}`;
+  }
+  updateProgress();
 
   // Load in small batches so the browser is not flooded with requests.
-  const loaded=[];
   for(let i=0;i<experimentCandidates.length;i+=12){
     const batch=experimentCandidates.slice(i,i+12);
     const results=await Promise.all(batch.map(readExperiment));
     results.filter(Boolean).forEach(x=>loaded.push(x));
+    completed+=batch.length;
+    updateProgress();
   }
 
   experiments=loaded.sort((a,b)=>a.n-b.n);
-  const note=document.getElementById("catalogue-note");
-  if(note) note.innerHTML=`✓ ${experiments.length} live experiment page${experiments.length===1?"":"s"} found in this folder.`;
+
+  if(progress) progress.style.width="100%";
+  if(loadingText) loadingText.textContent=`✓ ${experiments.length} experiment pages ready`;
+  if(note) note.textContent=`✓ ${experiments.length} real experiment pages found. Search below when you are ready.`;
+
   render();
 
   if(!experiments.length){
-    grid.innerHTML='<div class="card" style="grid-column:1/-1;text-align:center"><h3>No experiment pages could be read.</h3><p>Please ensure the experiment HTML files are in the same folder as this index.html.</p></div>';
+    grid.innerHTML='<div class="card" style="grid-column:1/-1;text-align:center"><h3>The experiment pages are taking longer to respond.</h3><p>The catalogue will work when the experiment files are available in the same folder. The rest of the learning portal is ready to use now.</p></div>';
   }
 }
 
