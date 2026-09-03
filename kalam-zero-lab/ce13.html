@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>CE13 — Vibration & Resonance | Kalam Zero Research Funding Lab</title>
+<meta name="description" content="Interactive Structural Vibration and Resonance simulator — mass-spring-damper, forced response, resonance, damping and mode shapes.">
+<style>
+:root{
+  --ink:#102033;--muted:#617083;--line:#dce5ee;--bg:#f4f8fb;--card:#fff;
+  --blue:#0b63ce;--blue2:#0a4d9f;--green:#149447;--orange:#f08a24;--red:#d94141;
+  --shadow:0 12px 35px rgba(16,32,51,.09);--radius:18px
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.55}
+a{color:inherit}
+.top{background:#071a2d;color:#fff;padding:10px 5%;font-size:13px;display:flex;justify-content:space-between;gap:15px;flex-wrap:wrap}
+.top b{color:#7dd3fc}
+header{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}
+.nav{max-width:1250px;margin:auto;padding:14px 22px;display:flex;align-items:center;justify-content:space-between;gap:18px}
+.brand{display:flex;align-items:center;gap:12px;text-decoration:none}
+.logo{width:70px;height:70px;border-radius:11px;display:block;object-fit:cover;background:#fff;border:1px solid #dbe5ee}
+.brand strong{display:block;font-size:15px}.brand span{font-size:11px;color:var(--muted)}
+.nav a{font-size:13px;text-decoration:none;color:#314255}
+.btn{display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:11px;padding:11px 16px;background:var(--blue);color:#fff!important;text-decoration:none;font-weight:800;cursor:pointer}
+.btn.alt{background:#eaf3ff;color:var(--blue)!important}.btn.green{background:var(--green)}
+.hero{max-width:1250px;margin:auto;padding:25px 22px 20px}
+.crumb{font-size:12px;color:var(--muted);margin-bottom:15px}
+.pill{display:inline-block;background:#e8f6ed;color:#13743a;border:1px solid #bfe7cd;border-radius:999px;padding:6px 11px;font-size:12px;font-weight:800}
+h1{font-size:clamp(31px,5vw,55px);line-height:1.02;margin:13px 0 10px;letter-spacing:-1.7px}
+.hero p{max-width:850px;color:#526276;font-size:17px;margin:0 0 20px}
+.meta{display:flex;gap:9px;flex-wrap:wrap}.tag{background:#fff;border:1px solid var(--line);padding:7px 11px;border-radius:9px;font-size:12px;font-weight:700}
+.layout{max-width:1250px;margin:auto;padding:18px 22px 60px;display:grid;grid-template-columns:280px 1fr;gap:20px}
+.side,.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.side{padding:18px;height:max-content;position:sticky;top:86px}.side h3{margin:0 0 10px;font-size:15px}
+.side a{display:block;text-decoration:none;padding:9px 10px;border-radius:9px;font-size:13px;color:#455568}.side a:hover{background:#eef6ff;color:var(--blue)}
+.content{display:grid;gap:18px}.card{padding:22px}.card h2{margin:0 0 7px;font-size:24px;letter-spacing:-.4px}.card h3{margin:18px 0 6px}.lead{color:var(--muted);margin-top:0}
+.objectives{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}.obj{border:1px solid var(--line);border-radius:13px;padding:14px;background:#fbfdff}.obj b{display:block}.obj small{color:var(--muted)}
+.sim{background:#071a2d;color:#fff;padding:0;overflow:hidden}.simhead{padding:20px 22px;background:linear-gradient(135deg,#071a2d,#10375a)}.simhead h2{color:#fff}.simgrid{display:grid;grid-template-columns:310px 1fr}.controls{padding:18px;background:#0c263e}.control{margin-bottom:15px}.control label{display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:5px}.control output{color:#7dd3fc}.control input[type=range]{width:100%;accent-color:#55b7ff}.switches{display:flex;gap:7px;flex-wrap:wrap}.switches button{border:1px solid #35546e;background:#17344e;color:#dcecff;padding:8px 10px;border-radius:9px;cursor:pointer;font-weight:700;font-size:12px}.switches button.active{background:#0b63ce;border-color:#49a4ff}
+.canvaswrap{min-height:470px;background:#061522;position:relative}.canvaswrap canvas{width:100%;height:470px;display:block}.readout{position:absolute;left:15px;top:15px;background:rgba(5,17,28,.78);border:1px solid #29465e;border-radius:10px;padding:9px 11px;font-size:12px;color:#dcecff;backdrop-filter:blur(6px)}.status{position:absolute;right:15px;top:15px;background:#123b25;color:#8ff0b2;border:1px solid #2f8051;border-radius:999px;padding:6px 10px;font-size:11px;font-weight:800}
+.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}.actions button{cursor:pointer;border:0;border-radius:10px;padding:10px 14px;font-weight:800}.run{background:#39b56a;color:#fff}.pause{background:#f0a53c;color:#172333}.reset{background:#e7edf3;color:#172333}
+.formula{background:#f7fbff;border-left:4px solid var(--blue);padding:14px;border-radius:10px;font-family:Georgia,serif;font-size:17px}
+.conceptgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.concept{border:1px solid var(--line);padding:15px;border-radius:13px}.concept b{display:block;margin-bottom:4px}.concept p{margin:0;color:var(--muted);font-size:14px}
+.quiz{background:linear-gradient(135deg,#eef7ff,#f8fcff)}.q{padding:15px;background:#fff;border:1px solid var(--line);border-radius:13px;margin:12px 0}.q strong{display:block;margin-bottom:8px}.q button{margin:4px 5px 0 0;padding:8px 10px;border:1px solid #cbd8e5;background:#fff;border-radius:8px;cursor:pointer}.q button:hover{border-color:var(--blue);color:var(--blue)}.feedback{font-weight:800;margin-top:8px;min-height:20px}.mission{border:2px dashed #a7c5df;background:#f9fcff}
+.footer{background:#071a2d;color:#d9e8f5;padding:30px 5%;text-align:center;font-size:12px}
+@media(max-width:900px){.layout{grid-template-columns:1fr}.side{position:static}.simgrid{grid-template-columns:1fr}.controls{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.objectives,.conceptgrid{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.nav a:not(.btn){display:none}.hero,.layout{padding-left:14px;padding-right:14px}.objectives,.conceptgrid,.controls{grid-template-columns:1fr}.card{padding:16px}.canvaswrap,.canvaswrap canvas{height:390px}.canvaswrap{min-height:390px}}
+
+.labcost{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.costbox{border:1px solid var(--line);border-left:5px solid #ef4444;border-radius:13px;padding:20px;background:#fff}
+.costbox.green{border-left-color:#18b967}
+.costbox .eyebrow{font-size:12px;color:#587087;letter-spacing:.3px}
+.costbox .price{font-size:31px;font-weight:900;margin:8px 0 5px;color:#ef4444}
+.costbox.green .price{color:#12a34a}
+.costbox p{margin:0;color:#587087;font-size:13px}
+.costtable{width:100%;border-collapse:collapse;margin-top:14px;font-size:13px}
+.costtable th,.costtable td{padding:10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.costtable th{background:#f4f8fb}
+.source-note{font-size:11px;color:#718095;margin-top:12px}
+.placegrid{display:grid;grid-template-columns:repeat(2,1fr);gap:11px;margin-top:14px}
+.place{border:1px solid var(--line);border-radius:12px;padding:13px;background:#fbfdff}
+.place b{display:block}.place span{display:block;color:var(--muted);font-size:12px;margin-top:3px}
+.place a{color:var(--blue);font-size:12px;font-weight:800;text-decoration:none}
+@media(max-width:700px){.labcost,.placegrid{grid-template-columns:1fr}}
+
+header{background:transparent;border:0;position:relative}
+.nav{max-width:none;margin:9px 9px 0;padding:15px 24px;background:linear-gradient(135deg,#06253d,#105b80);border-radius:8px;box-shadow:0 8px 18px rgba(8,28,47,.18)}
+.brand strong{color:#fff;font-size:22px;letter-spacing:-.3px}.brand span{color:#e3eef7;font-size:13px;font-weight:700}
+.suite{border:1px solid rgba(255,255,255,.32);border-radius:8px;padding:9px 18px;min-width:200px;text-align:center;color:#fff}
+.suite small{display:block;font-size:11px;letter-spacing:1px;font-weight:800}.suite b{display:block;color:#ffd32a;font-size:17px;margin-top:3px}
+</style>
+</head>
+<body>
+<header><nav class="nav">
+<a class="brand" href="https://garrf.in/kalam-zero-lab/">
+<img class="logo" src="logo.jpeg" alt="GopalKrishna Advanced Rural Research Foundation (GARRF) logo">
+<div><strong>GopalKrishna Advanced Rural Research Foundation</strong><span>GARRF • Virtual Engineering Laboratory Manual</span></div>
+</a>
+<div class="suite"><small>KALAM ZERO LAB</small><b>CE13 • VIBRATION &amp; RESONANCE</b></div>
+</nav></header>
+
+<section class="hero">
+<div class="crumb">Civil Engineering › Structural Dynamics › CE13</div>
+<span class="pill">🟢 TO BUILD • INTERACTIVE EXPERIMENT</span>
+<h1>📳 Vibration &amp; Resonance</h1>
+<p>Make a structure move. Find its natural frequency. Add damping. Force it near resonance. Then discover <b>why structures vibrate dangerously — and how engineers control them.</b></p>
+<div class="meta"><span class="tag">Mechanical / Structural</span><span class="tag">Mass–Spring–Damper</span><span class="tag">Forced Response</span><span class="tag">Resonance</span><span class="tag">Mode Shapes</span><span class="tag">Canvas + JavaScript</span></div>
+</section>
+
+<main class="layout">
+<aside class="side">
+<h3>CE13 Experiment Map</h3>
+<a href="#aim">01 · What are we discovering?</a><a href="#concepts">02 · Concepts</a><a href="#simulator">03 · Build the system</a><a href="#physical-lab">04 · Physical lab cost</a><a href="#real-labs">05 · Where real labs exist</a><a href="#resonance">06 · Hunt resonance</a><a href="#modes">07 · Mode shapes</a><a href="#questions">08 · Think like an engineer</a><a href="#challenge">09 · Challenge</a>
+<hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
+<a href="https://garrf.in/kalam-zero-lab/">← Kalam Zero Lab</a>
+</aside>
+
+<section class="content">
+<div class="card" id="aim">
+<h2>🎯 What will you discover?</h2>
+<p class="lead">Don't just read the formula. <b>Touch the variables and watch the physics respond.</b></p>
+<div class="objectives">
+<div class="obj"><b>1. Natural frequency</b><small>See how mass and stiffness set the rhythm of a system.</small></div>
+<div class="obj"><b>2. Damping</b><small>Discover why oscillations die out — and why damping matters near resonance.</small></div>
+<div class="obj"><b>3. Resonance</b><small>Drive the system at the wrong frequency and watch the response grow.</small></div>
+</div>
+</div>
+
+<div class="card" id="concepts">
+<h2>🧠 Before you simulate</h2>
+<p class="lead">Imagine a mass attached to a spring. Pull it and release it. The spring wants to return the mass to equilibrium; inertia makes the mass overshoot.</p>
+<div class="formula">ωₙ = √(k/m) &nbsp;&nbsp; and &nbsp;&nbsp; fₙ = ωₙ / 2π</div>
+<div class="conceptgrid">
+<div class="concept"><b>Mass (m)</b><p>More mass → more inertia → generally a slower natural vibration.</p></div>
+<div class="concept"><b>Stiffness (k)</b><p>Stiffer spring → stronger restoring force → generally a faster natural vibration.</p></div>
+<div class="concept"><b>Damping (c)</b><p>Damping removes energy from the motion. More damping usually reduces the resonance peak.</p></div>
+<div class="concept"><b>Forcing frequency (f)</b><p>The external rhythm. When it approaches the natural frequency, the response can become large.</p></div>
+</div>
+</div>
+
+<div class="card sim" id="simulator">
+<div class="simhead"><h2>🔬 Build &amp; Break the Virtual Structure</h2><p style="margin:0;color:#bcd2e6">Your job: change one variable at a time. Predict first. Then press PLAY and see whether nature agrees.</p></div>
+<div class="simgrid">
+<div class="controls">
+<div class="control"><label>Mass <output id="massOut">10 kg</output></label><input id="mass" type="range" min="2" max="30" step=".5" value="10"></div>
+<div class="control"><label>Stiffness <output id="kOut">1000 N/m</output></label><input id="stiff" type="range" min="200" max="3000" step="50" value="1000"></div>
+<div class="control"><label>Damping <output id="cOut">12 Ns/m</output></label><input id="damp" type="range" min="0" max="80" step="1" value="12"></div>
+<div class="control"><label>Force <output id="forceOut">80 N</output></label><input id="force" type="range" min="0" max="200" step="5" value="80"></div>
+<div class="control"><label>Drive frequency <output id="freqOut">1.40 Hz</output></label><input id="freq" type="range" min=".1" max="5" step=".01" value="1.4"></div>
+<div class="control"><label>Initial displacement <output id="xOut">0.10 m</output></label><input id="initial" type="range" min=".02" max=".5" step=".01" value=".1"></div>
+<div class="control"><label>View</label><div class="switches"><button id="massBtn" class="active" onclick="setView('single')">Mass–Spring</button><button id="beamBtn" onclick="setView('modes')">Mode Shapes</button></div></div>
+<div class="actions"><button class="run" onclick="play()">▶ PLAY</button><button class="pause" onclick="pause()">Ⅱ PAUSE</button><button class="reset" onclick="resetSim()">↻ RESET</button></div>
+</div>
+<div class="canvaswrap"><canvas id="simCanvas"></canvas><div class="readout" id="readout">Natural frequency: —</div><div class="status" id="status">READY</div></div>
+</div>
+</div>
+
+
+<div class="card" id="physical-lab">
+<h2>🏗️ What would this cost as a real physical laboratory?</h2>
+<p class="lead">This simulation lets a student explore the physics before an institution spends money on hardware. The numbers below are <b>budgetary planning ranges, not quotations</b>.</p>
+<div class="labcost">
+<div class="costbox">
+<div class="eyebrow">TRADITIONAL TEACHING-SCALE VIBRATION / STRUCTURAL DYNAMICS LAB</div>
+<div class="price">₹8–15 Lakh+</div>
+<p>A practical planning range for a compact teaching setup with a small shaker, model structure, accelerometers, basic DAQ, amplifier/controller, impact excitation and a computer. Actual cost varies strongly with specification and supplier.</p>
+</div>
+<div class="costbox green">
+<div class="eyebrow">KALAM ZERO LAB — THIS VIRTUAL EXPERIMENT</div>
+<div class="price">₹0</div>
+<p>No physical shaker, DAQ, accelerometer, reaction frame or laboratory room is required for the student to begin learning CE13.</p>
+</div>
+</div>
+<table class="costtable">
+<thead><tr><th>Physical component</th><th>Why it is needed</th><th>Budget impact</th></tr></thead>
+<tbody>
+<tr><td>Mini shake table / dynamic shaker + amplifier</td><td>Creates controlled harmonic excitation for forced-vibration tests.</td><td>Major cost item; specification-dependent.</td></tr>
+<tr><td>Accelerometers + force/impact sensor</td><td>Measures structural response and excitation.</td><td>Multiple channels increase cost.</td></tr>
+<tr><td>DAQ + signal conditioning</td><td>Captures vibration signals for FFT, frequency-response and modal analysis.</td><td>Moderate to high.</td></tr>
+<tr><td>Test models / beam / frame / mass-spring rigs</td><td>Provides physical structures whose modes and resonance can be measured.</td><td>Low to moderate; custom fabrication changes cost.</td></tr>
+<tr><td>Computer + analysis software</td><td>Signal processing, plotting, modal analysis and reporting.</td><td>Varies by software and licence.</td></tr>
+<tr><td>Room, workbench, safety, calibration &amp; maintenance</td><td>Turns equipment into a functioning laboratory rather than a collection of instruments.</td><td>Often overlooked in headline equipment prices.</td></tr>
+</tbody></table>
+<p class="source-note"><b>Evidence:</b> An older NICEE/India laboratory-development document estimated about ₹2.3 lakh for models, shake tables and oscilloscope when suitable accelerometers, signal conditioning and computer DAQ were already available, and ₹4–6.5 lakh when those were also required. Current Indian published vibration-equipment pricing is broader; one supplier currently lists resonance simulation equipment at ₹1.875 lakh and systems up to ₹18 lakh, excluding taxes/freight. These figures show why a present-day teaching-lab budget should be treated as a configuration-dependent estimate rather than a single fixed price. citeturn0search14turn0search11</p>
+</div>
+
+<div class="card" id="real-labs">
+<h2>🌍 Where do physical laboratories like this exist?</h2>
+<p class="lead">CE13 is based on real engineering laboratory practices. Universities use shakers, accelerometers, impact hammers, data acquisition and modal-analysis methods to study vibration and structural dynamics.</p>
+<div class="placegrid">
+<div class="place"><b>IIT Kanpur — Structural Engineering Laboratory</b><span>Experimental modal analysis, free/forced/ambient vibration, electro-dynamic and servo-hydraulic shake tables, impact hammer testing and vibration measurement facilities.</span><a href="https://www.iitk.ac.in/structural-engineering-laboratory" target="_blank" rel="noopener">View laboratory →</a></div>
+<div class="place"><b>IIT Tirupati — Mechanical Engineering Laboratories</b><span>Includes 100 N and 400 N dynamic shakers with amplifiers, accelerometers, force sensors and modal impact hammer facilities.</span><a href="https://mech.iittp.ac.in/academics/laboratories" target="_blank" rel="noopener">View facilities →</a></div>
+<div class="place"><b>IIT Delhi — Vibration Research Laboratory</b><span>Vibration research covering machinery health monitoring, rotor dynamics, vibration/noise engineering, FFT analysis, modal hammer and accelerometers.</span><a href="https://mech.iitd.ac.in/laboratories" target="_blank" rel="noopener">View laboratories →</a></div>
+<div class="place"><b>IIT Kanpur — Vibration &amp; Control Laboratory</b><span>Vibration analysis of continuous systems, tuned-mass damping, vibration testing, beam models, sensors and active vibration-control experiments.</span><a href="https://www.iitk.ac.in/me/vibration-and-control-laboratory" target="_blank" rel="noopener">View laboratory →</a></div>
+<div class="place"><b>Structural Dynamics Lab — TKM College of Engineering</b><span>A teaching laboratory with a 0–25 Hz horizontal mini shake table, accelerometers and DAQ, supporting free/forced vibration and multi-storey model experiments.</span><a href="https://tkmce.ac.in/lab2-civil.php" target="_blank" rel="noopener">View laboratory →</a></div>
+<div class="place"><b>IIT Jodhpur — Vibration Laboratory</b><span>Dedicated vibration and control facilities for measuring vibration characteristics and studying vibration analysis and control strategies.</span><a href="https://iitj.ac.in/mechanical-engineering/en/Vibration-Laboratory" target="_blank" rel="noopener">View laboratory →</a></div>
+</div>
+<p class="source-note">These are examples of real physical facilities; the existence of a facility does not mean every item listed there is identical to the CE13 model. citeturn0search0turn0search1turn0search5turn0search9turn0search3turn0search7</p>
+</div>
+
+<div class="card" id="resonance">
+<h2>🔥 Resonance Lab</h2>
+<p class="lead">Slowly sweep the <b>drive frequency</b>. Your mission is to locate the frequency where the structure responds most strongly.</p>
+<div class="formula">For a damped single-degree-of-freedom system: &nbsp; mẍ + cẋ + kx = F₀ sin(ωt)</div>
+<p><b>Prediction:</b> If the natural frequency is <span id="fnText">—</span> Hz, what do you think will happen when the drive frequency reaches that neighborhood?</p>
+<div class="actions"><button class="btn" onclick="jumpToResonance()">🎯 Move drive frequency near resonance</button><button class="btn alt" onclick="increaseDamping()">🛡️ Add damping</button></div>
+</div>
+
+<div class="card" id="modes">
+<h2>〰️ Mode Shapes — see a structure vibrate as a shape</h2>
+<p class="lead">Real structures have many degrees of freedom. A beam or frame does not move as a single block: it can vibrate in different <b>modes</b>. Switch the simulator to <b>Mode Shapes</b> and change the mode.</p>
+<div class="switches" style="margin:12px 0"><button onclick="mode=1;setView('modes')">Mode 1</button><button onclick="mode=2;setView('modes')">Mode 2</button><button onclick="mode=3;setView('modes')">Mode 3</button></div>
+<p><b>Ask yourself:</b> Where are the nodes? Which mode has more curvature? Why would a sensor placed at a node struggle to detect that particular mode?</p>
+</div>
+
+<div class="card quiz" id="questions">
+<h2>🧩 Think before you answer</h2>
+<div class="q"><strong>Q1. You double the mass while keeping stiffness constant. What happens to natural frequency?</strong><button onclick="answer(this,false)">A · It increases</button><button onclick="answer(this,true)">B · It decreases</button><button onclick="answer(this,false)">C · It stays identical</button><div class="feedback"></div></div>
+<div class="q"><strong>Q2. You increase damping near resonance. What should generally happen to the peak response?</strong><button onclick="answer(this,true)">A · It reduces</button><button onclick="answer(this,false)">B · It becomes infinite</button><button onclick="answer(this,false)">C · It cannot change</button><div class="feedback"></div></div>
+<div class="q"><strong>Q3. A machine excites a floor close to its natural frequency. What engineering idea should immediately come to mind?</strong><button onclick="answer(this,true)">A · Resonance</button><button onclick="answer(this,false)">B · Static equilibrium only</button><button onclick="answer(this,false)">C · Density</button><div class="feedback"></div></div>
+</div>
+
+<div class="card mission" id="challenge">
+<h2>🚀 Engineer's Challenge — can you beat the simulator?</h2>
+<p><b>Mission 1:</b> Set damping almost to zero. Find the drive frequency that produces the largest visible response.</p>
+<p><b>Mission 2:</b> Now double the mass. Without pressing anything else, predict the new natural frequency. Check it.</p>
+<p><b>Mission 3:</b> Restore the original mass. Increase damping dramatically. Repeat the resonance test. Explain what changed.</p>
+<p><b>Mission 4:</b> Switch to Mode Shapes. Compare Modes 1, 2 and 3. Sketch them on paper and mark the nodes.</p>
+<p style="margin-bottom:0"><b>Researcher's question:</b> If this were a real bridge, machine foundation or building, what would you measure in the field to identify its vibration characteristics?</p>
+</div>
+
+<div class="card">
+<h2>📚 Take-away</h2>
+<p>You have just used the same core reasoning engineers use in structural dynamics: <b>model → predict → excite → observe → compare → explain → redesign.</b> Virtual experimentation is a starting point for engineering intuition; real structures still require validated analytical, numerical and physical testing.</p>
+<a class="btn" href="https://garrf.in/kalam-zero-lab/">← Explore more Kalam Zero Lab experiments</a>
+</div>
+</section>
+</main>
+<footer class="footer">CE13 • Vibration &amp; Resonance • Kalam Zero Research Funding Lab • GARRF<br>Learn Engineering by Actually Experimenting.<br><br><b>© 2026 Gopalkrishna Advanced Rural Research Foundation. All Rights Reserved.</b></footer>
+
+<script>
+const canvas=document.getElementById('simCanvas'),ctx=canvas.getContext('2d');
+const massEl=document.getElementById('mass'),kEl=document.getElementById('stiff'),cEl=document.getElementById('damp'),forceEl=document.getElementById('force'),freqEl=document.getElementById('freq'),initialEl=document.getElementById('initial');
+let running=false,t=0,x=0,v=0,last=0,view='single',mode=1;
+
+function val(e){return +e.value}
+function natural(){return Math.sqrt(val(kEl)/val(massEl))/(2*Math.PI)}
+function sync(){
+ document.getElementById('massOut').textContent=val(massEl)+' kg';
+ document.getElementById('kOut').textContent=val(kEl)+' N/m';
+ document.getElementById('cOut').textContent=val(cEl)+' Ns/m';
+ document.getElementById('forceOut').textContent=val(forceEl)+' N';
+ document.getElementById('freqOut').textContent=val(freqEl).toFixed(2)+' Hz';
+ document.getElementById('xOut').textContent=val(initialEl).toFixed(2)+' m';
+ document.getElementById('fnText').textContent=natural().toFixed(2);
+}
+[massEl,kEl,cEl,forceEl,freqEl,initialEl].forEach(e=>e.addEventListener('input',()=>{sync(); if(!running) draw()}));
+
+function resize(){const r=canvas.getBoundingClientRect(),d=devicePixelRatio||1;canvas.width=r.width*d;canvas.height=r.height*d;ctx.setTransform(d,0,0,d,0,0);draw()}
+window.addEventListener('resize',resize);
+
+function spring(x1,y,x2,amp=12,turns=12){
+ let pts=[],n=turns*12; for(let i=0;i<=n;i++){let q=i/n,xx=x1+(x2-x1)*q,yy=y+(i===0||i===n?0:Math.sin(q*turns*2*Math.PI)*amp);pts.push([xx,yy])}
+ ctx.beginPath();pts.forEach((p,i)=>i?ctx.lineTo(...p):ctx.moveTo(...p));ctx.strokeStyle='#66c7ff';ctx.lineWidth=2;ctx.stroke();
+}
+function draw(){
+ const w=canvas.clientWidth,h=canvas.clientHeight;ctx.clearRect(0,0,w,h);
+ ctx.strokeStyle='#17344b';ctx.lineWidth=1;for(let y=50;y<h;y+=50){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}
+ if(view==='modes'){drawModes(w,h);return}
+ const m=val(massEl),k=val(kEl),c=val(cEl),F=val(forceEl),f=val(freqEl),fn=natural();
+ const amp=Math.min(150, F/Math.max(1,k)*180 + Math.abs(x)*120);
+ const equilibrium=w*.57, px=equilibrium+x*320+Math.sin(t*2*Math.PI*f)*amp*.35;
+ ctx.fillStyle='#8aa0b4';ctx.fillRect(70,h*.42,35,100);
+ spring(105,h*.47,px-40,10,11);
+ ctx.fillStyle='#f2b84b';ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.roundRect(px-40,h*.40,80,95,12);ctx.fill();ctx.stroke();
+ ctx.fillStyle='#13283c';ctx.font='bold 14px system-ui';ctx.textAlign='center';ctx.fillText('m = '+m+' kg',px,h*.40+55);
+ ctx.strokeStyle='#9bb0c2';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(35,h*.73);ctx.lineTo(w-25,h*.73);ctx.stroke();
+ ctx.fillStyle='#7dd3fc';ctx.font='13px system-ui';ctx.textAlign='left';ctx.fillText('k = '+k+' N/m   •   c = '+c+' Ns/m',25,h*.84);
+ ctx.fillStyle='#dcecff';ctx.textAlign='right';ctx.fillText('drive = '+f.toFixed(2)+' Hz',w-25,h*.84);
+ const ratio=f/fn;let st=ratio>.85&&ratio<1.15?'⚠ NEAR RESONANCE': 'NORMAL RESPONSE';
+ document.getElementById('status').textContent=st;document.getElementById('status').style.background=st.includes('RESONANCE')?'#4b2419':'#123b25';
+ document.getElementById('readout').innerHTML='Natural frequency: <b>'+fn.toFixed(2)+' Hz</b><br>Drive / natural = '+ratio.toFixed(2);
+}
+function drawModes(w,h){
+ ctx.strokeStyle='#274c66';ctx.lineWidth=1;for(let y=70;y<h-50;y+=45){ctx.beginPath();ctx.moveTo(20,y);ctx.lineTo(w-20,y);ctx.stroke()}
+ let base=h*.57,L=w*.72,x0=w*.14,n=mode;
+ ctx.strokeStyle='#9fb4c5';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(x0,base);ctx.lineTo(x0+L,base);ctx.stroke();
+ ctx.strokeStyle='#55c7ff';ctx.lineWidth=4;ctx.beginPath();
+ for(let i=0;i<=100;i++){let q=i/100,xx=x0+L*q,yy=base-Math.sin(n*Math.PI*q)*100; if(i===0)ctx.moveTo(xx,yy);else ctx.lineTo(xx,yy)}ctx.stroke();
+ ctx.fillStyle='#fff';ctx.font='bold 18px system-ui';ctx.fillText('Mode '+n,30,40);
+ ctx.font='13px system-ui';ctx.fillStyle='#a9c5d9';ctx.fillText('Nodes occur where displacement = 0',30,h-25);
+ for(let i=1;i<n;i++){let xx=x0+L*i/n;ctx.fillStyle='#ffcf68';ctx.beginPath();ctx.arc(xx,base,6,0,Math.PI*2);ctx.fill()}
+}
+function step(dt){
+ const m=val(massEl),k=val(kEl),c=val(cEl),F=val(forceEl),w=2*Math.PI*val(freqEl);
+ let a=(F*Math.sin(w*t)-c*v-k*x)/m;v+=a*dt;x+=v*dt;t+=dt;
+ if(Math.abs(x)>1.5)x=Math.sign(x)*1.5;
+}
+function loop(now){if(!running)return;if(!last)last=now;let dt=Math.min(.03,(now-last)/1000);last=now;step(dt);draw();requestAnimationFrame(loop)}
+function play(){if(!running){running=true;last=0;document.getElementById('status').textContent='RUNNING';requestAnimationFrame(loop)}}
+function pause(){running=false;last=0;document.getElementById('status').textContent='PAUSED';draw()}
+function resetSim(){running=false;t=0;x=val(initialEl);v=0;last=0;document.getElementById('status').textContent='READY';draw()}
+function setView(vw){view=vw;document.getElementById('massBtn').classList.toggle('active',vw==='single');document.getElementById('beamBtn').classList.toggle('active',vw==='modes');draw()}
+function jumpToResonance(){freqEl.value=Math.max(.1,Math.min(5,natural().toFixed(2)));sync();draw()}
+function increaseDamping(){cEl.value=Math.min(80,val(cEl)+30);sync();draw()}
+function answer(btn,correct){const f=btn.parentElement.querySelector('.feedback');f.textContent=correct?'✅ Correct — now change the variables and prove it in the simulator.':'❌ Not quite. Use ωₙ = √(k/m) and reason from the equation.';f.style.color=correct?'#149447':'#d94141'}
+sync();resetSim();resize();
+</script>
+</body>
+</html>
