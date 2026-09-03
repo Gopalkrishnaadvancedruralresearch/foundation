@@ -1,0 +1,577 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Arduino1 V3 — Full Robotics Engineering Studio — Protected</title>
+<style>
+:root{
+  --bg:#eef4f8;--panel:#fff;--ink:#172033;--muted:#64748b;--blue:#0369a1;
+  --blue2:#0ea5e9;--navy:#063451;--green:#16a34a;--orange:#f59e0b;
+  --red:#dc2626;--purple:#7c3aed;--line:#dbe4ec;--soft:#f8fafc;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--ink)}
+header{background:linear-gradient(135deg,#063451,#0879a8);color:#fff;padding:18px 20px;position:sticky;top:0;z-index:20}
+.header-inner{max-width:1400px;margin:auto;display:flex;align-items:center;gap:15px}
+.logo{width:58px;height:58px;object-fit:contain;background:#fff;border-radius:10px;padding:4px}
+header h1{margin:0;font-size:25px} header p{margin:4px 0 0;opacity:.9}
+.top-actions{margin-left:auto;display:flex;gap:7px;flex-wrap:wrap}
+.container{max-width:1400px;margin:auto;padding:20px}
+.hero,.section{background:var(--panel);border-radius:15px;padding:20px;margin-bottom:18px;box-shadow:0 5px 20px rgba(0,0,0,.07)}
+.hero{border-top:5px solid var(--blue2)}
+h2{margin:0 0 12px;color:var(--navy)} h3{color:#075985;margin-top:0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+label{display:block;font-weight:bold;margin:0 0 5px}
+input,select,textarea{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:7px;font-size:14px;background:white}
+textarea{min-height:80px;resize:vertical}
+button{border:0;border-radius:7px;padding:10px 14px;font-weight:bold;cursor:pointer;margin:4px 3px 4px 0}
+button:hover{filter:brightness(.96)} .blue{background:#0369a1;color:#fff}.green{background:#16a34a;color:#fff}
+.orange{background:#f59e0b;color:#172033}.purple{background:#7c3aed;color:#fff}.gray{background:#64748b;color:#fff}
+.red{background:#dc2626;color:#fff}.light{background:#e0f2fe;color:#075985}
+.result,.good,.warning,.error,.info{margin-top:12px;padding:13px;border-radius:8px}
+.result,.info{background:#eff6ff;border-left:5px solid #0ea5e9}
+.good{background:#ecfdf5;border-left:5px solid #16a34a}.warning{background:#fffbeb;border-left:5px solid #f59e0b}
+.error{background:#fef2f2;border-left:5px solid #dc2626}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.card{border:1px solid var(--line);border-radius:11px;padding:14px;background:var(--soft)}
+.card.selected{border:2px solid var(--green);background:#f0fdf4}
+.card h3{margin:0 0 7px}.badge{display:inline-block;padding:4px 8px;background:#dff3ff;color:#075985;border-radius:20px;font-size:12px;font-weight:bold}
+.badge.green{background:#dcfce7;color:#166534}.badge.warn{background:#fef3c7;color:#92400e}.badge.red{background:#fee2e2;color:#991b1b}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.stat{background:#f8fafc;border:1px solid var(--line);padding:13px;border-radius:9px}
+.stat small{display:block;color:var(--muted)}.stat strong{display:block;font-size:20px;color:#0369a1;margin-top:4px}
+table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px solid var(--line);text-align:left}th{background:#f1f5f9}
+.flow{display:flex;flex-wrap:wrap;gap:7px;margin-top:15px}.flow span{background:#e0f2fe;color:#075985;padding:7px 11px;border-radius:20px;font-size:12px;font-weight:bold}
+.section-nav{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 18px}.section-nav a{text-decoration:none;color:#075985;background:#e0f2fe;padding:7px 10px;border-radius:20px;font-size:12px;font-weight:bold}
+.codebox{background:#0f172a;color:#e2e8f0;padding:14px;border-radius:9px;overflow:auto;font-family:Consolas,monospace;font-size:13px;white-space:pre-wrap}
+.component-card{position:relative}.component-card button{font-size:12px}
+.diagram{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;align-items:center;margin:15px 0}
+.block{padding:18px 10px;border:2px solid #93c5fd;border-radius:12px;text-align:center;background:#eff6ff;font-weight:bold}
+.arrow{text-align:center;font-size:24px;color:#0369a1}
+.canvas-wrap{border:1px solid var(--line);border-radius:12px;background:#fbfdff;overflow:auto}
+#circuitCanvas{display:block;min-width:950px}
+.check-row{display:flex;justify-content:space-between;gap:10px;padding:10px;border-bottom:1px solid var(--line)}
+footer{text-align:center;color:#fff;background:#063451;padding:25px}
+.small{font-size:12px;color:var(--muted)} .hidden{display:none!important}
+@media(max-width:800px){header{position:static}.top-actions{margin-left:0}.header-inner{flex-wrap:wrap}.diagram{grid-template-columns:1fr}.arrow{transform:rotate(90deg)}}
+@media print{header{position:static}.top-actions,button,.section-nav{display:none!important}body{background:#fff}.hero,.section{box-shadow:none}}
+</style>
+</head>
+<body>
+
+<div id="passwordGate" style="position:fixed;inset:0;background:linear-gradient(135deg,#063451,#0879a8);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;">
+  <div style="width:min(420px,100%);background:#fff;border-radius:16px;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center;">
+    <div style="font-size:46px;margin-bottom:8px;">🔐</div>
+    <h2 style="margin:0 0 8px;color:#063451;">Arduino Robotics</h2>
+    <p style="color:#64748b;margin:0 0 20px;">Protected Robotics Engineering Studio</p>
+    <label for="accessPassword" style="display:block;text-align:left;font-weight:bold;margin-bottom:6px;">Password</label>
+    <input id="accessPassword" type="password" autocomplete="off" placeholder="Enter access password"
+      style="width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:8px;font-size:16px;margin-bottom:10px;">
+    <button onclick="unlockArduino1()" style="width:100%;background:#0369a1;color:#fff;border:0;border-radius:8px;padding:12px;font-weight:bold;font-size:15px;cursor:pointer;">Unlock Arduino1 V3</button>
+    <div id="passwordError" style="color:#dc2626;font-size:13px;margin-top:12px;min-height:18px;"></div>
+    <p style="font-size:11px;color:#94a3b8;margin:18px 0 0;">Authorized users only.</p>
+  </div>
+</div>
+<script>
+/*
+  Arduino1 V3 password gate.
+  IMPORTANT: This is client-side protection. The password is embedded in this HTML
+  and is therefore NOT suitable for protecting highly confidential material.
+  Change the password below before handing out the file.
+*/
+const ARDUINO1_PASSWORD = "GARRF_2026"; 
+
+function unlockArduino1(){
+  const entered = document.getElementById("accessPassword").value;
+  const error = document.getElementById("passwordError");
+  if(entered === ARDUINO1_PASSWORD){
+    sessionStorage.setItem("arduino1_unlocked","yes");
+    document.getElementById("passwordGate").style.display="none";
+    error.textContent="";
+  }else{
+    error.textContent="Incorrect password. Please try again.";
+    document.getElementById("accessPassword").value="";
+    document.getElementById("accessPassword").focus();
+  }
+}
+
+(function(){
+  if(sessionStorage.getItem("arduino1_unlocked")==="yes"){
+    window.addEventListener("DOMContentLoaded",function(){
+      const gate=document.getElementById("passwordGate");
+      if(gate) gate.style.display="none";
+    });
+  }
+  document.addEventListener("keydown",function(e){
+    if(e.key==="Enter" && document.activeElement && document.activeElement.id==="accessPassword"){
+      unlockArduino1();
+    }
+  });
+})();
+</script>
+
+<header>
+  <div class="header-inner">
+    <img class="logo" src="https://garrf.in/kalam-zero-lab/logo.jpeg" alt="GARRF logo" onerror="this.style.display='none'">
+    <div>
+      <h1>🤖 Arduino1 V3</h1>
+      <p>Full Robotics Engineering Studio — Student Edition</p>
+    </div>
+    <div class="top-actions">
+      <button class="light" onclick="saveProject()">💾 Save JSON</button>
+      <button class="light" onclick="document.getElementById('fileInput').click()">📂 Load JSON</button>
+      <button class="orange" onclick="window.print()">🖨 Print</button>
+      <input id="fileInput" type="file" accept=".json,application/json" class="hidden" onchange="loadProject(event)">
+    </div>
+  </div>
+</header>
+
+<div class="container">
+<section class="hero">
+  <h2>From Arduino to Robotics → AI</h2>
+  <p>Arduino1 helps students learn robotics by making engineering decisions instead of simply copying a circuit.</p>
+  <p><strong>Design → Select → Calculate → Check → Build → Test → Improve</strong></p>
+  <div class="flow">
+    <span>Requirements</span><span>Calculations</span><span>Specifications</span><span>Recommendations</span>
+    <span>Candidate Tests</span><span>Circuit Studio</span><span>Verification</span><span>Design Review</span><span>BOM</span><span>Challenge</span>
+  </div>
+</section>
+
+<nav class="section-nav">
+<a href="#robot">1 Robot</a><a href="#calc">2 Calculations</a><a href="#components">3 Components</a><a href="#resistor">4 Resistor</a>
+<a href="#motor">5 Motor</a><a href="#battery">6 Battery</a><a href="#circuit">7 Circuit Studio</a><a href="#review">8 Review</a>
+<a href="#bom">9 BOM</a><a href="#challenge">10 Challenge</a><a href="#save">11 Project</a>
+</nav>
+
+<section class="section" id="robot">
+<h2>1. 🤖 Define Your Robot</h2>
+<div class="grid">
+<div><label>Robot type</label><select id="robotType" onchange="updateAll()">
+<option value="obstacle">Obstacle Avoider</option><option value="line">Line Follower</option><option value="agriculture">Agriculture Robot</option>
+<option value="inspection">Inspection Robot</option><option value="vehicle">Autonomous Vehicle</option><option value="arm">Robotic Arm</option></select></div>
+<div><label>Robot mass (kg)</label><input id="mass" type="number" value="1" min="0" step=".1" oninput="updateAll()"></div>
+<div><label>Payload (kg)</label><input id="payload" type="number" value="0" min="0" step=".1" oninput="updateAll()"></div>
+<div><label>Wheel diameter (mm)</label><input id="wheelDiameter" type="number" value="65" min="1" oninput="updateAll()"></div>
+<div><label>Target speed (m/s)</label><input id="speed" type="number" value=".5" min="0" step=".05" oninput="updateAll()"></div>
+<div><label>Required runtime (hours)</label><input id="runtime" type="number" value="1" min="0" step=".1" oninput="updateAll()"></div>
+<div><label>Terrain</label><select id="terrain" onchange="updateAll()"><option value="1">Smooth floor</option><option value="1.25">Outdoor</option><option value="1.6">Rough terrain</option><option value="2">Slope</option></select></div>
+<div><label>Driven wheels</label><select id="drivenWheels" onchange="updateAll()"><option value="2">2</option><option value="4">4</option></select></div>
+<div><label>Motor count</label><input id="motorCount" type="number" value="2" min="1" step="1" oninput="updateAll()"></div>
+<div><label>Estimated slope angle (°)</label><input id="slopeAngle" type="number" value="0" min="0" max="45" step="1" oninput="updateAll()"></div>
+</div>
+<div id="robotSummary" class="result"></div>
+</section>
+
+<section class="section" id="calc">
+<h2>2. 🧮 Engineering Calculations</h2>
+<div class="stat-grid" id="calcStats"></div>
+<div class="grid2">
+<div class="card"><h3>Torque model</h3><div id="torqueExplain"></div></div>
+<div class="card"><h3>Power & battery model</h3><div id="powerExplain"></div></div>
+</div>
+<div id="calcWarnings"></div>
+</section>
+
+<section class="section" id="components">
+<h2>3. 🧩 Component Recommendation Engine</h2>
+<p>The robot is defined first. Arduino1 converts the requirements into component specifications, then gives a starting architecture.</p>
+<div id="recommendations" class="cards"></div>
+<div class="info"><strong>Engineering rule:</strong> a recommendation is a starting point, not a substitute for checking the actual datasheet, stall current, gearbox efficiency, thermal limits, wiring and mechanical design.</div>
+</section>
+
+<section class="section" id="resistor">
+<h2>4. Ω Resistor Laboratory</h2>
+<div class="grid">
+<div><label>Supply voltage (V)</label><input id="ledVoltage" type="number" value="5" step=".1"></div>
+<div><label>LED forward voltage (V)</label><input id="ledForward" type="number" value="2" step=".1"></div>
+<div><label>Desired current (mA)</label><input id="ledCurrent" type="number" value="10" step=".1"></div>
+</div>
+<button class="purple" onclick="calculateResistor()">Calculate LED Resistor</button>
+<div id="resistorResult"></div>
+<hr>
+<h3>Ohm's Law</h3>
+<div class="grid">
+<div><label>Voltage (V)</label><input id="ohmVoltage" type="number" value="5"></div>
+<div><label>Resistance (Ω)</label><input id="ohmResistance" type="number" value="220"></div>
+</div>
+<button class="blue" onclick="calculateOhm()">Calculate Current</button>
+<div id="ohmResult"></div>
+</section>
+
+<section class="section" id="motor">
+<h2>5. ⚙️ Motor & Torque Candidate Tester</h2>
+<div class="grid">
+<div><label>Candidate motor torque (N·m)</label><input id="motorTorque" type="number" value=".25" step=".01"></div>
+<div><label>Candidate motor RPM</label><input id="motorRPM" type="number" value="150" step="1"></div>
+<div><label>Candidate motor voltage (V)</label><input id="motorVoltage" type="number" value="6" step=".1"></div>
+<div><label>Candidate motor current each (A)</label><input id="motorCurrent" type="number" value=".6" step=".05"></div>
+<div><label>Candidate stall current each (A)</label><input id="stallCurrent" type="number" value="2" step=".1"></div>
+<div><label>Gearbox efficiency (%)</label><input id="motorEfficiency" type="number" value="80" min="1" max="100"></div>
+</div>
+<button class="green" onclick="testMotor()">Test Candidate Motor</button>
+<div id="motorResult"></div>
+</section>
+
+<section class="section" id="battery">
+<h2>6. 🔋 Battery Designer & Candidate Tester</h2>
+<div class="grid">
+<div><label>Candidate battery voltage (V)</label><input id="batteryVoltage" type="number" value="7.4" step=".1"></div>
+<div><label>Candidate battery capacity (Ah)</label><input id="batteryAh" type="number" value="2.2" step=".1"></div>
+<div><label>Battery usable fraction (%)</label><input id="usablePct" type="number" value="80" min="10" max="100"></div>
+<div><label>Power-system efficiency (%)</label><input id="systemEfficiency" type="number" value="85" min="20" max="100"></div>
+<div><label>Extra current reserve (%)</label><input id="currentReserve" type="number" value="25" min="0" max="100"></div>
+</div>
+<button class="blue" onclick="testBattery()">Test Candidate Battery</button>
+<div id="batteryResult"></div>
+</section>
+
+<section class="section" id="circuit">
+<h2>7. 🔌 Full Circuit Design Studio</h2>
+<p>Use the selected architecture from V3 to build and verify the electrical system.</p>
+
+<div class="grid2">
+<div class="card">
+<h3>Arduino</h3>
+<div class="grid">
+<div><label>Board</label><select id="arduinoBoard" onchange="buildCircuit()"><option>Arduino Uno R3</option><option>Arduino Nano</option><option>Arduino Mega</option></select></div>
+<div><label>Logic voltage</label><input id="logicVoltage" type="number" value="5" step=".1" oninput="buildCircuit()"></div>
+</div>
+</div>
+<div class="card">
+<h3>Motor driver</h3>
+<div class="grid">
+<div><label>Driver</label><select id="driverType" onchange="buildCircuit()"><option value="L298N">L298N</option><option value="TB6612FNG">TB6612FNG</option><option value="DRV8833">DRV8833</option></select></div>
+<div><label>Driver logic voltage</label><input id="driverLogic" type="number" value="5" step=".1" oninput="buildCircuit()"></div>
+<div><label>Motor supply max (V)</label><input id="driverMotorMax" type="number" value="12" step=".1" oninput="buildCircuit()"></div>
+<div><label>Driver current/channel (A)</label><input id="driverCurrent" type="number" value="2" step=".1" oninput="buildCircuit()"></div>
+</div>
+</div>
+</div>
+
+<h3>Pin & wiring assignment</h3>
+<div class="grid">
+<div><label>LED pin</label><select id="ledPin"><option>D13</option><option>D12</option><option>D11</option><option>D10</option><option>D9</option><option>D8</option></select></div>
+<div><label>Driver IN1</label><select id="in1Pin"><option>D5</option><option>D6</option><option>D7</option><option>D8</option><option>D9</option></select></div>
+<div><label>Driver IN2</label><select id="in2Pin"><option>D6</option><option>D5</option><option>D7</option><option>D8</option><option>D9</option></select></div>
+<div><label>Driver PWM/ENA</label><select id="pwmPin"><option>D9</option><option>D10</option><option>D11</option><option>D5</option><option>D6</option></select></div>
+<div><label>Sensor signal</label><select id="sensorPin"><option>A0</option><option>A1</option><option>A2</option><option>D2</option><option>D3</option><option>D4</option></select></div>
+<div><label>Sensor voltage (V)</label><input id="sensorVoltage" type="number" value="5" step=".1"></div>
+</div>
+<button class="green" onclick="checkPins()">Check Pin Assignment</button>
+<div id="pinResult"></div>
+
+<h3>Student Wiring Canvas</h3>
+<div class="canvas-wrap"><canvas id="circuitCanvas" width="1100" height="520"></canvas></div>
+<div class="small">The diagram is an educational wiring view. The machine checks below are based on the selected pin/power semantics.</div>
+
+<h3>Connections</h3>
+<div class="grid">
+<div class="card"><strong>Power</strong><p>Battery + → Motor Driver VM<br>Battery − → common GND<br>Arduino GND → common GND</p></div>
+<div class="card"><strong>Motors</strong><p>Driver OUT1/OUT2 → Motor A<br>Driver OUT3/OUT4 → Motor B</p></div>
+<div class="card"><strong>Control</strong><p>Arduino IN1/IN2/PWM → Driver logic inputs<br>Arduino sensor pin → Sensor signal</p></div>
+<div class="card"><strong>LED</strong><p>Arduino LED pin → resistor → LED anode<br>LED cathode → GND</p></div>
+</div>
+<button class="orange" onclick="runCircuitReview()">Run Full Circuit Check</button>
+<div id="circuitReview"></div>
+</section>
+
+<section class="section" id="review">
+<h2>8. ⚡ Automatic Engineering Design Review</h2>
+<button class="orange" onclick="runDesignReview()">Run Engineering Review</button>
+<div id="reviewResult"></div>
+</section>
+
+<section class="section" id="bom">
+<h2>9. 📋 Automatic Bill of Materials</h2>
+<button class="blue" onclick="generateBOM()">Refresh BOM</button>
+<div id="bomResult"></div>
+</section>
+
+<section class="section" id="challenge">
+<h2>10. 🎯 Student Engineering Challenge</h2>
+<div class="card">
+<h3 id="challengeTitle">Design Challenge</h3>
+<p id="challengeText"></p>
+</div>
+<div class="grid">
+<div><label>Your engineering decision</label><textarea id="studentDecision" placeholder="Explain what you would change and why..."></textarea></div>
+<div><label>Evidence / calculation</label><textarea id="studentEvidence" placeholder="Show the calculation, specification or circuit evidence..."></textarea></div>
+</div>
+<button class="purple" onclick="evaluateChallenge()">Evaluate Challenge</button>
+<div id="challengeResult"></div>
+</section>
+
+<section class="section" id="save">
+<h2>11. 💾 Project Data</h2>
+<p>Your complete V3 project can be saved as a JSON file and loaded later.</p>
+<div class="grid">
+<div><label>Project name</label><input id="projectName" value="My Arduino1 Robot"></div>
+<div><label>Student name</label><input id="studentName" placeholder="Optional"></div>
+</div>
+<button class="green" onclick="saveProject()">Save Complete Project JSON</button>
+<button class="gray" onclick="resetProject()">Reset Project</button>
+<div id="saveResult"></div>
+</section>
+</div>
+
+<footer>Arduino1 V3 — Robotics Engineering Studio • Educational planning tool • Always verify real component datasheets before building.</footer>
+
+<script>
+const $=id=>document.getElementById(id);
+const num=id=>parseFloat($(id).value)||0;
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const fmt=(x,d=2)=>Number.isFinite(x)?x.toFixed(d):"—";
+
+let state={motorTest:null,batteryTest:null,resistor:null,ohm:null,pinCheck:null,circuitReview:null,designReview:null,bom:null,challenge:null};
+
+const motorDB={
+  obstacle:{name:"Obstacle Avoider",sensor:"Ultrasonic / IR distance sensor",driver:"TB6612FNG or DRV8833",motor:"Geared DC motor"},
+  line:{name:"Line Follower",sensor:"IR reflectance array",driver:"TB6612FNG or DRV8833",motor:"Geared DC motor"},
+  agriculture:{name:"Agriculture Robot",sensor:"Soil / moisture / distance sensors",driver:"High-current motor driver",motor:"Geared DC motor with higher torque"},
+  inspection:{name:"Inspection Robot",sensor:"Distance / camera / IMU",driver:"TB6612FNG or higher-current driver",motor:"Geared DC motor"},
+  vehicle:{name:"Autonomous Vehicle",sensor:"Ultrasonic / IMU / encoder",driver:"High-current motor driver",motor:"Geared DC motor"},
+  arm:{name:"Robotic Arm",sensor:"Position / limit / force sensors",driver:"Servo / stepper / suitable driver",motor:"Servo / geared actuator"}
+};
+
+function getRobot(){
+ const m=num("mass"),p=num("payload"),total=m+p,wd=num("wheelDiameter"),r=wd/2000;
+ const v=num("speed"),rt=num("runtime"),terrain=num("terrain"),n=Math.max(1,num("motorCount"));
+ const slope=num("slopeAngle")*Math.PI/180;
+ return {type:$("robotType").value,m,p,total,wd,r,v,rt,terrain,n,slope};
+}
+
+function calculate(){
+ const R=getRobot(),g=9.81;
+ const wheelRPM=R.r>0?R.v/(2*Math.PI*R.r)*60:0;
+ const rollingCoeff=0.025*R.terrain;
+ const rolling=R.total*g*rollingCoeff;
+ const grade=R.total*g*Math.sin(R.slope);
+ const force=rolling+grade;
+ const baseTorque=force*R.r;
+ const requiredTorque=baseTorque*2/R.n;
+ const wheelPower=force*R.v;
+ const electricalPower=wheelPower/0.65 + .75;
+ const avgCurrent=electricalPower/Math.max(1,num("batteryVoltage"));
+ const batteryAh=avgCurrent*R.rt/Math.max(.01,num("systemEfficiency")/100);
+ const peakCurrent=R.n*num("motorCurrent")+num("logicCurrent")+.2;
+ const reservePeak=peakCurrent*(1+num("currentReserve")/100);
+ return {R,wheelRPM,rolling,grade,force,baseTorque,requiredTorque,wheelPower,electricalPower,avgCurrent,batteryAh,peakCurrent,reservePeak};
+}
+
+function updateAll(){
+ const C=calculate(),R=C.R,T=motorDB[R.type];
+ $("robotSummary").innerHTML=`<strong>${T.name}</strong> — ${R.total.toFixed(2)} kg total mass, ${(R.r*1000).toFixed(1)} mm wheel radius, ${R.v.toFixed(2)} m/s target speed, ${R.rt.toFixed(1)} h runtime.`;
+ $("calcStats").innerHTML=[
+ ["Total mass",fmt(R.total)+" kg"],["Wheel radius",fmt(R.r*1000,1)+" mm"],["Wheel speed",fmt(C.wheelRPM,1)+" RPM"],
+ ["Drive force",fmt(C.force)+" N"],["Torque / motor",fmt(C.requiredTorque)+" N·m"],["Wheel power",fmt(C.wheelPower)+" W"],
+ ["Estimated electrical power",fmt(C.electricalPower)+" W"],["Estimated battery",fmt(C.batteryAh)+" Ah"]
+ ].map(x=>`<div class="stat"><small>${x[0]}</small><strong>${x[1]}</strong></div>`).join("");
+ $("torqueExplain").innerHTML=`Rolling force = m·g·Crr; slope force = m·g·sin(θ).<br><br>
+Educational required torque per motor ≈ (total drive force × wheel radius × 2) ÷ motor count.<br><br>
+Terrain factor = ${R.terrain}×. This is a first-pass teaching model, not a complete drivetrain simulation.`;
+ $("powerExplain").innerHTML=`Wheel power = force × speed = <strong>${fmt(C.wheelPower)} W</strong>.<br>
+A planning allowance is used for drivetrain/electrical losses. Estimated average current is about <strong>${fmt(C.avgCurrent)} A</strong> at the entered battery voltage.`;
+ let warns=[];
+ if(C.requiredTorque>0 && C.requiredTorque>.5) warns.push("High torque requirement: check gearbox, traction, stall torque and wheel slip.");
+ if(C.wheelRPM>300) warns.push("High wheel RPM requirement: check motor/gearbox speed and achievable loaded RPM.");
+ if(R.total<=0) warns.push("Enter a positive robot mass.");
+ $("calcWarnings").innerHTML=warns.map(w=>`<div class="warning">⚠️ ${w}</div>`).join("");
+ renderRecommendations(C);
+ buildCircuit();
+}
+
+function renderRecommendations(C){
+ const R=C.R,T=motorDB[R.type];
+ const motorTorque=C.requiredTorque;
+ const driverCurrent=Math.max(1,C.reservePeak*.8);
+ const batteryV=num("batteryVoltage")||7.4;
+ const cards=[
+ {title:"Arduino / Controller",spec:"Arduino Uno R3 or equivalent 5 V logic controller",why:"Suitable for beginner robotics control, sensors and PWM-based motor control."},
+ {title:"Motor",spec:`Geared DC motor • ≥ ${fmt(motorTorque)} N·m educational torque target • loaded RPM near ${fmt(C.wheelRPM,0)}`,why:"Torque comes from the robot mass, wheel radius, terrain and slope requirement."},
+ {title:"Motor Driver",spec:`Driver current capability ≥ ${fmt(driverCurrent,1)} A planning target`,why:"Motors should be powered through a driver rather than directly from Arduino pins."},
+ {title:"Battery",spec:`${fmt(batteryV,1)} V candidate • ≥ ${fmt(C.batteryAh)} Ah planning estimate`,why:"Capacity is derived from estimated electrical load and required runtime."},
+ {title:"Sensor",spec:T.sensor,why:"Sensor architecture follows the selected robot task."},
+ {title:"LED",spec:"5 mm LED + calculated series resistor",why:"The resistor limits current and protects the LED/output."}
+ ];
+ $("recommendations").innerHTML=cards.map(c=>`<div class="card component-card"><span class="badge">RECOMMENDED</span><h3>${c.title}</h3><p><strong>${c.spec}</strong></p><p>${c.why}</p></div>`).join("");
+}
+
+function calculateResistor(){
+ const V=num("ledVoltage"),Vf=num("ledForward"),I=num("ledCurrent")/1000;
+ if(I<=0||V<=Vf){$("resistorResult").innerHTML='<div class="error">Enter a valid current and make supply voltage greater than LED forward voltage.</div>';return}
+ const R=(V-Vf)/I,P=I*I*R;
+ const standard=[100,150,180,220,270,330,390,470,560,680,820,1000,1500,2200,3300,4700,6800,10000];
+ const chosen=standard.find(x=>x>=R)||Math.ceil(R/100)*100;
+ const actual=(V-Vf)/chosen*1000;
+ state.resistor={required:R,chosen,actual,power:P};
+ $("resistorResult").innerHTML=`<div class="good"><strong>Required resistor:</strong> ${fmt(R,1)} Ω<br>
+Nearest standard value at or above requirement: <strong>${chosen} Ω</strong><br>
+Approximate LED current with ${chosen} Ω: <strong>${fmt(actual,1)} mA</strong><br>
+Resistor power: ${fmt(P*1000,1)} mW — use an appropriately rated resistor.</div>`;
+}
+function calculateOhm(){
+ const V=num("ohmVoltage"),R=num("ohmResistance");
+ if(R<=0){$("ohmResult").innerHTML='<div class="error">Resistance must be greater than zero.</div>';return}
+ const I=V/R;
+ state.ohm={V,R,I};
+ $("ohmResult").innerHTML=`<div class="result">I = V/R = <strong>${fmt(I*1000,2)} mA</strong>.</div>`;
+}
+
+function testMotor(){
+ const C=calculate(),torque=num("motorTorque"),rpm=num("motorRPM"),v=num("motorVoltage"),i=num("motorCurrent"),stall=num("stallCurrent");
+ const passTorque=torque>=C.requiredTorque, passRPM=rpm>=C.wheelRPM, passVoltage=Math.abs(v-num("batteryVoltage"))<=Math.max(1,num("batteryVoltage")*.15);
+ const passDriver=stall<=num("driverCurrent");
+ state.motorTest={passTorque,passRPM,passVoltage,passDriver};
+ $("motorResult").innerHTML=`${statusBox(passTorque,"Torque","Candidate torque meets the educational requirement.","Candidate torque is below the educational requirement.")}
+${statusBox(passRPM,"Speed","Candidate no-load/nominal RPM is at or above the calculated wheel RPM.","Candidate RPM may be too low under load.")}
+${statusBox(passVoltage,"Voltage","Candidate voltage is reasonably close to the battery voltage.","Check motor operating voltage against the selected battery.")}
+${statusBox(passDriver,"Stall current","Entered stall current is within the driver channel rating.","Stall current may exceed the driver rating; verify actual datasheet limits.")}`;
+}
+function statusBox(pass,title,good,bad){return `<div class="${pass?'good':'warning'}"><strong>${pass?'PASS':'CHECK'} — ${title}</strong><br>${pass?good:bad}</div>`}
+
+function testBattery(){
+ const C=calculate(),V=num("batteryVoltage"),Ah=num("batteryAh"),usable=num("usablePct")/100,eff=num("systemEfficiency")/100;
+ const energy=V*Ah*usable*eff,required=C.electricalPower*C.R.rt,run=V*Ah*usable*eff/Math.max(.01,C.electricalPower);
+ const capacityPass=run>=C.R.rt, voltagePass=V>=num("motorVoltage")*.85, currentPass=C.reservePeak<=Ah*2;
+ state.batteryTest={energy,run,capacityPass,voltagePass,currentPass};
+ $("batteryResult").innerHTML=`<div class="${capacityPass?'good':'warning'}"><strong>${capacityPass?'PASS':'CHECK'} — Runtime</strong><br>
+Estimated runtime ≈ <strong>${fmt(run)} h</strong> vs required ${fmt(C.R.rt)} h.</div>
+<div class="${voltagePass?'good':'warning'}"><strong>${voltagePass?'PASS':'CHECK'} — Voltage</strong><br>Check motor, driver and regulator voltage ranges.</div>
+<div class="${currentPass?'good':'warning'}"><strong>${currentPass?'PASS':'CHECK'} — Current reserve</strong><br>Peak planning current ≈ ${fmt(C.reservePeak)} A. Battery discharge capability must be checked from the real battery datasheet.</div>`;
+}
+
+function uniquePins(){
+ return [$("ledPin").value,$("in1Pin").value,$("in2Pin").value,$("pwmPin").value,$("sensorPin").value];
+}
+function checkPins(){
+ const p=uniquePins(),dup=p.filter((x,i)=>p.indexOf(x)!==i),hasDup=dup.length>0;
+ const pwm=$("pwmPin").value, pwmOK=["D3","D5","D6","D9","D10","D11"].includes(pwm);
+ const sensor=$("sensorPin").value;
+ state.pinCheck={hasDup,pwmOK,sensor};
+ $("pinResult").innerHTML=`${hasDup?'<div class="error">❌ Pin conflict: '+[...new Set(dup)].join(", ")+' is assigned to more than one function.</div>':'<div class="good">✅ No duplicate pin assignments detected.</div>'}
+ ${pwmOK?'<div class="good">✅ PWM assignment is on a common PWM-capable Uno pin.</div>':'<div class="warning">⚠️ Selected pin may not provide PWM on Arduino Uno.</div>'}
+ <div class="info">Sensor signal assigned to <strong>${sensor}</strong>. Verify the actual sensor interface and voltage.</div>`;
+}
+function buildCircuit(){
+ const c=$("circuitCanvas"),ctx=c.getContext("2d"); if(!ctx)return;
+ ctx.clearRect(0,0,c.width,c.height);ctx.font="bold 15px Arial";
+ const boxes=[
+  [35,55,190,120,"Arduino",$("arduinoBoard").value],
+  [455,40,200,140,"Motor Driver",$("driverType").value],
+  [820,45,220,90,"Battery",fmt(num("batteryVoltage"),1)+" V"],
+  [820,190,220,90,"Motors",num("motorCount")+" motor(s)"],
+  [40,300,190,90,"Sensor",$("sensorPin").value],
+  [455,300,200,90,"LED + Resistor",$("ledPin").value]
+ ];
+ boxes.forEach(([x,y,w,h,t,s])=>{ctx.fillStyle="#eff6ff";ctx.strokeStyle="#0ea5e9";ctx.lineWidth=2;ctx.beginPath();ctx.roundRect(x,y,w,h,12);ctx.fill();ctx.stroke();ctx.fillStyle="#063451";ctx.fillText(t,x+15,y+28);ctx.font="13px Arial";ctx.fillText(s,x+15,y+53);ctx.font="bold 15px Arial";});
+ ctx.strokeStyle="#0369a1";ctx.lineWidth=3;
+ line(ctx,225,115,455,100);line(ctx,655,85,820,90);line(ctx,655,135,820,235);line(ctx,225,340,455,340);line(ctx,225,100,350,220);line(ctx,350,220,455,340);
+ ctx.fillStyle="#16a34a";ctx.font="bold 13px Arial";ctx.fillText("control",315,105);ctx.fillText("motor power",700,80);ctx.fillText("motor outputs",690,215);ctx.fillText("sensor",315,330);ctx.fillText("LED",350,250);
+}
+function line(ctx,x1,y1,x2,y2){ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke()}
+
+function runCircuitReview(){
+ checkPins();
+ const C=calculate(),batteryV=num("batteryVoltage"),logic=num("logicVoltage"),driverLogic=num("driverLogic"),driverMax=num("driverMotorMax");
+ const checks=[];
+ checks.push(["No duplicate Arduino pins",!state.pinCheck.hasDup,"Each function has a unique assigned pin."]);
+ checks.push(["PWM pin suitable",state.pinCheck.pwmOK,"PWM should use a PWM-capable pin for speed control."]);
+ checks.push(["Driver logic compatibility",Math.abs(logic-driverLogic)<=1,"Arduino logic voltage should be compatible with driver logic input range."]);
+ checks.push(["Battery within driver motor range",batteryV<=driverMax,"Battery voltage must not exceed driver motor-supply rating."]);
+ checks.push(["Motor not powered by Arduino pin",true,"The architecture routes motors through the driver."]);
+ checks.push(["Common ground required",true,"Arduino GND, driver GND and battery negative must share the intended reference."]);
+ checks.push(["LED series resistor",!!state.resistor,"Calculate and place a series resistor for the LED."]);
+ checks.push(["Sensor voltage check",num("sensorVoltage")<=logic+0.1,"Sensor output must not exceed the Arduino input voltage domain."]);
+ const pass=checks.filter(x=>x[1]).length, total=checks.length;
+ state.circuitReview={checks,pass,total};
+ $("circuitReview").innerHTML=`<div class="${pass===total?'good':'warning'}"><strong>Circuit score: ${pass}/${total}</strong></div>`+
+ checks.map(x=>`<div class="check-row"><span><strong>${x[1]?'PASS':'CHECK'}</strong> — ${x[0]}<br><span class="small">${x[2]}</span></span><span>${x[1]?'✅':'⚠️'}</span></div>`).join("");
+}
+
+function runDesignReview(){
+ const C=calculate();let items=[];
+ const motorPass=state.motorTest?.passTorque ?? false;
+ const batteryPass=state.batteryTest?.capacityPass ?? false;
+ items.push(["Robot requirements entered",C.R.total>0&&C.R.wd>0&&C.R.v>=0,"Mass, wheel size and target speed are defined."]);
+ items.push(["Torque requirement calculated",C.requiredTorque>=0,"Educational torque requirement is available."]);
+ items.push(["Motor candidate tested",!!state.motorTest,motorPass?"Candidate passed torque test.":"Test a candidate motor before finalizing."]);
+ items.push(["Battery candidate tested",!!state.batteryTest,batteryPass?"Candidate runtime passed.":"Test a battery candidate against runtime."]);
+ items.push(["LED resistor calculated",!!state.resistor,"Calculate the LED resistor if an LED is included."]);
+ items.push(["Pin assignment checked",!!state.pinCheck&&!state.pinCheck.hasDup,"Check pin conflicts before wiring."]);
+ items.push(["Circuit checked",!!state.circuitReview&&state.circuitReview.pass===state.circuitReview.total,"Run the full circuit check."]);
+ const pass=items.filter(x=>x[1]).length;
+ $("reviewResult").innerHTML=`<div class="${pass===items.length?'good':'warning'}"><strong>Engineering Review: ${pass}/${items.length} checks passed.</strong></div>`+
+ items.map(x=>`<div class="check-row"><span><strong>${x[1]?'PASS':'ACTION'}</strong> — ${x[0]}<br><span class="small">${x[2]}</span></span><span>${x[1]?'✅':'⚠️'}</span></div>`).join("");
+ state.designReview={items,pass,total:items.length};
+}
+
+function generateBOM(){
+ const R=getRobot(),C=calculate(),T=motorDB[R.type];
+ if(!state.resistor) calculateResistor();
+ const rows=[
+ ["Arduino Uno R3 / equivalent",1,"5 V logic controller","Controller and sensor interface"],
+ [T.driver,1,"Current rating ≥ planning target","Motor driver"],
+ [T.motor,R.n,`Geared motor; target ≥ ${fmt(C.requiredTorque)} N·m per motor`,"Drive motors"],
+ [`Battery ${fmt(num("batteryVoltage"),1)} V`,1,`≥ ${fmt(C.batteryAh)} Ah planning estimate`,"Energy source"],
+ [T.sensor,1,"Compatible voltage/interface","Robot sensing"],
+ ["LED",1,"5 mm indicator LED","Status indicator"],
+ [`Resistor ${state.resistor?.chosen||"calculate"} Ω`,1,"Series LED resistor","LED current limiting"],
+ ["Chassis / wheels",1,"Sized for robot requirements","Mechanical structure"],
+ ["Wires / connectors",1,"Appropriate current and voltage rating","Electrical interconnects"]
+ ];
+ state.bom=rows;
+ $("bomResult").innerHTML=`<table><thead><tr><th>#</th><th>Component</th><th>Qty</th><th>Specification</th><th>Purpose</th></tr></thead><tbody>`+
+ rows.map((r,i)=>`<tr><td>${i+1}</td><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td></tr>`).join("")+
+ `</tbody></table><div class="small">Planning BOM generated from the current design. Prices are intentionally not treated as live purchasing data.</div>`;
+}
+
+function makeChallenge(){
+ const C=calculate(),R=C.R;
+ $("challengeTitle").textContent=`Challenge: Make the ${motorDB[R.type].name} meet ${R.rt.toFixed(1)} h runtime at ${R.v.toFixed(2)} m/s`;
+ $("challengeText").textContent=`Your current design requires about ${C.requiredTorque.toFixed(3)} N·m per motor and an estimated ${C.batteryAh.toFixed(2)} Ah battery. Explain one engineering improvement that increases reliability or performance without ignoring voltage, current, torque or wiring constraints.`;
+}
+function evaluateChallenge(){
+ const decision=$("studentDecision").value.trim(),evidence=$("studentEvidence").value.trim();
+ let score=0,feedback=[];
+ if(decision.length>20){score++;feedback.push("Decision is clearly explained.");}else feedback.push("Give a more specific engineering decision.");
+ if(evidence.length>20){score++;feedback.push("Evidence/calculation is included.");}else feedback.push("Support the decision with a calculation, specification or circuit check.");
+ if(/torque|battery|current|voltage|rpm|power|resistor|driver|pin|runtime/i.test(decision+" "+evidence)){score++;feedback.push("Engineering terminology is used.");}else feedback.push("Mention the engineering quantity that supports your decision.");
+ state.challenge={score,feedback};
+ $("challengeResult").innerHTML=`<div class="${score===3?'good':'warning'}"><strong>Challenge score: ${score}/3</strong><br>${feedback.join("<br>")}</div>`;
+}
+
+function collectForm(){
+ const ids=["projectName","studentName","robotType","mass","payload","wheelDiameter","speed","runtime","terrain","drivenWheels","motorCount","slopeAngle",
+ "ledVoltage","ledForward","ledCurrent","ohmVoltage","ohmResistance","motorTorque","motorRPM","motorVoltage","motorCurrent","stallCurrent","motorEfficiency",
+ "batteryVoltage","batteryAh","usablePct","systemEfficiency","currentReserve","arduinoBoard","logicVoltage","driverType","driverLogic","driverMotorMax","driverCurrent",
+ "ledPin","in1Pin","in2Pin","pwmPin","sensorPin","sensorVoltage"];
+ const data={};ids.forEach(id=>data[id]=$(id).value);return data;
+}
+function applyForm(data){Object.entries(data||{}).forEach(([id,v])=>{if($(id)&&v!==undefined)$(id).value=v});updateAll();calculateResistor();calculateOhm();testMotor();testBattery();checkPins();runCircuitReview();generateBOM();runDesignReview();makeChallenge();}
+function saveProject(){
+ generateBOM();runDesignReview();
+ const project={app:"Arduino1",version:"V3",savedAt:new Date().toISOString(),form:collectForm(),state};
+ const blob=new Blob([JSON.stringify(project,null,2)],{type:"application/json"});
+ const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=(($("projectName").value||"arduino1-v3").replace(/[^a-z0-9-_]+/gi,"-").toLowerCase())+".json";a.click();URL.revokeObjectURL(a.href);
+ $("saveResult").innerHTML='<div class="good">✅ Complete V3 project JSON saved.</div>';
+}
+function loadProject(ev){
+ const f=ev.target.files[0];if(!f)return;
+ const reader=new FileReader();reader.onload=()=>{try{const p=JSON.parse(reader.result);applyForm(p.form);state=p.state||state;$("saveResult").innerHTML='<div class="good">✅ Project loaded successfully.</div>'}catch(e){$("saveResult").innerHTML='<div class="error">Could not load this JSON project.</div>'}};reader.readAsText(f);
+}
+function resetProject(){if(!confirm("Reset the current Arduino1 V3 project?"))return;location.reload();}
+
+function init(){
+ $("logicCurrent") || createHiddenLogic();
+ updateAll();calculateResistor();calculateOhm();buildCircuit();makeChallenge();generateBOM();
+}
+function createHiddenLogic(){
+ const d=document.createElement("input");d.id="logicCurrent";d.value=".15";d.type="hidden";document.body.appendChild(d);
+}
+window.addEventListener("load",init);
+</script>
+</body>
+</html>
