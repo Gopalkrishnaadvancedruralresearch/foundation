@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Virudh - GARRF AI Inspector (Serverless)</title>
+    <!-- Load OpenCV.js -->
+    <script async src="https://docs.opencv.org/4.8.0/opencv.js" onload="onOpenCvReady();" type="text/javascript"></script>
+    <style>
+        body { font-family: sans-serif; padding: 2rem; background: #f4f7f6; }
+        .box { background: white; padding: 2rem; border-radius: 8px; max-width: 600px; margin: auto; }
+        input, button { width: 100%; margin-top: 10px; padding: 10px; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>Virudh AI (Browser-Only Edition)</h2>
+        
+        <label><strong>Gemini API Key:</strong></label>
+        <input type="password" id="apiKey" placeholder="Enter API Key to protect your quota">
+        
+        <label><strong>Baseline Image:</strong></label>
+        <input type="file" id="baseline" accept="image/*">
+        
+        <label><strong>Current Image:</strong></label>
+        <input type="file" id="current" accept="image/*">
+        
+        <button id="analyzeBtn" onclick="analyzeImages()">Analyze Structure</button>
+        
+        <pre id="output" style="margin-top: 20px; white-space: pre-wrap;"></pre>
+    </div>
+
+    <script>
+        function onOpenCvReady() {
+            document.getElementById('analyzeBtn').innerText = "OpenCV Loaded - Ready to Analyze";
+        }
+
+        async function analyzeImages() {
+            const apiKey = document.getElementById('apiKey').value;
+            if (!apiKey) return alert("Please enter an API key.");
+            
+            document.getElementById('output').innerText = "Aligning images with OpenCV.js...";
+            
+            // 1. OpenCV.js Logic Goes Here
+            // (Note: OpenCV.js ORB alignment requires managing WebAssembly memory vectors: 
+            // cv.Mat(), cv.KeyPointVector(), cv.DMatchVector(), and cv.findHomography)
+            
+            // For this REST example, assume we converted the aligned image to a base64 string:
+            const base64Baseline = await getBase64(document.getElementById('baseline').files[0]);
+            const base64Current = await getBase64(document.getElementById('current').files[0]);
+            
+            document.getElementById('output').innerText = "Sending to Gemini...";
+
+            // 2. Direct REST API Call to Gemini
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+            
+            const payload = {
+                contents: [{
+                    parts: [
+                        { text: "Compare these structural images and output a JSON status report." },
+                        { inline_data: { mime_type: "image/jpeg", data: base64Baseline.split(',')[1] } },
+                        { inline_data: { mime_type: "image/jpeg", data: base64Current.split(',')[1] } }
+                    ]
+                }],
+                generationConfig: { responseMimeType: "application/json" }
+            };
+
+            const response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+            document.getElementById('output').innerText = data.candidates[0].content.parts[0].text;
+        }
+
+        // Helper to convert file to base64
+        function getBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+    </script>
+</body>
+</html>
