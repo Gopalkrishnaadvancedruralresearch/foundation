@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CHITTI — AI Robotics Assistant & Voice Agent | GARRF</title>
+    <style>
+        :root {
+            --garrf-primary: #0f2c59;
+            --garrf-secondary: #176b87;
+            --garrf-accent: #22a6b3;
+            --garrf-bg: #f8f9fa;
+            --garrf-card-bg: #ffffff;
+            --garrf-text: #333333;
+            --garrf-light: #e8f4f8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--garrf-bg);
+            color: var(--garrf-text);
+            line-height: 1.6;
+        }
+
+        header {
+            background: var(--garrf-primary);
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 4px solid var(--garrf-accent);
+        }
+
+        .brand-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .brand-logo {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid white;
+            background-color: white;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+        }
+
+        /* Tabs Styling */
+        .tab-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 0;
+        }
+
+        .tab-btn {
+            background: #d1d8e0;
+            color: var(--garrf-primary);
+            border: none;
+            padding: 0.75rem 1.5rem;
+            font-weight: 700;
+            cursor: pointer;
+            border-radius: 6px 6px 0 0;
+            transition: background 0.2s;
+        }
+
+        .tab-btn.active {
+            background: var(--garrf-secondary);
+            color: white;
+        }
+
+        /* Tab Content Panels */
+        .tab-content {
+            display: none;
+            background: var(--garrf-card-bg);
+            border-radius: 0 8px 8px 8px;
+            padding: 2rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            border-top: 5px solid var(--garrf-secondary);
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .chat-box, .voice-box {
+            background: #f1f2f6;
+            border: 1px solid #ced6e0;
+            padding: 1.25rem;
+            border-radius: 6px;
+            height: 350px;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+            font-size: 0.95rem;
+            white-space: pre-line;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 0.75rem;
+            border: 1px solid #ced6e0;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+
+        .btn {
+            background: var(--garrf-secondary);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 5px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background: var(--garrf-primary);
+        }
+
+        .mic-btn {
+            background: #eb4d4b;
+            font-size: 1.1rem;
+        }
+
+        .mic-btn.listening {
+            background: #27ae60;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+
+        .status-text {
+            font-size: 0.85rem;
+            color: #636e72;
+            margin-top: 0.5rem;
+            font-style: italic;
+        }
+
+        .studio-banner {
+            background: #e8f4f8;
+            border-left: 4px solid var(--garrf-accent);
+            padding: 0.75rem 1rem;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            color: var(--garrf-primary);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand-container">
+            <img src="logo.jpeg" alt="GARRF Logo" class="brand-logo" onerror="this.style.display='none'">
+            <div>
+                <h1>CHITTI Robotics Assistant & Voice Agent</h1>
+                <p>GopalKrishna Advanced Rural Research Foundation (GARRF)</p>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+
+        <!-- Navigation Tabs -->
+        <div class="tab-container">
+            <button class="tab-btn active" onclick="switchTab('chat')">💬 CHITTI Chat (Text)</button>
+            <button class="tab-btn" onclick="switchTab('voice')">🎙️ CHITTI Voice Agent</button>
+        </div>
+
+        <!-- TAB 1: CHITTI Text Chat -->
+        <div id="chatTab" class="tab-content active">
+            <div class="studio-banner">
+                💡 <b>Workspace Note:</b> For Level 2 Senior Engineering, keep the official <a href="https://garrf.in/kalam-zero-lab/ArduinoRobotics.html" target="_blank">GARRF Arduino Robotics Studio</a> open side-by-side.
+            </div>
+            <div id="chatHistory" class="chat-box"><b>CHITTI:</b> Hi! I’m Chitti AI Assistant from GARRF. 🤖
+I operate at two levels:
+LEVEL 1 — Chitti AI Assistant
+I can help you learn robotics, Arduino, electronics, sensors, motors, programming, robot design and troubleshooting.
+LEVEL 2 — Chitti Senior AI Assistant
+For deeper engineering work, you must use the official GARRF Arduino Robotics Studio side-by-side with me. This is where we work on engineering requirements, calculations, component specifications, candidate testing, circuit verification, design review, BOM and engineering challenges.
+
+You can start learning with me right now.
+When you're ready for Senior Level, open the official GARRF Arduino Robotics Studio alongside CHITTI.
+
+What would you like to learn or build? 🤖🚀</div>
+            <div class="input-group">
+                <input type="text" id="chatInput" placeholder="Ask CHITTI about robotics, calculations, or circuit design..." onkeypress="handleChatKey(event)">
+                <button class="btn" onclick="sendChatMessage()">Send</button>
+            </div>
+        </div>
+
+        <!-- TAB 2: CHITTI Voice Agent -->
+        <div id="voiceTab" class="tab-content">
+            <div class="studio-banner">
+                🎙️ <b>Voice Mode Active:</b> Click "Start Speaking" to talk with CHITTI out loud using the exact same two-level mentoring rules.
+            </div>
+            <div id="voiceTranscript" class="voice-box"><b>CHITTI Voice:</b> Hi! I’m Chitti AI Assistant from GARRF. Click "Start Speaking" and tell me what you would like to build or learn today.</div>
+
+            <div style="display: flex; gap: 10px; align-items: center; margin-top: 1rem;">
+                <button id="micButton" class="btn mic-btn" onclick="toggleSpeechRecognition()">🎙️ Start Speaking</button>
+                <div class="status-text" id="voiceStatus">Status: Idle</div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Tab Management Logic
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+
+            if (tabName === 'chat') {
+                document.getElementById('chatTab').classList.add('active');
+                document.querySelectorAll('.tab-btn')[0].classList.add('active');
+            } else {
+                document.getElementById('voiceTab').classList.add('active');
+                document.querySelectorAll('.tab-btn')[1].classList.add('active');
+            }
+        }
+
+        // Shared CHITTI Core Logic Engine (Applies to both Text and Voice)
+        function getChittiResponse(userInput) {
+            const q = userInput.toLowerCase();
+
+            // Check if asking for Senior Level work
+            if (q.includes('senior') || q.includes('calculate') || q.includes('torque') || q.includes('specification') || q.includes('bom') || q.includes('design review')) {
+                return "Chitti Senior AI Assistant here. 🛠️ To perform this engineering calculation and component selection, ensure you have the official GARRF Arduino Robotics Studio open side-by-side at garrf.in/kalam-zero-lab/ArduinoRobotics.html.\n\nLet's follow our engineering workflow:\n1. REQUIREMENT: What is your target load or movement?\n2. ENGINEERING MODEL: Let's set up our Given, Find, and Formula.\n3. CALCULATION: What are your parameters?\nTell me your robot's mass and dimensions so we can compute it together!";
+            }
+            
+            // Check for Quadruped / Robot Dog
+            if (q.includes('quadruped') || q.includes('dog') || q.includes('servo')) {
+                return "Building a quadruped robot dog requires structured progress: One servo -> One joint -> One leg -> Four legs -> Gait.\n\nAt Level 1, we learn joint degrees of freedom (DOF), PWM control, and power distribution. When you are ready to compute torque margins and select specific servo models, open the GARRF Arduino Robotics Studio side-by-side to switch to Chitti Senior AI Assistant mode!";
+            }
+
+            // General Level 1 Robotics Learning response
+            return `Chitti AI Assistant here. 🤖 You asked about "${userInput}".\n\nLet's break this down into engineering thinking:\n- Understand the problem\n- Check your sensor and motor connections\n- Verify common grounding between your power supply and microcontroller.\n\nWhat are you trying to build next?`;
+        }
+
+        // Text Chat Handler
+        function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const history = document.getElementById('chatHistory');
+            if (!input.value.trim()) return;
+
+            const userText = input.value;
+            history.innerHTML += `\n\n<b>You:</b> ${userText}`;
+            input.value = '';
+
+            setTimeout(() => {
+                const reply = getChittiResponse(userText);
+                history.innerHTML += `\n\n<b>CHITTI:</b> ${reply}`;
+                history.scrollTop = history.scrollHeight;
+            }, 600);
+        }
+
+        function handleChatKey(e) {
+            if (e.key === 'Enter') sendChatMessage();
+        }
+
+        // Voice Agent Logic (Web Speech API)
+        let recognition;
+        let isListening = false;
+
+        function initSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                alert("Speech recognition requires Google Chrome browser.");
+                return null;
+            }
+
+            const rec = new SpeechRecognition();
+            rec.lang = 'en-US';
+            rec.interimResults = false;
+            rec.maxAlternatives = 1;
+
+            rec.onstart = () => {
+                isListening = true;
+                document.getElementById('micButton').classList.add('listening');
+                document.getElementById('micButton').innerText = "🛑 Listening...";
+                document.getElementById('voiceStatus').innerText = "Status: Listening to student...";
+            };
+
+            rec.onresult = (event) => {
+                const speechToText = event.results[0][0].transcript;
+                const voiceBox = document.getElementById('voiceTranscript');
+                voiceBox.innerHTML += `\n\n<b>You (Spoken):</b> "${speechToText}"`;
+                
+                const reply = getChittiResponse(speechToText);
+                voiceBox.innerHTML += `\n\n<b>CHITTI (Voice):</b> "${reply}"`;
+                voiceBox.scrollTop = voiceBox.scrollHeight;
+
+                speakText(reply);
+            };
+
+            rec.onerror = (event) => {
+                document.getElementById('voiceStatus').innerText = `Status: Error (${event.error})`;
+                stopListeningState();
+            };
+
+            rec.onend = () => {
+                stopListeningState();
+            };
+
+            return rec;
+        }
+
+        function toggleSpeechRecognition() {
+            if (!recognition) {
+                recognition = initSpeechRecognition();
+                if (!recognition) return;
+            }
+
+            if (isListening) {
+                recognition.stop();
+            } else {
+                recognition.start();
+            }
+        }
+
+        function stopListeningState() {
+            isListening = false;
+            const micBtn = document.getElementById('micButton');
+            micBtn.classList.remove('listening');
+            micBtn.innerText = "🎙️ Start Speaking";
+            document.getElementById('voiceStatus').innerText = "Status: Idle";
+        }
+
+        // Male Voice Synthesis Configuration
+        function speakText(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); // Stop any ongoing speech
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 1.0;
+                utterance.pitch = 0.9; // Lower pitch for realistic male voice tone
+
+                const voices = window.speechSynthesis.getVoices();
+                const maleVoice = voices.find(v => v.name.includes('Male') || v.name.includes('David') || v.name.includes('Google US English') || v.name.includes('Natural'));
+                if (maleVoice) {
+                    utterance.voice = maleVoice;
+                }
+
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.onvoiceschanged = () => {
+                window.speechSynthesis.getVoices();
+            };
+        }
+    </script>
+
+</body>
+</html>
