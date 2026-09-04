@@ -2,87 +2,118 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Virudh - GARRF AI Inspector (Serverless)</title>
-    <!-- Load OpenCV.js -->
-    <script async src="https://docs.opencv.org/4.8.0/opencv.js" onload="onOpenCvReady();" type="text/javascript"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIRUDH - AI Defective Digital Twin</title>
     <style>
-        body { font-family: sans-serif; padding: 2rem; background: #f4f7f6; }
-        .box { background: white; padding: 2rem; border-radius: 8px; max-width: 600px; margin: auto; }
-        input, button { width: 100%; margin-top: 10px; padding: 10px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f4f7f6; }
+        .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; text-align: center; margin-bottom: 5px; }
+        p.subtitle { text-align: center; color: #7f8c8d; font-size: 0.9em; margin-top: 0; margin-bottom: 30px;}
+        .input-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; color: #34495e; }
+        input[type="text"], input[type="file"] { width: 100%; padding: 10px; border: 1px solid #bdc3c7; border-radius: 5px; box-sizing: border-box; }
+        button { background-color: #2980b9; color: white; padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; width: 100%; font-size: 16px; font-weight: bold; }
+        button:hover { background-color: #3498db; }
+        #imagePreview { max-width: 100%; max-height: 300px; margin-top: 10px; display: none; border-radius: 5px; }
+        #loading { display: none; text-align: center; margin-top: 20px; color: #2980b9; font-weight: bold; }
+        #responseArea { margin-top: 20px; padding: 15px; border-radius: 5px; background-color: #ecf0f1; display: none; white-space: pre-wrap; line-height: 1.5; }
     </style>
 </head>
 <body>
-    <div class="box">
-        <h2>Virudh AI (Browser-Only Edition)</h2>
-        
-        <label><strong>Gemini API Key:</strong></label>
-        <input type="password" id="apiKey" placeholder="Enter API Key to protect your quota">
-        
-        <label><strong>Baseline Image:</strong></label>
-        <input type="file" id="baseline" accept="image/*">
-        
-        <label><strong>Current Image:</strong></label>
-        <input type="file" id="current" accept="image/*">
-        
-        <button id="analyzeBtn" onclick="analyzeImages()">Analyze Structure</button>
-        
-        <pre id="output" style="margin-top: 20px; white-space: pre-wrap;"></pre>
+
+<div class="container">
+    <h1>VIRUDH</h1>
+    <p class="subtitle">AI Defective Digital Twin for Visual SHM <br>By Dr. Venu Gopal Madhav Annamdas | GARRF</p>
+
+    <div class="input-group">
+        <label for="apiKey">Gemini API Key</label>
+        <input type="text" id="apiKey" placeholder="Enter your Gemini API Key here...">
     </div>
 
-    <script>
-        function onOpenCvReady() {
-            document.getElementById('analyzeBtn').innerText = "OpenCV Loaded - Ready to Analyze";
+    <div class="input-group">
+        <label for="imageUpload">Upload Structural Image (Crack, Spalling, Corrosion)</label>
+        <input type="file" id="imageUpload" accept="image/*" onchange="previewImage()">
+        <img id="imagePreview" alt="Image Preview">
+    </div>
+
+    <button onclick="analyzeStructure()">Analyze Structure with VIRUDH</button>
+
+    <div id="loading">VIRUDH is analyzing the digital twin...</div>
+    <div id="responseArea"></div>
+</div>
+
+<script>
+    let base64Image = "";
+
+    function previewImage() {
+        const file = document.getElementById('imageUpload').files[0];
+        const reader = new FileReader();
+        
+        reader.onloadend = function() {
+            base64Image = reader.result.split(',')[1]; // Extract base64 data
+            document.getElementById('imagePreview').src = reader.result;
+            document.getElementById('imagePreview').style.display = 'block';
+        }
+        
+        if (file) {
+            reader.readAsDataURL(file);
+        }
+    }
+
+    async function analyzeStructure() {
+        const apiKey = document.getElementById('apiKey').value;
+        const responseArea = document.getElementById('responseArea');
+        const loading = document.getElementById('loading');
+
+        if (!apiKey || !base64Image) {
+            alert("Please provide both an API Key and an Image.");
+            return;
         }
 
-        async function analyzeImages() {
-            const apiKey = document.getElementById('apiKey').value;
-            if (!apiKey) return alert("Please enter an API key.");
-            
-            document.getElementById('output').innerText = "Aligning images with OpenCV.js...";
-            
-            // 1. OpenCV.js Logic Goes Here
-            // (Note: OpenCV.js ORB alignment requires managing WebAssembly memory vectors: 
-            // cv.Mat(), cv.KeyPointVector(), cv.DMatchVector(), and cv.findHomography)
-            
-            // For this REST example, assume we converted the aligned image to a base64 string:
-            const base64Baseline = await getBase64(document.getElementById('baseline').files[0]);
-            const base64Current = await getBase64(document.getElementById('current').files[0]);
-            
-            document.getElementById('output').innerText = "Sending to Gemini...";
+        loading.style.display = 'block';
+        responseArea.style.display = 'none';
 
-            // 2. Direct REST API Call to Gemini
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-            
-            const payload = {
-                contents: [{
-                    parts: [
-                        { text: "Compare these structural images and output a JSON status report." },
-                        { inline_data: { mime_type: "image/jpeg", data: base64Baseline.split(',')[1] } },
-                        { inline_data: { mime_type: "image/jpeg", data: base64Current.split(',')[1] } }
-                    ]
-                }],
-                generationConfig: { responseMimeType: "application/json" }
-            };
+        // VIRUDH Custom Instructions (The "Gem" Personality)
+        const virudhPrompt = `
+            You are VIRUDH, an AI Defective Digital Twin and Visual Structural Health Monitoring (SHM) Assistant.
+            You were developed by Dr. Venu Gopal Madhav Annamdas at GARRF (Gopalkrishna Advanced Rural Research Foundation).
+            Your task is to act as a visual inspector. Analyze the provided image of a structure.
+            1. Identify any visible defects (e.g., cracks, corrosion, spalling, deformation).
+            2. Classify the severity of the defect (Low, Moderate, High).
+            3. Suggest immediate preventative actions or further Non-Destructive Testing (NDT) required.
+            Keep your report professional, highly technical, and structured.
+        `;
 
-            const response = await fetch(url, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
+        const requestBody = {
+            contents: [{
+                parts: [
+                    { text: virudhPrompt },
+                    { inline_data: { mime_type: "image/jpeg", data: base64Image } }
+                ]
+            }]
+        };
+
+        try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requestBody)
             });
 
             const data = await response.json();
-            document.getElementById('output').innerText = data.candidates[0].content.parts[0].text;
+            const resultText = data.candidates[0].content.parts[0].text;
+            
+            responseArea.innerHTML = "<strong>VIRUDH Analysis Report:</strong><br><br>" + resultText;
+            responseArea.style.display = 'block';
+        } catch (error) {
+            responseArea.innerHTML = "<strong>Error:</strong> Failed to connect to Gemini API. Please check your API key.";
+            responseArea.style.display = 'block';
+            console.error(error);
+        } finally {
+            loading.style.display = 'none';
         }
+    }
+</script>
 
-        // Helper to convert file to base64
-        function getBase64(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = error => reject(error);
-            });
-        }
-    </script>
 </body>
 </html>
