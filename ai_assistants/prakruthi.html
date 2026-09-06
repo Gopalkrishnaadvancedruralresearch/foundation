@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prakruthi - Voice & Form Interface</title>
+    <style>
+        :root {
+            --primary: #2e7d32;
+            --primary-hover: #1b5e20;
+            --bg-color: #f4f9f4;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --border-color: #c8e6c9;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: var(--card-bg);
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        h2 {
+            color: var(--primary);
+            text-align: center;
+            margin-top: 0;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: 20px 0 10px;
+            color: var(--primary);
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 5px;
+        }
+
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        button.mic-btn {
+            background-color: #d32f2f;
+        }
+        button.mic-btn.listening {
+            background-color: #b71c1c;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        label {
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        input, textarea {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 1rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.1);
+        }
+
+        .submit-btn {
+            background-color: #ff8f00;
+            font-size: 1.05rem;
+            margin-top: 10px;
+        }
+        .submit-btn:hover {
+            background-color: #ef6c00;
+        }
+
+        #status-log {
+            margin-top: 15px;
+            font-size: 0.85rem;
+            color: #666;
+            text-align: center;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Prakruthi Control Panel</h2>
+    
+    <!-- 7 Exact Buttons -->
+    <div class="section-title">Voice & Interaction Controls</div>
+    <div class="button-grid">
+        <button onclick="speakText('Welcome to Prakruthi system interface.')">1. Welcome</button>
+        <button onclick="speakText('System status is normal and fully operational.')">2. Status Check</button>
+        <button onclick="speakText('Please fill out the form details below before submission.')">3. Instructions</button>
+        <button onclick="speakText('Data collection protocol initialized successfully.')">4. Protocol</button>
+        <button onclick="speakText('Warning: Ensure all mandatory fields are filled accurately.')">5. Warning</button>
+        <button id="mic-toggle-btn" class="mic-btn" onclick="toggleSpeechRecognition()">6. Start Mic</button>
+        <button onclick="stopAllSpeech()" style="background-color: #455a64;">7. Stop / Clear</button>
+    </div>
+
+    <!-- Form Collection -->
+    <div class="section-title">Data Collection Form</div>
+    <form id="prakruthi-form" onsubmit="handleFormSubmit(event)">
+        <div class="form-group">
+            <label for="fullName">Full Name *</label>
+            <input type="text" id="fullName" required placeholder="Enter your full name">
+        </div>
+
+        <div class="form-group">
+            <label for="email">Email Address *</label>
+            <input type="email" id="email" required placeholder="name@example.com">
+        </div>
+
+        <div class="form-group">
+            <label for="comments">Comments / Feedback *</label>
+            <textarea id="comments" rows="4" required placeholder="Enter your observations or inputs..."></textarea>
+        </div>
+
+        <button type="submit" class="submit-btn">Mandatory SUBMIT</button>
+    </form>
+
+    <div id="status-log">System ready.</div>
+</div>
+
+<script>
+    const synth = window.speechSynthesis;
+    let selectedVoice = null;
+    let recognition = null;
+    let isListening = false;
+
+    // Load Indian Female Voice if available
+    function loadVoices() {
+        const voices = synth.getVoices();
+        // Look for Indian English female voice or fallback to any Indian/female voice
+        selectedVoice = voices.find(v => (v.lang === 'en-IN' || v.lang.includes('IN')) && v.name.toLowerCase().includes('female')) ||
+                        voices.find(v => v.lang === 'en-IN') ||
+                        voices.find(v => v.lang.startsWith('en')) || 
+                        voices[0];
+    }
+
+    loadVoices();
+    if (synth.onvoiceschanged !== undefined) {
+        synth.onvoiceschanged = loadVoices;
+    }
+
+    // 1. Latest button wins immediately & no double voices
+    function speakText(text) {
+        if (!synth) {
+            alert("Speech synthesis is not supported in this browser.");
+            return;
+        }
+        
+        // Immediately cancel any queued or current speech (latest button wins)
+        synth.cancel();
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        if (selectedVoice) {
+            utterance.voice = selectedVoice;
+        }
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+
+        document.getElementById('status-log').innerText = `Speaking: "${text}"`;
+        
+        utterance.onend = () => {
+            document.getElementById('status-log').innerText = "System ready.";
+        };
+
+        synth.speak(utterance);
+    }
+
+    // Stop and clear speech queue
+    function stopAllSpeech() {
+        if (synth) {
+            synth.cancel();
+            document.getElementById('status-log').innerText = "Speech stopped.";
+        }
+        if (isListening && recognition) {
+            recognition.stop();
+        }
+    }
+
+    // 6. Microphone Input (Speech to Text)
+    function toggleSpeechRecognition() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            alert("Speech Recognition API is not supported in this browser. Try Google Chrome.");
+            return;
+        }
+
+        const micBtn = document.getElementById('mic-toggle-btn');
+
+        if (isListening) {
+            recognition.stop();
+            return;
+        }
+
+        recognition = new SpeechRecognition();
+        recognition.lang = 'en-IN'; // Set to Indian context
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+
+        recognition.onstart = () => {
+            isListening = true;
+            micBtn.classList.add('listening');
+            micBtn.innerText = "Listening...";
+            document.getElementById('status-log').innerText = "Listening for microphone input...";
+        };
+
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            // Automatically dump transcript into the comments box
+            const commentsField = document.getElementById('comments');
+            commentsField.value += (commentsField.value ? " " : "") + transcript;
+            document.getElementById('status-log').innerText = `Captured: "${transcript}"`;
+        };
+
+        recognition.onerror = (event) => {
+            document.getElementById('status-log').innerText = `Mic error: ${event.error}`;
+        };
+
+        recognition.onend = () => {
+            isListening = false;
+            micBtn.classList.remove('listening');
+            micBtn.innerText = "6. Start Mic";
+        };
+
+        recognition.start();
+    }
+
+    // Mandatory SUBMIT Handler (using mailto fallback to target recipient)
+    function handleFormSubmit(event) {
+        event.preventDefault();
+        
+        const name = document.getElementById('fullName').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const comments = document.getElementById('comments').value.trim();
+
+        if (!name || !email || !comments) {
+            alert("Please fill in all mandatory fields.");
+            return;
+        }
+
+        const recipient = "venuannamdas1976@gmail.com";
+        const subject = encodeURIComponent(`Prakruthi Submission from ${name}`);
+        const body = encodeURIComponent(`Name: ${name}\nEmail: ${email}\n\nComments:\n${comments}`);
+
+        // Trigger user's mail client to send data directly to target email
+        window.location.href = `mailto:${recipient}?subject=${subject}&body=${body}`;
+        
+        document.getElementById('status-log').innerText = "Form submitted via email client launcher.";
+        speakText("Form submitted successfully.");
+    }
+</script>
+
+</body>
+</html>
