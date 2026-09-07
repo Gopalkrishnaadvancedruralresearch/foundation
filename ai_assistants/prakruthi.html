@@ -128,11 +128,18 @@ h1{
   text-align:center;
   cursor:pointer;
   transition:all 0.15s ease;
+  width: 100%;
 }
-.keypad-btn:hover{
+.keypad-btn:hover:not(:disabled){
   border-color:var(--mid-green);
   background:#f7fbf9;
   transform:translateY(-2px);
+}
+.keypad-btn:disabled{
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: #f0f0f0;
+  border-color: #d0d0d0;
 }
 .keypad-btn .num{
   font-size:28px;
@@ -141,6 +148,9 @@ h1{
   display:block;
   margin-bottom:4px;
 }
+.keypad-btn:disabled .num{
+  color: #888;
+}
 .keypad-btn .label{
   font-size:10px;
   font-weight:800;
@@ -148,6 +158,9 @@ h1{
   text-transform:uppercase;
   display:block;
   letter-spacing:0.5px;
+}
+.keypad-btn:disabled .label{
+  color: #888;
 }
 
 /* Chat Area */
@@ -239,7 +252,7 @@ footer strong{display:block; margin-bottom:4px;}
         <option value="ml-IN">🇮🇳 മലയാളം (Malayalam)</option>
       </select>
     </div>
-    <div class="status-text" id="statusText">Prakruthi Voice Ready (Female, Indian)</div>
+    <div class="status-text" id="statusText">Press "CALL PRAKRUTHI" to activate keypad.</div>
   </section>
 
   <!-- Interactive Grid: Keypad & Assistant Dialogue -->
@@ -247,45 +260,45 @@ footer strong{display:block; margin-bottom:4px;}
     <!-- Keypad Box -->
     <section class="card" id="keypadCard">
       <h3 style="margin:0 0 6px 0;">Choose an Option</h3>
-      <p style="font-size:12px; color:var(--text-muted); margin:0 0 14px 0;">Please press a number from 1 to 8. Press 9 — RE-SELECT at any time to return here.</p>
+      <p style="font-size:12px; color:var(--text-muted); margin:0 0 14px 0;" id="keypadNotice">Please press "CALL PRAKRUTHI" to enable keypad options.</p>
 
       <div class="keypad-grid">
-        <div class="keypad-btn" onclick="selectOption(1)">
+        <button class="keypad-btn" onclick="selectOption(1)" disabled>
           <span class="num">1</span>
           <span class="label">STUDENT</span>
-        </div>
-        <div class="keypad-btn" onclick="selectOption(2)">
+        </button>
+        <button class="keypad-btn" onclick="selectOption(2)" disabled>
           <span class="num">2</span>
           <span class="label">FACULTY</span>
-        </div>
-        <div class="keypad-btn" onclick="selectOption(3)">
+        </button>
+        <button class="keypad-btn" onclick="selectOption(3)" disabled>
           <span class="num">3</span>
           <span class="label">FREELANCER</span>
-        </div>
-        <div class="keypad-btn" onclick="selectOption(4)">
+        </button>
+        <button class="keypad-btn" onclick="selectOption(4)" disabled>
           <span class="num">4</span>
           <span class="label">KNOW OUR FOUNDER</span>
-        </div>
-        <div class="keypad-btn" onclick="selectOption(5)">
+        </button>
+        <button class="keypad-btn" onclick="selectOption(5)" disabled>
           <span class="num">5</span>
           <span class="label">VISITOR</span>
-        </div>
-        <div class="keypad-btn" onclick="selectOption(6)">
+        </button>
+        <button class="keypad-btn" onclick="selectOption(6)" disabled>
           <span class="num">6</span>
           <span class="label">INDUSTRY PARTNER</span>
-        </div>
-        <div class="keypad-btn" onclick="selectOption(7)">
+        </button>
+        <button class="keypad-btn" onclick="selectOption(7)" disabled>
           <span class="num">7</span>
           <span class="label">PASSWORD FOR EXPERIMENTS</span>
-        </div>
-        <div class="keypad-btn" onclick="selectOption(8)">
+        </button>
+        <button class="keypad-btn" onclick="selectOption(8)" disabled>
           <span class="num">8</span>
           <span class="label">GARRF.IN STAFF</span>
-        </div>
-        <div class="keypad-btn" onclick="selectOption(9)">
+        </button>
+        <button class="keypad-btn" onclick="selectOption(9)" disabled>
           <span class="num">9</span>
           <span class="label">RE-SELECT</span>
-        </div>
+        </button>
       </div>
 
       <div class="notice-box">
@@ -298,7 +311,7 @@ footer strong{display:block; margin-bottom:4px;}
       <h3 style="margin:0 0 14px 0;">💬 Communicate with Prakruthi</h3>
       <div class="chat-box" id="chatBox">
         <div class="chat-msg" id="greetingMsg">
-          Hello, I am Prakruthi, AI Assistant to Dr. Venu Gopal Madhav Annamdas, Founder of GARRF Foundation. Please choose one of the following options by pressing a number from 1 to 8.
+          Hello! Please press "CALL PRAKRUTHI" above to initiate the conversation and enable the keypad.
         </div>
       </div>
     </section>
@@ -339,11 +352,12 @@ let currentOption = null;
 let formDataStore = {};
 let prakruthiVoice = null;
 let currentLang = 'en-IN';
+let callActive = false;
 
 // Translations for Speech & Interface Prompts
 const languageData = {
   'en-IN': {
-    greeting: "Hello, I am Prakruthi. Please choose an option from 1 to 8 on the keypad.",
+    greeting: "Hello, I am Prakruthi, AI Assistant to Dr. Venu Gopal Madhav Annamdas, Founder of GARRF Foundation. Please choose one of the options from 1 to 8 on the keypad.",
     reset: "Options reset. Please choose a number from 1 to 8.",
     optionSelected: "Option {num}, {title} selected. Please complete the form details.",
     formReady: "Form details ready. Please confirm to prepare your email.",
@@ -461,13 +475,26 @@ if ('speechSynthesis' in window) {
   loadPrakruthiVoice();
 }
 
+function setKeypadState(enabled) {
+  const buttons = document.querySelectorAll('.keypad-btn');
+  buttons.forEach(btn => btn.disabled = !enabled);
+  const notice = document.getElementById('keypadNotice');
+  if (enabled) {
+    notice.textContent = "Please press a number from 1 to 8. Press 9 — RE-SELECT at any time to return here.";
+  } else {
+    notice.textContent = "Please press 'CALL PRAKRUTHI' to enable keypad options.";
+  }
+}
+
 function changeLanguage() {
   currentLang = document.getElementById('languageSelect').value;
   loadPrakruthiVoice();
   
-  const text = languageData[currentLang].greeting;
-  addChatMsg(text);
-  speak(text);
+  if (callActive) {
+    const text = languageData[currentLang].greeting;
+    addChatMsg(text);
+    speak(text);
+  }
 }
 
 function speak(text) {
@@ -487,13 +514,20 @@ function speak(text) {
 }
 
 function startVoice() {
+  callActive = true;
+  setKeypadState(true);
   document.getElementById('statusText').textContent = `Call Connected to Prakruthi (${currentLang})`;
-  speak(languageData[currentLang].greeting);
+  const greeting = languageData[currentLang].greeting;
+  addChatMsg(greeting);
+  speak(greeting);
 }
 
 function stopVoice() {
+  callActive = false;
+  setKeypadState(false);
   if ('speechSynthesis' in window) speechSynthesis.cancel();
-  document.getElementById('statusText').textContent = "Call Ended.";
+  document.getElementById('statusText').textContent = "Call Ended. Keypad locked.";
+  addChatMsg("Call ended. Press 'CALL PRAKRUTHI' to start again.");
 }
 
 function focusKeypad() {
@@ -501,6 +535,8 @@ function focusKeypad() {
 }
 
 function selectOption(num) {
+  if (!callActive) return;
+
   const langTexts = languageData[currentLang];
 
   if (num === 9) {
