@@ -311,6 +311,7 @@ footer strong{display:block; margin-bottom:4px;}
 <script>
 let currentOption = null;
 let formDataStore = {};
+let selectedVoice = null;
 
 const optionsMap = {
   1: { title: "Student Enquiry", fields: ["Full Name", "Institution", "Course / Year", "Message"] },
@@ -323,17 +324,44 @@ const optionsMap = {
   8: { title: "Password Access Request", fields: ["Applicant Name", "Institution", "Reason for Experiment Access"] }
 };
 
+// Select Natural Indian Female Voice
+function loadFemaleIndianVoice() {
+  if (!('speechSynthesis' in window)) return;
+  
+  const voices = speechSynthesis.getVoices();
+  
+  // Prioritize Indian English/Hindi female voices
+  selectedVoice = voices.find(v => 
+    v.lang.includes('IN') && (v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('natural') || v.name.includes('Google') || v.name.includes('Heera') || v.name.includes('Neerja') || v.name.includes('Kalpana'))
+  ) || voices.find(v => 
+    v.lang.includes('en-IN') || v.lang.includes('te-IN') || v.lang.includes('hi-IN')
+  ) || voices.find(v => 
+    v.name.toLowerCase().includes('female')
+  ) || voices[0];
+}
+
+if ('speechSynthesis' in window) {
+  speechSynthesis.onvoiceschanged = loadFemaleIndianVoice;
+  loadFemaleIndianVoice();
+}
+
 function speak(text) {
-  if ('speechSynthesis' in window) {
-    speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    u.rate = 0.9;
-    speechSynthesis.speak(u);
-  }
+  if (!('speechSynthesis' in window)) return;
+  speechSynthesis.cancel();
+  
+  const utterance = new SpeechSynthesisUtterance(text);
+  
+  if (!selectedVoice) loadFemaleIndianVoice();
+  if (selectedVoice) utterance.voice = selectedVoice;
+  
+  utterance.rate = 0.92;
+  utterance.pitch = 1.05;
+  
+  speechSynthesis.speak(utterance);
 }
 
 function startVoice() {
-  document.getElementById('statusText').textContent = "Voice Assistant Active";
+  document.getElementById('statusText').textContent = "Voice Assistant Active (Indian Female Voice)";
   speak("Hello, I am Prakruthi. Please choose an option from 1 to 8 on the keypad.");
 }
 
@@ -358,12 +386,11 @@ function selectOption(num) {
 
   currentOption = num;
   const config = optionsMap[num];
-  const msgText = `Option ${num} (${config.title}) selected. Please complete the form details.`;
+  const msgText = `Option ${num}, ${config.title} selected. Please complete the form details.`;
   
   addChatMsg(msgText);
   speak(msgText);
 
-  // Render Dynamic Form
   document.getElementById('formTitle').textContent = `📋 ${num}. ${config.title}`;
   const table = document.getElementById('dynamicFields');
   table.innerHTML = '';
@@ -400,7 +427,6 @@ function submitForm(e) {
     formDataStore[inp.name] = inp.value;
   });
 
-  // Render Confirmation Preview
   let html = `<table class="form-table"><thead><tr><th>Field</th><th>Response</th></tr></thead><tbody>`;
   for(let key in formDataStore){
     html += `<tr><th>${key}</th><td>${formDataStore[key]}</td></tr>`;
