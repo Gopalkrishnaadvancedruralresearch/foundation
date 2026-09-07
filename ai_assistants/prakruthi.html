@@ -82,6 +82,9 @@ footer strong{color:#fff}
    <button class="secondary" onclick="goHome()">🔢 SHOW KEYPAD</button>
   </div>
   <div id="status" class="status">Voice ready. Click Communicate with Prakruthi and allow microphone access.</div>
+  <div style="margin-top:10px;font-size:13px;color:#637267">
+   <b>Voice:</b> <span id="voiceName">MEETH / Natural Indian Female — preferred</span>
+  </div>
  </div>
 </section>
 
@@ -205,33 +208,91 @@ function stopVoice(){
  statusEl.textContent="Voice stopped.";
 }
 function chooseFemaleIndianVoice(){
- const voices=window.speechSynthesis?window.speechSynthesis.getVoices():[];
- /* Strong preference for Indian-English female voice names. */
- const preferredNames=[
-  "Google हिन्दी Female","Google Hindi Female","Google UK English Female",
-  "Microsoft Neerja","Microsoft Heera","Microsoft Kalpana","Microsoft Swara",
-  "Aditi","Raveena","Veena"
- ];
- for(const name of preferredNames){
-  const v=voices.find(x=>x.name.toLowerCase().includes(name.toLowerCase()) && /en-in|hi-in/i.test(x.lang));
-  if(v)return v;
- }
- return voices.find(v=>/en-in/i.test(v.lang) && /female|woman|girl/i.test(v.name))
-     || voices.find(v=>/en-in/i.test(v.lang))
-     || voices.find(v=>/hi-in/i.test(v.lang))
-     || null;
+  const voices=window.speechSynthesis?window.speechSynthesis.getVoices():[];
+
+  /*
+    VOICE PRIORITY:
+    1. MEETH — if the browser/device exposes a voice whose name contains "Meeth"
+    2. Known Indian female natural voices
+    3. Any explicitly female Indian-English voice
+    4. Any Indian-English voice
+    5. Final fallback: first available voice
+
+    The browser can only use voices installed/exposed by the device/browser.
+  */
+  const meeth = voices.find(v => /meeth/i.test(v.name));
+  if(meeth) return meeth;
+
+  const preferred = [
+    "Microsoft Swara Online (Natural) - English (India)",
+    "Microsoft Neerja Online (Natural) - English (India)",
+    "Microsoft Aarti Online (Natural) - English (India)",
+    "Microsoft Heera Online (Natural) - English (India)",
+    "Google English (India) Female",
+    "Google हिन्दी Female",
+    "Google Hindi Female",
+    "Aditi",
+    "Raveena",
+    "Veena",
+    "Heera",
+    "Swara",
+    "Neerja"
+  ];
+
+  for(const name of preferred){
+    const v=voices.find(x => x.name.toLowerCase().includes(name.toLowerCase()));
+    if(v && /en-in|hi-in/i.test(v.lang)) return v;
+  }
+
+  const femaleIndian = voices.find(v =>
+    /en-in/i.test(v.lang) &&
+    /(female|woman|girl|swara|neerja|aarti|heera|raveena|veena|aditi)/i.test(v.name)
+  );
+  if(femaleIndian) return femaleIndian;
+
+  const indian = voices.find(v => /en-in/i.test(v.lang));
+  if(indian) return indian;
+
+  return voices[0] || null;
 }
+
+function refreshVoiceStatus(){
+  const v=chooseFemaleIndianVoice();
+  if(v){
+    statusEl.textContent="Voice selected: "+v.name+" ("+v.lang+").";
+  }else{
+    statusEl.textContent="No browser voice is currently available.";
+  }
+}
+
 function speak(text){
- stopVoice();
- if(!window.speechSynthesis){statusEl.textContent="Speech output is not supported by this browser.";return}
- const u=new SpeechSynthesisUtterance(text);
- u.lang="en-IN";u.rate=.91;u.pitch=1.12;u.volume=1;
- const voice=chooseFemaleIndianVoice();
- if(voice)u.voice=voice;
- u.onstart=()=>statusEl.textContent="Prakruthi is speaking…";
- u.onend=()=>statusEl.textContent="Prakruthi is ready.";
- window.speechSynthesis.speak(u);
+  if(window.speechSynthesis) window.speechSynthesis.cancel();
+
+  if(!window.speechSynthesis){
+    statusEl.textContent="Speech output is not supported by this browser.";
+    return;
+  }
+
+  const u=new SpeechSynthesisUtterance(text);
+  const voice=chooseFemaleIndianVoice();
+
+  /*
+    Never leave the voice unspecified if an Indian voice is available.
+    This prevents the browser's default male voice from being selected.
+  */
+  u.lang = voice ? voice.lang : "en-IN";
+  u.voice = voice || null;
+  u.rate = 0.90;
+  u.pitch = 1.08;
+  u.volume = 1.0;
+
+  u.onstart=()=>statusEl.textContent="Prakruthi is speaking in the selected female/Meeth voice…";
+  u.onend=()=>statusEl.textContent="Prakruthi is ready.";
+  u.onerror=()=>statusEl.textContent="Voice playback failed. Please use the keypad or text fields.";
+
+  window.speechSynthesis.speak(u);
 }
+
 function say(text){addMessage(text,"prakruthi");speak(text)}
 
 function startVoice(){
@@ -368,9 +429,21 @@ function goHome(){
 }
 function esc(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
 document.addEventListener("keydown",e=>{if(/^[1-9]$/.test(e.key)){e.key==="9"?goHome():selectOption(Number(e.key))}});
-window.speechSynthesis&&window.speechSynthesis.addEventListener("voiceschanged",()=>{ /* refresh voice list */ });
+if(window.speechSynthesis){
+  window.speechSynthesis.addEventListener("voiceschanged",()=>{
+    const v=chooseFemaleIndianVoice();
+    document.getElementById("voiceName").textContent =
+      v ? (v.name+" — "+v.lang) : "MEETH / Natural Indian Female — preferred";
+  });
+}
 window.addEventListener("load",()=>{
- setTimeout(()=>say("Hello, I am Prakruthi, AI Assistant to Dr. Venu Gopal Madhav Annamdas, Founder of GARR Foundation. Please choose one of the following options by pressing a number from 1 to 8."),500);
+ setTimeout(()=>{
+   refreshVoiceStatus();
+   const v=chooseFemaleIndianVoice();
+   document.getElementById("voiceName").textContent =
+     v ? (v.name+" — "+v.lang) : "MEETH / Natural Indian Female — preferred";
+   say("Hello, I am Prakruthi, AI Assistant to Dr. Venu Gopal Madhav Annamdas, Founder of GARR Foundation. Please choose one of the following options by pressing a number from 1 to 8.");
+ },900);
 });
 </script>
 </body>
