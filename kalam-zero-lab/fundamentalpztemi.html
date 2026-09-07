@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GARRF Kalam Zero Cost Lab &bull; PZT Electromechanical Impedance (EMI) Analyzer</title>
+    <!-- Include KaTeX for flawless mathematical rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body);"></script>
+    <style>
+        :root {
+            --primary: #0f172a;
+            --accent: #0284c7;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --kalam-gold: #b45309;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #334155;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            background: var(--card-bg);
+            padding: 20px 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            margin-bottom: 25px;
+            gap: 20px;
+        }
+        header img.logo-img {
+            height: 65px;
+            width: auto;
+            border-radius: 6px;
+            object-fit: contain;
+        }
+        header .title-container {
+            display: flex;
+            flex-direction: column;
+        }
+        header h1 {
+            color: var(--primary);
+            margin: 0 0 4px 0;
+            font-size: 1.6rem;
+        }
+        header p {
+            color: #64748b;
+            margin: 0;
+            font-size: 0.9rem;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            gap: 20px;
+            max-width: 1500px;
+            margin: 0 auto;
+        }
+        @media (max-width: 1050px) {
+            .container { grid-template-columns: 1fr; }
+            header { flex-direction: column; text-align: center; justify-content: center; }
+        }
+        .card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .card h2 {
+            font-size: 1.2rem;
+            margin-top: 0;
+            color: var(--primary);
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 8px;
+        }
+        .input-group {
+            margin-bottom: 12px;
+        }
+        label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px 10px;
+            box-sizing: border-box;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            background: #fff;
+        }
+        button {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-top: 10px;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background-color: #0369a1;
+        }
+        .results-box {
+            margin-top: 15px;
+            background: #f1f5f9;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        .results-box p {
+            margin: 6px 0;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            color: white;
+            font-size: 0.85rem;
+            margin-top: 5px;
+        }
+        .sim-viewport {
+            position: relative;
+            background: #090d16;
+            border-radius: 8px;
+            overflow: hidden;
+            height: 520px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        .sim-controls {
+            margin-top: 12px;
+            display: flex;
+            gap: 10px;
+        }
+        .sim-controls button {
+            margin-top: 0;
+            background-color: #475569;
+        }
+        .sim-controls button.primary-action {
+            background-color: var(--success);
+        }
+
+        /* Large Sections Styling */
+        .section-box {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+            max-width: 1500px;
+            margin-left: auto;
+            margin-right: auto;
+            border-left: 4px solid #0284c7;
+        }
+        .section-box.quiz-box {
+            border-left-color: #f59e0b;
+        }
+        .section-box h3 {
+            margin-top: 0;
+            color: var(--primary);
+            font-size: 1.2rem;
+            border-bottom: 2px solid #f1f5f9;
+            padding-bottom: 8px;
+        }
+        .section-box h4 {
+            color: #475569;
+            margin-bottom: 6px;
+            font-size: 0.98rem;
+        }
+        .section-box p, .section-box ul {
+            font-size: 0.92rem;
+            color: #475569;
+            line-height: 1.6;
+        }
+        .section-box ul { padding-left: 20px; margin: 6px 0; }
+        .section-box ul li { margin-bottom: 8px; }
+
+        /* Quiz Styling */
+        .quiz-question {
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .quiz-question p {
+            font-weight: 600;
+            color: #92400e;
+            margin-top: 0;
+        }
+        .options-list label {
+            display: block;
+            font-weight: normal;
+            margin-bottom: 6px;
+            cursor: pointer;
+        }
+        .quiz-feedback {
+            font-weight: bold;
+            margin-top: 8px;
+            font-size: 0.9rem;
+        }
+
+        /* Infrastructure Grid */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            max-width: 1500px;
+            margin: 0 auto 20px auto;
+        }
+        @media (max-width: 800px) {
+            .info-grid { grid-template-columns: 1fr; }
+        }
+        .info-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid var(--accent);
+        }
+        .info-card.kalam {
+            border-left-color: var(--kalam-gold);
+            background: linear-gradient(to bottom right, #fffbeb, #ffffff);
+        }
+        .info-card h3 {
+            margin-top: 0;
+            color: var(--primary);
+            font-size: 1.05rem;
+        }
+        .info-card.kalam h3 {
+            color: var(--kalam-gold);
+        }
+        .info-card p, .info-card ul {
+            font-size: 0.9rem;
+            color: #475569;
+            line-height: 1.5;
+        }
+        .info-card ul { padding-left: 20px; margin: 8px 0; }
+
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            font-size: 0.85rem;
+            color: #64748b;
+            border-top: 1px solid #e2e8f0;
+            max-width: 1500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <img src="logo.jpeg" alt="GARRF Logo" class="logo-img" onerror="this.style.display='none'">
+    <div class="title-container">
+        <h1>Gopalkrishna Advanced Rural Research Foundation</h1>
+        <p>Virtual Undergraduate Engineering Laboratory &bull; PZT Electromechanical Impedance (EMI) Signature Analyzer</p>
+    </div>
+</header>
+
+<div class="container">
+    <!-- Left Column: Parameters & Controls -->
+    <div class="card">
+        <h2>EMI Test Parameters</h2>
+
+        <div class="input-group">
+            <label>Host Structure Material:</label>
+            <select id="hostMaterial">
+                <option value="aluminum">Aluminum Alloy (6061-T6 Beam)</option>
+                <option value="steel">Structural Steel (ISMB / Mild Steel Beam)</option>
+                <option value="concrete">Reinforced Concrete Structure / Slab</option>
+                <option value="composite">Carbon Fiber Reinforced Polymer (CFRP)</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <label>Structural Health Condition:</label>
+            <select id="structuralState">
+                <option value="baseline">Healthy Structure (Baseline Reference)</option>
+                <option value="bolt_loose">Moderate Bolt Loosening / Joint Degradation</option>
+                <option value="crack">Internal Micro-Crack / Delamination</option>
+                <option value="severe">Severe Structural Damage / Corrosion</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <label>Sweep Start Frequency (\(\text{kHz}\)):</label>
+            <input type="number" id="freqStart" value="30" step="5" min="10" max="100">
+        </div>
+        
+        <div class="input-group">
+            <label>Sweep End Frequency (\(\text{kHz}\)):</label>
+            <input type="number" id="freqEnd" value="70" step="5" min="50" max="200">
+        </div>
+
+        <div class="input-group">
+            <label>Damage Severity Index (%):</label>
+            <input type="number" id="damageSeverity" value="15" step="5" min="0" max="80">
+        </div>
+
+        <button class="primary-action" onclick="runEmiSimulation()">Run Frequency Sweep</button>
+        <button style="background-color: #475569;" onclick="resetEmiTest()">Reset Analyzer</button>
+
+        <div class="results-box" id="calcResults">
+            <p style="color: #64748b; font-style: italic;">Configure material and parameters, then click "Run Frequency Sweep" to generate the signature.</p>
+        </div>
+    </div>
+
+    <!-- Right Column: Real-time Canvas Simulation -->
+    <div class="card" style="display: flex; flex-direction: column;">
+        <h2>Real-Time Conductance (\(G\)) & Susceptance (\(B\)) Signature Viewport</h2>
+        <div class="sim-viewport">
+            <canvas id="simCanvas" width="1000" height="520"></canvas>
+        </div>
+        <div class="sim-controls">
+            <button class="primary-action" onclick="runEmiSimulation()">Run Sweep</button>
+            <button onclick="resetEmiTest()">Reset View</button>
+        </div>
+        <p style="font-size: 0.85rem; color: #475569; margin-top: 12px; line-height: 1.5; background: #f8fafc; padding: 10px; border-left: 3px solid var(--accent); border-radius: 4px;">
+            <em>Note:</em> High-frequency electromechanical impedance technique monitors variations in structural dynamic stiffness \(Z(\omega)\) [\(\text{N}\cdot\text{s}/\text{m}\)] through coupled electrical conductance \(G(\omega)\) [\(\text{mS}\)] and susceptance \(B(\omega)\) [\(\text{mS}\)] signatures across diverse structural substrates.
+        </p>
+    </div>
+</div>
+
+<!-- Comprehensive Engineering Theory Section -->
+<div class="section-box">
+<h3>Comprehensive Electromechanical Impedance (EMI) SHM Theory</h3>
+    
+    <h4>1. Coupled Electromechanical Modeling Across Substrates</h4>
+    <p>When a surface-bonded PZT patch is excited by a high-frequency harmonic alternating voltage \(V\), it interacts directly with the host structure's mechanical impedance \(Z_s(\omega)\) and the PZT patch's internal mechanical impedance \(Z_a(\omega)\). The substrate material properties—such as Young’s modulus \(E\) and mass density \(\rho\)—dictate baseline resonance frequencies (\(f_r \propto \sqrt{E/\rho}\)). The total complex electrical admittance \(Y(\omega)\) [\(\text{mS}\)] measured by an impedance analyzer is formulated as:</p>
+    <p style="text-align: center; font-weight: bold; color: var(--primary);">
+        $$Y(\omega) = G(\omega) + j B(\omega) = j\omega \varepsilon_{33}^T \left(1 - j\delta\right) \frac{A}{h} + \omega k_{31}^2 \frac{Z_s(\omega)}{Z_s(\omega) + Z_a(\omega)} \tan\left(\frac{\theta}{2}\right)$$
+    </p>
+    <p>Where:</p>
+    <ul>
+        <li><strong>\(G(\omega)\) [\(\text{mS}\)]</strong> = Conductance (real part of admittance), highly sensitive to structural resonant shifts and damage across aluminum, steel, concrete, or composites.</li>
+        <li><strong>\(B(\omega)\) [\(\text{mS}\)]</strong> = Susceptance (imaginary part of admittance), dominated by the baseline capacitive properties of the PZT sensor.</li>
+        <li><strong>\(Z_s(\omega)\) & \(Z_a(\omega)\) [\(\text{N}\cdot\text{s}/\text{m}\)]</strong> = Mechanical impedances of the host structure and PZT actuator respectively.</li>
+    </ul>
+
+    <h4 style="margin-top: 15px;">2. Damage Detection and Statistical Metrics (RMSD)</h4>
+    <p>Any localized structural change alters local stiffness and damping, shifting the resonant peaks in the conductance \(G(\omega)\) spectrum. Quantifying this damage is commonly performed using the Root Mean Square Deviation (RMSD) index:</p>
+    <p style="text-align: center; font-weight: bold; color: var(--primary);">
+        $$\text{RMSD} = \sqrt{\frac{\sum_{i=1}^{N} \left[ G_{\text{damage}}(\omega_i) - G_{\text{baseline}}(\omega_i) \right]^2}{\sum_{i=1}^{N} \left[ G_{\text{baseline}}(\omega_i) \right]^2}} \times 100\%$$
+    </p>
+</div>
+
+<!-- Interactive Student Quiz Section -->
+<div class="section-box quiz-box">
+<h3>Interactive Knowledge Check & Student Assessment</h3>
+<p>Test your understanding of Electromechanical Impedance (EMI) and structural health monitoring by answering the following questions:</p>
+
+    <div class="quiz-question">
+        <p>Q1. How do different substrate materials (such as Aluminum versus Structural Steel) affect the conductance signature peaks?</p>
+        <div class="options-list">
+            <label><input type="radio" name="q1" value="a" onclick="checkAnswer(1, 'a')"> a) Different stiffness-to-density ratios shift the baseline resonant peak frequencies along the frequency spectrum</label>
+            <label><input type="radio" name="q1" value="b" onclick="checkAnswer(1, 'b')"> b) Substrate material has zero effect on piezoelectric response</label>
+            <label><input type="radio" name="q1" value="c" onclick="checkAnswer(1, 'c')"> c) Steel always results in zero electrical conductance</label>
+            <label><input type="radio" name="q1" value="d" onclick="checkAnswer(1, 'd')"> d) Concrete causes the frequency scale to invert completely</label>
+        </div>
+        <div id="feedback1" class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz-question">
+        <p>Q2. Which component of the complex electrical admittance measured from a PZT patch is most sensitive to structural damage?</p>
+        <div class="options-list">
+            <label><input type="radio" name="q2" value="a" onclick="checkAnswer(2, 'a')"> a) Conductance (\(G\))</label>
+            <label><input type="radio" name="q2" value="b" onclick="checkAnswer(2, 'b')"> b) Pure DC resistance</label>
+            <label><input type="radio" name="q2" value="c" onclick="checkAnswer(2, 'c')"> c) Lead wire inductance</label>
+            <label><input type="radio" name="q2" value="d" onclick="checkAnswer(2, 'd')"> d) Ambient room temperature coefficient</label>
+        </div>
+        <div id="feedback2" class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz-question">
+        <p>Q3. Why are high frequencies (\(30\text{ kHz}\) to \(400\text{ kHz}\)) utilized in PZT-based EMI measurements?</p>
+        <div class="options-list">
+            <label><input type="radio" name="q3" value="a" onclick="checkAnswer(3, 'a')"> a) High frequencies yield short wavelengths capable of detecting microscopic, incipient damage near the patch footprint</label>
+            <label><input type="radio" name="q3" value="b" onclick="checkAnswer(3, 'b')"> b) Low frequencies melt the sensor</label>
+            <label><input type="radio" name="q3" value="c" onclick="checkAnswer(3, 'c')"> c) High frequencies remove electrical wiring requirements</label>
+            <label><input type="radio" name="q3" value="d" onclick="checkAnswer(3, 'd')"> d) Government standards mandate high frequencies</label>
+        </div>
+        <div id="feedback3" class="quiz-feedback"></div>
+    </div>
+</div>
+
+<!-- Infrastructure, Cost, and Kalam Lab Information Section -->
+<div class="info-grid">
+    <div class="info-card">
+        <h3>Real-World Infrastructure & Cost Analysis</h3>
+        <p><strong>Where it exists:</strong> Advanced NDT and Smart Structures labs use precision impedance analyzers (such as Keysight E4980A or HIOKI LCR meters) connected to PZT sensor arrays on metallic and concrete testbeds.</p>
+        <p><strong>Cost of Real Equipment:</strong> Professional high-frequency impedance analyzers and data loggers cost between <strong>$15,000 to $35,000 (INR 12 Lakhs to 30 Lakhs+)</strong>.</p>
+    </div>
+
+    <div class="info-card kalam">
+        <h3>Kalam Zero Cost Lab ($0 Initiative)</h3>
+        <p><strong>Cost: $0.00 (Completely Free)</strong></p>
+        <p>In alignment with Dr. A.P.J. Abdul Kalam's vision of empowering grassroots innovators and resource-constrained institutions, the <strong>Kalam Zero Cost Lab</strong> initiative eliminates prohibitive capital barriers.</p>
+        <ul>
+            <li>Requires zero benchtop LCR meters or expensive impedance analyzers.</li>
+            <li>Runs instantly inside web browsers on standard PCs in any rural or urban engineering college.</li>
+            <li>Provides universal interactive training on smart structural health monitoring across beams and slabs for every student.</li>
+        </ul>
+    </div>
+</div>
+
+<footer>
+    &copy; 2026 Gopalkrishna Advanced Rural Research Foundation (GARRF). All rights reserved. <br>
+    Open-Source Engineering Education Initiative &bull; Web: <a href="https://garrf.in" target="_blank" style="color: var(--accent); text-decoration: none;">garrf.in</a>
+</footer>
+
+<script>
+    let simulationActive = false;
+    let emiData = {
+        material: 'aluminum',
+        state: 'baseline',
+        fStart: 30,
+        fEnd: 70,
+        severity: 15,
+        rmsd: 0
+    };
+
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function drawGridBackground() {
+        ctx.fillStyle = '#090d16';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 1;
+        for (let x = 0; x < canvas.width; x += 40) {
+            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+        }
+        for (let y = 0; y < canvas.height; y += 40) {
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+        }
+    }
+
+    function drawInitialScreen() {
+        drawGridBackground();
+        ctx.fillStyle = '#64748b';
+        ctx.font = '16px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Awaiting Frequency Sweep...', canvas.width / 2, canvas.height / 2 - 10);
+        ctx.font = '13px sans-serif';
+        ctx.fillStyle = '#475569';
+        ctx.fillText('Select substrate material, configure parameters, and click "Run Frequency Sweep"', canvas.width / 2, canvas.height / 2 + 20);
+        ctx.textAlign = 'left';
+    }
+
+    function runEmiSimulation() {
+        let material = document.getElementById('hostMaterial').value;
+        let state = document.getElementById('structuralState').value;
+        let fStart = parseFloat(document.getElementById('freqStart').value) || 30;
+        let fEnd = parseFloat(document.getElementById('freqEnd').value) || 70;
+        let severity = parseFloat(document.getElementById('damageSeverity').value) || 15;
+
+        if (fStart >= fEnd) {
+            fEnd = fStart + 20;
+            document.getElementById('freqEnd').value = fEnd;
+        }
+
+        let calculatedRmsd = 0;
+        let statusText = "HEALTHY (BASELINE MATCH)";
+        let statusColor = "var(--success)";
+
+        if (state === 'bolt_loose') {
+            calculatedRmsd = severity * 0.45;
+            statusText = `MODERATE JOINT DEGRADATION (RMSD: ${calculatedRmsd.toFixed(1)}%)`;
+            statusColor = "var(--kalam-gold)";
+        } else if (state === 'crack') {
+            calculatedRmsd = severity * 0.82;
+            statusText = `INTERNAL MICRO-CRACK DETECTED (RMSD: ${calculatedRmsd.toFixed(1)}%)`;
+            statusColor = "#ea580c";
+        } else if (state === 'severe') {
+            calculatedRmsd = severity * 1.45;
+            statusText = `CRITICAL STRUCTURAL DAMAGE (RMSD: ${calculatedRmsd.toFixed(1)}%)`;
+            statusColor = "var(--danger)";
+        } else if (state === 'baseline') {
+            calculatedRmsd = 0.0;
+            statusText = "HEALTHY STRUCTURE (NO DAMAGE)";
+            statusColor = "var(--success)";
+        }
+
+        emiData = {
+            material,
+            state,
+            fStart,
+            fEnd,
+            severity,
+            rmsd: calculatedRmsd
+        };
+
+        simulationActive = true;
+
+        let matNameMap = {
+            'aluminum': 'Aluminum Alloy Beam',
+            'steel': 'Structural Steel Beam',
+            'concrete': 'Reinforced Concrete Slab',
+            'composite': 'Carbon Fiber Composite (CFRP)'
+        };
+
+        document.getElementById('calcResults').innerHTML = `
+            <p><strong>Substrate:</strong> ${matNameMap[material]}</p>
+            <p><strong>Frequency Band:</strong> ${fStart} kHz to ${fEnd} kHz</p>
+            <p><strong>Damage Severity Index:</strong> ${severity}%</p>
+            <p><strong>Signature Metric (RMSD):</strong> <span style="color: var(--accent); font-weight: bold;">${calculatedRmsd.toFixed(2)}%</span></p>
+            <span class="status-badge" style="background-color: ${statusColor};">${statusText}</span>
+        `;
+    }
+
+    function resetEmiTest() {
+        simulationActive = false;
+        document.getElementById('hostMaterial').value = 'aluminum';
+        document.getElementById('structuralState').value = 'baseline';
+        document.getElementById('freqStart').value = 30;
+        document.getElementById('freqEnd').value = 70;
+        document.getElementById('damageSeverity').value = 15;
+        document.getElementById('calcResults').innerHTML = `
+            <p style="color: #64748b; font-style: italic;">Configure material and parameters, then click "Run Frequency Sweep" to generate the signature.</p>
+        `;
+        drawInitialScreen();
+    }
+
+    function getMaterialPeakCenters() {
+        if (emiData.material === 'aluminum') return [38, 55, 68];
+        if (emiData.material === 'steel') return [45, 62, 78];
+        if (emiData.material === 'concrete') return [25, 42, 60];
+        if (emiData.material === 'composite') return [50, 70, 88];
+        return [38, 55, 68];
+    }
+
+    function drawScene() {
+        if (!simulationActive) {
+            return;
+        }
+
+        drawGridBackground();
+
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = 'bold 15px sans-serif';
+        ctx.fillText('ELECTROMECHANICAL IMPEDANCE (EMI) CONDUCTANCE SIGNATURE G(\u03c9)', 50, 40);
+
+        ctx.fillStyle = '#cbd5e1';
+        ctx.font = '13px sans-serif';
+        ctx.fillText(`Substrate: ${emiData.material.toUpperCase()}    |    Range: ${emiData.fStart} kHz - ${emiData.fEnd} kHz    |    RMSD: ${emiData.rmsd.toFixed(1)}%`, 50, 68);
+
+        // Draw Plot Area
+        let plotX = 80;
+        let plotY = 110;
+        let plotWidth = 840;
+        let plotHeight = 350;
+
+        ctx.fillStyle = '#020617';
+        ctx.fillRect(plotX, plotY, plotWidth, plotHeight);
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(plotX, plotY, plotWidth, plotHeight);
+
+        // --- Y-AXIS SUBDIVISIONS & DIVISIONS (Conductance G in mS) ---
+        let maxG = 4.0;
+        for (let g = 0.0; g <= maxG; g += 0.5) {
+            let yPos = (plotY + plotHeight - 40) - (g / maxG) * 260;
+            
+            ctx.strokeStyle = (g === 0.0 || g === 2.0 || g === 4.0) ? '#334155' : '#1e293b';
+            ctx.lineWidth = (g === 0.0 || g === 2.0 || g === 4.0) ? 1.2 : 0.8;
+            ctx.beginPath();
+            ctx.moveTo(plotX, yPos);
+            ctx.lineTo(plotX + plotWidth, yPos);
+            ctx.stroke();
+
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '10px sans-serif';
+            ctx.textAlign = 'right';
+            ctx.fillText(g.toFixed(1) + ' mS', plotX - 8, yPos + 4);
+        }
+
+        // --- X-AXIS SUBDIVISIONS & DIVISIONS (Frequency in kHz) ---
+        let fSpan = emiData.fEnd - emiData.fStart;
+        let stepKhz = fSpan > 60 ? 10 : 5;
+        let firstTick = Math.ceil(emiData.fStart / stepKhz) * stepKhz;
+
+        for (let f = firstTick; f <= emiData.fEnd; f += stepKhz) {
+            let px = plotX + ((f - emiData.fStart) / fSpan) * plotWidth;
+
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 0.8;
+            ctx.beginPath();
+            ctx.moveTo(px, plotY);
+            ctx.lineTo(px, plotY + plotHeight - 40);
+            ctx.stroke();
+
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '10px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(f + ' kHz', px, plotY + plotHeight - 22);
+        }
+        ctx.textAlign = 'left';
+
+        // Axis Titles
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '11px sans-serif';
+        ctx.fillText('Conductance G (\u00b5S / mS)', plotX + 15, plotY + 18);
+        ctx.fillText('Frequency (\u03c9 in kHz) \u2192', plotX + plotWidth - 160, plotY + plotHeight - 8);
+
+        let peaks = getMaterialPeakCenters();
+
+        // Draw Baseline Curve (Gray Dashed)
+        ctx.strokeStyle = '#64748b';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        for (let px = 0; px <= plotWidth; px += 2) {
+            let freq = emiData.fStart + (px / plotWidth) * fSpan;
+            let gVal = 0.5 + 1.2 * Math.exp(-Math.pow(freq - peaks[0], 2) / 40) 
+                           + 2.5 * Math.exp(-Math.pow(freq - peaks[1], 2) / 30)
+                           + 0.8 * Math.exp(-Math.pow(freq - peaks[2], 2) / 50);
+            let screenY = (plotY + plotHeight - 40) - (gVal / maxG) * 260;
+            if (px === 0) ctx.moveTo(plotX + px, screenY);
+            else ctx.lineTo(plotX + px, screenY);
+        }
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Draw Current Curve (Dynamic Health Status)
+        let isHealthy = (emiData.state === 'baseline');
+        ctx.strokeStyle = isHealthy ? '#38bdf8' : (emiData.rmsd > 30 ? '#ef4444' : '#f59e0b');
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        for (let px = 0; px <= plotWidth; px += 2) {
+            let freq = emiData.fStart + (px / plotWidth) * fSpan;
+            let shift = isHealthy ? 0 : (emiData.severity / 100) * 2.5;
+            let ampMod = isHealthy ? 1.0 : (1.0 + (emiData.severity / 100) * 0.3);
+
+            let gVal = 0.5 + (1.2 * ampMod) * Math.exp(-Math.pow(freq - (peaks[0] + shift), 2) / 40) 
+                           + (2.5 * ampMod) * Math.exp(-Math.pow(freq - (peaks[1] + shift * 1.5), 2) / 30)
+                           + (0.8 * ampMod) * Math.exp(-Math.pow(freq - (peaks[2] + shift * 0.8), 2) / 50);
+
+            let screenY = (plotY + plotHeight - 40) - (gVal / maxG) * 260;
+            if (px === 0) ctx.moveTo(plotX + px, screenY);
+            else ctx.lineTo(plotX + px, screenY);
+        }
+        ctx.stroke();
+
+        // Legend Box & Text
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(plotX + plotWidth - 190, plotY + 12, 180, 50);
+        ctx.strokeStyle = '#334155';
+        ctx.strokeRect(plotX + plotWidth - 190, plotY + 12, 180, 50);
+
+        ctx.fillStyle = '#64748b';
+        ctx.fillRect(plotX + plotWidth - 180, plotY + 24, 15, 3);
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '11px sans-serif';
+        ctx.fillText('Baseline (Healthy)', plotX + plotWidth - 158, plotY + 28);
+
+        ctx.fillStyle = isHealthy ? '#38bdf8' : '#f59e0b';
+        ctx.fillRect(plotX + plotWidth - 180, plotY + 45, 15, 3);
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillText(isHealthy ? 'Current (Healthy)' : 'Current / Damaged', plotX + plotWidth - 158, plotY + 49);
+    }
+
+    function checkAnswer(qNum, selectedOpt) {
+        let feedbackEl = document.getElementById(`feedback${qNum}`);
+        if (qNum === 1) {
+            if (selectedOpt === 'a') {
+                feedbackEl.style.color = 'var(--success)';
+                feedbackEl.innerHTML = 'Correct! Different substrate materials possess distinct stiffness-to-density ratios, shifting resonant peak frequencies.';
+            } else {
+                feedbackEl.style.color = 'var(--danger)';
+                feedbackEl.innerHTML = 'Incorrect. The host material stiffness and density directly govern structural mechanical impedance and resonant peaks.';
+            }
+        } else if (qNum === 2) {
+            if (selectedOpt === 'a') {
+                feedbackEl.style.color = 'var(--success)';
+                feedbackEl.innerHTML = 'Correct! Conductance (G) represents the real part of electrical admittance linked directly with structural mechanical impedance.';
+            } else {
+                feedbackEl.style.color = 'var(--danger)';
+                feedbackEl.innerHTML = 'Incorrect. Conductance (G) is the primary metric sensitive to structural changes.';
+            }
+        } else if (qNum === 3) {
+            if (selectedOpt === 'a') {
+                feedbackEl.style.color = 'var(--success)';
+                feedbackEl.innerHTML = 'Correct! High frequencies provide short wavelengths needed to detect microscopic, localized damage near the PZT patch.';
+            } else {
+                feedbackEl.style.color = 'var(--danger)';
+                feedbackEl.innerHTML = 'Incorrect. High frequencies offer high sensitivity to incipient micro-defects through short wavelengths.';
+            }
+        }
+    }
+
+    drawInitialScreen();
+
+    function loop() {
+        drawScene();
+        requestAnimationFrame(loop);
+    }
+    loop();
+</script>
+
+</body>
+</html>
