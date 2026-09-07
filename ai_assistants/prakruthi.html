@@ -75,8 +75,8 @@ h1{
 }
 .hero-p{color:var(--text-muted); font-size:14px; margin-bottom:20px; max-width:750px;}
 
-/* Action Control Buttons */
-.controls{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px;}
+/* Action Control Buttons & Selectors */
+.controls{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px; align-items:center;}
 .btn-control{
   border:none;
   padding:10px 18px;
@@ -91,6 +91,18 @@ h1{
 .btn-primary{background:var(--dark-green); color:#fff;}
 .btn-light{background:#faece8; color:#9c3827;}
 .btn-neutral{background:#dbebe2; color:var(--dark-green);}
+
+.lang-select{
+  padding:9px 14px;
+  border-radius:8px;
+  border:1.5px solid var(--mid-green);
+  background:#fff;
+  color:var(--dark-green);
+  font-weight:700;
+  font-size:12px;
+  cursor:pointer;
+  outline:none;
+}
 
 .status-text{font-size:12px; color:var(--text-muted); font-style:italic;}
 
@@ -212,6 +224,20 @@ footer strong{display:block; margin-bottom:4px;}
       <button class="btn-control btn-primary" onclick="startVoice()">🎙️ START VOICE CONVERSATION</button>
       <button class="btn-control btn-light" onclick="stopVoice()">🔇 STOP VOICE</button>
       <button class="btn-control btn-neutral" onclick="focusKeypad()">🔢 SHOW KEYPAD</button>
+      
+      <!-- Multilingual Selector -->
+      <select id="languageSelect" class="lang-select" onchange="changeLanguage()">
+        <option value="en-IN">🌐 English (India)</option>
+        <option value="hi-IN">🇮🇳 हिन्दी (Hindi)</option>
+        <option value="te-IN">🇮🇳 తెలుగు (Telugu)</option>
+        <option value="ta-IN">🇮🇳 தமிழ் (Tamil)</option>
+        <option value="mr-IN">🇮🇳 मराठी (Marathi)</option>
+        <option value="kn-IN">🇮🇳 ಕನ್ನಡ (Kannada)</option>
+        <option value="bn-IN">🇮🇳 বাংলা (Bengali)</option>
+        <option value="gu-IN">🇮🇳 ગુજરાતી (Gujarati)</option>
+        <option value="pa-IN">🇮🇳 ਪੰਜਾਬੀ (Punjabi)</option>
+        <option value="ml-IN">🇮🇳 മലയാളം (Malayalam)</option>
+      </select>
     </div>
     <div class="status-text" id="statusText">Listening / ready.</div>
   </section>
@@ -271,7 +297,7 @@ footer strong{display:block; margin-bottom:4px;}
     <section class="card">
       <h3 style="margin:0 0 14px 0;">💬 Communicate with Prakruthi</h3>
       <div class="chat-box" id="chatBox">
-        <div class="chat-msg">
+        <div class="chat-msg" id="greetingMsg">
           Hello, I am Prakruthi, AI Assistant to Dr. Venu Gopal Madhav Annamdas, Founder of GARRF Foundation. Please choose one of the following options by pressing a number from 1 to 8.
         </div>
       </div>
@@ -312,6 +338,81 @@ footer strong{display:block; margin-bottom:4px;}
 let currentOption = null;
 let formDataStore = {};
 let selectedVoice = null;
+let currentLang = 'en-IN';
+
+// Translations for Speech & Interface Prompts
+const languageData = {
+  'en-IN': {
+    greeting: "Hello, I am Prakruthi. Please choose an option from 1 to 8 on the keypad.",
+    reset: "Options reset. Please choose a number from 1 to 8.",
+    optionSelected: "Option {num}, {title} selected. Please complete the form details.",
+    formReady: "Form details ready. Please confirm to prepare your email.",
+    emailOpening: "Opening your email application. Please send the message to complete your submission."
+  },
+  'hi-IN': {
+    greeting: "नमस्ते, मैं प्रकृति हूँ। कृपया कीपैड पर 1 से 8 तक का विकल्प चुनें।",
+    reset: "विकल्प रीसेट हो गए हैं। कृपया 1 से 8 तक का नंबर चुनें।",
+    optionSelected: "विकल्प {num}, {title} चुना गया है। कृपया फॉर्म का विवरण भरें।",
+    formReady: "फॉर्म विवरण तैयार है। ईमेल भेजने के लिए पुष्टि करें।",
+    emailOpening: "आपका ईमेल ऐप खोला जा रहा है। कृपया सबमिशन पूरा करने के लिए संदेश भेजें।"
+  },
+  'te-IN': {
+    greeting: "నమస్కారం, నేను ప్రకృతి. దయచేసి కీప్యాడ్‌పై 1 నుండి 8 వరకు ఒక వికల్పాన్ని ఎంచుకోండి.",
+    reset: "ఆప్షన్లు రీసెట్ చేయబడ్డాయి. దయచేసి 1 నుండి 8 వరకు ఉన్న సంఖ్యను ఎంచుకోండి.",
+    optionSelected: "వికల్పం {num}, {title} ఎంచుకోబడింది. దయచేసి వివరాలను భర్తీ చేయండి.",
+    formReady: "ఫారమ్ వివరాలు సిద్ధంగా ఉన్నాయి. ఇమెయిల్ పంపడానికి నిర్ధారించండి.",
+    emailOpening: "మీ ఇమెయిల్ అప్లికేషన్ తెరవబడుతోంది."
+  },
+  'ta-IN': {
+    greeting: "வணக்கம், நான் பிரக்ருதி. விசைப்பலகையில் 1 முதல் 8 வரையிலான ஒரு தேர்வை தேர்ந்தெடுக்கவும்.",
+    reset: "தேர்வுகள் மீட்டமைக்கப்பட்டன. தயவுசெய்து 1 முதல் 8 வரை தேர்ந்தெடுக்கவும்.",
+    optionSelected: "தேர்வு {num}, {title} தேர்ந்தெடுக்கப்பட்டது. விவரங்களை நிரப்பவும்.",
+    formReady: "படிவ விவரங்கள் தயார். மின்னஞ்சலை அனுப்ப உறுதிப்படுத்தவும்.",
+    emailOpening: "மின்னஞ்சல் பயன்பாடு திறக்கப்படுகிறது."
+  },
+  'mr-IN': {
+    greeting: "नमस्कार, मी प्रकृति आहे. कृपया कीपॅडवर १ ते ८ पैकी एक पर्याय निवडा.",
+    reset: "पर्याय रिसेट केले गेले आहेत. कृपया १ ते ८ पैकी एक क्रमांक निवडा.",
+    optionSelected: "पर्याय {num}, {title} निवडला गेला आहे. कृपया फॉर्म भरा.",
+    formReady: "फॉर्म तपशील तयार आहेत. ईमेल पाठवण्यासाठी पुष्टी करा.",
+    emailOpening: "तुमचे ईमेल ॲप्लिकेशन उघडत आहे."
+  },
+  'kn-IN': {
+    greeting: "ನಮಸ್ಕಾರ, ನಾನು ಪ್ರಕೃತಿ. ದಯವಿಟ್ಟು ಕೀಪ್ಯಾಡ್‌ನಲ್ಲಿ 1 ರಿಂದ 8 ರವರೆಗಿನ ಆಯ್ಕೆಯನ್ನು ಆರಿಸಿ.",
+    reset: "ಆಯ್ಕೆಗಳನ್ನು ಮರುಹೊಂದಿಸಲಾಗಿದೆ. ದಯವಿಟ್ಟು 1 ರಿಂದ 8 ರ ಸಂಖ್ಯೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ.",
+    optionSelected: "ಆಯ್ಕೆ {num}, {title} ಆಯ್ಕೆಮಾಡಲಾಗಿದೆ. ದಯವಿಟ್ಟು ಫಾರ್ಮ್ ವಿವರಗಳನ್ನು ಭರ್ತಿ ಮಾಡಿ.",
+    formReady: "ಫಾರ್ಮ್ ವಿವರಗಳು ಸಿದ್ಧವಾಗಿವೆ. ಇಮೇಲ್ ಕಳುಹಿಸಲು ದೃಢೀಕರಿಸಿ.",
+    emailOpening: "ನಿಮ್ಮ ಇಮೇಲ್ ಅಪ್ಲಿಕೇಶನ್ ಅನ್ನು ತೆರೆಯಲಾಗುತ್ತಿದೆ."
+  },
+  'bn-IN': {
+    greeting: "নমস্কার, আমি প্রকৃতি। কিপ্যাডে ১ থেকে ৮ এর মধ্যে একটি বিকল্প নির্বাচন করুন।",
+    reset: "বিকল্পগুলি রিসেট করা হয়েছে। দয়া করে ১ থেকে ৮ এর মধ্যে নির্বাচন করুন।",
+    optionSelected: "বিকল্প {num}, {title} নির্বাচিত হয়েছে। বিস্তারিত পূরণ করুন।",
+    formReady: "ফর্ম প্রস্তুত। ইমেল পাঠাতে নিশ্চিত করুন।",
+    emailOpening: "আপনার ইমেল অ্যাপ্লিকেশন খোলা হচ্ছে।"
+  },
+  'gu-IN': {
+    greeting: "નમસ્તે, હું પ્રકૃતિ છું. કૃપા કરીને કીપેડ પર 1 થી 8 માંથી એક વિકલ્પ પસંદ કરો.",
+    reset: "વિકલ્પો રિસેટ કરવામાં આવ્યા છે. કૃપા કરીને 1 થી 8 નો નંબર પસંદ કરો.",
+    optionSelected: "વિકલ્પ {num}, {title} પસંદ કરવામાં આવ્યો છે. કૃપા કરીને વિગતો ભરો.",
+    formReady: "ફોર્મ તૈયાર છે. ઈમેલ મોકલવા માટે પુષ્ટિ કરો.",
+    emailOpening: "તમારું ઈમેલ એપ્લિકેશન ખોલવામાં આવી રહ્યું છે."
+  },
+  'pa-IN': {
+    greeting: "ਸਤਿ ਸ਼੍ਰੀ ਅਕਾਲ, ਮੈਂ ਪ੍ਰਕ੍ਰਿਤੀ ਹਾਂ। ਕਿਰਪਾ ਕਰਕੇ ਕੀਪੈਡ 'ਤੇ 1 ਤੋਂ 8 ਤੱਕ ਇੱਕ ਵਿਕਲਪ ਚੁਣੋ।",
+    reset: "ਵਿਕਲਪ ਰੀਸੈਟ ਕੀਤੇ ਗਏ ਹਨ। ਕਿਰਪਾ ਕਰਕੇ 1 ਤੋਂ 8 ਤੱਕ ਚੁਣੋ।",
+    optionSelected: "ਵਿਕਲਪ {num}, {title} ਚੁਣਿਆ ਗਿਆ ਹੈ। ਫਾਰਮ ਦੇ ਵੇਰਵੇ ਭਰੋ।",
+    formReady: "ਫਾਰਮ ਤਿਆਰ ਹੈ। ਈਮੇਲ ਭੇਜਣ ਲਈ ਪੁਸ਼ਟੀ ਕਰੋ।",
+    emailOpening: "ਤੁਹਾਡੀ ਈਮੇਲ ਐਪਲੀਕੇਸ਼ਨ ਖੋਲ੍ਹੀ ਜਾ ਰਹੀ ਹੈ।"
+  },
+  'ml-IN': {
+    greeting: "നമസ്കാരം, ഞാൻ പ്രകൃതി. കീപാഡിൽ 1 മുതൽ 8 വരെയുള്ള ഒരു ഓപ്ഷൻ തിരഞ്ഞെടുക്കുക.",
+    reset: "ഓപ്ഷനുകൾ റീസെറ്റ് ചെയ്തു. ദയവായി 1 മുതൽ 8 വരെയുള്ള നമ്പർ തിരഞ്ഞെടുക്കുക.",
+    optionSelected: "ഓപ്ഷൻ {num}, {title} തിരഞ്ഞെടുത്തു. ദയവായി വിശദാംശങ്ങൾ പൂരിപ്പിക്കുക.",
+    formReady: "ഫോം തയ്യാറാണ്. ഇമെയിൽ അയയ്ക്കാൻ സ്ഥിരീകരിക്കുക.",
+    emailOpening: "നിങ്ങളുടെ ഇമെയിൽ ആപ്ലിക്കേഷൻ തുറക്കുന്നു."
+  }
+};
 
 const optionsMap = {
   1: { title: "Student Enquiry", fields: ["Full Name", "Institution", "Course / Year", "Message"] },
@@ -324,19 +425,21 @@ const optionsMap = {
   8: { title: "Password Access Request", fields: ["Applicant Name", "Institution", "Reason for Experiment Access"] }
 };
 
-// Select Natural Indian Female Voice
+// Filter Female Indian Voice based on Language Code
 function loadFemaleIndianVoice() {
   if (!('speechSynthesis' in window)) return;
   
   const voices = speechSynthesis.getVoices();
+  const targetLang = currentLang.split('-')[0]; // e.g., 'hi', 'te', 'en'
   
-  // Prioritize Indian English/Hindi female voices
+  // Dynamic lookup for target language female voices
   selectedVoice = voices.find(v => 
-    v.lang.includes('IN') && (v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('natural') || v.name.includes('Google') || v.name.includes('Heera') || v.name.includes('Neerja') || v.name.includes('Kalpana'))
+    v.lang.toLowerCase().includes(targetLang) && 
+    (v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('natural') || v.name.includes('Google') || v.name.includes('Heera') || v.name.includes('Neerja') || v.name.includes('Kalpana'))
   ) || voices.find(v => 
-    v.lang.includes('en-IN') || v.lang.includes('te-IN') || v.lang.includes('hi-IN')
+    v.lang.toLowerCase().includes(targetLang)
   ) || voices.find(v => 
-    v.name.toLowerCase().includes('female')
+    v.lang.includes('IN')
   ) || voices[0];
 }
 
@@ -345,24 +448,34 @@ if ('speechSynthesis' in window) {
   loadFemaleIndianVoice();
 }
 
+function changeLanguage() {
+  currentLang = document.getElementById('languageSelect').value;
+  loadFemaleIndianVoice();
+  
+  const text = languageData[currentLang].greeting;
+  addChatMsg(text);
+  speak(text);
+}
+
 function speak(text) {
   if (!('speechSynthesis' in window)) return;
   speechSynthesis.cancel();
   
   const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = currentLang;
   
   if (!selectedVoice) loadFemaleIndianVoice();
   if (selectedVoice) utterance.voice = selectedVoice;
   
   utterance.rate = 0.92;
-  utterance.pitch = 1.05;
+  utterance.pitch = 1.05; // Natural female tone
   
   speechSynthesis.speak(utterance);
 }
 
 function startVoice() {
-  document.getElementById('statusText').textContent = "Voice Assistant Active (Indian Female Voice)";
-  speak("Hello, I am Prakruthi. Please choose an option from 1 to 8 on the keypad.");
+  document.getElementById('statusText').textContent = `Voice Assistant Active (${currentLang})`;
+  speak(languageData[currentLang].greeting);
 }
 
 function stopVoice() {
@@ -375,18 +488,20 @@ function focusKeypad() {
 }
 
 function selectOption(num) {
+  const langTexts = languageData[currentLang];
+
   if (num === 9) {
     currentOption = null;
     document.getElementById('formCard').style.display = 'none';
     document.getElementById('previewCard').style.display = 'none';
-    addChatMsg("Option reset. Please select a number from 1 to 8.");
-    speak("Options reset. Please choose a number from 1 to 8.");
+    addChatMsg(langTexts.reset);
+    speak(langTexts.reset);
     return;
   }
 
   currentOption = num;
   const config = optionsMap[num];
-  const msgText = `Option ${num}, ${config.title} selected. Please complete the form details.`;
+  const msgText = langTexts.optionSelected.replace('{num}', num).replace('{title}', config.title);
   
   addChatMsg(msgText);
   speak(msgText);
@@ -438,7 +553,7 @@ function submitForm(e) {
   document.getElementById('previewCard').style.display = 'block';
   document.getElementById('previewCard').scrollIntoView({ behavior: 'smooth' });
 
-  const confirmMsg = "Form details ready. Please confirm to prepare your email.";
+  const confirmMsg = languageData[currentLang].formReady;
   addChatMsg(confirmMsg);
   speak(confirmMsg);
 }
@@ -451,7 +566,7 @@ function backToForm() {
 function openEmailComposer() {
   const config = optionsMap[currentOption];
   const subject = `GARRF Enquiry: ${config.title}`;
-  let body = `GARRF ENQUIRY FORM SUBMISSION\nCategory: ${config.title}\n==================================\n\n`;
+  let body = `GARRF ENQUIRY FORM SUBMISSION\nCategory: ${config.title}\nLanguage: ${currentLang}\n==================================\n\n`;
 
   for(let key in formDataStore){
     body += `${key}:\n${formDataStore[key]}\n\n`;
@@ -461,7 +576,7 @@ function openEmailComposer() {
 
   window.location.href = `mailto:info@garrf.in?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   
-  speak("Opening your email application. Please send the message to complete your submission.");
+  speak(languageData[currentLang].emailOpening);
 }
 
 function addChatMsg(msg) {
