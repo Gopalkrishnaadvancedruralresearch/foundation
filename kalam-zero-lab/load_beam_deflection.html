@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GARRF Comprehensive Beam Deflection & Support Analysis Lab</title>
+    <style>
+        :root {
+            --primary: #0f172a;
+            --accent: #2563eb;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --kalam-gold: #b45309;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #334155;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            background: var(--card-bg);
+            padding: 20px 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            margin-bottom: 25px;
+            gap: 20px;
+        }
+        header img.logo-img {
+            height: 65px;
+            width: auto;
+            border-radius: 6px;
+            object-fit: contain;
+        }
+        header .title-container {
+            display: flex;
+            flex-direction: column;
+        }
+        header h1 {
+            color: var(--primary);
+            margin: 0 0 4px 0;
+            font-size: 1.6rem;
+        }
+        header p {
+            color: #64748b;
+            margin: 0;
+            font-size: 0.9rem;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            gap: 20px;
+            max-width: 1500px;
+            margin: 0 auto;
+        }
+        @media (max-width: 1050px) {
+            .container { grid-template-columns: 1fr; }
+            header { flex-direction: column; text-align: center; justify-content: center; }
+        }
+        .card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .card h2 {
+            font-size: 1.2rem;
+            margin-top: 0;
+            color: var(--primary);
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 8px;
+        }
+        .input-group {
+            margin-bottom: 12px;
+        }
+        label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px 10px;
+            box-sizing: border-box;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            background: #fff;
+        }
+        button {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-top: 10px;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background-color: #1d4ed8;
+        }
+        .results-box {
+            margin-top: 15px;
+            background: #f1f5f9;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        .results-box p {
+            margin: 6px 0;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            color: white;
+            font-size: 0.85rem;
+            margin-top: 5px;
+        }
+        .sim-viewport {
+            position: relative;
+            background: #090d16;
+            border-radius: 8px;
+            overflow: hidden;
+            height: 520px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        .sim-controls {
+            margin-top: 12px;
+            display: flex;
+            gap: 10px;
+        }
+        .sim-controls button {
+            margin-top: 0;
+            background-color: #475569;
+        }
+        .sim-controls button.primary-action {
+            background-color: var(--success);
+        }
+
+        /* Large Sections Styling */
+        .section-box {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+            max-width: 1500px;
+            margin-left: auto;
+            margin-right: auto;
+            border-left: 4px solid #8b5cf6;
+        }
+        .section-box.quiz-box {
+            border-left-color: #f59e0b;
+        }
+        .section-box h3 {
+            margin-top: 0;
+            color: var(--primary);
+            font-size: 1.2rem;
+            border-bottom: 2px solid #f1f5f9;
+            padding-bottom: 8px;
+        }
+        .section-box h4 {
+            color: #475569;
+            margin-bottom: 6px;
+            font-size: 0.98rem;
+        }
+        .section-box p, .section-box ul {
+            font-size: 0.92rem;
+            color: #475569;
+            line-height: 1.6;
+        }
+        .section-box ul { padding-left: 20px; margin: 6px 0; }
+
+        /* Quiz Styling */
+        .quiz-question {
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .quiz-question p {
+            font-weight: 600;
+            color: #92400e;
+            margin-top: 0;
+        }
+        .options-list label {
+            display: block;
+            font-weight: normal;
+            margin-bottom: 6px;
+            cursor: pointer;
+        }
+        .quiz-feedback {
+            font-weight: bold;
+            margin-top: 8px;
+            font-size: 0.9rem;
+        }
+
+        /* Infrastructure Grid */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            max-width: 1500px;
+            margin: 0 auto 20px auto;
+        }
+        @media (max-width: 800px) {
+            .info-grid { grid-template-columns: 1fr; }
+        }
+        .info-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid var(--accent);
+        }
+        .info-card.kalam {
+            border-left-color: var(--kalam-gold);
+            background: linear-gradient(to bottom right, #fffbeb, #ffffff);
+        }
+        .info-card h3 {
+            margin-top: 0;
+            color: var(--primary);
+            font-size: 1.05rem;
+        }
+        .info-card.kalam h3 {
+            color: var(--kalam-gold);
+        }
+        .info-card p, .info-card ul {
+            font-size: 0.9rem;
+            color: #475569;
+            line-height: 1.5;
+        }
+        .info-card ul { padding-left: 20px; margin: 8px 0; }
+
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            font-size: 0.85rem;
+            color: #64748b;
+            border-top: 1px solid #e2e8f0;
+            max-width: 1500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <img src="logo.jpeg" alt="GARRF Logo" class="logo-img" onerror="this.style.display='none'">
+    <div class="title-container">
+        <h1>Gopalkrishna Advanced Rural Research Foundation</h1>
+        <p>Virtual Undergraduate Engineering Laboratory &bull; Multi-Support & Multi-Loading Beam Deflection Suite</p>
+    </div>
+</header>
+
+<div class="container">
+    <!-- Left Column: Input Parameters & Calculations -->
+    <div class="card">
+        <h2>Beam & Loading Configuration</h2>
+
+        <div class="input-group">
+            <label>Support Boundary Condition:</label>
+            <select id="supportType" onchange="runCalculations()">
+                <option value="cantilever">Cantilever Beam (Fixed-Free)</option>
+                <option value="simplySupported">Simply Supported Beam (Pin-Roller)</option>
+                <option value="fixedBeam">Fixed-Fixed Beam (Encastered)</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <label>Loading Type / Scheme:</label>
+            <select id="loadType" onchange="toggleLoadInputs(); runCalculations();">
+                <option value="singlePoint">Single Concentrated Load (Point Load)</option>
+                <option value="twoPoint">Two Point Loads (Symmetric Dual Loads)</option>
+                <option value="udl">Uniformly Distributed Load (UDL, w in N/m)</option>
+            </select>
+        </div>
+        
+        <div class="input-group">
+            <label>Beam Material:</label>
+            <select id="material" onchange="runCalculations()">
+                <option value="200">Structural Steel (Young's Modulus E = 200 GPa)</option>
+                <option value="70">Aluminum Alloy (Young's Modulus E = 70 GPa)</option>
+                <option value="110">Brass (Young's Modulus E = 110 GPa)</option>
+            </select>
+        </div>
+
+        <!-- Dynamic load parameter inputs -->
+        <div class="input-group" id="groupSingleLoad">
+            <label id="labelSingleLoad">Point Load Magnitude, P (N):</label>
+            <input type="number" id="load" value="80" step="10" min="10" max="500" oninput="runCalculations()">
+        </div>
+
+        <div class="input-group" id="groupSecondLoad" style="display:none;">
+            <label>Second Point Load Magnitude, P₂ (N):</label>
+            <input type="number" id="load2" value="80" step="10" min="10" max="500" oninput="runCalculations()">
+        </div>
+
+        <div class="input-group">
+            <label>Span Length, L (m):</label>
+            <input type="number" id="beamLength" value="1.0" step="0.05" min="0.4" max="2.0" oninput="runCalculations()">
+        </div>
+        
+        <div class="input-group">
+            <label>Rectangular Width, b (mm):</label>
+            <input type="number" id="width" value="30" step="2" min="10" max="60" oninput="runCalculations()">
+        </div>
+
+        <div class="input-group">
+            <label>Rectangular Depth/Height, h (mm):</label>
+            <input type="number" id="height" value="15" step="1" min="5" max="40" oninput="runCalculations()">
+        </div>
+
+        <button onclick="runDeflectionTest()">Apply Load & Simulate Deflection (Very Slow)</button>
+        <button style="background-color: #475569;" onclick="resetSimulation()">Reset Test Bench</button>
+
+        <div class="results-box" id="calcResults">
+            <!-- Dynamic calculation outputs injected here -->
+        </div>
+    </div>
+
+    <!-- Right Column: Real-time Data-Driven Large Canvas Simulation -->
+    <div class="card" style="display: flex; flex-direction: column;">
+        <h2>Enlarged & Dramatized Multi-Support & Multi-Load Bending Simulation</h2>
+        <div class="sim-viewport">
+            <canvas id="simCanvas" width="1000" height="520"></canvas>
+        </div>
+        <div class="sim-controls">
+            <button class="primary-action" onclick="runDeflectionTest()">Engage Load & Bend Beam (Very Slow)</button>
+            <button onclick="resetSimulation()">Reset View</button>
+        </div>
+        <p style="font-size: 0.82rem; color: #64748b; margin-top: 10px;">
+            <em>Note:</em> Animation runs at an ultra-slow pace to allow observation of progressive curvature development under single loads, twin loads, or distributed UDL fields.
+        </p>
+    </div>
+</div>
+
+<!-- Comprehensive Engineering Theory Section -->
+<div class="section-box">
+<h3>Comprehensive Mechanics of Materials Theory: Loading Variations</h3>
+    
+    <h4>1. Point Loads vs. Two Point Loads vs. Uniformly Distributed Loads (UDL)</h4>
+    <p>Real-world structures rarely experience isolated single point loads. Analyzing different load distributions is crucial for accurate structural design:</p>
+    <ul>
+        <li><strong>Single Concentrated Load (Point Load):</strong> Applied at a specific point (e.g., tip of a cantilever or mid-span of a simply supported beam). It produces sharp bending moment diagrams with a linear triangular variation for simply supported spans.</li>
+        <li><strong>Two Point Loads (Symmetric Dual Loading):</strong> Frequently used in four-point bending tests to create a pure bending zone (constant bending moment with zero shear force) between the loading points. This is ideal for material property testing without shear deformation interference.</li>
+        <li><strong>Uniformly Distributed Load (UDL, w):</strong> Represents weight spread continuously across the beam length, such as floor slabs, self-weight, or fluid pressure. For a simply supported beam, a UDL results in a parabolic bending moment diagram with a maximum bending moment of $\frac{wL^2}{8}$ and a maximum deflection of $\delta_{max} = \frac{5wL^4}{384EI}$, which is significantly higher in deflection efficiency than a concentrated load of equivalent total magnitude.</li>
+    </ul>
+
+    <h4 style="margin-top: 15px;">2. Deflection Formula Summary Across Systems</h4>
+    <p>Depending on boundary conditions and loading schemas, maximum deflections follow distinct mathematical laws:</p>
+    <ul>
+        <li>Cantilever with UDL: $\delta_{max} = \frac{wL^4}{8EI}$</li>
+        <li>Simply Supported with UDL: $\delta_{max} = \frac{5wL^4}{384EI}$</li>
+        <li>Fixed-Fixed with UDL: $\delta_{max} = \frac{wL^4}{384EI}$</li>
+    </ul>
+</div>
+
+<!-- Interactive Student Quiz Section -->
+<div class="section-box quiz-box">
+<h3>Interactive Knowledge Check & Student Assessment</h3>
+<p>Test your understanding of beam mechanics under diverse loading configurations by answering the following questions:</p>
+
+    <div class="quiz-question">
+        <p>Q1. For a simply supported beam of identical span, material, and cross-section, how does the maximum deflection caused by a Uniformly Distributed Load (UDL) of total magnitude $W = P$ compare to a single concentrated point load $P$ at mid-span?</p>
+        <div class="options-list">
+            <label><input type="radio" name="q1" value="a" onclick="checkAnswer(1, 'a')"> a) UDL deflection is exactly 5/8th (62.5%) of the mid-span point load deflection</label>
+            <label><input type="radio" name="q1" value="b" onclick="checkAnswer(1, 'b')"> b) UDL deflection is four times larger than point load deflection</label>
+            <label><input type="radio" name="q1" value="c" onclick="checkAnswer(1, 'c')"> c) Both deflections are completely identical</label>
+            <label><input type="radio" name="q1" value="d" onclick="checkAnswer(1, 'd')"> d) UDL causes zero deflection</label>
+        </div>
+        <div id="feedback1" class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz-question">
+        <p>Q2. What is the primary advantage of applying Two Point Loads symmetrically on a beam (four-point bending) in laboratory material testing?</p>
+        <div class="options-list">
+            <label><input type="radio" name="q2" value="a" onclick="checkAnswer(2, 'a')"> a) It eliminates all bending stress completely</label>
+            <label><input type="radio" name="q2" value="b" onclick="checkAnswer(2, 'b')"> b) It creates a central region of pure bending where shear force is zero, providing uniform maximum stress</label>
+            <label><input type="radio" name="q2" value="c" onclick="checkAnswer(2, 'c')"> c) It makes the beam unbreakable</label>
+            <label><input type="radio" name="q2" value="d" onclick="checkAnswer(2, 'd')"> d) It prevents any deflection from occurring</label>
+        </div>
+        <div id="feedback2" class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz-question">
+        <p>Q3. In a fixed-fixed beam under a UDL, why is the maximum deflection only 1/5th of a simply supported beam under the exact same UDL?</p>
+        <div class="options-list">
+            <label><input type="radio" name="q3" value="a" onclick="checkAnswer(3, 'a')"> a) Because fixed ends provide rigid moment restraints that stiffen the structural span</label>
+            <label><input type="radio" name="q3" value="b" onclick="checkAnswer(3, 'b')"> b) Because the beam material changes automatically</label>
+            <label><input type="radio" name="q3" value="c" onclick="checkAnswer(3, 'c')"> c) Because gravity acts differently on fixed beams</label>
+            <label><input type="radio" name="q3" value="d" onclick="checkAnswer(3, 'd')"> d) It is a coincidence with no physical basis</label>
+        </div>
+        <div id="feedback3" class="quiz-feedback"></div>
+    </div>
+</div>
+
+<!-- Infrastructure, Cost, and Kalam Lab Information Section -->
+<div class="info-grid">
+    <div class="info-card">
+        <h3>Real-World Infrastructure & Cost Analysis</h3>
+        <p><strong>Where it exists:</strong> Structural testing laboratories equipped with hydraulic actuators, spreader beams for two-point loading, and continuous load distribution manifolds are standard in premier engineering institutes.</p>
+        <p><strong>Cost of Real Equipment:</strong> Advanced multi-load testing rigs with multi-channel data loggers and load cells cost between <strong>$12,000 to $30,000 (INR 10 Lakhs to 25 Lakhs+)</strong>.</p>
+    </div>
+
+    <div class="info-card kalam">
+        <h3>Kalam Zero Cost Lab ($0 Initiative)</h3>
+        <p><strong>Cost: $0.00 (Completely Free)</strong></p>
+        <p>In alignment with Dr. A.P.J. Abdul Kalam's vision of empowering grassroots innovators and resource-constrained institutions, the <strong>Kalam Zero Cost Lab</strong> initiative removes prohibitive capital barriers.</p>
+        <ul>
+            <li>Requires zero hardware machinery, hydraulic pumps, or physical weights.</li>
+            <li>Runs instantly inside web browsers on standard PCs in any rural or urban college.</li>
+            <li>Provides universal interactive engineering training for every student.</li>
+        </ul>
+    </div>
+</div>
+
+<footer>
+    &copy; 2026 Gopalkrishna Advanced Rural Research Foundation (GARRF). All rights reserved. <br>
+    Open-Source Engineering Education Initiative &bull; Web: <a href="https://garrf.in" target="_blank" style="color: var(--accent); text-decoration: none;">garrf.in</a>
+</footer>
+
+<script>
+    let globalPhysics = {
+        supportType: 'cantilever',
+        loadType: 'singlePoint',
+        E_GPa: 200,
+        P1: 80,
+        P2: 80,
+        L: 1.0,
+        b_mm: 30,
+        h_mm: 15,
+        I: 0,
+        maxDeflectionMm: 0,
+        maxBendingStressMPa: 0
+    };
+
+    function toggleLoadInputs() {
+        let loadType = document.getElementById('loadType').value;
+        let groupSingle = document.getElementById('groupSingleLoad');
+        let groupSecond = document.getElementById('groupSecondLoad');
+        let labelSingle = document.getElementById('labelSingleLoad');
+
+        if (loadType === 'singlePoint') {
+            groupSingle.style.display = 'block';
+            groupSecond.style.display = 'none';
+            labelSingle.innerText = 'Point Load Magnitude, P (N):';
+        } else if (loadType === 'twoPoint') {
+            groupSingle.style.display = 'block';
+            groupSecond.style.display = 'block';
+            labelSingle.innerText = 'First Point Load, P₁ (N):';
+        } else if (loadType === 'udl') {
+            groupSingle.style.display = 'block';
+            groupSecond.style.display = 'none';
+            labelSingle.innerText = 'Distributed Load Intensity, w (N/m):';
+        }
+    }
+
+    function runCalculations() {
+        let supportType = document.getElementById('supportType').value;
+        let loadType = document.getElementById('loadType').value;
+        let E_GPa = parseFloat(document.getElementById('material').value) || 200;
+        let val1 = parseFloat(document.getElementById('load').value) || 80;
+        let val2 = parseFloat(document.getElementById('load2').value) || 80;
+        let L = parseFloat(document.getElementById('beamLength').value) || 1.0;
+        let b_mm = parseFloat(document.getElementById('width').value) || 30;
+        let h_mm = parseFloat(document.getElementById('height').value) || 15;
+
+        let E = E_GPa * 1e9; // Pa
+        let b = b_mm / 1000; // meters
+        let h = h_mm / 1000; // meters
+
+        let I = (b * Math.pow(h, 3)) / 12;
+
+        let deltaMeters = 0;
+        let maxMoment = 0;
+        let P1 = val1;
+        let P2 = val2;
+
+        if (loadType === 'singlePoint') {
+            if (supportType === 'cantilever') {
+                deltaMeters = (P1 * Math.pow(L, 3)) / (3 * E * I);
+                maxMoment = P1 * L;
+            } else if (supportType === 'simplySupported') {
+                deltaMeters = (P1 * Math.pow(L, 3)) / (48 * E * I);
+                maxMoment = (P1 * L) / 4;
+            } else if (supportType === 'fixedBeam') {
+                deltaMeters = (P1 * Math.pow(L, 3)) / (192 * E * I);
+                maxMoment = (P1 * L) / 8;
+            }
+        } else if (loadType === 'twoPoint') {
+            // Symmetric two point loads at L/3 and 2L/3
+            if (supportType === 'cantilever') {
+                // Approximate superposition for cantilever with two loads at L/2 and L
+                let d1 = (P1 * Math.pow(L/2, 3)) / (3 * E * I) + (P1 * (L/2) * Math.pow(L/2, 2)) / (2 * E * I); // simplified superposition
+                let d2 = (P2 * Math.pow(L, 3)) / (3 * E * I);
+                deltaMeters = d1 + d2;
+                maxMoment = P1 * (L/2) + P2 * L;
+            } else if (supportType === 'simplySupported') {
+                // Two symmetric loads at L/3 from supports: delta_max = 23 P L^3 / (648 EI)
+                let P_avg = (P1 + P2) / 2;
+                deltaMeters = (23 * P_avg * Math.pow(L, 3)) / (648 * E * I);
+                maxMoment = P_avg * (L / 3);
+            } else if (supportType === 'fixedBeam') {
+                let P_avg = (P1 + P2) / 2;
+                deltaMeters = (P_avg * Math.pow(L, 3)) / (120 * E * I); // standard approximation for dual symmetric loads
+                maxMoment = (P_avg * L) / 6;
+            }
+        } else if (loadType === 'udl') {
+            let w = val1; // N/m
+            if (supportType === 'cantilever') {
+                deltaMeters = (w * Math.pow(L, 4)) / (8 * E * I);
+                maxMoment = (w * Math.pow(L, 2)) / 2;
+            } else if (supportType === 'simplySupported') {
+                deltaMeters = (5 * w * Math.pow(L, 4)) / (384 * E * I);
+                maxMoment = (w * Math.pow(L, 2)) / 8;
+            } else if (supportType === 'fixedBeam') {
+                deltaMeters = (w * Math.pow(L, 4)) / (384 * E * I);
+                maxMoment = (w * Math.pow(L, 2)) / 12;
+            }
+        }
+
+        let maxDeflectionMm = deltaMeters * 1000;
+        let c = h / 2;
+        let maxBendingStress = (maxMoment * c) / I;
+        let maxBendingStressMPa = maxBendingStress / 1e6;
+
+        globalPhysics = { supportType, loadType, E_GPa, P1, P2, L, b_mm, h_mm, I, maxDeflectionMm, maxBendingStressMPa };
+
+        let safeLimit = E_GPa > 100 ? 250 : 150;
+        let badgeHtml = maxBendingStressMPa <= safeLimit
+            ? `<span class="status-badge" style="background-color: var(--success);">Status: SAFE / WITHIN ELASTIC LIMIT</span>`
+            : `<span class="status-badge" style="background-color: var(--danger);">Status: PLASTIC YIELD / OVER-STRESSED</span>`;
+
+        document.getElementById('calcResults').innerHTML = `
+            <p><strong>Moment of Inertia (I):</strong> ${(I * 1e12).toFixed(1)} &times; 10⁻¹² m⁴</p>
+            <p><strong>Max Deflection (&delta;):</strong> ${maxDeflectionMm.toFixed(2)} mm</p>
+            <p><strong>Max Bending Stress (&sigma;):</strong> ${maxBendingStressMPa.toFixed(1)} MPa</p>
+            ${badgeHtml}
+        `;
+    }
+
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let currentLoadProgress = 0;
+    let targetLoadProgress = 0;
+    let isAnimating = false;
+
+    function drawGridBackground() {
+        ctx.fillStyle = '#090d16';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 1;
+        for (let x = 0; x < canvas.width; x += 40) {
+            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+        }
+        for (let y = 0; y < canvas.height; y += 40) {
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+        }
+    }
+
+    function drawScene() {
+        drawGridBackground();
+
+        let typeName = globalPhysics.supportType === 'cantilever' ? 'CANTILEVER BEAM' :
+                       globalPhysics.supportType === 'simplySupported' ? 'SIMPLY SUPPORTED BEAM' : 'FIXED-FIXED BEAM';
+        let loadName = globalPhysics.loadType === 'singlePoint' ? 'Single Point Load' :
+                       globalPhysics.loadType === 'twoPoint' ? 'Two Point Loads (P₁, P₂)' : 'Uniformly Distributed Load (UDL)';
+
+        // Header telemetry inside canvas
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = 'bold 15px sans-serif';
+        ctx.fillText(`CONFIG: ${typeName} | LOADING: ${loadName}`, 50, 40);
+        
+        ctx.fillStyle = '#cbd5e1';
+        ctx.font = '13px sans-serif';
+        ctx.fillText(`Span: ${globalPhysics.L} m    |    Max Deflection: ${globalPhysics.maxDeflectionMm.toFixed(2)} mm    |    Max Stress: ${globalPhysics.maxBendingStressMPa.toFixed(1)} MPa`, 50, 68);
+
+        let beamHeightPx = Math.max(16, Math.min(45, globalPhysics.h_mm * 1.8));
+        let activeDeflectionPx = currentLoadProgress * Math.min(180, globalPhysics.maxDeflectionMm * 4.0);
+
+        let startX = 150;
+        let lengthPx = 700;
+        let startY = 250;
+
+        if (globalPhysics.supportType === 'cantilever') {
+            // Draw Fixed Wall on Left
+            ctx.fillStyle = '#334155';
+            ctx.fillRect(startX - 35, startY - 90, 35, 180);
+            ctx.fillStyle = '#64748b';
+            ctx.fillRect(startX - 45, startY - 90, 10, 180);
+            
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 2;
+            for (let hy = startY - 80; hy < startY + 90; hy += 20) {
+                ctx.beginPath(); ctx.moveTo(startX - 35, hy); ctx.lineTo(startX - 5, hy - 15); ctx.stroke();
+            }
+
+            let endX = startX + lengthPx;
+            let controlX = startX + lengthPx * 0.5;
+            let controlY = startY + activeDeflectionPx * 0.75;
+            let endY = startY + activeDeflectionPx;
+
+            drawBeamCurve(startX, startY, controlX, controlY, endX, endY, beamHeightPx);
+
+            // Draw Loads based on type
+            let arrowTravelY = currentLoadProgress * 50;
+            if (globalPhysics.loadType === 'singlePoint') {
+                drawArrow(endX, endY + beamHeightPx/2 + 5 - (50 - arrowTravelY), endX, endY + beamHeightPx/2 + 55, `#22c55e`, `P = ${globalPhysics.P1} N`);
+            } else if (globalPhysics.loadType === 'twoPoint') {
+                let midX = startX + lengthPx / 2;
+                let midControlY = startY + (activeDeflectionPx * 0.35);
+                drawArrow(midX, midControlY + beamHeightPx/2 + 5 - (50 - arrowTravelY), midX, midControlY + beamHeightPx/2 + 55, `#38bdf8`, `P₁ = ${globalPhysics.P1} N`);
+                drawArrow(endX, endY + beamHeightPx/2 + 5 - (50 - arrowTravelY), endX, endY + beamHeightPx/2 + 55, `#22c55e`, `P₂ = ${globalPhysics.P2} N`);
+            } else if (globalPhysics.loadType === 'udl') {
+                drawUDLArrows(startX, endX, startY, beamHeightPx, currentLoadProgress, `w = ${globalPhysics.P1} N/m`);
+            }
+
+        } else if (globalPhysics.supportType === 'simplySupported') {
+            let endX = startX + lengthPx;
+            let midX = startX + lengthPx / 2;
+            let midControlY = startY + activeDeflectionPx;
+
+            drawPinSupport(startX, startY + beamHeightPx/2);
+            drawRollerSupport(endX, startY + beamHeightPx/2);
+
+            drawSymmetricBeamCurve(startX, startY, midX, midControlY, endX, startY, beamHeightPx);
+
+            let arrowTravelY = currentLoadProgress * 55;
+            if (globalPhysics.loadType === 'singlePoint') {
+                drawArrow(midX, startY - 60 + (55 - arrowTravelY), midX, startY - 5, `#22c55e`, `P = ${globalPhysics.P1} N`);
+            } else if (globalPhysics.loadType === 'twoPoint') {
+                let x1 = startX + lengthPx / 3;
+                let x2 = startX + (2 * lengthPx) / 3;
+                drawArrow(x1, startY - 60 + (55 - arrowTravelY), x1, startY - 5, `#38bdf8`, `P₁ = ${globalPhysics.P1} N`);
+                drawArrow(x2, startY - 60 + (55 - arrowTravelY), x2, startY - 5, `#22c55e`, `P₂ = ${globalPhysics.P2} N`);
+            } else if (globalPhysics.loadType === 'udl') {
+                drawUDLArrowsTop(startX, endX, startY, beamHeightPx, currentLoadProgress, `w = ${globalPhysics.P1} N/m`);
+            }
+
+        } else if (globalPhysics.supportType === 'fixedBeam') {
+            let endX = startX + lengthPx;
+            let midX = startX + lengthPx / 2;
+            let midControlY = startY + activeDeflectionPx;
+
+            ctx.fillStyle = '#334155';
+            ctx.fillRect(startX - 25, startY - 80, 25, 160);
+            ctx.fillRect(endX, startY - 80, 25, 160);
+
+            drawSymmetricBeamCurve(startX, startY, midX, midControlY, endX, startY, beamHeightPx);
+
+            let arrowTravelY = currentLoadProgress * 55;
+            if (globalPhysics.loadType === 'singlePoint') {
+                drawArrow(midX, startY - 60 + (55 - arrowTravelY), midX, startY - 5, `#22c55e`, `P = ${globalPhysics.P1} N`);
+            } else if (globalPhysics.loadType === 'twoPoint') {
+                let x1 = startX + lengthPx / 3;
+                let x2 = startX + (2 * lengthPx) / 3;
+                drawArrow(x1, startY - 60 + (55 - arrowTravelY), x1, startY - 5, `#38bdf8`, `P₁ = ${globalPhysics.P1} N`);
+                drawArrow(x2, startY - 60 + (55 - arrowTravelY), x2, startY - 5, `#22c55e`, `P₂ = ${globalPhysics.P2} N`);
+            } else if (globalPhysics.loadType === 'udl') {
+                drawUDLArrowsTop(startX, endX, startY, beamHeightPx, currentLoadProgress, `w = ${globalPhysics.P1} N/m`);
+            }
+        }
+
+        // Ultra-slow animation step (0.003)
+        if (isAnimating) {
+            currentLoadProgress += 0.003;
+            if (currentLoadProgress >= targetLoadProgress) {
+                currentLoadProgress = targetLoadProgress;
+                isAnimating = false;
+            }
+        }
+    }
+
+    function drawBeamCurve(x1, y1, cx, cy, x2, y2, heightPx) {
+        let beamGrad = ctx.createLinearGradient(0, y1 - heightPx/2, 0, y1 + heightPx/2);
+        beamGrad.addColorStop(0, '#475569');
+        beamGrad.addColorStop(0.5, '#cbd5e1');
+        beamGrad.addColorStop(1, '#1e293b');
+
+        ctx.save();
+        ctx.lineWidth = heightPx;
+        ctx.strokeStyle = beamGrad;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.quadraticCurveTo(cx, cy, x2, y2);
+        ctx.stroke();
+        ctx.restore();
+
+        ctx.strokeStyle = 'rgba(234, 179, 8, 0.7)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 6]);
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.quadraticCurveTo(cx, cy, x2, y2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+    }
+
+    function drawSymmetricBeamCurve(x1, y1, mx, my, x2, y2, heightPx) {
+        let beamGrad = ctx.createLinearGradient(0, y1 - heightPx/2, 0, y1 + heightPx/2);
+        beamGrad.addColorStop(0, '#475569');
+        beamGrad.addColorStop(0.5, '#cbd5e1');
+        beamGrad.addColorStop(1, '#1e293b');
+
+        ctx.save();
+        ctx.lineWidth = heightPx;
+        ctx.strokeStyle = beamGrad;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.quadraticCurveTo(mx, my + heightPx*0.2, x2, y2);
+        ctx.stroke();
+        ctx.restore();
+
+        ctx.strokeStyle = 'rgba(234, 179, 8, 0.7)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 6]);
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.quadraticCurveTo(mx, my, x2, y2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+    }
+
+    function drawUDLArrows(xStart, xEnd, yBase, heightPx, progress, labelText) {
+        ctx.strokeStyle = '#22c55e';
+        ctx.fillStyle = '#22c55e';
+        ctx.lineWidth = 2;
+        let count = 12;
+        let step = (xEnd - xStart) / count;
+        for (let i = 0; i <= count; i++) {
+            let xx = xStart + i * step;
+            let yy1 = yBase + heightPx/2 + 5;
+            let yy2 = yy1 + 35 * progress;
+            ctx.beginPath(); ctx.moveTo(xx, yy1); ctx.lineTo(xx, yy2); ctx.stroke();
+            // Arrowhead
+            ctx.beginPath(); ctx.moveTo(xx, yy2); ctx.lineTo(xx - 3, yy2 - 8); ctx.lineTo(xx + 3, yy2 - 8); ctx.fill();
+        }
+        ctx.font = 'bold 12px sans-serif';
+        ctx.fillText(labelText, xStart + 200, yBase + 75);
+    }
+
+    function drawUDLArrowsTop(xStart, xEnd, yBase, heightPx, progress, labelText) {
+        ctx.strokeStyle = '#22c55e';
+        ctx.fillStyle = '#22c55e';
+        ctx.lineWidth = 2;
+        let count = 12;
+        let step = (xEnd - xStart) / count;
+        for (let i = 0; i <= count; i++) {
+            let xx = xStart + i * step;
+            let yy2 = yBase - heightPx/2 - 5;
+            let yy1 = yy2 - 35 * progress;
+            ctx.beginPath(); ctx.moveTo(xx, yy1); ctx.lineTo(xx, yy2); ctx.stroke();
+            // Arrowhead
+            ctx.beginPath(); ctx.moveTo(xx, yy2); ctx.lineTo(xx - 3, yy2 + 8); ctx.lineTo(xx + 3, yy2 + 8); ctx.fill();
+        }
+        ctx.font = 'bold 12px sans-serif';
+        ctx.fillText(labelText, xStart + 200, yBase - 50);
+    }
+
+    function drawPinSupport(x, y) {
+        ctx.fillStyle = '#64748b';
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - 15, y + 25);
+        ctx.lineTo(x + 15, y + 25);
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    function drawRollerSupport(x, y) {
+        drawPinSupport(x, y);
+        ctx.fillStyle = '#eab308';
+        ctx.beginPath();
+        ctx.arc(x - 8, y + 32, 6, 0, Math.PI * 2);
+        ctx.arc(x + 8, y + 32, 6, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    function drawArrow(x1, y1, x2, y2, color, label) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        if (y2 > y1) {
+            ctx.moveTo(x2, y2); ctx.lineTo(x2 - 5, y2 - 10); ctx.lineTo(x2 + 5, y2 - 10);
+        } else {
+            ctx.moveTo(x2, y2); ctx.lineTo(x2 - 5, y2 + 10); ctx.lineTo(x2 + 5, y2 + 10);
+        }
+        ctx.fill();
+
+        ctx.font = 'bold 12px sans-serif';
+        ctx.fillText(label, x2 + 10, (y1 + y2)/2);
+    }
+
+    function runDeflectionTest() {
+        runCalculations();
+        targetLoadProgress = 1.0;
+        currentLoadProgress = 0;
+        isAnimating = true;
+    }
+
+    function resetSimulation() {
+        targetLoadProgress = 0;
+        currentLoadProgress = 0;
+        isAnimating = false;
+    }
+
+    function checkAnswer(qNum, selectedOpt) {
+        let feedbackEl = document.getElementById(`feedback${qNum}`);
+        if (qNum === 1) {
+            if (selectedOpt === 'a') {
+                feedbackEl.style.color = 'var(--success)';
+                feedbackEl.innerHTML = 'Correct! For a simply supported beam, the max deflection under a UDL is $\\frac{5wL^4}{384EI}$, whereas for a point load $P$ it is $\\frac{PL^3}{48EI}$. Setting $wL = P$, the UDL deflection is $\\frac{5}{8}$th of the point load deflection.';
+            } else {
+                feedbackEl.style.color = 'var(--danger)';
+                feedbackEl.innerHTML = 'Incorrect. Review the standard deflection formulas: distributed loading spreads the bending moment energy, resulting in a deflection ratio of 5/8 compared to a concentrated mid-span point load.';
+            }
+        } else if (qNum === 2) {
+            if (selectedOpt === 'b') {
+                feedbackEl.style.color = 'var(--success)';
+                feedbackEl.innerHTML = 'Correct! Four-point bending (two symmetric loads) creates a constant bending moment zone between the load points with zero shear force, preventing shear stress interference.';
+            } else {
+                feedbackEl.style.color = 'var(--danger)';
+                feedbackEl.innerHTML = 'Incorrect. Two point loads create a pure bending moment region where shear is zero, which is critical for pure flexural testing.';
+            }
+        } else if (qNum === 3) {
+            if (selectedOpt === 'a') {
+                feedbackEl.style.color = 'var(--success)';
+                feedbackEl.innerHTML = 'Correct! Clamping both ends prevents rotational slopes at the supports, increasing overall structural stiffness and lowering maximum deflection.';
+            } else {
+                feedbackEl.style.color = 'var(--danger)';
+                feedbackEl.innerHTML = 'Incorrect. Fixed support end moments provide negative bending restraint that significantly reduces the mid-span deflection compared to simply supported boundaries.';
+            }
+        }
+    }
+
+    toggleLoadInputs();
+    runCalculations();
+
+    function loop() {
+        drawScene();
+        requestAnimationFrame(loop);
+    }
+    loop();
+</script>
+
+</body>
+</html>
