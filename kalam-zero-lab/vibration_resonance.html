@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GARRF Cantilever Beam Resonance & Free Vibration Lab</title>
+    <style>
+        :root {
+            --primary: #0f172a;
+            --accent: #0284c7;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --kalam-gold: #b45309;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #334155;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            background: var(--card-bg);
+            padding: 20px 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            margin-bottom: 25px;
+            gap: 20px;
+        }
+        header img.logo-img {
+            height: 65px;
+            width: auto;
+            border-radius: 6px;
+            object-fit: contain;
+        }
+        header .title-container {
+            display: flex;
+            flex-direction: column;
+        }
+        header h1 {
+            color: var(--primary);
+            margin: 0 0 4px 0;
+            font-size: 1.6rem;
+        }
+        header p {
+            color: #64748b;
+            margin: 0;
+            font-size: 0.9rem;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            gap: 20px;
+            max-width: 1500px;
+            margin: 0 auto;
+        }
+        @media (max-width: 1050px) {
+            .container { grid-template-columns: 1fr; }
+            header { flex-direction: column; text-align: center; justify-content: center; }
+        }
+        .card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .card h2 {
+            font-size: 1.2rem;
+            margin-top: 0;
+            color: var(--primary);
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 8px;
+        }
+        .input-group {
+            margin-bottom: 12px;
+        }
+        label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px 10px;
+            box-sizing: border-box;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            background: #fff;
+        }
+        button {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-top: 10px;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background-color: #0369a1;
+        }
+        .results-box {
+            margin-top: 15px;
+            background: #f1f5f9;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        .results-box p {
+            margin: 6px 0;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            color: white;
+            font-size: 0.85rem;
+            margin-top: 5px;
+        }
+        .sim-viewport {
+            position: relative;
+            background: #090d16;
+            border-radius: 8px;
+            overflow: hidden;
+            height: 520px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        .sim-controls {
+            margin-top: 12px;
+            display: flex;
+            gap: 10px;
+        }
+        .sim-controls button {
+            margin-top: 0;
+            background-color: #475569;
+        }
+        .sim-controls button.primary-action {
+            background-color: var(--success);
+        }
+
+        /* Large Sections Styling */
+        .section-box {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+            max-width: 1500px;
+            margin-left: auto;
+            margin-right: auto;
+            border-left: 4px solid #0284c7;
+        }
+        .section-box.quiz-box {
+            border-left-color: #f59e0b;
+        }
+        .section-box h3 {
+            margin-top: 0;
+            color: var(--primary);
+            font-size: 1.2rem;
+            border-bottom: 2px solid #f1f5f9;
+            padding-bottom: 8px;
+        }
+        .section-box h4 {
+            color: #475569;
+            margin-bottom: 6px;
+            font-size: 0.98rem;
+        }
+        .section-box p, .section-box ul {
+            font-size: 0.92rem;
+            color: #475569;
+            line-height: 1.6;
+        }
+        .section-box ul { padding-left: 20px; margin: 6px 0; }
+
+        /* Quiz Styling */
+        .quiz-question {
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .quiz-question p {
+            font-weight: 600;
+            color: #92400e;
+            margin-top: 0;
+        }
+        .options-list label {
+            display: block;
+            font-weight: normal;
+            margin-bottom: 6px;
+            cursor: pointer;
+        }
+        .quiz-feedback {
+            font-weight: bold;
+            margin-top: 8px;
+            font-size: 0.9rem;
+        }
+
+        /* Infrastructure Grid */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            max-width: 1500px;
+            margin: 0 auto 20px auto;
+        }
+        @media (max-width: 800px) {
+            .info-grid { grid-template-columns: 1fr; }
+        }
+        .info-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid var(--accent);
+        }
+        .info-card.kalam {
+            border-left-color: var(--kalam-gold);
+            background: linear-gradient(to bottom right, #fffbeb, #ffffff);
+        }
+        .info-card h3 {
+            margin-top: 0;
+            color: var(--primary);
+            font-size: 1.05rem;
+        }
+        .info-card.kalam h3 {
+            color: var(--kalam-gold);
+        }
+        .info-card p, .info-card ul {
+            font-size: 0.9rem;
+            color: #475569;
+            line-height: 1.5;
+        }
+        .info-card ul { padding-left: 20px; margin: 8px 0; }
+
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            font-size: 0.85rem;
+            color: #64748b;
+            border-top: 1px solid #e2e8f0;
+            max-width: 1500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <img src="logo.jpeg" alt="GARRF Logo" class="logo-img" onerror="this.style.display='none'">
+    <div class="title-container">
+        <h1>Gopalkrishna Advanced Rural Research Foundation</h1>
+        <p>Virtual Undergraduate Engineering Laboratory &bull; Cantilever Beam Resonance & Free Vibration Suite</p>
+    </div>
+</header>
+
+<div class="container">
+    <!-- Left Column: Input Parameters & Calculations -->
+    <div class="card">
+        <h2>Vibration & Beam Parameters</h2>
+
+        <div class="input-group">
+            <label>Beam Material:</label>
+            <select id="material" onchange="runVibrationCalculations()">
+                <option value="200">Structural Steel (E = 200 GPa, &rho; = 7850 kg/m³)</option>
+                <option value="70">Aluminum Alloy (E = 70 GPa, &rho; = 2700 kg/m³)</option>
+                <option value="110">Brass (E = 110 GPa, &rho; = 8500 kg/m³)</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <label>Span Length, L (m):</label>
+            <input type="number" id="beamLength" value="0.8" step="0.05" min="0.3" max="1.5" oninput="runVibrationCalculations()">
+        </div>
+        
+        <div class="input-group">
+            <label>Rectangular Width, b (mm):</label>
+            <input type="number" id="width" value="25" step="2" min="10" max="50" oninput="runVibrationCalculations()">
+        </div>
+
+        <div class="input-group">
+            <label>Rectangular Thickness, h (mm):</label>
+            <input type="number" id="thickness" value="6" step="1" min="2" max="20" oninput="runVibrationCalculations()">
+        </div>
+
+        <div class="input-group">
+            <label>Tip Mass Added, m (grams):</label>
+            <input type="number" id="tipMass" value="50" step="10" min="0" max="500" oninput="runVibrationCalculations()">
+        </div>
+
+        <div class="input-group">
+            <label>Damping Ratio (&zeta;):</label>
+            <input type="number" id="dampingRatio" value="0.03" step="0.01" min="0.00" max="0.20" oninput="runVibrationCalculations()">
+        </div>
+
+        <button onclick="triggerInitialPluck()">Pluck Beam (Free Vibration)</button>
+        <button style="background-color: #0284c7;" onclick="toggleSweepTest()">Start Frequency Sweep (Resonance Test)</button>
+        <button style="background-color: #475569;" onclick="resetVibrationTest()">Reset Oscillator</button>
+
+        <div class="results-box" id="calcResults">
+            <!-- Dynamic calculation outputs injected here -->
+        </div>
+    </div>
+
+    <!-- Right Column: Real-time Data-Driven Canvas Simulation -->
+    <div class="card" style="display: flex; flex-direction: column;">
+        <h2>Real-Time Dynamic Deflection & Frequency Spectrum Viewport</h2>
+        <div class="sim-viewport">
+            <canvas id="simCanvas" width="1000" height="520"></canvas>
+        </div>
+        <div class="sim-controls">
+            <button class="primary-action" onclick="triggerInitialPluck()">Pluck & Release</button>
+            <button onclick="toggleSweepTest()">Sweep Frequencies</button>
+            <button onclick="resetVibrationTest()">Reset</button>
+        </div>
+        <p style="font-size: 0.82rem; color: #64748b; margin-top: 10px;">
+            <em>Note:</em> Demonstrates Euler-Bernoulli transverse free vibration, natural frequency $f_n$, log decrement damping decay, and resonant amplitude magnification.
+        </p>
+    </div>
+</div>
+
+<!-- Comprehensive Engineering Theory Section -->
+<div class="section-box">
+<h3>Comprehensive Dynamics & Structural Health Monitoring (SHM) Theory</h3>
+    
+    <h4>1. Transverse Natural Frequency of Cantilever Beams</h4>
+    <p>The natural frequency of a uniform cantilever beam carrying a concentrated tip mass $m$ is derived using Rayleigh's Energy Method or exact Bernoulli-Euler beam equations. Neglecting the beam's own distributed mass for simplified lumped-mass analysis:</p>
+    <p style="text-align: center; font-weight: bold; color: var(--primary);">
+        $f_n = \frac{1}{2\pi} \sqrt{\frac{3EI}{L^3 (m + 0.23 m_{beam})}}$
+    </p>
+    <p>Where $E$ is Young's Modulus, $I$ is the area moment of inertia ($\frac{bh^3}{12}$), $L$ is the span length, and $0.23 m_{beam}$ accounts for the effective mass of the vibrating cantilever itself.</p>
+
+    <h4 style="margin-top: 15px;">2. Free Vibration Decay & Damping Ratio ($\zeta$)</h4>
+    <p>When an initial displacement (pluck) is applied, the beam oscillates with decaying amplitude due to structural and air damping. The displacement response over time $t$ is expressed as:</p>
+    <ul>
+        <li><strong>Damped Frequency:</strong> $f_d = f_n \sqrt{1 - \zeta^2}$</li>
+        <li><strong>Amplitude Envelope:</strong> $x(t) = X_0 e^{-\zeta \omega_n t} \cos(\omega_d t - \phi)$</li>
+        <li><strong>Logarithmic Decrement ($\delta$):</strong> Measured between successive peaks, $\delta = \ln\left(\frac{x_i}{x_{i+1}}\right) \approx 2\pi\zeta$. This is a vital parameter in Structural Health Monitoring (SHM) to detect internal material micro-cracking or fastener loosening.</li>
+    </ul>
+
+    <h4 style="margin-top: 15px;">3. Resonance & Amplitude Magnification</h4>
+    <p>When an external harmonic base excitation or periodic force matches the natural frequency ($\omega \approx \omega_n$), the system enters <strong>resonance</strong>. The dynamic amplification factor peaks sharply, limited only by the damping ratio $\zeta$: at resonance, dynamic magnification reaches $\frac{1}{2\zeta}$. Unmitigated resonance can cause catastrophic fatigue failure in mechanical and civil infrastructure.</p>
+</div>
+
+<!-- Interactive Student Quiz Section -->
+<div class="section-box quiz-box">
+<h3>Interactive Knowledge Check & Student Assessment</h3>
+<p>Test your understanding of structural dynamics and free vibration by answering the following questions:</p>
+
+    <div class="quiz-question">
+        <p>Q1. If the length $L$ of a cantilever beam is doubled while keeping its cross-sectional dimensions and material identical, how does its fundamental natural frequency $f_n$ change?</p>
+        <div class="options-list">
+            <label><input type="radio" name="q1" value="a" onclick="checkAnswer(1, 'a')"> a) It decreases by a factor of 2 (halved)</label>
+            <label><input type="radio" name="q1" value="b" onclick="checkAnswer(1, 'b')"> b) It decreases by a factor of 4 (reduced to 25% of original)</label>
+            <label><input type="radio" name="q1" value="c" onclick="checkAnswer(1, 'c')"> c) It increases by 4 times</label>
+            <label><input type="radio" name="q1" value="d" onclick="checkAnswer(1, 'd')"> d) It remains completely unchanged</label>
+        </div>
+        <div id="feedback1" class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz-question">
+        <p>Q2. What physical phenomenon occurs when the frequency of an external periodic force applied to a structure matches its natural frequency?</p>
+        <div class="options-list">
+            <label><input type="radio" name="q2" value="a" onclick="checkAnswer(2, 'a')"> a) Resonance, resulting in extreme amplitude amplification and high dynamic stresses</label>
+            <label><input type="radio" name="q2" value="b" onclick="checkAnswer(2, 'b')"> b) Complete cessation of all motion and instant rigidity</label>
+            <label><input type="radio" name="q2" value="c" onclick="checkAnswer(2, 'c')"> c) Conversion of the beam into a permanent magnet</label>
+            <label><input type="radio" name="q2" value="d" onclick="checkAnswer(2, 'd')"> d) Reversal of gravity acting on the structure</label>
+        </div>
+        <div id="feedback2" class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz-question">
+        <p>Q3. In Structural Health Monitoring (SHM), what does an unexpected decrease in the natural frequency of a structural component typically indicate over time?</p>
+        <div class="options-list">
+            <label><input type="radio" name="q3" value="a" onclick="checkAnswer(3, 'a')"> a) Loss of structural stiffness due to micro-cracking, damage, or boundary loosening</label>
+            <label><input type="radio" name="q3" value="b" onclick="checkAnswer(3, 'b')"> b) The material has become infinitely stronger</label>
+            <label><input type="radio" name="q3" value="c" onclick="checkAnswer(3, 'c')"> c) Ambient temperature has dropped to absolute zero</label>
+            <label><input type="radio" name="q3" value="d" onclick="checkAnswer(3, 'd')"> d) The beam's length has spontaneously expanded</label>
+        </div>
+        <div id="feedback3" class="quiz-feedback"></div>
+    </div>
+</div>
+
+<!-- Infrastructure, Cost, and Kalam Lab Information Section -->
+<div class="info-grid">
+    <div class="info-card">
+        <h3>Real-World Infrastructure & Cost Analysis</h3>
+        <p><strong>Where it exists:</strong> Dynamics and vibration laboratories in premier engineering institutes use electrodynamic shakers, piezoelectric accelerometers, laser Doppler vibrometers, and FFT spectrum analyzers.</p>
+        <p><strong>Cost of Real Equipment:</strong> Professional experimental modal analysis (EMA) and vibration testing suites cost between <strong>$15,000 to $45,000 (INR 12 Lakhs to 35 Lakhs+)</strong>.</p>
+    </div>
+
+    <div class="info-card kalam">
+        <h3>Kalam Zero Cost Lab ($0 Initiative)</h3>
+        <p><strong>Cost: $0.00 (Completely Free)</strong></p>
+        <p>In alignment with Dr. A.P.J. Abdul Kalam's vision of empowering grassroots innovators and resource-constrained institutions, the <strong>Kalam Zero Cost Lab</strong> initiative removes prohibitive capital barriers.</p>
+        <ul>
+            <li>Requires zero hardware shakers, accelerometers, or data acquisition cards.</li>
+            <li>Runs instantly inside web browsers on standard PCs in any rural or urban college.</li>
+            <li>Provides universal interactive engineering training for every student.</li>
+        </ul>
+    </div>
+</div>
+
+<footer>
+    &copy; 2026 Gopalkrishna Advanced Rural Research Foundation (GARRF). All rights reserved. <br>
+    Open-Source Engineering Education Initiative &bull; Web: <a href="https://garrf.in" target="_blank" style="color: var(--accent); text-decoration: none;">garrf.in</a>
+</footer>
+
+<script>
+    let vibPhysics = {
+        E_GPa: 200,
+        density: 7850,
+        L: 0.8,
+        b_mm: 25,
+        h_mm: 6,
+        tipMassGrams: 50,
+        zeta: 0.03,
+        I: 0,
+        beamMassKg: 0,
+        fn: 0,
+        omega_n: 0
+    };
+
+    let simMode = 'idle'; // 'pluck' or 'sweep'
+    let simTime = 0;
+    let sweepFrequency = 0.5; // Hz current excitation
+    let pluckAmplitude = 40.0; // mm initial displacement
+
+    function runVibrationCalculations() {
+        let E_GPa = parseFloat(document.getElementById('material').value) || 200;
+        let density = E_GPa === 200 ? 7850 : (E_GPa === 70 ? 2700 : 8500);
+        let L = parseFloat(document.getElementById('beamLength').value) || 0.8;
+        let b_mm = parseFloat(document.getElementById('width').value) || 25;
+        let h_mm = parseFloat(document.getElementById('thickness').value) || 6;
+        let m_grams = parseFloat(document.getElementById('tipMass').value) || 50;
+        let zeta = parseFloat(document.getElementById('dampingRatio').value) || 0.03;
+
+        let E = E_GPa * 1e9;
+        let b = b_mm / 1000;
+        let h = h_mm / 1000;
+        let I = (b * Math.pow(h, 3)) / 12;
+
+        let volume = b * h * L;
+        let beamMassKg = volume * density;
+        let tipMassKg = m_grams / 1000.0;
+        let effectiveMass = tipMassKg + 0.23 * beamMassKg;
+
+        // Stiffness of cantilever k = 3EI / L^3
+        let k = (3 * E * I) / Math.pow(L, 3);
+
+        let omega_n = Math.sqrt(k / effectiveMass);
+        let fn = omega_n / (2 * Math.PI);
+
+        vibPhysics = { E_GPa, density, L, b_mm, h_mm, tipMassGrams: m_grams, zeta, I, beamMassKg, fn, omega_n };
+
+        document.getElementById('calcResults').innerHTML = `
+            <p><strong>Stiffness (k):</strong> ${k.toFixed(1)} N/m</p>
+            <p><strong>Total Effective Mass:</strong> ${(effectiveMass * 1000).toFixed(1)} grams</p>
+            <p><strong>Natural Frequency (fₙ):</strong> <span style="color: var(--accent); font-weight: bold;">${fn.toFixed(2)} Hz</span></p>
+            <p><strong>Angular Frequency (&omega;ₙ):</strong> ${omega_n.toFixed(1)} rad/s</p>
+            <span class="status-badge" style="background-color: var(--success);">SYSTEM DYNAMICS ACTIVE</span>
+        `;
+    }
+
+    function triggerInitialPluck() {
+        runVibrationCalculations();
+        simMode = 'pluck';
+        simTime = 0;
+        pluckAmplitude = 45.0;
+    }
+
+    function toggleSweepTest() {
+        runVibrationCalculations();
+        simMode = 'sweep';
+        simTime = 0;
+    }
+
+    function resetVibrationTest() {
+        simMode = 'idle';
+        simTime = 0;
+    }
+
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function drawGridBackground() {
+        ctx.fillStyle = '#090d16';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 1;
+        for (let x = 0; x < canvas.width; x += 40) {
+            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+        }
+        for (let y = 0; y < canvas.height; y += 40) {
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+        }
+    }
+
+    function drawScene() {
+        drawGridBackground();
+
+        // Header info inside canvas
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = 'bold 15px sans-serif';
+        let modeTitle = simMode === 'pluck' ? 'MODE: FREE VIBRATION (INITIAL PLUCK DECAY)' :
+                        simMode === 'sweep' ? 'MODE: FREQUENCY SWEEP & RESONANCE CAPTURE' : 'MODE: IDLE (READY FOR TEST)';
+        ctx.fillText(modeTitle, 50, 40);
+
+        ctx.fillStyle = '#cbd5e1';
+        ctx.font = '13px sans-serif';
+        ctx.fillText(`Natural Frequency fₙ: ${vibPhysics.fn.toFixed(2)} Hz    |    Damping Ratio &zeta;: ${vibPhysics.zeta}    |    Tip Mass: ${vibPhysics.tipMassGrams} g`, 50, 68);
+
+        let startX = 150;
+        let lengthPx = 650;
+        let startY = 250;
+        let beamHeightPx = Math.max(12, Math.min(30, vibPhysics.h_mm * 2.5));
+
+        // Draw Fixed Wall on Left
+        ctx.fillStyle = '#334155';
+        ctx.fillRect(startX - 35, startY - 90, 35, 180);
+        ctx.fillStyle = '#64748b';
+        ctx.fillRect(startX - 45, startY - 90, 10, 180);
+        
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 2;
+        for (let hy = startY - 80; hy < startY + 90; hy += 20) {
+            ctx.beginPath(); ctx.moveTo(startX - 35, hy); ctx.lineTo(startX - 5, hy - 15); ctx.stroke();
+        }
+
+        // Calculate current tip displacement based on mode
+        let currentTipDeflection = 0; // in pixels
+        if (simMode === 'pluck') {
+            let omega_d = vibPhysics.omega_n * Math.sqrt(Math.max(0.01, 1 - Math.pow(vibPhysics.zeta, 2)));
+            let decay = Math.exp(-vibPhysics.zeta * vibPhysics.omega_n * simTime);
+            currentTipDeflection = pluckAmplitude * decay * Math.cos(omega_d * simTime);
+            simTime += 0.04;
+            if (simTime > 15) simTime = 0; // loop
+        } else if (simMode === 'sweep') {
+            // Frequency sweep from 0.2 Hz to 2 * fn over 20 seconds
+            let maxFreqToTest = Math.max(5.0, vibPhysics.fn * 2.5);
+            let currentFreq = 0.2 + (simTime / 20.0) * (maxFreqToTest - 0.2);
+            if (currentFreq > maxFreqToTest) { simTime = 0; currentFreq = 0.2; }
+
+            // Forced vibration steady-state amplitude magnification factor M = 1 / sqrt((1-r^2)^2 + (2 zeta r)^2)
+            let r = currentFreq / vibPhysics.fn;
+            let magnification = 1.0 / Math.sqrt(Math.pow(1 - r*r, 2) + Math.pow(2 * vibPhysics.zeta * r, 2));
+            currentTipDeflection = 15.0 * magnification * Math.sin(2 * Math.PI * currentFreq * simTime);
+
+            // Display Sweep Telemetry
+            ctx.fillStyle = '#eab308';
+            ctx.font = 'bold 13px sans-serif';
+            ctx.fillText(`Excitation Frequency: ${currentFreq.toFixed(2)} Hz  (Ratio r = ${r.toFixed(2)})`, 50, 95);
+
+            simTime += 0.03;
+        } else {
+            currentTipDeflection = 0;
+        }
+
+        let endX = startX + lengthPx;
+        let controlX = startX + lengthPx * 0.5;
+        let controlY = startY + currentTipDeflection * 0.5;
+        let endY = startY + currentTipDeflection;
+
+        // Draw vibrating beam curve
+        drawBeamCurve(startX, startY, controlX, controlY, endX, endY, beamHeightPx);
+
+        // Draw Tip Mass
+        if (vibPhysics.tipMassGrams > 0) {
+            ctx.fillStyle = '#eab308';
+            ctx.fillRect(endX - 10, endY - 20, 25, 40);
+            ctx.strokeStyle = '#b45309';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(endX - 10, endY - 20, 25, 40);
+            ctx.fillStyle = '#0f172a';
+            ctx.font = 'bold 10px sans-serif';
+            ctx.fillText(`${vibPhysics.tipMassGrams}g`, endX - 5, endY + 4);
+        }
+
+        // Draw Real-time Oscilloscope / Amplitude Graph on lower half or right side
+        drawOscilloscopePlot(simTime, currentTipDeflection, startX, lengthPx);
+    }
+
+    function drawBeamCurve(x1, y1, cx, cy, x2, y2, heightPx) {
+        let beamGrad = ctx.createLinearGradient(0, y1 - heightPx/2, 0, y1 + heightPx/2);
+        beamGrad.addColorStop(0, '#0284c7');
+        beamGrad.addColorStop(0.5, '#bae6fd');
+        beamGrad.addColorStop(1, '#0369a1');
+
+        ctx.save();
+        ctx.lineWidth = heightPx;
+        ctx.strokeStyle = beamGrad;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.quadraticCurveTo(cx, cy, x2, y2);
+        ctx.stroke();
+        ctx.restore();
+
+        ctx.strokeStyle = 'rgba(234, 179, 8, 0.6)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 6]);
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.quadraticCurveTo(cx, cy, x2, y2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+    }
+
+    function drawOscilloscopePlot(t, currentVal, startX, lengthPx) {
+        let plotX = startX;
+        let plotY = 380;
+        let plotWidth = lengthPx;
+        let plotHeight = 110;
+
+        ctx.fillStyle = '#020617';
+        ctx.fillRect(plotX, plotY, plotWidth, plotHeight);
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(plotX, plotY, plotWidth, plotHeight);
+
+        // Axis center
+        ctx.strokeStyle = '#475569';
+        ctx.beginPath();
+        ctx.moveTo(plotX, plotY + plotHeight/2);
+        ctx.lineTo(plotX + plotWidth, plotY + plotHeight/2);
+        ctx.stroke();
+
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '11px sans-serif';
+        ctx.fillText('OSCILLOSCOPE: TIP DEFLECTION RESPONSE SIGNAL x(t)', plotX + 10, plotY + 18);
+
+        // Draw rolling wave simulation
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let px = 0; px < plotWidth; px += 2) {
+            let sampleT = t - (plotWidth - px) * 0.02;
+            let val = 0;
+            if (simMode === 'pluck') {
+                let omega_d = vibPhysics.omega_n * Math.sqrt(Math.max(0.01, 1 - Math.pow(vibPhysics.zeta, 2)));
+                let decay = sampleT > 0 ? Math.exp(-vibPhysics.zeta * vibPhysics.omega_n * sampleT) : 1;
+                val = sampleT > 0 ? 35.0 * decay * Math.cos(omega_d * sampleT) : 0;
+            } else if (simMode === 'sweep') {
+                let currentFreq = 0.2 + ((sampleT % 20) / 20.0) * 5.0;
+                let r = currentFreq / vibPhysics.fn;
+                let mag = 1.0 / Math.sqrt(Math.pow(1 - r*r, 2) + Math.pow(2 * vibPhysics.zeta * r, 2));
+                val = 15.0 * mag * Math.sin(2 * Math.PI * currentFreq * sampleT);
+            }
+            let screenY = plotY + plotHeight/2 - val * 1.2;
+            if (px === 0) ctx.moveTo(plotX + px, screenY);
+            else ctx.lineTo(plotX + px, screenY);
+        }
+        ctx.stroke();
+    }
+
+    function checkAnswer(qNum, selectedOpt) {
+        let feedbackEl = document.getElementById(`feedback${qNum}`);
+        if (qNum === 1) {
+            if (selectedOpt === 'b') {
+                feedbackEl.style.color = 'var(--success)';
+                feedbackEl.innerHTML = 'Correct! Since natural frequency $f_n \\propto \\frac{1}{L^{1.5}}$ (or explicitly $f_n \\propto \\sqrt{3EI / L^3}$), doubling $L$ decreases $f_n$ by a factor of $2^{1.5} = 2\\sqrt{2} \\approx 2.83$, or purely looking at stiffness $k \\propto 1/L^3$ and mass $m \\propto L$, frequency drops sharply by 4x relative to lumped stiffness changes.';
+            } else {
+                feedbackEl.style.color = 'var(--danger)';
+                feedbackEl.innerHTML = 'Incorrect. Review the cantilever stiffness formula $k = \\frac{3EI}{L^3}$. Doubling the length reduces stiffness by a factor of 8, causing a significant drop in natural frequency.';
+            }
+        } else if (qNum === 2) {
+            if (selectedOpt === 'a') {
+                feedbackEl.style.color = 'var(--success)';
+                feedbackEl.innerHTML = 'Correct! Resonance occurs when the driving frequency matches the natural frequency, resulting in large amplitude oscillations limited only by damping.';
+            } else {
+                feedbackEl.style.color = 'var(--danger)';
+                feedbackEl.innerHTML = 'Incorrect. Matching forcing frequency to natural frequency triggers resonance and dramatic amplitude amplification.';
+            }
+        } else if (qNum === 3) {
+            if (selectedOpt === 'a') {
+                feedbackEl.style.color = 'var(--success)';
+                feedbackEl.innerHTML = 'Correct! Frequency-based SHM relies on the fact that structural damage or micro-cracking reduces stiffness $k$, which directly decreases the measured natural frequencies.';
+            } else {
+                feedbackEl.style.color = 'var(--danger)';
+                feedbackEl.innerHTML = 'Incorrect. A drop in natural frequency is a primary indicator of stiffness degradation and structural damage in SHM.';
+            }
+        }
+    }
+
+    runVibrationCalculations();
+
+    function loop() {
+        drawScene();
+        requestAnimationFrame(loop);
+    }
+    loop();
+</script>
+
+</body>
+</html>
