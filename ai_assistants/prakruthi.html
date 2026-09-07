@@ -239,7 +239,7 @@ footer strong{display:block; margin-bottom:4px;}
         <option value="ml-IN">🇮🇳 മലയാളം (Malayalam)</option>
       </select>
     </div>
-    <div class="status-text" id="statusText">Listening / ready.</div>
+    <div class="status-text" id="statusText">Prakruthi Voice Ready (Female, Indian)</div>
   </section>
 
   <!-- Interactive Grid: Keypad & Assistant Dialogue -->
@@ -337,7 +337,7 @@ footer strong{display:block; margin-bottom:4px;}
 <script>
 let currentOption = null;
 let formDataStore = {};
-let selectedVoice = null;
+let prakruthiVoice = null;
 let currentLang = 'en-IN';
 
 // Translations for Speech & Interface Prompts
@@ -425,32 +425,36 @@ const optionsMap = {
   8: { title: "Password Access Request", fields: ["Applicant Name", "Institution", "Reason for Experiment Access"] }
 };
 
-// Filter Female Indian Voice based on Language Code
-function loadFemaleIndianVoice() {
+// Strict Indian Female Voice Picker for Prakruthi
+function loadPrakruthiVoice() {
   if (!('speechSynthesis' in window)) return;
   
   const voices = speechSynthesis.getVoices();
-  const targetLang = currentLang.split('-')[0]; // e.g., 'hi', 'te', 'en'
+  const langCode = currentLang.split('-')[0]; // e.g. "hi", "te", "en"
   
-  // Dynamic lookup for target language female voices
-  selectedVoice = voices.find(v => 
-    v.lang.toLowerCase().includes(targetLang) && 
-    (v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('natural') || v.name.includes('Google') || v.name.includes('Heera') || v.name.includes('Neerja') || v.name.includes('Kalpana'))
+  // High-priority search for explicit Indian Female voices across browsers
+  prakruthiVoice = voices.find(v => 
+    v.lang.toLowerCase().includes(langCode) && 
+    (v.name.includes('Google') || v.name.includes('Swara') || v.name.includes('Heera') || 
+     v.name.includes('Neerja') || v.name.includes('Kalpana') || v.name.includes('Komal') || 
+     v.name.toLowerCase().includes('female'))
   ) || voices.find(v => 
-    v.lang.toLowerCase().includes(targetLang)
+    v.lang.includes('IN') && (v.name.toLowerCase().includes('female') || v.name.includes('Google'))
+  ) || voices.find(v => 
+    v.lang.toLowerCase().includes(langCode)
   ) || voices.find(v => 
     v.lang.includes('IN')
   ) || voices[0];
 }
 
 if ('speechSynthesis' in window) {
-  speechSynthesis.onvoiceschanged = loadFemaleIndianVoice;
-  loadFemaleIndianVoice();
+  speechSynthesis.onvoiceschanged = loadPrakruthiVoice;
+  loadPrakruthiVoice();
 }
 
 function changeLanguage() {
   currentLang = document.getElementById('languageSelect').value;
-  loadFemaleIndianVoice();
+  loadPrakruthiVoice();
   
   const text = languageData[currentLang].greeting;
   addChatMsg(text);
@@ -459,22 +463,23 @@ function changeLanguage() {
 
 function speak(text) {
   if (!('speechSynthesis' in window)) return;
-  speechSynthesis.cancel();
+  speechSynthesis.cancel(); // Stop active speaking first
   
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = currentLang;
   
-  if (!selectedVoice) loadFemaleIndianVoice();
-  if (selectedVoice) utterance.voice = selectedVoice;
+  if (!prakruthiVoice) loadPrakruthiVoice();
+  if (prakruthiVoice) utterance.voice = prakruthiVoice;
   
-  utterance.rate = 0.92;
-  utterance.pitch = 1.05; // Natural female tone
+  // Tuned parameters for standard soft female vocal tone
+  utterance.rate = 0.90; 
+  utterance.pitch = 1.15; 
   
   speechSynthesis.speak(utterance);
 }
 
 function startVoice() {
-  document.getElementById('statusText').textContent = `Voice Assistant Active (${currentLang})`;
+  document.getElementById('statusText').textContent = `Prakruthi Active (${currentLang} Female Voice)`;
   speak(languageData[currentLang].greeting);
 }
 
