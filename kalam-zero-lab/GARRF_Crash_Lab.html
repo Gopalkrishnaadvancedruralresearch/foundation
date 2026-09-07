@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GARRF Advanced Virtual Crash & Safety Lab</title>
+    <style>
+        :root {
+            --primary: #0f172a;
+            --accent: #2563eb;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --kalam-gold: #b45309;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #334155;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            background: var(--card-bg);
+            padding: 20px 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            margin-bottom: 25px;
+            gap: 20px;
+        }
+        header img.logo-img {
+            height: 65px;
+            width: auto;
+            border-radius: 6px;
+            object-fit: contain;
+        }
+        header .title-container {
+            display: flex;
+            flex-direction: column;
+        }
+        header h1 {
+            color: var(--primary);
+            margin: 0 0 4px 0;
+            font-size: 1.6rem;
+        }
+        header p {
+            color: #64748b;
+            margin: 0;
+            font-size: 0.9rem;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 20px;
+            max-width: 1250px;
+            margin: 0 auto;
+        }
+        @media (max-width: 900px) {
+            .container { grid-template-columns: 1fr; }
+            header { flex-direction: column; text-align: center; justify-content: center; }
+        }
+        .card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .card h2 {
+            font-size: 1.2rem;
+            margin-top: 0;
+            color: var(--primary);
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 8px;
+        }
+        .input-group {
+            margin-bottom: 12px;
+        }
+        label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        input {
+            width: 100%;
+            padding: 8px 10px;
+            box-sizing: border-box;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 0.95rem;
+        }
+        button {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-top: 10px;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background-color: #1d4ed8;
+        }
+        .results-box {
+            margin-top: 15px;
+            background: #f1f5f9;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        .results-box p {
+            margin: 6px 0;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            color: white;
+            font-size: 0.85rem;
+            margin-top: 5px;
+        }
+        .sim-viewport {
+            position: relative;
+            background: #090d16;
+            border-radius: 8px;
+            overflow: hidden;
+            height: 380px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        .sim-controls {
+            margin-top: 12px;
+            display: flex;
+            gap: 10px;
+        }
+        .sim-controls button {
+            margin-top: 0;
+            background-color: #475569;
+        }
+        .sim-controls button.primary-action {
+            background-color: var(--success);
+        }
+        
+        /* Educational Curriculum & Experiment Guidance Section */
+        .curriculum-card {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+            border-left: 4px solid #8b5cf6;
+        }
+        .curriculum-card h3 {
+            margin-top: 0;
+            color: var(--primary);
+            font-size: 1.15rem;
+        }
+        .curriculum-card h4 {
+            color: #475569;
+            margin-bottom: 6px;
+            font-size: 0.95rem;
+        }
+        .curriculum-card p, .curriculum-card ul {
+            font-size: 0.9rem;
+            color: #475569;
+            line-height: 1.5;
+        }
+        .curriculum-card ul { padding-left: 20px; margin: 6px 0; }
+
+        /* Infrastructure Grid Section */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            max-width: 1250px;
+            margin: 0 auto 20px auto;
+        }
+        @media (max-width: 800px) {
+            .info-grid { grid-template-columns: 1fr; }
+        }
+        .info-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid var(--accent);
+        }
+        .info-card.kalam {
+            border-left-color: var(--kalam-gold);
+            background: linear-gradient(to bottom right, #fffbeb, #ffffff);
+        }
+        .info-card h3 {
+            margin-top: 0;
+            color: var(--primary);
+            font-size: 1.05rem;
+        }
+        .info-card.kalam h3 {
+            color: var(--kalam-gold);
+        }
+        .info-card p, .info-card ul {
+            font-size: 0.9rem;
+            color: #475569;
+            line-height: 1.5;
+        }
+        .info-card ul { padding-left: 20px; margin: 8px 0; }
+
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            font-size: 0.85rem;
+            color: #64748b;
+            border-top: 1px solid #e2e8f0;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <img src="logo.jpeg" alt="GARRF Logo" class="logo-img" onerror="this.style.display='none'">
+    <div class="title-container">
+        <h1>Gopalkrishna Advanced Rural Research Foundation</h1>
+        <p>Virtual Undergraduate Engineering Laboratory &bull; Parametric Crash & Safety Frame Suite</p>
+    </div>
+</header>
+
+<div class="container">
+    <!-- Left Column: Input Parameters & Calculations -->
+    <div class="card">
+        <h2>Design Parameters</h2>
+        
+        <div class="input-group">
+            <label>Vehicle Mass (kg):</label>
+            <input type="number" id="mass" value="1200" step="50" oninput="runCalculations()">
+        </div>
+        
+        <div class="input-group">
+            <label>Impact Speed (km/h):</label>
+            <input type="number" id="speed" value="80" step="5" oninput="runCalculations()">
+        </div>
+        
+        <div class="input-group">
+            <label>Crumple Zone Deformation (m):</label>
+            <input type="number" id="distance" value="0.8" step="0.1" oninput="runCalculations()">
+        </div>
+
+        <div class="input-group">
+            <label>Material Yield Strength (MPa):</label>
+            <input type="number" id="yieldStress" value="180" oninput="runCalculations()">
+        </div>
+
+        <div class="input-group">
+            <label>Working Stress under Impact (MPa):</label>
+            <input type="number" id="workStress" value="210" oninput="runCalculations()">
+        </div>
+
+        <button onclick="runCalculations()">Recalculate Metrics</button>
+
+        <div class="results-box" id="calcResults">
+            <!-- Dynamic calculation outputs injected here -->
+        </div>
+    </div>
+
+    <!-- Right Column: Real-time Data-Driven Canvas Simulation -->
+    <div class="card" style="display: flex; flex-direction: column;">
+        <h2>Live Telemetry & High-Speed Dynamic Tear Sandbox</h2>
+        <div class="sim-viewport">
+            <canvas id="simCanvas" width="750" height="380"></canvas>
+        </div>
+        <div class="sim-controls">
+            <button class="primary-action" onclick="triggerCrash()">Run High-Speed Impact & Velocity Throw Test</button>
+            <button onclick="resetSimulation()">Reset View</button>
+        </div>
+        <p style="font-size: 0.82rem; color: #64748b; margin-top: 10px;">
+            <em>Note:</em> The simulation features a realistic textured asphalt highway road, distance milestone markers, and kinetic energy/momentum-proportional throw-off trajectory when structural limits are breached.
+        </p>
+    </div>
+</div>
+
+<!-- Target Student Group & Experiment Varieties Section -->
+<div class="curriculum-card">
+    <h3>Academic Curriculum Integration & Experiment Scope</h3>
+    
+    <h4>1. Target Student Cohorts (Which Year & Branch?)</h4>
+    <p>This virtual lab experiment is explicitly engineered for <strong>Mechanical Engineering (ME)</strong>, <strong>Automobile Engineering</strong>, and <strong>Aerospace/Structural Engineering</strong> undergraduates:</p>
+    <ul>
+        <div><strong>2nd Year Undergraduates:</strong> Fits courses in <em>Engineering Mechanics</em>, <em>Kinematics of Machinery</em>, and <em>Strength of Materials (SOM)</em> to study kinetic energy transfer, stress, strain, and material yield limits.</div>
+        <div style="margin-top: 6px;"><strong>3rd & Final Year Undergraduates:</strong> Fits courses in <em>Design of Machine Elements (DME)</em>, <em>Finite Element Methods (FEM)</em>, <em>Crashworthiness</em>, and <em>Automotive Safety Systems</em> to calculate Factors of Safety (FOS) and deceleration loads.</div>
+    </ul>
+
+    <h4 style="margin-top: 15px;">2. How Many Types of Experiments Can Be Conducted Here?</h4>
+    <p>A wide breadth of modular exploratory experiments can be executed within this single suite by varying input variables:</p>
+    <ul>
+        <li><strong>Experiment A (Crumple Zone Efficiency Study):</strong> Analyze how changing the deformation distance ($0.3\text{m}$ vs $1.2\text{m}$) drastically alters average impact force and occupant G-load survival thresholds.</li>
+        <li><strong>Experiment B (Material Selection & Safety Factor Analysis):</strong> Test structural behavior under identical impact forces by substituting material yield strengths (e.g., Mild Steel vs. Advanced High-Strength Steels vs. Aluminum Alloys) to evaluate FOS margins.</li>
+        <li><strong>Experiment C (Velocity Sensitivity & Kinetic Energy Dissipation):</strong> Scale impact velocities from city speeds ($30\text{ km/h}$) to highway speeds ($120\text{ km/h}$) to examine nonlinear kinetic energy scaling ($KE \propto v^2$) and frame failure risk thresholds.</li>
+        <li><strong>Experiment D (Restraint & Trigger Calibration):</strong> Observe how vehicle deceleration spikes dictate dynamic airbag trigger thresholds and occupant safety containment.</li>
+    </ul>
+</div>
+
+<!-- Infrastructure, Cost, and Kalam Lab Information Section -->
+<div class="info-grid">
+    <div class="info-card">
+        <h3>Real-World Infrastructure & Cost Analysis</h3>
+        <p><strong>Where it exists:</strong> Full-scale physical crash-testing facilities and impact mechanics laboratories are hosted at premier institutions like <strong>IISc Bangalore</strong> (Impact Mechanics Lab), select <strong>IITs</strong> (e.g., IIT Delhi, IIT Bombay mechanical engineering testing cells), and national automotive testing centers (such as <strong>ARAI Pune</strong>).</p>
+        <p><strong>Cost of Real Experiments:</strong> A single physical destructive crash test or instrumented high-speed impact trial costs anywhere from <strong>$10,000 to over $100,000 (INR 8 Lakhs to 80 Lakhs+)</strong> per test. This accounts for vehicle/chassis prototyping, sample destruction, high-speed camera arrays ($50k+), multi-axis accelerometers, strain gauges, and specialized Data Acquisition Systems (DAQ).</p>
+    </div>
+
+    <div class="info-card kalam">
+        <h3>Kalam Zero Cost Lab ($0 Initiative)</h3>
+        <p><strong>Cost: $0.00 (Completely Free)</strong></p>
+        <p>In alignment with Dr. A.P.J. Abdul Kalam's vision of empowering grassroots innovators and resource-constrained institutions, the <strong>Kalam Zero Cost Lab</strong> initiative eliminates prohibitive financial overheads.</p>
+        <ul>
+            <li>Requires zero hardware investment or proprietary software licenses.</li>
+            <li>Runs instantly inside standard web browsers on basic institutional PCs.</li>
+            <li>Enables engineering undergraduates across rural and urban colleges to explore complex mechanical impact dynamics safely and freely.</li>
+        </ul>
+    </div>
+</div>
+
+<footer>
+    &copy; 2026 Gopalkrishna Advanced Rural Research Foundation (GARRF). All rights reserved. <br>
+    Open-Source Engineering Education Initiative &bull; Web: <a href="https://garrf.in" target="_blank" style="color: var(--accent); text-decoration: none;">garrf.in</a>
+</footer>
+
+<script>
+    let globalPhysics = {
+        m: 1200,
+        speedKmh: 80,
+        vMs: 22.22,
+        d: 0.8,
+        ke: 296296,
+        avgForce: 370370,
+        gForce: 31.5,
+        fos: 0.86
+    };
+
+    function runCalculations() {
+        let m = parseFloat(document.getElementById('mass').value) || 1200;
+        let speedKmh = parseFloat(document.getElementById('speed').value) || 80;
+        let d = parseFloat(document.getElementById('distance').value) || 0.8;
+        let sy = parseFloat(document.getElementById('yieldStress').value) || 180;
+        let sw = parseFloat(document.getElementById('workStress').value) || 210;
+
+        let vMs = speedKmh * (1000 / 3600);
+        let ke = 0.5 * m * (vMs ** 2);
+        let avgForce = ke / d;
+        let gForce = avgForce / (m * 9.81);
+        let fos = sy / sw;
+
+        globalPhysics = { m, speedKmh, vMs, d, ke, avgForce, gForce, fos };
+
+        let badgeHtml = fos >= 1.5 && gForce <= 35 
+            ? `<span class="status-badge" style="background-color: var(--success);">Design Status: SAFE / OPTIMAL</span>`
+            : `<span class="status-badge" style="background-color: var(--danger);">Design Status: CATASTROPHIC HIGH-SPEED TEAR</span>`;
+
+        document.getElementById('calcResults').innerHTML = `
+            <p><strong>Kinetic Energy:</strong> ${ke.toLocaleString(undefined, {maximumFractionDigits: 0})} J</p>
+            <p><strong>Avg Impact Force:</strong> ${avgForce.toLocaleString(undefined, {maximumFractionDigits: 0})} N</p>
+            <p><strong>Deceleration Load:</strong> ${gForce.toFixed(1)} G's</p>
+            <p><strong>Factor of Safety (FOS):</strong> ${fos.toFixed(2)}</p>
+            ${badgeHtml}
+        `;
+    }
+
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let initialCarX = 80;
+    let carX = 80;
+    let wallX = 580;
+    let isCrashing = false;
+    let hasCollided = false;
+    let velocity = 0;
+    let currentDeformation = 0;
+    let maxDeformationPx = 0;
+    let airbagRadius = 0;
+    let liveSpeedDisplay = 0;
+    let wheelRotationAngle = 0;
+
+    let cabinDetachX = 0;
+    let cabinDetachY = 0;
+    let cabinRotation = 0;
+    let cabinVelX = 0;
+    let cabinVelY = 0;
+    let cabinAngularVel = 0;
+    let debrisParticles = [];
+    let roadScrollOffset = 0;
+
+    function drawRealWheel(x, y, radius, rotationAngle) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(rotationAngle);
+
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, 0, radius - 4, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.fillStyle = '#94a3b8';
+        ctx.beginPath();
+        ctx.arc(0, 0, radius * 0.65, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#64748b';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 3;
+        for (let i = 0; i < 5; i++) {
+            let angle = (i * 2 * Math.PI) / 5;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(Math.cos(angle) * (radius * 0.65), Math.sin(angle) * (radius * 0.65));
+            ctx.stroke();
+        }
+
+        ctx.fillStyle = '#1e293b';
+        ctx.beginPath();
+        ctx.arc(0, 0, radius * 0.22, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#cbd5e1';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.restore();
+    }
+
+    function drawBackgroundScene() {
+        let skyGrad = ctx.createLinearGradient(0, 0, 0, 220);
+        skyGrad.addColorStop(0, '#020617');
+        skyGrad.addColorStop(1, '#1e293b');
+        ctx.fillStyle = skyGrad;
+        ctx.fillRect(0, 0, canvas.width, 220);
+
+        ctx.fillStyle = '#111827';
+        ctx.beginPath();
+        ctx.moveTo(0, 220);
+        ctx.lineTo(0, 160);
+        ctx.lineTo(120, 130);
+        ctx.lineTo(260, 175);
+        ctx.lineTo(400, 120);
+        ctx.lineTo(580, 165);
+        ctx.lineTo(750, 140);
+        ctx.lineTo(750, 220);
+        ctx.fill();
+
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(0, 220, canvas.width, 160);
+
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 1;
+        for (let i = 230; i < 370; i += 25) {
+            ctx.beginPath();
+            ctx.moveTo(0, i);
+            ctx.lineTo(750, i);
+            ctx.stroke();
+        }
+
+        ctx.strokeStyle = '#eab308';
+        ctx.lineWidth = 4;
+        ctx.setLineDash([30, 20]);
+        ctx.lineDashOffset = -roadScrollOffset;
+        ctx.beginPath();
+        ctx.moveTo(0, 300);
+        ctx.lineTo(750, 300);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        for (let x = 0; x < 750; x += 40) {
+            let shiftedX = (x - (roadScrollOffset % 40));
+            ctx.fillStyle = (Math.floor(x / 40) % 2 === 0) ? '#dc2626' : '#f8fafc';
+            ctx.fillRect(shiftedX, 216, 40, 6);
+        }
+
+        ctx.fillStyle = '#64748b';
+        ctx.font = '10px monospace';
+        ctx.fillText("CRASH LAB TEST ZONE - BAY 04", 30, 238);
+        ctx.fillText("IMPACT BARRIER WALL ->", wallX - 110, 238);
+    }
+
+    function drawScene() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        drawBackgroundScene();
+
+        ctx.fillStyle = '#334155';
+        ctx.fillRect(wallX, 150, 24, 150);
+        ctx.fillStyle = '#cbd5e1';
+        ctx.fillRect(wallX + 4, 154, 16, 142);
+        ctx.strokeStyle = '#64748b';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(wallX + 4, 170); ctx.lineTo(wallX + 20, 190);
+        ctx.moveTo(wallX + 4, 210); ctx.lineTo(wallX + 20, 230);
+        ctx.moveTo(wallX + 4, 250); ctx.lineTo(wallX + 20, 270);
+        ctx.stroke();
+
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = '11px sans-serif';
+        ctx.fillText("Rigid Impact Wall", wallX - 32, 142);
+
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = '12px monospace';
+        ctx.fillText(`--- LIVE TELEMETRY DISPLAY ---`, 20, 25);
+        ctx.fillStyle = '#e2e8f0';
+        ctx.fillText(`Mass: ${globalPhysics.m} kg  |  Target Speed: ${globalPhysics.speedKmh} km/h`, 20, 42);
+        ctx.fillText(`Current Speed: ${Math.max(0, liveSpeedDisplay).toFixed(1)} km/h`, 20, 59);
+        ctx.fillText(`Impact Force: ${(hasCollided ? globalPhysics.avgForce : 0).toLocaleString(undefined, {maximumFractionDigits: 0})} N`, 20, 76);
+        ctx.fillText(`Deceleration: ${(hasCollided ? globalPhysics.gForce : 0).toFixed(1)} Gs`, 20, 93);
+
+        maxDeformationPx = globalPhysics.d * 50; 
+        let currentWidth = 120 - currentDeformation;
+        let isUnsafe = globalPhysics.fos < 1.5;
+
+        ctx.fillStyle = isUnsafe && hasCollided ? '#7f1d1d' : (isUnsafe ? '#ef4444' : '#2563eb');
+        ctx.fillRect(carX, 245, Math.max(20, currentWidth), 40);
+
+        let wheelRadius = 15;
+        drawRealWheel(carX + 25, 285, wheelRadius, wheelRotationAngle);
+
+        if (hasCollided && isUnsafe) {
+            // Precise Physics scaling based directly on mass and velocity (momentum / kinetic energy scaling)
+            // Higher mass or higher speed gives proportionally higher launch velocity & throw-off distance
+            let massVelocityScale = (globalPhysics.m / 1200) * (globalPhysics.speedKmh / 60);
+
+            if (cabinDetachX === 0) {
+                cabinDetachX = carX + Math.max(20, currentWidth - 50);
+                cabinDetachY = 210;
+                cabinVelX = - (2.2 * massVelocityScale); // Higher throw-off distance for heavier/faster crashes
+                cabinVelY = - (3.8 * massVelocityScale); // Higher vertical ejection arc for heavier/faster crashes
+                cabinAngularVel = 0.04 * massVelocityScale;
+            }
+
+            cabinDetachX += cabinVelX;
+            cabinDetachY += cabinVelY;
+            cabinVelY += 0.45; // Gravity
+
+            cabinRotation += cabinAngularVel;
+            cabinAngularVel *= 0.97; 
+
+            if (cabinDetachY >= 250) {
+                cabinDetachY = 250;
+                cabinVelY = -cabinVelY * 0.35; // bounce dampening
+                cabinVelX *= 0.75; // ground friction slowing down horizontal slide
+                cabinAngularVel *= 0.5;
+
+                if (Math.abs(cabinVelY) < 0.6 && Math.abs(cabinVelX) < 0.6) {
+                    cabinVelY = 0;
+                    cabinVelX = 0;
+                    cabinAngularVel = 0;
+                    cabinRotation = Math.round(cabinRotation / (Math.PI / 2)) * (Math.PI / 2);
+                }
+            }
+
+            ctx.save();
+            ctx.translate(cabinDetachX + 22, cabinDetachY + 17);
+            ctx.rotate(cabinRotation);
+            ctx.fillStyle = '#b91c1c'; 
+            ctx.fillRect(-22, -17, 45, 35);
+            ctx.strokeStyle = '#fca5a5';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(-10, -10); ctx.lineTo(10, 10);
+            ctx.moveTo(10, -10); ctx.lineTo(-10, 10);
+            ctx.stroke();
+            ctx.restore();
+
+            let bouncedWheelX = wallX - Math.min(180, 45 * massVelocityScale);
+            drawRealWheel(bouncedWheelX, 285, wheelRadius, wheelRotationAngle + 5);
+
+            ctx.fillStyle = '#fbbf24';
+            debrisParticles.forEach(p => {
+                ctx.fillRect(p.x, p.y, p.size, p.size);
+                p.x += p.vx * massVelocityScale;
+                p.y += p.vy;
+                p.vy += 0.35;
+            });
+
+        } else {
+            let cabinX = carX + Math.max(20, currentWidth - 50);
+            ctx.fillStyle = '#1e40af';
+            ctx.fillRect(cabinX, 210, 45, 35);
+
+            drawRealWheel(carX + Math.max(35, currentWidth - 25), 285, wheelRadius, wheelRotationAngle);
+
+            if (hasCollided) {
+                if (airbagRadius < 38) airbagRadius += 4;
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                ctx.beginPath();
+                ctx.arc(carX + currentWidth - 15, 225, airbagRadius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#94a3b8';
+                ctx.stroke();
+                
+                ctx.fillStyle = '#0f172a';
+                ctx.font = '10px sans-serif';
+                ctx.fillText("AIRBAG DEPLOYED", carX + currentWidth - 45, 195);
+            }
+        }
+
+        if (isCrashing) {
+            carX += velocity;
+            roadScrollOffset += velocity;
+            wheelRotationAngle += velocity * 0.15;
+            liveSpeedDisplay -= (globalPhysics.speedKmh / (maxDeformationPx / velocity));
+
+            if (carX + 120 >= wallX) {
+                let penetration = (carX + 120) - wallX;
+                currentDeformation = Math.min(maxDeformationPx, penetration);
+                
+                if (currentDeformation >= maxDeformationPx || Math.abs(velocity) < 0.2) {
+                    isCrashing = false;
+                    hasCollided = true;
+                    liveSpeedDisplay = 0;
+
+                    if (isUnsafe) {
+                        debrisParticles = [];
+                        let sparkCount = Math.floor(15 + (globalPhysics.speedKmh / 3));
+                        for (let i = 0; i < sparkCount; i++) {
+                            debrisParticles.push({
+                                x: wallX - 10,
+                                y: 240 + (Math.random() * 40 - 20),
+                                vx: -(Math.random() * 10 + 4),
+                                vy: -(Math.random() * 8 + 2),
+                                size: Math.random() * 5 + 2
+                            });
+                        }
+                    }
+                }
+            } else {
+                liveSpeedDisplay = globalPhysics.speedKmh;
+            }
+        }
+    }
+
+    function triggerCrash() {
+        resetSimulation();
+        velocity = globalPhysics.speedKmh / 14; 
+        liveSpeedDisplay = globalPhysics.speedKmh;
+        isCrashing = true;
+    }
+
+    function resetSimulation() {
+        carX = initialCarX;
+        isCrashing = false;
+        hasCollided = false;
+        currentDeformation = 0;
+        airbagRadius = 0;
+        velocity = 0;
+        wheelRotationAngle = 0;
+        cabinDetachX = 0;
+        cabinDetachY = 0;
+        cabinRotation = 0;
+        cabinVelX = 0;
+        cabinVelY = 0;
+        cabinAngularVel = 0;
+        debrisParticles = [];
+        roadScrollOffset = 0;
+        liveSpeedDisplay = globalPhysics.speedKmh;
+    }
+
+    runCalculations();
+    liveSpeedDisplay = globalPhysics.speedKmh;
+
+    function loop() {
+        drawScene();
+        requestAnimationFrame(loop);
+    }
+    loop();
+</script>
+
+</body>
+</html>
