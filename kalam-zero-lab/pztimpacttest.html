@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GARRF Piezoelectric (PZT) Impact & Voltage Generation Lab</title>
+    <!-- Include KaTeX for flawless mathematical rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body);"></script>
+    <style>
+        :root {
+            --primary: #0f172a;
+            --accent: #0284c7;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --kalam-gold: #b45309;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #334155;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            background: var(--card-bg);
+            padding: 20px 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            margin-bottom: 25px;
+            gap: 20px;
+        }
+        header img.logo-img {
+            height: 65px;
+            width: auto;
+            border-radius: 6px;
+            object-fit: contain;
+        }
+        header .title-container {
+            display: flex;
+            flex-direction: column;
+        }
+        header h1 {
+            color: var(--primary);
+            margin: 0 0 4px 0;
+            font-size: 1.6rem;
+        }
+        header p {
+            color: #64748b;
+            margin: 0;
+            font-size: 0.9rem;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            gap: 20px;
+            max-width: 1500px;
+            margin: 0 auto;
+        }
+        @media (max-width: 1050px) {
+            .container { grid-template-columns: 1fr; }
+            header { flex-direction: column; text-align: center; justify-content: center; }
+        }
+        .card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .card h2 {
+            font-size: 1.2rem;
+            margin-top: 0;
+            color: var(--primary);
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 8px;
+        }
+        .input-group {
+            margin-bottom: 12px;
+        }
+        label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px 10px;
+            box-sizing: border-box;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            background: #fff;
+        }
+        button {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-top: 10px;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background-color: #0369a1;
+        }
+        .results-box {
+            margin-top: 15px;
+            background: #f1f5f9;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        .results-box p {
+            margin: 6px 0;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            color: white;
+            font-size: 0.85rem;
+            margin-top: 5px;
+        }
+        .sim-viewport {
+            position: relative;
+            background: #090d16;
+            border-radius: 8px;
+            overflow: hidden;
+            height: 520px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        .sim-controls {
+            margin-top: 12px;
+            display: flex;
+            gap: 10px;
+        }
+        .sim-controls button {
+            margin-top: 0;
+            background-color: #475569;
+        }
+        .sim-controls button.primary-action {
+            background-color: var(--success);
+        }
+
+        /* Large Sections Styling */
+        .section-box {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+            max-width: 1500px;
+            margin-left: auto;
+            margin-right: auto;
+            border-left: 4px solid #0284c7;
+        }
+        .section-box.quiz-box {
+            border-left-color: #f59e0b;
+        }
+        .section-box h3 {
+            margin-top: 0;
+            color: var(--primary);
+            font-size: 1.2rem;
+            border-bottom: 2px solid #f1f5f9;
+            padding-bottom: 8px;
+        }
+        .section-box h4 {
+            color: #475569;
+            margin-bottom: 6px;
+            font-size: 0.98rem;
+        }
+        .section-box p, .section-box ul {
+            font-size: 0.92rem;
+            color: #475569;
+            line-height: 1.6;
+        }
+        .section-box ul { padding-left: 20px; margin: 6px 0; }
+        .section-box ul li { margin-bottom: 8px; }
+
+        /* Quiz Styling */
+        .quiz-question {
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .quiz-question p {
+            font-weight: 600;
+            color: #92400e;
+            margin-top: 0;
+        }
+        .options-list label {
+            display: block;
+            font-weight: normal;
+            margin-bottom: 6px;
+            cursor: pointer;
+        }
+        .quiz-feedback {
+            font-weight: bold;
+            margin-top: 8px;
+            font-size: 0.9rem;
+        }
+
+        /* Infrastructure Grid */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            max-width: 1500px;
+            margin: 0 auto 20px auto;
+        }
+        @media (max-width: 800px) {
+            .info-grid { grid-template-columns: 1fr; }
+        }
+        .info-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid var(--accent);
+        }
+        .info-card.kalam {
+            border-left-color: var(--kalam-gold);
+            background: linear-gradient(to bottom right, #fffbeb, #ffffff);
+        }
+        .info-card h3 {
+            margin-top: 0;
+            color: var(--primary);
+            font-size: 1.05rem;
+        }
+        .info-card.kalam h3 {
+            color: var(--kalam-gold);
+        }
+        .info-card p, .info-card ul {
+            font-size: 0.9rem;
+            color: #475569;
+            line-height: 1.5;
+        }
+        .info-card ul { padding-left: 20px; margin: 8px 0; }
+
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            font-size: 0.85rem;
+            color: #64748b;
+            border-top: 1px solid #e2e8f0;
+            max-width: 1500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <img src="logo.jpeg" alt="GARRF Logo" class="logo-img" onerror="this.style.display='none'">
+    <div class="title-container">
+        <h1>Gopalkrishna Advanced Rural Research Foundation</h1>
+        <p>Virtual Undergraduate Engineering Laboratory &bull; Piezoelectric (PZT) Impact & Voltage Generation Suite</p>
+    </div>
+</header>
+
+<div class="container">
+    <!-- Left Column: Input Parameters & Calculations -->
+    <div class="card">
+        <h2>PZT Sensor & Impact Parameters</h2>
+
+        <div class="input-group">
+            <label>Piezoelectric Material:</label>
+            <select id="pztMaterial" onchange="runPiezoCalculations()">
+                <option value="pzt5h">PZT-5H (High Sensitivity, Charge Coefficient = 593 picocoulombs per Newton)</option>
+                <option value="pzt5a">PZT-5A (Standard Industrial, Charge Coefficient = 374 picocoulombs per Newton)</option>
+                <option value="pvdf">PVDF Polymer Film (Flexible, Charge Coefficient = 33 picocoulombs per Newton)</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <label>Impact Force (F), Newtons:</label>
+            <input type="number" id="impactForce" value="50" step="5" min="10" max="200" oninput="runPiezoCalculations()">
+        </div>
+        
+        <div class="input-group">
+            <label>PZT Patch Thickness (t<sub>p</sub>), millimeters:</label>
+            <input type="number" id="pztThickness" value="0.3" step="0.05" min="0.1" max="1.0" oninput="runPiezoCalculations()">
+        </div>
+
+        <div class="input-group">
+            <label>Load Resistance (R), Megaohms:</label>
+            <input type="number" id="loadResistance" value="1.0" step="0.5" min="0.1" max="10.0" oninput="runPiezoCalculations()">
+        </div>
+
+        <button class="primary-action" onclick="triggerPztImpact()">Strike Structure (Impact Test)</button>
+        <button style="background-color: #475569;" onclick="resetPztTest()">Reset Oscilloscope</button>
+
+        <div class="results-box" id="calcResults">
+            <!-- Dynamic calculation outputs injected here -->
+        </div>
+    </div>
+
+    <!-- Right Column: Real-time Data-Driven Canvas Simulation -->
+    <div class="card" style="display: flex; flex-direction: column;">
+        <h2>Real-Time Impact Event & Open-Circuit Voltage Spike Viewport</h2>
+        <div class="sim-viewport">
+            <canvas id="simCanvas" width="1000" height="520"></canvas>
+        </div>
+        <div class="sim-controls">
+            <button class="primary-action" onclick="triggerPztImpact()">Strike Structure</button>
+            <button onclick="resetPztTest()">Reset</button>
+        </div>
+        <p style="font-size: 0.82rem; color: #64748b; margin-top: 10px;">
+            <em>Note:</em> Demonstrates the direct piezoelectric effect, accumulated charge Q = d<sub>33</sub> &middot; F (Coulombs), and RC exponential voltage discharge curve V(t) = V<sub>peak</sub> e<sup>-t / &tau;</sup> across the patch electrodes.
+        </p>
+    </div>
+</div>
+
+<!-- Comprehensive Engineering Theory Section -->
+<div class="section-box">
+<h3>Comprehensive Smart Materials & Structural Health Monitoring (SHM) Theory</h3>
+    
+    <h4>1. The Direct Piezoelectric Effect</h4>
+    <p>Piezoelectric materials (such as Lead Zirconate Titanate - PZT) exhibit electromechanical coupling. When a mechanical stress \(T\) (Newtons per square meter or Pascals) or concentrated impact force \(F\) (Newtons) is applied along the polarization axis, dipole moments shift, generating an electric charge \(Q\) (Coulombs) or electric displacement field \(D\) (Coulombs per square meter):</p>
+    <p style="text-align: center; font-weight: bold; color: var(--primary);">
+        $$Q = d_{33} \cdot F \quad \text{or} \quad D_3 = d_{33} \cdot T_3$$
+    </p>
+    <p>Where:</p>
+    <ul>
+        <li><strong>\(Q\)</strong> = Generated electrostatic charge (Coulombs)</li>
+        <li><strong>\(F\)</strong> = Applied mechanical impact force (Newtons)</li>
+        <li><strong>\(D_3\)</strong> = Electric displacement field component (Coulombs per square meter)</li>
+        <li><strong>\(T_3\)</strong> = Normal mechanical stress component (Newtons per square meter)</li>
+        <li><strong>\(d_{33}\)</strong> = Piezoelectric charge coefficient (Coulombs per Newton or equivalently meters per Volt), representing charge generated per unit force along axis 3.</li>
+    </ul>
+
+    <h4 style="margin-top: 15px;">2. Open-Circuit Voltage and RC Discharge Transient</h4>
+    <p>The generated charge develops an open-circuit voltage \(V_{\text{oc}}\) (Volts) governed by the equivalent electrical capacitance \(C_p\) (Farads) of the PZT patch:</p>
+    <ul>
+        <li><strong>Peak Voltage:</strong> 
+            $$V_{\text{peak}} = \frac{Q}{C_p} = \frac{d_{33} \cdot F \cdot t_p}{\varepsilon_3^T \cdot A}$$
+            where \(t_p\) is patch thickness (meters), \(\varepsilon_3^T\) is permittivity under constant stress (Farads per meter), and \(A\) is electrode surface area (square meters).
+        </li>
+        <li><strong>RC Time Constant (\(\tau\)):</strong> When connected to a data acquisition system with input resistance \(R\) (ohms), the discharge time constant is given by:
+            $$\tau = R \cdot C_p \quad (\text{seconds})$$
+        </li>
+        <li><strong>Voltage Response Equation:</strong> 
+            $$V(t) = V_{\text{peak}} \cdot e^{-\frac{t}{R C_p}} \cdot \cos(\omega_d t) \quad (\text{Volts})$$
+        </li>
+    </ul>
+
+    <h4 style="margin-top: 15px;">3. Role in Structural Health Monitoring (SHM)</h4>
+    <p>PZT patches surface-bonded to metallic or composite structures serve as dual-purpose actuators and sensors. In impact monitoring, an unexpected impulse voltage spike detects foreign object damage (FOD), bird strikes on aerospace panels, or structural impacts on civil bridges in real time.</p>
+</div>
+
+<!-- Interactive Student Quiz Section -->
+<div class="section-box quiz-box">
+<h3>Interactive Knowledge Check & Student Assessment</h3>
+<p>Test your understanding of smart materials and piezoelectric sensing by answering the following questions:</p>
+
+    <div class="quiz-question">
+        <p>Q1. What fundamental physical change occurs inside a PZT piezoelectric patch when it undergoes mechanical compression from an impact?</p>
+        <div class="options-list">
+            <label><input type="radio" name="q1" value="a" onclick="checkAnswer(1, 'a')"> a) Internal dipoles realign, generating a displacement of electrical charge across electrode surfaces</label>
+            <label><input type="radio" name="q1" value="b" onclick="checkAnswer(1, 'b')"> b) The material permanently melts into a liquid state</label>
+            <label><input type="radio" name="q1" value="c" onclick="checkAnswer(1, 'c')"> c) Its electrical resistance drops exactly to zero (superconductivity)</label>
+            <label><input type="radio" name="q1" value="d" onclick="checkAnswer(1, 'd')"> d) It transforms chemically into pure copper</label>
+        </div>
+        <div id="feedback1" class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz-question">
+        <p>Q2. What are the SI units of the piezoelectric charge coefficient \(d_{33}\)?</p>
+        <div class="options-list">
+            <label><input type="radio" name="q2" value="a" onclick="checkAnswer(2, 'a')"> a) Coulombs per Newton or meters per Volt</label>
+            <label><input type="radio" name="q2" value="b" onclick="checkAnswer(2, 'b')"> b) Joules per kilogram</label>
+            <label><input type="radio" name="q2" value="c" onclick="checkAnswer(2, 'c')"> c) Ohms per square meter</label>
+            <label><input type="radio" name="q2" value="d" onclick="checkAnswer(2, 'd')"> d) Henrys per meter</label>
+        </div>
+        <div id="feedback2" class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz-question">
+        <p>Q3. Why is a high input impedance oscilloscope or charge amplifier required when measuring static or transient forces with PZT sensors?</p>
+        <div class="options-list">
+            <label><input type="radio" name="q3" value="a" onclick="checkAnswer(3, 'a')"> a) To prevent the generated electrostatic charge from leaking away too quickly through a low-resistance path</label>
+            <label><input type="radio" name="q3" value="b" onclick="checkAnswer(3, 'b')"> b) To supply high AC mains voltage to heat up the sensor</label>
+            <label><input type="radio" name="q3" value="c" onclick="checkAnswer(3, 'c')"> c) To convert mechanical waves into visible laser beams</label>
+            <label><input type="radio" name="q3" value="d" onclick="checkAnswer(3, 'd')"> d) To magnetize the aluminum base structure</label>
+        </div>
+        <div id="feedback3" class="quiz-feedback"></div>
+    </div>
+</div>
+
+<!-- Infrastructure, Cost, and Kalam Lab Information Section -->
+<div class="info-grid">
+    <div class="info-card">
+        <h3>Real-World Infrastructure & Cost Analysis</h3>
+        <p><strong>Where it exists:</strong> Advanced Smart Materials & NDT laboratories utilize modal impact hammers, charge amplifiers, high-bandwidth digital storage oscilloscopes, and specialized PZT signal conditioning hardware.</p>
+        <p><strong>Cost of Real Equipment:</strong> Professional piezoelectric testing and impact data acquisition systems cost between <strong>$12,000 to $30,000 (INR 10 Lakhs to 25 Lakhs+)</strong>.</p>
+    </div>
+
+    <div class="info-card kalam">
+        <h3>Kalam Zero Cost Lab ($0 Initiative)</h3>
+        <p><strong>Cost: $0.00 (Completely Free)</strong></p>
+        <p>In alignment with Dr. A.P.J. Abdul Kalam's vision of empowering grassroots innovators and resource-constrained institutions, the <strong>Kalam Zero Cost Lab</strong> initiative eliminates prohibitive capital barriers.</p>
+        <ul>
+            <li>Requires zero hardware impact hammers, charge amplifiers, or oscilloscopes.</li>
+            <li>Runs instantly inside web browsers on standard PCs in any rural or urban college.</li>
+            <li>Provides universal interactive engineering training for every student.</li>
+        </ul>
+    </div>
+</div>
+
+<footer>
+    &copy; 2026 Gopalkrishna Advanced Rural Research Foundation (GARRF). All rights reserved. <br>
+    Open-Source Engineering Education Initiative &bull; Web: <a href="https://garrf.in" target="_blank" style="color: var(--accent); text-decoration: none;">garrf.in</a>
+</footer>
+
+<script>
+    let piezoPhysics = {
+        d33: 593e-12, // Coulombs per Newton
+        force: 50,    // Newtons
+        thickness_mm: 0.3, // millimeters
+        resistance_Mohm: 1.0, // Megaohms
+        capacitance_nF: 1.5, // nanofarads
+        peakVoltage: 0 // Volts
+    };
+
+    let simState = 'idle'; // 'impact', 'decay'
+    let simTime = 0; // seconds
+
+    function runPiezoCalculations() {
+        let mat = document.getElementById('pztMaterial').value;
+        let force = parseFloat(document.getElementById('impactForce').value) || 50; // Newtons
+        let t_mm = parseFloat(document.getElementById('pztThickness').value) || 0.3; // millimeters
+        let R_Mohm = parseFloat(document.getElementById('loadResistance').value) || 1.0; // Megaohms
+
+        let d33 = mat === 'pzt5h' ? 593e-12 : (mat === 'pzt5a' ? 374e-12 : 33e-12); // Coulombs per Newton
+        
+        let chargeQ = d33 * force; // Coulombs
+
+        let baseCap = mat === 'pvdf' ? 0.15e-9 : 1.5e-9; // Farads
+        let patchCapFarads = baseCap * (0.3 / t_mm); // Farads
+
+        let peakVoltage = chargeQ / patchCapFarads; // Volts
+
+        piezoPhysics = {
+            d33,
+            force,
+            thickness_mm: t_mm,
+            resistance_Mohm: R_Mohm,
+            capacitance_nF: patchCapFarads * 1e9, // nanofarads
+            peakVoltage
+        };
+
+        document.getElementById('calcResults').innerHTML = `
+            <p><strong>Generated Charge (Q):</strong> ${(chargeQ * 1e12).toFixed(1)} picocoulombs</p>
+            <p><strong>Patch Capacitance (C<sub>p</sub>):</strong> ${(patchCapFarads * 1e9).toFixed(2)} nanofarads</p>
+            <p><strong>Peak Open-Circuit Voltage (V<sub>peak</sub>):</strong> <span style="color: var(--accent); font-weight: bold;">${peakVoltage.toFixed(1)} Volts</span></p>
+            <p><strong>RC Time Constant (&tau;):</strong> ${(R_Mohm * 1e6 * patchCapFarads * 1000).toFixed(1)} milliseconds</p>
+            <span class="status-badge" style="background-color: var(--success);">SENSOR SYSTEM READY</span>
+        `;
+    }
+
+    function triggerPztImpact() {
+        runPiezoCalculations();
+        simState = 'impact';
+        simTime = 0;
+    }
+
+    function resetPztTest() {
+        simState = 'idle';
+        simTime = 0;
+    }
+
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function drawGridBackground() {
+        ctx.fillStyle = '#090d16';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 1;
+        for (let x = 0; x < canvas.width; x += 40) {
+            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+        }
+        for (let y = 0; y < canvas.height; y += 40) {
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+        }
+    }
+
+    function drawScene() {
+        drawGridBackground();
+
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = 'bold 15px sans-serif';
+        let modeTitle = simState === 'impact' ? 'MODE: IMPACT STRIKE & PZT VOLTAGE TRANSIENT CAPTURE' : 'MODE: IDLE (READY FOR IMPACT STRIKE)';
+        ctx.fillText(modeTitle, 50, 40);
+
+        ctx.fillStyle = '#cbd5e1';
+        ctx.font = '13px sans-serif';
+        ctx.fillText(`Impact Force: ${piezoPhysics.force} Newtons    |    PZT d33: ${(piezoPhysics.d33*1e12).toFixed(0)} picocoulombs per Newton    |    Load Resistance: ${piezoPhysics.resistance_Mohm} Megaohms`, 50, 68);
+
+        let beamX = 250;
+        let beamY = 160;
+        let beamWidth = 500;
+        let beamHeight = 30;
+
+        ctx.fillStyle = '#475569';
+        ctx.fillRect(beamX, beamY, beamWidth, beamHeight);
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(beamX, beamY, beamWidth, beamHeight);
+
+        let pztX = beamX + beamWidth / 2 - 30;
+        let pztY = beamY - 12;
+        ctx.fillStyle = '#eab308';
+        ctx.fillRect(pztX, pztY, 60, 12);
+        ctx.strokeStyle = '#b45309';
+        ctx.strokeRect(pztX, pztY, 60, 12);
+
+        ctx.fillStyle = '#0f172a';
+        ctx.font = 'bold 10px sans-serif';
+        ctx.fillText('PZT PATCH', pztX + 2, pztY + 9);
+
+        let hammerY = beamY - 80;
+        if (simState === 'impact') {
+            if (simTime < 0.2) {
+                hammerY = beamY - 80 + (simTime / 0.2) * 80;
+            } else {
+                hammerY = beamY - 80 - Math.min(60, (simTime - 0.2) * 150);
+            }
+        }
+
+        ctx.fillStyle = '#cbd5e1';
+        ctx.fillRect(beamX + beamWidth / 2 - 8, hammerY - 40, 16, 40);
+        ctx.fillStyle = '#dc2626';
+        ctx.beginPath();
+        ctx.arc(beamX + beamWidth / 2, hammerY, 14, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#991b1b';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        drawOscilloscopePlot(simTime);
+
+        if (simState === 'impact') {
+            simTime += 0.04;
+            if (simTime > 8) simTime = 0;
+        }
+    }
+
+    function drawOscilloscopePlot(t) {
+        let plotX = 100;
+        let plotY = 240;
+        let plotWidth = 800;
+        let plotHeight = 240;
+
+        ctx.fillStyle = '#020617';
+        ctx.fillRect(plotX, plotY, plotWidth, plotHeight);
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(plotX, plotY, plotWidth, plotHeight);
+
+        ctx.strokeStyle = '#475569';
+        ctx.beginPath();
+        ctx.moveTo(plotX, plotY + plotHeight - 40);
+        ctx.lineTo(plotX + plotWidth, plotY + plotHeight - 40);
+        ctx.stroke();
+
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '11px sans-serif';
+        ctx.fillText('OSCILLOSCOPE: PZT SENSOR VOLTAGE OUTPUT V(t) [Volts vs seconds]', plotX + 15, plotY + 22);
+
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+
+        let maxV = Math.max(10, piezoPhysics.peakVoltage);
+
+        for (let px = 0; px < plotWidth; px += 2) {
+            let sampleT = (px / plotWidth) * 8.0;
+            let val = 0;
+
+            if (simState === 'impact' && t >= sampleT) {
+                let dt = sampleT - 0.2;
+                if (dt >= 0) {
+                    let timeConstantSec = piezoPhysics.resistance_Mohm * 1e6 * (piezoPhysics.capacitance_nF * 1e-9);
+                    let decayFactor = Math.exp(-dt / Math.max(0.05, timeConstantSec * 10));
+                    val = piezoPhysics.peakVoltage * decayFactor * Math.sin(dt * 15.0);
+                }
+            }
+
+            let screenY = (plotY + plotHeight - 40) - (val / maxV) * 120;
+            if (px === 0) ctx.moveTo(plotX + px, screenY);
+            else ctx.lineTo(plotX + px, screenY);
+        }
+        ctx.stroke();
+    }
+
+    function checkAnswer(qNum, selectedOpt) {
+        let feedbackEl = document.getElementById(`feedback${qNum}`);
+        if (qNum === 1) {
+            if (selectedOpt === 'a') {
+                feedbackEl.style.color = 'var(--success)';
+                feedbackEl.innerHTML = 'Correct! Mechanical compression strains the PZT crystal lattice, causing dipole separation and generating free charges on the surface electrodes.';
+            } else {
+                feedbackEl.style.color = 'var(--danger)';
+                feedbackEl.innerHTML = 'Incorrect. Mechanical impact induces direct piezoelectric charge generation through internal dipole polarization.';
+            }
+        } else if (qNum === 2) {
+            if (selectedOpt === 'a') {
+                feedbackEl.style.color = 'var(--success)';
+                feedbackEl.innerHTML = 'Correct! The piezoelectric charge coefficient units are Coulombs per Newton or meters per Volt.';
+            } else {
+                feedbackEl.style.color = 'var(--danger)';
+                feedbackEl.innerHTML = 'Incorrect. The coefficient d<sub>33</sub> represents charge generated per unit force (Coulombs per Newton).';
+            }
+        } else if (qNum === 3) {
+            if (selectedOpt === 'a') {
+                feedbackEl.style.color = 'var(--success)';
+                feedbackEl.innerHTML = 'Correct! Because PZT sensors have very high source impedance and tiny capacitance, low resistance meters would drain the generated charge instantly before it can be measured.';
+            } else {
+                feedbackEl.style.color = 'var(--danger)';
+                feedbackEl.innerHTML = 'Incorrect. High input impedance prevents electrostatic charge leakage across the sensor terminals.';
+            }
+        }
+    }
+
+    runPiezoCalculations();
+
+    function loop() {
+        drawScene();
+        requestAnimationFrame(loop);
+    }
+    loop();
+</script>
+
+</body>
+</html>
