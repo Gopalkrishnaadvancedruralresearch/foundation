@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GARRF Advanced Virtual Torsion Testing & Shear Modulus Lab</title>
+    <style>
+        :root {
+            --primary: #0f172a;
+            --accent: #2563eb;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --kalam-gold: #b45309;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #334155;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            background: var(--card-bg);
+            padding: 20px 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            margin-bottom: 25px;
+            gap: 20px;
+        }
+        header img.logo-img {
+            height: 65px;
+            width: auto;
+            border-radius: 6px;
+            object-fit: contain;
+        }
+        header .title-container {
+            display: flex;
+            flex-direction: column;
+        }
+        header h1 {
+            color: var(--primary);
+            margin: 0 0 4px 0;
+            font-size: 1.6rem;
+        }
+        header p {
+            color: #64748b;
+            margin: 0;
+            font-size: 0.9rem;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        @media (max-width: 950px) {
+            .container { grid-template-columns: 1fr; }
+            header { flex-direction: column; text-align: center; justify-content: center; }
+        }
+        .card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .card h2 {
+            font-size: 1.2rem;
+            margin-top: 0;
+            color: var(--primary);
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 8px;
+        }
+        .input-group {
+            margin-bottom: 12px;
+        }
+        label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px 10px;
+            box-sizing: border-box;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            background: #fff;
+        }
+        button {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-top: 10px;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background-color: #1d4ed8;
+        }
+        .results-box {
+            margin-top: 15px;
+            background: #f1f5f9;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        .results-box p {
+            margin: 6px 0;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            color: white;
+            font-size: 0.85rem;
+            margin-top: 5px;
+        }
+        .sim-viewport {
+            position: relative;
+            background: #090d16;
+            border-radius: 8px;
+            overflow: hidden;
+            height: 520px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        .sim-controls {
+            margin-top: 12px;
+            display: flex;
+            gap: 10px;
+        }
+        .sim-controls button {
+            margin-top: 0;
+            background-color: #475569;
+        }
+        .sim-controls button.primary-action {
+            background-color: var(--success);
+        }
+        
+        /* Educational Curriculum Section */
+        .curriculum-card {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+            border-left: 4px solid #8b5cf6;
+            max-width: 1400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .curriculum-card h3 {
+            margin-top: 0;
+            color: var(--primary);
+            font-size: 1.15rem;
+        }
+        .curriculum-card h4 {
+            color: #475569;
+            margin-bottom: 6px;
+            font-size: 0.95rem;
+        }
+        .curriculum-card p, .curriculum-card ul {
+            font-size: 0.9rem;
+            color: #475569;
+            line-height: 1.5;
+        }
+        .curriculum-card ul { padding-left: 20px; margin: 6px 0; }
+
+        /* Infrastructure Grid Section */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto 20px auto;
+        }
+        @media (max-width: 800px) {
+            .info-grid { grid-template-columns: 1fr; }
+        }
+        .info-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid var(--accent);
+        }
+        .info-card.kalam {
+            border-left-color: var(--kalam-gold);
+            background: linear-gradient(to bottom right, #fffbeb, #ffffff);
+        }
+        .info-card h3 {
+            margin-top: 0;
+            color: var(--primary);
+            font-size: 1.05rem;
+        }
+        .info-card.kalam h3 {
+            color: var(--kalam-gold);
+        }
+        .info-card p, .info-card ul {
+            font-size: 0.9rem;
+            color: #475569;
+            line-height: 1.5;
+        }
+        .info-card ul { padding-left: 20px; margin: 8px 0; }
+
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            font-size: 0.85rem;
+            color: #64748b;
+            border-top: 1px solid #e2e8f0;
+            max-width: 1400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <img src="logo.jpeg" alt="GARRF Logo" class="logo-img" onerror="this.style.display='none'">
+    <div class="title-container">
+        <h1>Gopalkrishna Advanced Rural Research Foundation</h1>
+        <p>Virtual Undergraduate Engineering Laboratory &bull; Torsion Testing & Shear Modulus Analysis Suite</p>
+    </div>
+</header>
+
+<div class="container">
+    <!-- Left Column: Input Parameters & Calculations -->
+    <div class="card">
+        <h2>Shaft & Load Parameters</h2>
+        
+        <div class="input-group">
+            <label>Shaft Material:</label>
+            <select id="material" onchange="runCalculations()">
+                <option value="80">Steel (Rigidity Modulus G = 80 GPa)</option>
+                <option value="26">Aluminum (Rigidity Modulus G = 26 GPa)</option>
+                <option value="39">Brass (Rigidity Modulus G = 39 GPa)</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <label>Applied Torque, T (N·m):</label>
+            <input type="number" id="torque" value="150" step="10" min="10" max="600" oninput="runCalculations()">
+        </div>
+
+        <div class="input-group">
+            <label>Shaft Length, L (m):</label>
+            <input type="number" id="shaftLength" value="0.6" step="0.05" min="0.2" max="1.5" oninput="runCalculations()">
+        </div>
+        
+        <div class="input-group">
+            <label>Shaft Outer Diameter, d (mm):</label>
+            <input type="number" id="diameter" value="25" step="1" min="15" max="60" oninput="runCalculations()">
+        </div>
+
+        <button onclick="runTorsionTest()">Engage Motor & Dramatize Twist</button>
+        <button style="background-color: #475569;" onclick="resetSimulation()">Reset Test Bench</button>
+
+        <div class="results-box" id="calcResults">
+            <!-- Dynamic calculation outputs injected here -->
+        </div>
+    </div>
+
+    <!-- Right Column: Real-time Data-Driven Large Canvas Simulation -->
+    <div class="card" style="display: flex; flex-direction: column;">
+        <h2>Enlarged & Dramatized 3D Horizontal Shaft Twist Visualization</h2>
+        <div class="sim-viewport">
+            <canvas id="simCanvas" width="950" height="520"></canvas>
+        </div>
+        <div class="sim-controls">
+            <button class="primary-action" onclick="runTorsionTest()">Engage Torque Motor & Twist Shaft</button>
+            <button onclick="resetSimulation()">Reset View</button>
+        </div>
+        <p style="font-size: 0.82rem; color: #64748b; margin-top: 10px;">
+            <em>Note:</em> Calculations maintain rigorous analytical precision (exact θ = TL / GJ), while visual deformation is artistically amplified to clearly demonstrate shear strain patterns and torsional dynamics.
+        </p>
+    </div>
+</div>
+
+<!-- Target Student Group & Experiment Varieties Section -->
+<div class="curriculum-card">
+    <h3>Academic Curriculum Integration & Experiment Scope</h3>
+    
+    <h4>1. Target Student Cohorts (Which Year & Branch?)</h4>
+    <p>This virtual lab experiment mirrors standard Strength of Materials testing suites utilized across premier engineering institutions for <strong>Mechanical</strong>, <strong>Production</strong>, and <strong>Civil Engineering</strong> undergraduates:</p>
+    <ul>
+        <div><strong>2nd Year Undergraduates:</strong> Core module in <em>Strength of Materials (SOM)</em> / <em>Mechanics of Solids</em> to study torsional rigidity, polar moment of inertia (<em>J</em>), and shear stress distribution across circular cross-sections.</div>
+        <div style="margin-top: 6px;"><strong>3rd Year Undergraduates:</strong> Integrated into <em>Design of Machine Elements (DME)</em> for sizing drive shafts, propeller shafts, and power transmission components subjected to combined bending and twisting moments.</div>
+    </ul>
+
+    <h4 style="margin-top: 15px;">2. Why Horizontal Test Bed Orientation? (Core TTM Theory)</h4>
+    <p>Standard laboratory Torsion Testing Machines (TTM) are intentionally built in a <strong>horizontal configuration</strong> for several critical engineering reasons:</p>
+    <ul>
+        <li><strong>Real-World Application Alignment:</strong> Mirrors how industrial drive shafts, automotive propeller shafts, and structural tie rods are mounted and operated horizontally in service.</li>
+        <li><strong>Ergonomics & Line of Sight:</strong> Allows students and researchers to stand directly in front of the machine, giving an unobstructed view across the entire gauge length (<em>L</em>) to observe surface grid deformation.</li>
+        <li><strong>Structural Stability & Span Accommodation:</strong> Provides a low center of gravity and sturdy bed foundation capable of supporting long specimen spans (0.5 m to 1.5 m) under heavy torsional loads (N·m) without vertical instability or buckling.</li>
+    </ul>
+
+    <h4 style="margin-top: 15px;">3. Experiment Varieties Available in This Suite</h4>
+    <p>Students can perform multiple quantitative analytical trials within this single interface:</p>
+    <ul>
+        <li><strong>Experiment A (Modulus of Rigidity Determination):</strong> Measure twist angles (θ) under varying applied torque (<em>T</em>) to calculate experimental shear modulus (<em>G</em>).</li>
+        <li><strong>Experiment B (Diameter & Geometry Optimization):</strong> Observe how shaft diameter cubed (<em>d³</em>) radically impacts torsional stiffness and reduces maximum shear stress.</li>
+        <li><strong>Experiment C (Material Comparison Study):</strong> Compare torsional resilience across Steel, Aluminum, and Brass shafts under identical torque loadings.</li>
+        <li><strong>Experiment D (Angular Twist & Strain Mapping):</strong> Analyze surface shear strain distribution along the gauge length of the rotating element.</li>
+    </ul>
+</div>
+
+<!-- Infrastructure, Cost, and Kalam Lab Information Section -->
+<div class="info-grid">
+    <div class="info-card">
+        <h3>Real-World Infrastructure & Cost Analysis</h3>
+        <p><strong>Where it exists:</strong> Motorized Torsion Testing Machines (TTM) equipped with optical protractors, digital torque cells, and strain-gauge rosettes are installed in Material Testing laboratories across premier engineering institutions.</p>
+        <p><strong>Cost of Real Experiments:</strong> A research-grade motorized torsion testing rig with data acquisition consoles, precision chucks, and calibration weights costs between <strong>$12,000 to $35,000 (INR 10 Lakhs to 30 Lakhs+)</strong>.</p>
+    </div>
+
+    <div class="info-card kalam">
+        <h3>Kalam Zero Cost Lab ($0 Initiative)</h3>
+        <p><strong>Cost: $0.00 (Completely Free)</strong></p>
+        <p>In alignment with Dr. A.P.J. Abdul Kalam's vision of empowering grassroots innovators and resource-constrained institutions, the <strong>Kalam Zero Cost Lab</strong> initiative removes prohibitive capital barriers.</p>
+        <ul>
+            <li>Requires zero hardware machinery, hydraulic pumps, or calibration maintenance.</li>
+            <li>Runs instantly inside web browsers on standard PCs in any rural or urban college.</li>
+            <li>Provides universal interactive engineering training for every student.</li>
+        </ul>
+    </div>
+</div>
+
+<footer>
+    &copy; 2026 Gopalkrishna Advanced Rural Research Foundation (GARRF). All rights reserved. <br>
+    Open-Source Engineering Education Initiative &bull; Web: <a href="https://garrf.in" target="_blank" style="color: var(--accent); text-decoration: none;">garrf.in</a>
+</footer>
+
+<script>
+    let globalPhysics = {
+        G_GPa: 80,
+        T: 150,
+        L: 0.6,
+        d_mm: 25,
+        J: 0,
+        thetaRad: 0,
+        thetaDeg: 0,
+        maxShearStressMPa: 0
+    };
+
+    function runCalculations() {
+        let G_GPa = parseFloat(document.getElementById('material').value) || 80;
+        let T = parseFloat(document.getElementById('torque').value) || 150;
+        let L = parseFloat(document.getElementById('shaftLength').value) || 0.6;
+        let d_mm = parseFloat(document.getElementById('diameter').value) || 25;
+
+        let G = G_GPa * 1e9; // Pa
+        let d = d_mm / 1000; // meters
+        let r = d / 2;
+
+        let J = (Math.PI * Math.pow(d, 4)) / 32;
+        let thetaRad = (T * L) / (G * J);
+        let thetaDeg = thetaRad * (180 / Math.PI);
+
+        let maxShearStress = (T * r) / J;
+        let maxShearStressMPa = maxShearStress / 1e6;
+
+        globalPhysics = { G_GPa, T, L, d_mm, J, thetaRad, thetaDeg, maxShearStressMPa };
+
+        let safeLimit = G_GPa > 50 ? 300 : 200;
+        let badgeHtml = maxShearStressMPa <= safeLimit
+            ? `<span class="status-badge" style="background-color: var(--success);">Torsion Status: SAFE / WITHIN ELASTIC LIMIT</span>`
+            : `<span class="status-badge" style="background-color: var(--danger);">Torsion Status: PLASTIC YIELD / OVER-STRESSED</span>`;
+
+        document.getElementById('calcResults').innerHTML = `
+            <p><strong>Polar Moment (J):</strong> ${(J * 1e12).toFixed(1)} &times; 10⁻¹² m⁴</p>
+            <p><strong>True Twist Angle (&theta;):</strong> ${thetaDeg.toFixed(2)}&deg;</p>
+            <p><strong>Max Shear Stress (&tau;):</strong> ${maxShearStressMPa.toFixed(1)} MPa</p>
+            ${badgeHtml}
+        `;
+    }
+
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let currentTwistProgress = 0;
+    let targetTwistProgress = 0;
+    let isAnimating = false;
+
+    function drawGridBackground() {
+        ctx.fillStyle = '#090d16';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 1;
+        for (let x = 0; x < canvas.width; x += 40) {
+            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+        }
+        for (let y = 0; y < canvas.height; y += 40) {
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+        }
+    }
+
+    function drawScene() {
+        drawGridBackground();
+
+        // Header telemetry inside canvas
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = 'bold 15px sans-serif';
+        ctx.fillText(`MOTORIZED HORIZONTAL TTM - REAL-TIME TELEMETRY`, 50, 40);
+        
+        ctx.fillStyle = '#cbd5e1';
+        ctx.font = '13px sans-serif';
+        ctx.fillText(`Torque: ${globalPhysics.T} N·m    |    Shaft Dia: ${globalPhysics.d_mm} mm    |    Computed Twist: ${globalPhysics.thetaDeg.toFixed(2)}°    |    Max Shear Stress: ${globalPhysics.maxShearStressMPa.toFixed(1)} MPa`, 50, 68);
+
+        // Center Y for shaft simulation
+        let centerY = 260;
+        let shaftStartX = 140;
+        let shaftLengthPx = 640;
+        let shaftEndX = shaftStartX + shaftLengthPx;
+
+        // Draw Fixed Chuck (Left)
+        ctx.fillStyle = '#334155';
+        ctx.fillRect(80, centerY - 80, 60, 160);
+        ctx.fillStyle = '#64748b';
+        ctx.fillRect(110, centerY - 110, 30, 220);
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.fillText("FIXED CHUCK", 70, centerY + 130);
+
+        // Draw Dramatized Visual Twist Angle
+        let dramatizedMaxAngleRadians = Math.PI * 1.5; // ~270 degrees visual winding for dramatic effect
+        let activeAngle = currentTwistProgress * dramatizedMaxAngleRadians;
+
+        // Draw Rotating Torque Motor Head (Right)
+        let rightChuckX = shaftEndX;
+        ctx.save();
+        ctx.translate(rightChuckX, centerY);
+        ctx.rotate(activeAngle);
+        ctx.fillStyle = '#334155';
+        ctx.fillRect(0, -80, 60, 160);
+        ctx.fillStyle = '#eab308';
+        ctx.fillRect(15, -100, 30, 20);
+        ctx.restore();
+
+        ctx.fillStyle = '#eab308';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.fillText("MOTOR HEAD", rightChuckX - 10, centerY + 130);
+
+        // Draw Shaft Cylinder
+        let shaftRadiusPx = Math.min(60, Math.max(20, globalPhysics.d_mm * 1.4));
+        
+        let shaftGrad = ctx.createLinearGradient(0, centerY - shaftRadiusPx, 0, centerY + shaftRadiusPx);
+        shaftGrad.addColorStop(0, '#475569');
+        shaftGrad.addColorStop(0.3, '#94a3b8');
+        shaftGrad.addColorStop(0.7, '#cbd5e1');
+        shaftGrad.addColorStop(1, '#1e293b');
+
+        ctx.fillStyle = shaftGrad;
+        ctx.fillRect(shaftStartX, centerY - shaftRadiusPx, shaftLengthPx, shaftRadiusPx * 2);
+
+        // Draw Dramatized Twisted Surface Grid Lines & Helical Strips for clear shear deformation view
+        ctx.save();
+        ctx.strokeStyle = 'rgba(15, 23, 42, 0.85)';
+        ctx.lineWidth = 4;
+        
+        let numSlices = 40;
+        let sliceWidth = shaftLengthPx / numSlices;
+
+        for (let i = 0; i <= numSlices; i++) {
+            let px = shaftStartX + (i * sliceWidth);
+            let sliceFraction = i / numSlices;
+            let angleOffset = activeAngle * sliceFraction;
+
+            ctx.beginPath();
+            let topY = centerY - shaftRadiusPx;
+            let botY = centerY + shaftRadiusPx;
+            let tiltX = Math.sin(angleOffset) * (shaftRadiusPx * 0.9);
+            ctx.moveTo(px + tiltX, topY);
+            ctx.lineTo(px - tiltX, botY);
+            ctx.stroke();
+        }
+        ctx.restore();
+
+        // Draw Center Axis Reference Dashed Line
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([8, 6]);
+        ctx.beginPath();
+        ctx.moveTo(shaftStartX, centerY);
+        ctx.lineTo(shaftEndX, centerY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Draw Torque Direction Arrow & Label
+        ctx.strokeStyle = '#22c55e';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(shaftEndX + 45, centerY, 35, -Math.PI/2, Math.PI * 0.8);
+        ctx.stroke();
+        
+        ctx.fillStyle = '#22c55e';
+        ctx.beginPath();
+        ctx.moveTo(shaftEndX + 45, centerY - 35);
+        ctx.lineTo(shaftEndX + 55, centerY - 25);
+        ctx.lineTo(shaftEndX + 35, centerY - 25);
+        ctx.fill();
+
+        ctx.fillStyle = '#22c55e';
+        ctx.font = 'bold 13px sans-serif';
+        ctx.fillText(`Applied Torque T (${globalPhysics.T} N·m)`, shaftEndX + 15, centerY - 50);
+
+        // Animation logic
+        if (isAnimating) {
+            currentTwistProgress += 0.02;
+            if (currentTwistProgress >= targetTwistProgress) {
+                currentTwistProgress = targetTwistProgress;
+                isAnimating = false;
+            }
+        }
+    }
+
+    function runTorsionTest() {
+        runCalculations();
+        targetTwistProgress = 1.0;
+        currentTwistProgress = 0;
+        isAnimating = true;
+    }
+
+    function resetSimulation() {
+        targetTwistProgress = 0;
+        currentTwistProgress = 0;
+        isAnimating = false;
+    }
+
+    runCalculations();
+
+    function loop() {
+        drawScene();
+        requestAnimationFrame(loop);
+    }
+    loop();
+</script>
+
+</body>
+</html>
