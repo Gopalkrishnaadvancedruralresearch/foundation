@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GARRF Advanced Virtual Cantilever Beam & PZT Sensor Lab</title>
+    <style>
+        :root {
+            --primary: #0f172a;
+            --accent: #2563eb;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --kalam-gold: #b45309;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #334155;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            background: var(--card-bg);
+            padding: 20px 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            margin-bottom: 25px;
+            gap: 20px;
+        }
+        header img.logo-img {
+            height: 65px;
+            width: auto;
+            border-radius: 6px;
+            object-fit: contain;
+        }
+        header .title-container {
+            display: flex;
+            flex-direction: column;
+        }
+        header h1 {
+            color: var(--primary);
+            margin: 0 0 4px 0;
+            font-size: 1.6rem;
+        }
+        header p {
+            color: #64748b;
+            margin: 0;
+            font-size: 0.9rem;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 20px;
+            max-width: 1250px;
+            margin: 0 auto;
+        }
+        @media (max-width: 900px) {
+            .container { grid-template-columns: 1fr; }
+            header { flex-direction: column; text-align: center; justify-content: center; }
+        }
+        .card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .card h2 {
+            font-size: 1.2rem;
+            margin-top: 0;
+            color: var(--primary);
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 8px;
+        }
+        .input-group {
+            margin-bottom: 12px;
+        }
+        label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px 10px;
+            box-sizing: border-box;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            background: #fff;
+        }
+        button {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-top: 10px;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background-color: #1d4ed8;
+        }
+        .results-box {
+            margin-top: 15px;
+            background: #f1f5f9;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        .results-box p {
+            margin: 6px 0;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            color: white;
+            font-size: 0.85rem;
+            margin-top: 5px;
+        }
+        .sim-viewport {
+            position: relative;
+            background: #090d16;
+            border-radius: 8px;
+            overflow: hidden;
+            height: 380px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        .sim-controls {
+            margin-top: 12px;
+            display: flex;
+            gap: 10px;
+        }
+        .sim-controls button {
+            margin-top: 0;
+            background-color: #475569;
+        }
+        .sim-controls button.primary-action {
+            background-color: var(--success);
+        }
+        
+        /* Educational Curriculum Section */
+        .curriculum-card {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+            border-left: 4px solid #8b5cf6;
+        }
+        .curriculum-card h3 {
+            margin-top: 0;
+            color: var(--primary);
+            font-size: 1.15rem;
+        }
+        .curriculum-card h4 {
+            color: #475569;
+            margin-bottom: 6px;
+            font-size: 0.95rem;
+        }
+        .curriculum-card p, .curriculum-card ul {
+            font-size: 0.9rem;
+            color: #475569;
+            line-height: 1.5;
+        }
+        .curriculum-card ul { padding-left: 20px; margin: 6px 0; }
+
+        /* Infrastructure Grid Section */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            max-width: 1250px;
+            margin: 0 auto 20px auto;
+        }
+        @media (max-width: 800px) {
+            .info-grid { grid-template-columns: 1fr; }
+        }
+        .info-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid var(--accent);
+        }
+        .info-card.kalam {
+            border-left-color: var(--kalam-gold);
+            background: linear-gradient(to bottom right, #fffbeb, #ffffff);
+        }
+        .info-card h3 {
+            margin-top: 0;
+            color: var(--primary);
+            font-size: 1.05rem;
+        }
+        .info-card.kalam h3 {
+            color: var(--kalam-gold);
+        }
+        .info-card p, .info-card ul {
+            font-size: 0.9rem;
+            color: #475569;
+            line-height: 1.5;
+        }
+        .info-card ul { padding-left: 20px; margin: 8px 0; }
+
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            font-size: 0.85rem;
+            color: #64748b;
+            border-top: 1px solid #e2e8f0;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <img src="logo.jpeg" alt="GARRF Logo" class="logo-img" onerror="this.style.display='none'">
+    <div class="title-container">
+        <h1>Gopalkrishna Advanced Rural Research Foundation</h1>
+        <p>Virtual Undergraduate Engineering Laboratory &bull; Cantilever Beam Structural Health Monitoring (SHM) & Piezoelectric Sensor Suite</p>
+    </div>
+</header>
+
+<div class="container">
+    <!-- Left Column: Input Parameters & Calculations -->
+    <div class="card">
+        <h2>Beam & Sensor Parameters</h2>
+        
+        <div class="input-group">
+            <label>Beam Material:</label>
+            <select id="material" onchange="runCalculations()">
+                <option value="210">Structural Steel (E = 210 GPa)</option>
+                <option value="70">Aluminum Alloy (E = 70 GPa)</option>
+                <option value="115">Brass (E = 115 GPa)</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <label>Beam Length, L (m):</label>
+            <input type="number" id="beamLength" value="0.5" step="0.05" min="0.2" max="1.5" oninput="runCalculations()">
+        </div>
+        
+        <div class="input-group">
+            <label>Tip Load, P (N):</label>
+            <input type="number" id="tipLoad" value="15" step="1" min="1" max="100" oninput="runCalculations()">
+        </div>
+        
+        <div class="input-group">
+            <label>PZT Sensor Distance from Fixation, x (m):</label>
+            <input type="number" id="sensorPos" value="0.1" step="0.02" min="0.05" max="0.45" oninput="runCalculations()">
+        </div>
+
+        <button onclick="triggerVibration()">Excite Dynamic Vibration Test</button>
+        <button style="background-color: #475569;" onclick="resetSimulation()">Reset Baseline</button>
+
+        <div class="results-box" id="calcResults">
+            <!-- Dynamic calculation outputs injected here -->
+        </div>
+    </div>
+
+    <!-- Right Column: Real-time Data-Driven Canvas Simulation -->
+    <div class="card" style="display: flex; flex-direction: column;">
+        <h2>Live SHM Modal Response & PZT Voltage Telemetry</h2>
+        <div class="sim-viewport">
+            <canvas id="simCanvas" width="750" height="380"></canvas>
+        </div>
+        <div class="sim-controls">
+            <button class="primary-action" onclick="triggerVibration()">Run Free Vibration & Piezoelectric Response</button>
+            <button onclick="resetSimulation()">Reset View</button>
+        </div>
+        <p style="font-size: 0.82rem; color: #64748b; margin-top: 10px;">
+            <em>Note:</em> Simulates real-time Euler-Bernoulli bending deflection, surface strain concentration, and PZT piezoelectric voltage output oscilloscope wave traces commonly utilized in advanced structural health monitoring virtual labs.
+        </p>
+    </div>
+</div>
+
+<!-- Target Student Group & Experiment Varieties Section -->
+<div class="curriculum-card">
+    <h3>Academic Curriculum Integration & Experiment Scope</h3>
+    
+    <h4>1. Target Student Cohorts (Which Year & Branch?)</h4>
+    <p>This virtual lab experiment is a staple across premier institutions (such as <strong>IIT Bombay</strong>, <strong>IIT Madras</strong>, and <strong>IISc Bangalore</strong>) in <strong>Mechanical Engineering</strong>, <strong>Civil Engineering</strong>, and <strong>Aerospace Engineering</strong> curricula:</p>
+    <ul>
+        <div><strong>2nd & 3rd Year Undergraduates:</strong> Supports courses in <em>Strength of Materials (SOM)</em>, <em>Theory of Machines (TOM)</em>, and <em>Mechanical Measurements</em> to study beam deflection formulas ($y = \frac{PL^3}{3EI}$), natural frequency, and strain gauge/piezoelectric transducer calibration.</div>
+        <div style="margin-top: 6px;"><strong>Final Year Undergraduates & Postgraduates:</strong> Core component for <em>Structural Health Monitoring (SHM)</em>, <em>Smart Materials & Structures</em>, and <em>Non-Destructive Testing (NDT)</em> to evaluate electromechanical impedance and vibration signatures for structural damage detection.</div>
+    </ul>
+
+    <h4 style="margin-top: 15px;">2. How Many Types of Experiments Can Be Conducted Here?</h4>
+    <p>Students can perform multiple standardized laboratory modules using this single virtual workspace:</p>
+    <ul>
+        <li><strong>Experiment A (Static Deflection & Strain Mapping):</strong> Verify Euler-Bernoulli beam theory by measuring static tip deflection and validating theoretical bending stress against elastic modulus variations.</li>
+        <li><strong>Experiment B (Natural Frequency & Resonance Analysis):</strong> Determine the fundamental natural frequency of cantilever beams with varying lengths and materials using free vibration decay curves.</li>
+        <li><strong>Experiment C (Piezoelectric Sensor Voltage Generation):</strong> Quantify surface strain conversion into electric potential via PZT patches placed at different distances from the clamped root.</li>
+        <li><strong>Experiment D (Damping & Energy Dissipation Study):</strong> Analyze logarithmic decrement and damping ratios under dynamic impulse loading.</li>
+    </ul>
+</div>
+
+<!-- Infrastructure, Cost, and Kalam Lab Information Section -->
+<div class="info-grid">
+    <div class="info-card">
+        <h3>Real-World Infrastructure & Cost Analysis</h3>
+        <p><strong>Where it exists:</strong> Physical cantilever beam rigs equipped with PZT patches, electromagnetic shakers, laser displacement sensors, and high-speed digital storage oscilloscopes are installed in Dynamics and Structural Health Monitoring laboratories across <strong>IITs</strong> and specialized research centers.</p>
+        <p><strong>Cost of Real Experiments:</strong> Setting up a research-grade physical SHM test rig with precision force transducers, piezoelectric patches, charge amplifiers, and multi-channel digital oscilloscopes ranges from <strong>$8,000 to $25,000 (INR 6.5 Lakhs to 20 Lakhs+)</strong> per bench setup.</p>
+    </div>
+
+    <div class="info-card kalam">
+        <h3>Kalam Zero Cost Lab ($0 Initiative)</h3>
+        <p><strong>Cost: $0.00 (Completely Free)</strong></p>
+        <p>In alignment with Dr. A.P.J. Abdul Kalam's vision of empowering grassroots innovators and resource-constrained institutions, the <strong>Kalam Zero Cost Lab</strong> initiative eliminates prohibitive equipment costs.</p>
+        <ul>
+            <li>Requires zero hardware investment, DAQ cards, or oscilloscope units.</li>
+            <li>Runs instantly inside web browsers on any standard institutional computer.</li>
+            <li>Provides equal digital laboratory access to engineering students in rural and remote technical colleges.</li>
+        </ul>
+    </div>
+</div>
+
+<footer>
+    &copy; 2026 Gopalkrishna Advanced Rural Research Foundation (GARRF). All rights reserved. <br>
+    Open-Source Engineering Education Initiative &bull; Web: <a href="https://garrf.in" target="_blank" style="color: var(--accent); text-decoration: none;">garrf.in</a>
+</footer>
+
+<script>
+    let globalPhysics = {
+        E: 210, // GPa
+        L: 0.5, // m
+        P: 15,  // N
+        x: 0.1, // m
+        maxDeflection: 0,
+        maxStress: 0,
+        natFreq: 0,
+        voltagePeak: 0
+    };
+
+    function runCalculations() {
+        let E_GPa = parseFloat(document.getElementById('material').value) || 210;
+        let L = parseFloat(document.getElementById('beamLength').value) || 0.5;
+        let P = parseFloat(document.getElementById('tipLoad').value) || 15;
+        let x = parseFloat(document.getElementById('sensorPos').value) || 0.1;
+
+        let E = E_GPa * 1e9; // Pa
+        // Assume rectangular cross-section: width b = 0.03m, thickness h = 0.005m
+        let b = 0.03;
+        let h = 0.005;
+        let I = (b * Math.pow(h, 3)) / 12; // Moment of Inertia (m^4)
+
+        let maxDeflection = (P * Math.pow(L, 3)) / (3 * E * I); // meters
+        let maxStress = (P * L * (h / 2)) / I; // Pascals
+        let maxStressMPa = maxStress / 1e6;
+
+        // Approximate Natural Frequency (Hz) for cantilever beam: f_n = (1.875^2 / (2*pi*L^2)) * sqrt( (E*I) / (rho * A) )
+        // Let density rho = 7850 kg/m^3 for steel approximation or scaled
+        let rho = 7850;
+        let A = b * h;
+        let natFreq = (Math.pow(1.875, 2) / (2 * Math.PI * Math.pow(L, 2))) * Math.sqrt((E * I) / (rho * A));
+
+        // Piezoelectric voltage proportional to bending moment at sensor position x: M(x) = P * (L - x)
+        let momentAtSensor = P * (L - x);
+        let stressAtSensor = (momentAtSensor * (h / 2)) / I;
+        // PZT voltage sensitivity coefficient (approximate mV per MPa)
+        let voltagePeak = (stressAtSensor / 1e6) * 1.8;
+
+        globalPhysics = { E_GPa, L, P, x, maxDeflection, maxStressMPa, natFreq, voltagePeak };
+
+        document.getElementById('calcResults').innerHTML = `
+            <p><strong>Max Tip Deflection:</strong> ${(maxDeflection * 1000).toFixed(2)} mm</p>
+            <p><strong>Max Bending Stress:</strong> ${maxStressMPa.toFixed(2)} MPa</p>
+            <p><strong>Fundamental Freq ($f_n$):</strong> ${natFreq.toFixed(1)} Hz</p>
+            <p><strong>PZT Sensor Voltage:</strong> ±${voltagePeak.toFixed(2)} mV</p>
+            <span class="status-badge" style="background-color: var(--success);">SHM Sensor Status: ACTIVE / CALIBRATED</span>
+        `;
+    }
+
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let time = 0;
+    let isVibrating = false;
+    let vibrationAmplitude = 0;
+    let voltageHistory = [];
+
+    function drawGridBackground() {
+        ctx.fillStyle = '#090d16';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 1;
+        for (let x = 0; x < canvas.width; x += 30) {
+            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+        }
+        for (let y = 0; y < canvas.height; y += 30) {
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+        }
+    }
+
+    function drawScene() {
+        drawGridBackground();
+
+        // Divide viewport into top (Beam simulation) and bottom (Oscilloscope)
+        // Top section: Beam
+        ctx.fillStyle = '#334155';
+        ctx.fillRect(80, 80, 20, 140); // Clamped support base
+
+        // Draw Cantilever Beam
+        let startX = 100;
+        let startY = 150;
+        let beamLengthPx = 450;
+        let segments = 30;
+        let dx = beamLengthPx / segments;
+
+        ctx.save();
+        ctx.lineWidth = 8;
+        ctx.strokeStyle = globalPhysics.E_GPa > 150 ? '#94a3b8' : (globalPhysics.E_GPa > 80 ? '#fbbf24' : '#38bdf8');
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+
+        let defPoints = [];
+        for (let i = 0; i <= segments; i++) {
+            let px = startX + (i * dx);
+            let normalizedX = i / segments; // 0 to 1
+            // Euler-Bernoulli shape function for cantilever under tip load: y(x) = (P*x^2)/(6EI) * (3L - x)
+            let deflectionFactor = Math.pow(normalizedX, 2) * (3 - normalizedX) / 2;
+            
+            let currentDefl = 0;
+            if (isVibrating) {
+                let currentPos_m = normalizedX * globalPhysics.L;
+                let spatialMode = Math.pow(normalizedX, 2) * (3 - normalizedX) / 2;
+                currentDefl = vibrationAmplitude * spatialMode * Math.sin(2 * Math.PI * globalPhysics.natFreq * 0.15 * time);
+            } else {
+                currentDefl = (globalPhysics.maxDeflection * 1000 * 15) * deflectionFactor;
+            }
+
+            let py = startY + currentDefl;
+            defPoints.push({x: px, y: py});
+            if (i === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+        ctx.restore();
+
+        // Draw PZT Sensor Patch on Beam
+        let sensorIdx = Math.floor((globalPhysics.x / globalPhysics.L) * segments);
+        if (sensorIdx > segments) sensorIdx = segments;
+        if (defPoints[sensorIdx]) {
+            let sp = defPoints[sensorIdx];
+            ctx.fillStyle = '#dc2626';
+            ctx.fillRect(sp.x - 6, sp.y - 12, 12, 8);
+            ctx.fillStyle = '#f8fafc';
+            ctx.font = '9px sans-serif';
+            ctx.fillText("PZT Sensor", sp.x - 22, sp.y - 16);
+        }
+
+        // Draw Tip Load Vector & Mass
+        let tip = defPoints[segments];
+        ctx.fillStyle = '#eab308';
+        ctx.fillRect(tip.x - 6, tip.y - 10, 16, 20);
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath();
+        ctx.moveTo(tip.x + 10, tip.y);
+        ctx.lineTo(tip.x + 40, tip.y);
+        ctx.lineTo(tip.x + 32, tip.y - 5);
+        ctx.moveTo(tip.x + 40, tip.y);
+        ctx.lineTo(tip.x + 32, tip.y + 5);
+        ctx.fill();
+        ctx.font = '10px sans-serif';
+        ctx.fillText(`P = ${globalPhysics.P} N`, tip.x + 12, tip.y - 12);
+
+        // Bottom Section: Virtual Oscilloscope for PZT Sensor Voltage Output
+        let oscX = 80;
+        let oscY = 230;
+        let oscWidth = 590;
+        let oscHeight = 130;
+
+        ctx.fillStyle = '#020617';
+        ctx.fillRect(oscX, oscY, oscWidth, oscHeight);
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(oscX, oscY, oscWidth, oscHeight);
+
+        // Oscilloscope Grid lines
+        ctx.strokeStyle = '#1e293b';
+        for (let gx = oscX + 50; gx < oscX + oscWidth; gx += 50) {
+            ctx.beginPath(); ctx.moveTo(gx, oscY); ctx.lineTo(gx, oscY + oscHeight); ctx.stroke();
+        }
+        for (let gy = oscY + 25; gy < oscY + oscHeight; gy += 25) {
+            ctx.beginPath(); ctx.moveTo(oscX, gy); ctx.lineTo(oscX + oscWidth, gy); ctx.stroke();
+        }
+
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = '10px monospace';
+        ctx.fillText("OSCILLOSCOPE: PZT SENSOR VOLTAGE OUTPUT (CH 1)", oscX + 10, oscY + 16);
+        ctx.fillText(`+${globalPhysics.voltagePeak.toFixed(1)}mV`, oscX + oscWidth - 65, oscY + 16);
+
+        // Plot Voltage Waveform
+        if (isVibrating) {
+            let instantVoltage = globalPhysics.voltagePeak * Math.sin(2 * Math.PI * globalPhysics.natFreq * 0.15 * time) * Math.exp(-0.15 * time);
+            voltageHistory.push(instantVoltage);
+            if (voltageHistory.length > oscWidth - 20) {
+                voltageHistory.shift();
+            }
+        } else {
+            voltageHistory.push(0);
+            if (voltageHistory.length > oscWidth - 20) voltageHistory.shift();
+        }
+
+        ctx.save();
+        ctx.strokeStyle = '#22c55e';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        let startPlotX = oscX + 10;
+        let midOscY = oscY + oscHeight / 2;
+        for (let i = 0; i < voltageHistory.length; i++) {
+            let px = startPlotX + i;
+            let py = midOscY - (voltageHistory[i] / (globalPhysics.voltagePeak || 1)) * 40;
+            if (i === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+        ctx.restore();
+
+        if (isVibrating) {
+            time += 0.05;
+            vibrationAmplitude *= 0.992; // Damping decay
+            if (vibrationAmplitude < 0.1) {
+                isVibrating = false;
+            }
+        }
+    }
+
+    function triggerVibration() {
+        isVibrating = true;
+        vibrationAmplitude = globalPhysics.maxDeflection * 1000 * 20; // Initial impulse amplitude
+        time = 0;
+        voltageHistory = [];
+    }
+
+    function resetSimulation() {
+        isVibrating = false;
+        vibrationAmplitude = 0;
+        time = 0;
+        voltageHistory = [];
+    }
+
+    runCalculations();
+
+    function loop() {
+        drawScene();
+        requestAnimationFrame(loop);
+    }
+    loop();
+</script>
+
+</body>
+</html>
