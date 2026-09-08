@@ -581,6 +581,12 @@ tr:nth-child(even){
     .ct-buttons{grid-template-columns:repeat(2,1fr)}
 }
 
+
+.chamundi-voice-note{
+    font-size:11px;
+    opacity:.82;
+    margin:3px 0 0;
+}
 </style>
 
 </head>
@@ -3005,6 +3011,7 @@ const chamundiTranslations = {
 };
 
 let chamundiMuted = false;
+let chamundiResumeStep = 0;
 let chamundiVoiceWasSpeaking = false;
 let quizCompleted = false;
 
@@ -3016,15 +3023,13 @@ function chamundiStopVoice(){
 }
 
 function chamundiToggleMute(){
-    chamundiMuted = !chamundiMuted;
+  chamundiMuted = !chamundiMuted;
+  if (chamundiMuted) {
     chamundiStopVoice();
-
-    const btn = document.getElementById("chamundiMuteBtn");
-    if(btn){
-        btn.textContent = chamundiMuted ? "🔇" : "🔊";
-        btn.title = chamundiMuted ? "Unmute voice" : "Mute voice";
-        btn.setAttribute("aria-label", chamundiMuted ? "Unmute Chamundi voice" : "Mute Chamundi voice");
-    }
+  } else {
+    chamundiSpeak(chamundiSteps[chamundiStep]?.speech || '');
+  }
+  chamundiUpdateMuteButton();
 }
 
 function chamundiGetText(step){
@@ -3033,34 +3038,79 @@ function chamundiGetText(step){
 }
 
 function chamundiSpeak(text){
-    if(chamundiMuted || !chamundiSpeechEnabled || !("speechSynthesis" in window)) return;
+  if (chamundiMuted) return;
+    if(chamundiMuted || !("speechSynthesis" in window)) return;
+
+    // Stop anything already speaking so Chamundi never stacks voices.
     window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = ({
-        en:"en-IN", hi:"hi-IN", te:"te-IN", ta:"ta-IN",
-        kn:"kn-IN", ml:"ml-IN"
-    })[chamundiLanguage] || "en-IN";
-    u.rate = 0.92;
-    u.pitch = 1.08;
 
+    const speakNow = () => {
+        if(chamundiMuted) return;
+
+        const voices = window.speechSynthesis.getVoices();
+
+        // Prefer soft, natural-sounding Indian English female voices.
+        // Browser/OS voice names vary, so use several signals rather than one exact name.
+        const femaleWords = [
+            "female","woman","girl","susan","heera","veena","raveena",
+            "aditi","priya","neerja","lekha","swara","kavya","isha"
+        ];
+        const indianWords = [
+            "india","indian","en-in","hindi","telugu","tamil","kannada",
+            "malayalam","marathi","bengali"
+        ];
+        const harshWords = [
+            "male","man","david","mark","george","daniel","alex",
+            "microsoft david","microsoft mark","google uk english male"
+        ];
+
+        function scoreVoice(v){
+            const name = (v.name || "").toLowerCase();
+            const lang = (v.lang || "").toLowerCase();
+            let score = 0;
+
+            if(indianWords.some(w => name.includes(w) || lang.includes(w))) score += 100;
+            if(lang === "en-in") score += 90;
+            if(name.includes("en-in")) score += 80;
+
+            if(femaleWords.some(w => name.includes(w))) score += 120;
+            if(harshWords.some(w => name.includes(w))) score -= 180;
+
+            // Prefer Google/Microsoft female Indian voices when explicitly labelled female.
+            if(name.includes("google") && femaleWords.some(w => name.includes(w))) score += 20;
+            if(name.includes("microsoft") && femaleWords.some(w => name.includes(w))) score += 20;
+
+            return score;
+        }
+
+        const ranked = [...voices].sort((a,b) => scoreVoice(b) - scoreVoice(a));
+        const selected = ranked[0];
+
+        const utterance = new SpeechSynthesisUtterance(text);
+
+        if(selected){
+            utterance.voice = selected;
+            utterance.lang = selected.lang || "en-IN";
+        }else{
+            utterance.lang = "en-IN";
+        }
+
+        // Softer teacher-like delivery: slower, slightly higher pitch,
+        // and moderate volume to avoid the robotic/commanding sound.
+        utterance.rate = 0.88;
+        utterance.pitch = 1.18;
+        utterance.volume = 0.78;
+
+        window.speechSynthesis.speak(utterance);
+    };
+
+    // Chrome may populate voices asynchronously.
     const voices = window.speechSynthesis.getVoices();
-    const indian = voices.filter(v => /^(en-IN|hi-IN|te-IN|ta-IN|kn-IN|ml-IN)/i.test(v.lang));
-
-    /* Prefer a natural-sounding Indian female voice. Browser voice names vary
-       by OS/browser, so use a broad female-name preference list first. */
-    const femaleHints = /female|woman|girl|neerja|heera|veena|raveena|lekha|priya|sangeeta|swara|kalpana|aditi|ananya|kavya|meera|shreya|pooja|sunita|asha|sara|simran|tanya|riya|isha|divya/i;
-    const maleHints = /male|man|boy|ravi|raj|amit|arjun|rohit|rahul|vijay|kumar|mohan|anil|suresh|prakash|venkatesh/i;
-
-    const femaleIndian = indian.find(v => femaleHints.test(v.name) && !maleHints.test(v.name));
-    const naturalIndian = indian.find(v => !maleHints.test(v.name));
-
-    u.voice = femaleIndian || naturalIndian ||
-              voices.find(v => /^en-IN/i.test(v.lang) && !maleHints.test(v.name)) ||
-              indian.find(v => /^en-IN/i.test(v.lang)) ||
-              indian[0] ||
-              voices.find(v => /en-IN/i.test(v.lang)) ||
-              voices[0] || null;
-    window.speechSynthesis.speak(u);
+    if(voices.length){
+        speakNow();
+    }else{
+        window.speechSynthesis.addEventListener("voiceschanged", speakNow, {once:true});
+    }
 }
 
 function chamundiTarget(step){
@@ -3086,6 +3136,7 @@ function chamundiScrollToStep(){
 }
 
 function chamundiRender(){
+  chamundiResumeStep = chamundiStep;
     const msg = document.getElementById("chamundiMessage");
     const view = document.getElementById("chamundiCurrentView");
     const bar = document.getElementById("chamundiProgressBar");
@@ -3133,6 +3184,7 @@ function chamundiRestart(){
     quizCompleted = false;
     chamundiStarted = true;
     chamundiStep = 0;
+  chamundiResumeStep = 0;
     chamundiRender();
     chamundiScrollToStep();
     chamundiSpeak(chamundiGetText(chamundiStep));
