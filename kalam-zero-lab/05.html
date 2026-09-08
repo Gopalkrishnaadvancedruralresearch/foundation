@@ -482,6 +482,25 @@ tr:nth-child(even){
   .chamundi-box{right:10px;bottom:10px}
 }
 
+
+/* MAGIC V-I WORKSPACE — Sections 4 & 5 */
+.vi-magic-workspace{display:grid;grid-template-columns:minmax(300px,.82fr) minmax(420px,1.5fr);gap:18px;align-items:stretch;margin-top:10px}
+.vi-panel{background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:0 5px 18px rgba(0,0,0,.07)}
+.vi-panel-head{padding:13px 16px;background:linear-gradient(135deg,#0b4f8a,#17324d);color:#fff;font-weight:800;font-size:17px}
+.vi-panel-body{padding:15px}
+.vi-live-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.vi-live-card{border:1px solid #d8e2ea;border-radius:11px;padding:11px;background:#f8fbfd;text-align:center}
+.vi-live-card span{display:block;font-size:12px;color:#587083;margin-bottom:5px}
+.vi-live-card strong{font-size:20px;color:#0b4f8a}
+.vi-scan-status{margin-top:13px;padding:10px 12px;border-radius:10px;background:#eef7f1;border:1px solid #b9dec7;font-weight:700;text-align:center}
+.vi-scan-status.running{background:#fff7e8;border-color:#f0c875}
+.vi-scan-status.done{background:#edf7ff;border-color:#a9cee8}
+.vi-graph-wrap{height:420px;position:relative;background:#fbfdff;border-radius:10px;border:1px solid #d8e2ea;overflow:hidden}
+.vi-graph-wrap canvas{width:100%;height:100%;display:block}
+.vi-magic-caption{margin:10px 0 0;padding:10px 12px;background:#f4f8fb;border-left:4px solid var(--orange);border-radius:8px;font-size:13px}
+.vi-magic-banner{margin-bottom:14px;padding:12px 15px;border-radius:12px;background:linear-gradient(90deg,#eef7ff,#fff8ed);border:1px solid #c9dce9;text-align:center;font-weight:800;color:#17324d}
+@media(max-width:900px){.vi-magic-workspace{grid-template-columns:1fr}.vi-graph-wrap{height:360px}}
+@media(max-width:520px){.vi-live-grid{grid-template-columns:1fr 1fr}.vi-graph-wrap{height:300px}}
 </style>
 
 </head>
@@ -879,93 +898,34 @@ preserveAspectRatio="xMidYMid meet"> </svg>
 
 </section>
 
-<!-- RESULTS -->
-
-<section class="card" id="section4Measurements">
-
-<h2>
-📊 4. Live Measurements
-</h2>
-
-<div class="results">
-
-<div class="result">
-
-Applied Voltage
-
-<strong id="liveVoltage">
-0.00 V
-</strong>
-
+<!-- LIVE MEASUREMENTS + V-I MAGIC WORKSPACE -->
+<div class="vi-magic-banner" id="viMagicBanner">✨ Press <strong>AUTOMATIC V–I SCAN</strong> and watch the measurements and characteristic curve develop together in real time.</div>
+<div class="vi-magic-workspace">
+<section class="vi-panel" id="section4Measurements">
+<div class="vi-panel-head">📊 4. Live Measurements</div>
+<div class="vi-panel-body">
+<div class="vi-live-grid">
+<div class="vi-live-card"><span>Applied Voltage</span><strong id="liveVoltage">0.00 V</strong></div>
+<div class="vi-live-card"><span>Diode Voltage</span><strong id="diodeVoltage">0.00 V</strong></div>
+<div class="vi-live-card"><span>Diode Current</span><strong id="liveCurrent">0.00 mA</strong></div>
+<div class="vi-live-card"><span>Bias Mode</span><strong id="liveMode">Forward</strong></div>
+<div class="vi-live-card"><span>Cut-in Voltage</span><strong id="cutinVoltage">≈ 0.60 V</strong></div>
+<div class="vi-live-card"><span>Scan Progress</span><strong id="viScanPercent">0%</strong></div>
 </div>
-
-<div class="result">
-
-Diode Voltage
-
-<strong id="diodeVoltage">
-0.00 V
-</strong>
-
+<div class="vi-scan-status" id="viScanStatus">🟢 Ready — start the automatic scan to watch the experiment unfold.</div>
+<p class="small">The numerical values update live as the applied voltage changes. During an automatic scan, each new measurement is immediately plotted on the V–I graph.</p>
 </div>
-
-<div class="result">
-
-Diode Current
-
-<strong id="liveCurrent">
-0.00 mA
-</strong>
-
-</div>
-
-<div class="result">
-
-Bias Mode
-
-<strong id="liveMode">
-Forward
-</strong>
-
-</div>
-
-<div class="result">
-
-Cut-in Voltage
-
-<strong id="cutinVoltage">
-≈ 0.60 V
-</strong>
-
-</div>
-
-</div>
-
 </section>
 
-<!-- GRAPH -->
-
-<section class="card" id="section5Graph">
-
-<h2>
-📈 5. Diode V–I Characteristics
-</h2>
-
-<div class="graph-container">
-
-<canvas id="graph"></canvas>
-
+<section class="vi-panel" id="section5Graph">
+<div class="vi-panel-head">📈 5. Diode V–I Characteristics — LIVE</div>
+<div class="vi-panel-body">
+<div class="vi-graph-wrap"><canvas id="graph"></canvas></div>
+<div class="vi-magic-caption" id="viGraphMessage">The graph is ready. Press <strong>AUTOMATIC V–I SCAN</strong> above and watch the curve grow point by point.</div>
+<p class="small">Horizontal axis: diode voltage. Vertical axis: diode current. The forward characteristic rises sharply after the knee region.</p>
 </div>
-
-<p class="small">
-
-The horizontal axis represents diode voltage and the
-vertical axis represents diode current. The forward
-characteristic rises sharply after the knee region.
-
-</p>
-
 </section>
+</div>
 
 <!-- CUT IN -->
 
@@ -2532,6 +2492,13 @@ function scanCharacteristic(){
             ).textContent=
                 "✅ V–I scan complete.";
 
+            const scanStatus=document.getElementById("viScanStatus");
+            const pctEl=document.getElementById("viScanPercent");
+            const graphMsg=document.getElementById("viGraphMessage");
+            if(scanStatus){scanStatus.className="vi-scan-status done";scanStatus.textContent="✅ Scan complete — the full V–I characteristic has been built point by point.";}
+            if(pctEl) pctEl.textContent="100%";
+            if(graphMsg) graphMsg.innerHTML="🎓 <strong>Observe the complete curve.</strong> The sharp rise after the knee region is now visible as the result of the measurements collected during the scan.";
+
             drawGraph();
             if(typeof chamundiOnScanComplete==="function"){
                 chamundiOnScanComplete();
@@ -2559,6 +2526,18 @@ function scanCharacteristic(){
             )
 
         });
+
+        const scanPct=Math.min(100,Math.round((V/10)*100));
+        const pctEl=document.getElementById("viScanPercent");
+        const scanStatus=document.getElementById("viScanStatus");
+        const graphMsg=document.getElementById("viGraphMessage");
+        if(pctEl) pctEl.textContent=scanPct+"%";
+        if(scanStatus){scanStatus.className="vi-scan-status running";scanStatus.textContent="⚡ Scanning… "+scanPct+"% — voltage and current are being measured.";}
+        if(graphMsg){
+            if(V < getCutin(p.type)*0.8) graphMsg.innerHTML="🔎 Watch the current: it is still small. The curve is beginning to form.";
+            else if(V < getCutin(p.type)) graphMsg.innerHTML="👀 We are approaching the knee region. Watch how the curve starts turning upward.";
+            else graphMsg.innerHTML="✨ Magic moment! Forward current is rising rapidly — the V–I curve is revealing the diode's nonlinear behaviour.";
+        }
 
 
         document.getElementById(
