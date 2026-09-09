@@ -1,80 +1,459 @@
-<!-- SECTION 4: INTERACTIVE EXPERIMENTATION -->
-<div class="card">
-    <span class="section-tag">SECTION 4</span>
-    <h2>Interactive Experimentation & Signal Recording</h2>
-    
-    <div class="grid-layout-2col">
-        <div>
-            <h3>2D Wave Field & Damage Plane</h3>
-            <canvas id="waveCanvas" width="550" height="360"></canvas>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KALAM ZERO LAB • VIRTUAL EXPERIMENT</title>
+    <!-- Three.js CDN for 3D Surface Deformation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-card: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-green: #10b981;
+            --accent-blue: #2563eb;
+            --accent-amber: #d97706;
+            --border-color: #334155;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-main);
+            padding: 20px;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* HEADER & BRANDING */
+        header {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .header-title-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo-placeholder {
+            width: 50px;
+            height: 50px;
+            background-color: #334155;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            color: #cbd5e1;
+            font-weight: bold;
+        }
+
+        .header-text h1 {
+            font-size: 1.3rem;
+            color: #ffffff;
+        }
+
+        .header-text p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .badge-container {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 5px;
+        }
+
+        .flag-badge {
+            background-color: #0284c7;
+            color: #ffffff;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .lab-tag {
+            background-color: var(--accent-green);
+            color: #064e3b;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        }
+
+        /* CARD SECTIONS */
+        .card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            position: relative;
+        }
+
+        .section-tag {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: #334155;
+            color: #94a3b8;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+
+        h2 {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            color: #38bdf8;
+        }
+
+        /* LAYOUT GRID */
+        .grid-2col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 850px) {
+            .grid-2col {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* CANVAS & 3D CONTAINERS */
+        canvas, #threejs-container {
+            width: 100%;
+            height: 320px;
+            background-color: #020617;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        /* BUTTONS & CONTROLS */
+        .control-panel {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px 18px;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn-baseline { background-color: var(--accent-blue); }
+        .btn-damaged { background-color: var(--accent-amber); }
+        .btn-arjun { background-color: var(--accent-green); color: #064e3b; }
+
+        /* TERMINAL / OSCILLOSCOPE OUTPUT */
+        .terminal-box {
+            background-color: #020617;
+            border: 1px solid #1e293b;
+            border-left: 4px solid var(--accent-green);
+            border-radius: 6px;
+            padding: 15px;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 0.85rem;
+            color: #4ade80;
+            white-space: pre-wrap;
+            margin-top: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        /* ARJUN CHAT SECTION */
+        .arjun-card {
+            border-top: 4px solid var(--accent-green);
+        }
+
+        .chat-box {
+            background-color: #020617;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            height: 280px;
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .chat-msg {
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            max-width: 90%;
+        }
+
+        .msg-arjun {
+            background-color: #064e3b;
+            color: #a7f3d0;
+            align-self: flex-start;
+            border-left: 3px solid var(--accent-green);
+        }
+
+        .msg-user {
+            background-color: #1e3a8a;
+            color: #bfdbfe;
+            align-self: flex-end;
+        }
+
+        .chat-input-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background-color: #020617;
+            color: white;
+            font-size: 0.9rem;
+        }
+
+        /* FOOTER */
+        footer {
+            text-align: center;
+            padding: 15px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border-color);
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- HEADER & BRANDING -->
+    <header>
+        <div class="header-title-container">
+            <div class="logo-placeholder">GARRF</div>
+            <div class="header-text">
+                <h1>Gopalkrishna Advanced Rural Research Foundation</h1>
+                <p>Virtual AISIA R&D Platform • Frugal Engineering Education</p>
+            </div>
         </div>
-        <div>
-            <h3>3D Surface Deformation (A0 Mode)</h3>
-            <div id="threejs-container"></div>
+        <div class="badge-container">
+            <span class="flag-badge">India's Privately Leading Leader in Virtual Laboratories 🇮🇳</span>
+            <span class="lab-tag">KALAM ZERO LAB • VIRTUAL EXPERIMENT</span>
+        </div>
+    </header>
+
+    <!-- SECTION 1: EXPERIMENTAL PRINCIPLES -->
+    <div class="card">
+        <span class="section-tag">SECTION 1</span>
+        <h2>Piezoelectric Guided Lamb Wave & SHM Theory</h2>
+        <p style="font-size: 0.9rem; color: var(--text-muted);">
+            Structural Health Monitoring (SHM) utilizes Piezoelectric Wafer Active Sensors (PWAS) to generate high-frequency Lamb waves in metallic plates. 
+            By capturing clean baseline signals and comparing them against damaged states, Time-of-Flight (ToF) variations reveal the presence and location of structural defects.
+        </p>
+    </div>
+
+    <!-- SECTION 4: INTERACTIVE EXPERIMENTATION -->
+    <div class="card">
+        <span class="section-tag">SECTION 4</span>
+        <h2>Interactive Wave Propagation & Signal Capture</h2>
+
+        <div class="grid-2col">
+            <div>
+                <h3 style="font-size: 0.9rem; margin-bottom: 8px; color: var(--text-muted);">2D Wave Field Plane (Drag Actuator/Sensor/Defect)</h3>
+                <canvas id="waveCanvas" width="550" height="320"></canvas>
+            </div>
+            <div>
+                <h3 style="font-size: 0.9rem; margin-bottom: 8px; color: var(--text-muted);">3D Surface Deformation (A0 Mode Visualization)</h3>
+                <div id="threejs-container"></div>
+            </div>
+        </div>
+
+        <!-- CONTROL BUTTONS -->
+        <div class="control-panel">
+            <button class="btn btn-baseline" onclick="recordBaseline()">1️⃣ Record Baseline Signal (Healthy)</button>
+            <button class="btn btn-damaged" onclick="recordDamaged()">2️⃣ Record Damaged Signal (Experiment)</button>
+        </div>
+
+        <h3 style="font-size: 0.9rem; margin-top: 15px; color: var(--text-muted);">A-Scan Oscilloscope Output & Dataset Memory:</h3>
+        <div id="ascanOutput" class="terminal-box">Ready for Step 1: Click "Record Baseline Signal" to capture clean plate reference...</div>
+    </div>
+
+    <!-- SECTION 7: ARJUN AI RESEARCH ASSISTANT -->
+    <div class="card arjun-card">
+        <span class="section-tag" style="background: #064e3b; color: #a7f3d0;">SECTION 7</span>
+        <h2>🤖 ARJUN: GARRF PZT / EMI / SHM AI Research Assistant</h2>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
+            ARJUN proactively tracks your laboratory runs. Ask questions on wave physics, or upload external data files (.csv, .txt) and oscilloscope screenshots for diagnostic review.
+        </p>
+
+        <!-- Chat Container -->
+        <div id="arjunChatBox" class="chat-box">
+            <div class="chat-msg msg-arjun">
+                <strong>🤖 ARJUN:</strong> I am ARJUN, your SHM and Guided Wave Research Assistant. I am monitoring your experiment setup. Please run Step 1 (Baseline) and Step 2 (Damaged State) above. Once saved, I will automatically analyze your Time-of-Flight values here!
+            </div>
+        </div>
+
+        <!-- Chat Input -->
+        <div class="chat-input-group">
+            <input type="text" id="arjunInput" class="chat-input" placeholder="Ask ARJUN about your signals, Lamb wave modes, or wave velocity..." onkeypress="if(event.key==='Enter') sendArjunMessage()">
+            <button class="btn btn-arjun" style="min-width: 100px; flex: 0;" onclick="sendArjunMessage()">Send</button>
         </div>
     </div>
 
-    <!-- Dual Trigger Action Buttons -->
-    <div style="display: flex; gap: 15px; margin-top: 15px;">
-        <button id="btnBaseline" class="btn-actuate" style="background: #2563eb;" onclick="recordBaseline()">
-            1️⃣ Record Baseline Signal (Healthy)
-        </button>
-        <button id="btnDamaged" class="btn-actuate" style="background: #d97706;" onclick="recordDamaged()">
-            2️⃣ Record Damaged Signal (Experiment)
-        </button>
-    </div>
+    <!-- FOOTER -->
+    <footer>
+        Developed by Dr Annamdas Venu Gopal Madhav & Annamdas Shantanu Vasudev Krishna<br>
+        Gopalkrishna Advanced Rural Research Foundation (GARRF) • All Rights Reserved
+    </footer>
 
-    <h3 style="font-size: 1rem; margin-top: 15px;">A-Scan Oscilloscope Output & Dataset Memory:</h3>
-    <div id="ascanOutput" class="terminal-box">Ready for Step 1: Click "Record Baseline Signal" to capture clean plate reference...</div>
-</div>
-
-<!-- SECTION 7: ARJUN AI RESEARCH ASSISTANT -->
-<div class="card" style="border-top: 4px solid #10b981;">
-    <span class="section-tag" style="background: #d1fae5; color: #047857;">SECTION 7</span>
-    <h2>🤖 ARJUN: Virtual Lab AI Research Assistant</h2>
-    <p style="font-size: 0.9rem; color: var(--text-muted);">
-        ARJUN automatically tracks your experiment runs and baseline data. Ask follow-up questions or upload your data files for advanced structural diagnostics.
-    </p>
-
-    <!-- Chat Container -->
-    <div id="arjunChatBox" style="background: #0f172a; border-radius: 8px; padding: 15px; height: 280px; overflow-y: auto; color: #e2e8f0; font-size: 0.9rem; margin-bottom: 12px; display: flex; flex-direction: column; gap: 10px;">
-        <div id="arjunGreeting" style="background: #1e293b; padding: 12px 14px; border-radius: 8px; border-left: 3px solid #10b981;">
-            <strong>🤖 ARJUN:</strong> Welcome! I am monitoring your experiment in real time. Please run Step 1 (Baseline) and Step 2 (Damaged) above. Once recorded, I will automatically analyze your wave modes and Time-of-Flight values here!
-        </div>
-    </div>
-
-    <!-- Input Area -->
-    <div style="display: flex; gap: 10px;">
-        <input type="text" id="arjunInput" placeholder="Ask ARJUN about your wave signals or Lamb wave theory..." style="flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.95rem;" onkeypress="if(event.key==='Enter') sendArjunMessage()">
-        <button onclick="sendArjunMessage()" style="background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 700; cursor: pointer;">
-            Send
-        </button>
-    </div>
 </div>
 
 <script>
-    // Experiment Memory State
+    // --- CANVAS & EXPERIMENTAL SETUP ---
+    const canvas = document.getElementById('waveCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let actuator = { x: 100, y: 160 };
+    let sensor = { x: 450, y: 160 };
+    let defect = { x: 280, y: 100 };
+    let waveGroupVelocity = 5.4; // km/s (or mm/μs)
+
     let baselineData = null;
     let damagedData = null;
 
+    function drawCanvas() {
+        ctx.fillStyle = '#020617';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Grid
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 1;
+        for (let x = 0; x < canvas.width; x += 40) {
+            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+        }
+        for (let y = 0; y < canvas.height; y += 40) {
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+        }
+
+        // Direct Path Line
+        ctx.strokeStyle = '#3b82f6';
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath(); ctx.moveTo(actuator.x, actuator.y); ctx.lineTo(sensor.x, sensor.y); ctx.stroke();
+
+        // Echo Path Line
+        ctx.strokeStyle = '#f59e0b';
+        ctx.beginPath(); ctx.moveTo(actuator.x, actuator.y); ctx.lineTo(defect.x, defect.y); ctx.lineTo(sensor.x, sensor.y); ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Actuator
+        ctx.fillStyle = '#2563eb';
+        ctx.beginPath(); ctx.arc(actuator.x, actuator.y, 10, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#ffffff'; ctx.font = '10px sans-serif'; ctx.fillText('PZT Actuator', actuator.x - 25, actuator.y - 14);
+
+        // Sensor
+        ctx.fillStyle = '#10b981';
+        ctx.beginPath(); ctx.arc(sensor.x, sensor.y, 10, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#ffffff'; ctx.fillText('PZT Sensor', sensor.x - 20, sensor.y - 14);
+
+        // Defect
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath(); ctx.arc(defect.x, defect.y, 8, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#ffffff'; ctx.fillText('Defect/Crack', defect.x - 25, defect.y - 12);
+    }
+
+    drawCanvas();
+
+    // --- 3D THREE.JS DEFORMATION VISUALIZER ---
+    const container3d = document.getElementById('threejs-container');
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, container3d.clientWidth / container3d.clientHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(container3d.clientWidth, container3d.clientHeight);
+    container3d.appendChild(renderer.domElement);
+
+    const geometry = new THREE.PlaneGeometry(10, 6, 32, 32);
+    const material = new THREE.MeshBasicMaterial({ color: 0x38bdf8, wireframe: true });
+    const plane = new THREE.Mesh(geometry, material);
+    scene.add(plane);
+
+    plane.rotation.x = -Math.PI / 3;
+    camera.position.z = 8;
+
+    function animate3D() {
+        requestAnimationFrame(animate3D);
+        const time = Date.now() * 0.003;
+        const pos = plane.geometry.attributes.position;
+        for (let i = 0; i < pos.count; i++) {
+            const u = pos.getX(i);
+            const v = pos.getY(i);
+            const z = Math.sin(u * 2 + time) * 0.15 * Math.cos(v * 2 + time);
+            pos.setZ(i, z);
+        }
+        plane.geometry.attributes.position.needsUpdate = true;
+        renderer.render(scene, camera);
+    }
+    animate3D();
+
+    // --- EXPERIMENTAL DATASET WORKFLOW ---
     function recordBaseline() {
-        runSimulation(false, () => {
-            const directDist = Math.hypot(sensor.x - actuator.x, sensor.y - actuator.y);
-            const directToF = (directDist / 5.4).toFixed(1);
-            const timestamp = new Date().toLocaleTimeString();
+        const directDist = Math.hypot(sensor.x - actuator.x, sensor.y - actuator.y);
+        const directToF = (directDist / waveGroupVelocity).toFixed(1);
+        const timestamp = new Date().toLocaleTimeString();
 
-            if (confirm(`Baseline Wave Signal Captured!\n\n• Direct ToF: ${directToF} μs\n• Recorded Time: ${timestamp}\n\nDo you want to save this point as your FIRST BASELINE?`)) {
-                baselineData = {
-                    time: timestamp,
-                    actuator: { ...actuator },
-                    sensor: { ...sensor },
-                    directToF: directToF
-                };
-
-                updateOscilloscope();
-                checkArjunMagic();
-            }
-        });
+        if (confirm(`Baseline Wave Signal Captured!\n\n• Direct Distance: ${directDist.toFixed(1)} mm\n• Direct ToF: ${directToF} μs\n• Recorded Time: ${timestamp}\n\nDo you want to save this point as your FIRST BASELINE?`)) {
+            baselineData = {
+                time: timestamp,
+                actuator: { ...actuator },
+                sensor: { ...sensor },
+                directToF: directToF,
+                distance: directDist.toFixed(1)
+            };
+            updateOscilloscope();
+            checkArjunMagic();
+        }
     }
 
     function recordDamaged() {
@@ -83,68 +462,106 @@
             return;
         }
 
-        runSimulation(true, () => {
-            const actToDefect = Math.hypot(defect.x - actuator.x, defect.y - actuator.y);
-            const defectToSen = Math.hypot(sensor.x - defect.x, sensor.y - defect.y);
-            const directDist = Math.hypot(sensor.x - actuator.x, sensor.y - actuator.y);
+        const actToDefect = Math.hypot(defect.x - actuator.x, defect.y - actuator.y);
+        const defectToSen = Math.hypot(sensor.x - defect.x, sensor.y - defect.y);
+        const directDist = Math.hypot(sensor.x - actuator.x, sensor.y - actuator.y);
 
-            const directToF = (directDist / 5.4).toFixed(1);
-            const echoToF = ((actToDefect + defectToSen) / 5.4).toFixed(1);
-            const timestamp = new Date().toLocaleTimeString();
+        const directToF = (directDist / waveGroupVelocity).toFixed(1);
+        const echoToF = ((actToDefect + defectToSen) / waveGroupVelocity).toFixed(1);
+        const timestamp = new Date().toLocaleTimeString();
 
-            if (confirm(`Damaged State Signal Captured!\n\n• Direct ToF: ${directToF} μs\n• Echo ToF: ${echoToF} μs\n• Saved Time: ${timestamp}\n\nDo you want to save this point as your SECOND EXPERIMENTAL SET?`)) {
-                damagedData = {
-                    time: timestamp,
-                    defect: { ...defect },
-                    damageType: document.getElementById('damageTypeSelect').value,
-                    directToF: directToF,
-                    echoToF: echoToF,
-                    delayToF: (echoToF - directToF).toFixed(1)
-                };
-
-                updateOscilloscope();
-                checkArjunMagic();
-            }
-        });
+        if (confirm(`Damaged State Signal Captured!\n\n• Direct Wave ToF: ${directToF} μs\n• Scattered Echo ToF: ${echoToF} μs\n• Saved Time: ${timestamp}\n\nDo you want to save this point as your SECOND EXPERIMENTAL SET?`)) {
+            damagedData = {
+                time: timestamp,
+                defect: { ...defect },
+                directToF: directToF,
+                echoToF: echoToF,
+                delayToF: (echoToF - directToF).toFixed(1),
+                scatteredPath: (actToDefect + defectToSen).toFixed(1)
+            };
+            updateOscilloscope();
+            checkArjunMagic();
+        }
     }
 
     function updateOscilloscope() {
+        const ascanOutput = document.getElementById('ascanOutput');
         let text = `===================== EXPERIMENTAL DATASETS RECORDED =====================\n`;
         if (baselineData) {
             text += `[RECORD 1 - HEALTHY BASELINE] Timestamp: ${baselineData.time}\n`;
             text += `  • Actuator Position : (${baselineData.actuator.x}, ${baselineData.actuator.y}) mm\n`;
             text += `  • Sensor Position   : (${baselineData.sensor.x}, ${baselineData.sensor.y}) mm\n`;
+            text += `  • Direct Wave Path  : ${baselineData.distance} mm\n`;
             text += `  • Direct Wave ToF   : ${baselineData.directToF} μs\n\n`;
         }
         if (damagedData) {
             text += `[RECORD 2 - DAMAGED EXPERIMENT] Timestamp: ${damagedData.time}\n`;
-            text += `  • Damage Type       : ${damagedData.damageType}\n`;
-            text += `  • Damage Location   : (${damagedData.defect.x}, ${damagedData.defect.y}) mm\n`;
+            text += `  • Defect Location   : (${damagedData.defect.x}, ${damagedData.defect.y}) mm\n`;
             text += `  • Direct Wave ToF   : ${damagedData.directToF} μs\n`;
             text += `  • Scattered Echo ToF: ${damagedData.echoToF} μs\n`;
-            text += `  • Time Difference Δt: ${damagedData.delayToF} μs\n`;
+            text += `  • Echo Delay Δt     : ${damagedData.delayToF} μs\n`;
+            text += `  • Total Echo Path   : ${damagedData.scatteredPath} mm\n`;
         }
         ascanOutput.innerHTML = text;
     }
 
+    // --- ARJUN PROACTIVE "MAGIC" & CHAT ---
     function checkArjunMagic() {
         if (baselineData && damagedData) {
             const chatBox = document.getElementById('arjunChatBox');
             
             const magicMsg = document.createElement('div');
-            magicMsg.style.cssText = "background: #064e3b; color: #a7f3d0; padding: 12px 14px; border-radius: 8px; border-left: 4px solid #10b981; align-self: flex-start; max-width: 90%; font-size: 0.92rem; margin-top: 5px;";
-            
+            magicMsg.className = 'chat-msg msg-arjun';
             magicMsg.innerHTML = `
-                <strong>✨ ARJUN (Automated Analysis):</strong><br>
-                I noticed you have captured and saved both datasets! Here is what your signals reveal:<br><br>
-                • <strong>Baseline ToF:</strong> ${baselineData.directToF} μs<br>
+                <strong>✨ ARJUN (Automated Laboratory Analysis):</strong><br>
+                I have received and evaluated both of your saved datasets! Here is what your wave signals indicate:<br><br>
+                • <strong>Healthy Baseline ToF:</strong> ${baselineData.directToF} μs<br>
                 • <strong>Scattered Echo ToF:</strong> ${damagedData.echoToF} μs (Delay Δt = ${damagedData.delayToF} μs)<br>
-                • <strong>Inferred Path Distance:</strong> ${(damagedData.echoToF * 5.4).toFixed(1)} mm via A0 mode velocity (5.4 km/s).<br><br>
-                <em>You can ask me any follow-up questions regarding these signals, Lamb wave modes, or upload your own experimental files for further analysis!</em>
+                • <strong>Inferred Wave Speed:</strong> 5.4 km/s (A0 Lamb Mode)<br>
+                • <strong>Calculated Scattered Path:</strong> ${damagedData.scatteredPath} mm<br><br>
+                My interpretation is that a localized structural discontinuity (crack/corrosion) is creating a secondary wave reflection. You can ask me any further questions regarding wave propagation, or upload external data files for comparative diagnostics!
             `;
             
             chatBox.appendChild(magicMsg);
             chatBox.scrollTop = chatBox.scrollHeight;
         }
     }
+
+    function sendArjunMessage() {
+        const input = document.getElementById('arjunInput');
+        const text = input.value.trim();
+        if (!text) return;
+
+        const chatBox = document.getElementById('arjunChatBox');
+
+        // User Message
+        const userMsg = document.createElement('div');
+        userMsg.className = 'chat-msg msg-user';
+        userMsg.innerHTML = `<strong>You:</strong> ${text}`;
+        chatBox.appendChild(userMsg);
+
+        input.value = '';
+
+        // Proactive ARJUN Response Simulation
+        setTimeout(() => {
+            const arjunMsg = document.createElement('div');
+            arjunMsg.className = 'chat-msg msg-arjun';
+            
+            let responseText = "I have analyzed your query regarding PZT wave signals. ";
+            if (text.toLowerCase().includes("tof") || text.toLowerCase().includes("time")) {
+                responseText += "Time-of-Flight (ToF) is calculated as Total Distance divided by Group Velocity. In thin aluminum plates, A0 Lamb modes propagate at roughly 5.4 km/s.";
+            } else if (text.toLowerCase().includes("lamb") || text.toLowerCase().includes("mode")) {
+                responseText += "Lamb waves exist as S0 (Symmetric) and A0 (Antisymmetric) modes. The A0 mode is sensitive to surface damage and delamination.";
+            } else {
+                responseText += "My calculation indicates that comparing healthy baseline signals against damaged states provides high-sensitivity damage detection for critical structures.";
+            }
+
+            arjunMsg.innerHTML = `<strong>🤖 ARJUN:</strong> ${responseText}`;
+            chatBox.appendChild(arjunMsg);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }, 600);
+    }
 </script>
+
+</body>
+</html>
