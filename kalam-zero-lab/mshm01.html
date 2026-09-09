@@ -24,33 +24,36 @@
             padding: 0;
             line-height: 1.6;
         }
-        header {
-            background-color: var(--primary-color);
+        /* Prominent Top Mobile-Only Banner */
+        .top-mobile-banner {
+            background-color: #b91c1c;
             color: white;
-            padding: 2rem 1rem;
             text-align: center;
-            border-bottom: 4px solid var(--accent-color);
-        }
-        .header-top {
-            font-size: 1.1rem;
-            margin-bottom: 0.5rem;
+            padding: 0.6rem 1rem;
+            font-size: 0.95rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
-            flex-wrap: wrap;
+            box-shadow: inset 0 -2px 4px rgba(0,0,0,0.2);
         }
-        .mobile-alert-badge {
-            background: #f59e0b;
+        header {
+            background-color: var(--primary-color);
             color: white;
-            padding: 0.2rem 0.6rem;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            font-weight: 700;
+            padding: 1.5rem 1rem;
+            text-align: center;
+            border-bottom: 4px solid var(--accent-color);
+        }
+        .header-top {
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+            color: #cbd5e1;
         }
         header h1 {
             margin: 0.2rem 0;
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             letter-spacing: -0.5px;
             display: flex;
             align-items: center;
@@ -59,16 +62,16 @@
             flex-wrap: wrap;
         }
         .logo-img {
-            height: 45px;
+            height: 40px;
             width: auto;
             border-radius: 4px;
             background: #fff;
             padding: 2px;
         }
         header p {
-            margin: 0.5rem 0 0;
+            margin: 0.4rem 0 0;
             color: #cbd5e1;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
         }
         .container {
             max-width: 700px;
@@ -209,14 +212,18 @@
 </head>
 <body>
 
+<!-- Top Mandatory Mobile-Only Notice Banner -->
+<div class="top-mobile-banner">
+    <span>📱 Supports only Mobile Phones with Motion Sensors (Not for Laptops/Desktops)</span>
+</div>
+
 <header>
     <div class="header-top">
-        <span>🇮🇳 Leading Private Virtual Laboratories</span>
-        <span class="mobile-alert-badge">📱 Works Only on Mobile</span>
+        <span>🇮🇳 Gopalkrishna Advanced Rural Research Foundation</span>
     </div>
     <h1>
         <img src="logo.jpeg" alt="GARRF Logo" class="logo-img" onerror="this.style.display='none'">
-        Gopalkrishna Advanced Rural Research Foundation
+        GARRF Virtual Laboratory
     </h1>
     <p>Dr. APJ Abdul Kalam Zero Research Funding Lab • Open-Source SHM Initiative</p>
 </header>
@@ -231,7 +238,7 @@
 
         <!-- Desktop Warning / Mobile Prompt -->
         <div id="desktop-notice">
-            <strong>📱 Notice:</strong> This experiment requires mobile hardware sensors. Please open this web link directly on your smartphone browser via HTTPS to run the test.
+            <strong>⚠️ Important Notice:</strong> This experiment requires phone motion sensors. If opened on a desktop computer, the test will not initialize. Please open this link directly on your mobile device.
         </div>
 
         <!-- Visualization Glimpse / UI Preview -->
@@ -242,7 +249,7 @@
                 <p style="font-size: 0.8rem; margin-top: 0.5rem;">Real-time time-history acceleration curve tracking impact response.</p>
             </div>
             <div class="preview-box">
-                <div class="mockup-screen">👩‍🏫 AI Teacher: Kushmanda </div>
+                <div class="mockup-screen">👩‍🏫 AI Teacher: Kushmanda (Sweet Indian Female Voice)</div>
                 <p style="font-size: 0.8rem; margin-top: 0.5rem;">Guides students hands-free through structural theory and telemetry updates.</p>
             </div>
         </div>
@@ -268,6 +275,8 @@
             Status: Ready for vibration capture...
         </div>
 
+        <button class="btn" id="download-btn" onclick="downloadCSV()" style="display:none; background-color: #059669;">📥 Download Recorded Data (CSV)</button>
+
         <div class="chart-container">
             <canvas id="vibrationChart"></canvas>
         </div>
@@ -291,7 +300,6 @@
     // Load available speech voices and select a sweet Indian English female tone
     function loadVoices() {
         const voices = window.speechSynthesis.getVoices();
-        // Prioritize Indian English female or soft expressive browser voices
         selectedVoice = voices.find(v => (v.lang === 'en-IN' || v.lang.includes('IN')) && (v.name.includes('Female') || v.name.includes('Google') || v.name.includes('Rishi') || v.name.includes('Heera'))) ||
                         voices.find(v => v.lang === 'en-IN' || v.lang.includes('IN')) || 
                         voices.find(v => v.name.includes('Female') || v.name.includes('Google US English')) || 
@@ -421,8 +429,30 @@
         let maxVal = Math.max(...accelerationData.map(Math.abs));
         document.getElementById('results').innerText = Analysis Complete — Max Peak Acceleration: ${maxVal.toFixed(2)} m/s²;
         
+        // Show download CSV button
+        document.getElementById('download-btn').style.display = 'block';
+
         // Kushmanda AI Teacher Telemetry Summary
-        speak(Wonderful! The test is complete. The maximum peak acceleration recorded was ${maxVal.toFixed(2)} meters per second squared. Notice the exponential decay curve on your screen representing structural damping.);
+        speak(Wonderful! The test is complete. The maximum peak acceleration recorded was ${maxVal.toFixed(2)} meters per second squared. You can now download your data file.);
+    }
+
+    function downloadCSV() {
+        if (accelerationData.length === 0) return;
+
+        let csvContent = "data:text/csv;charset=utf-8,Time_s,Z_Acceleration_mps2\n";
+        for (let i = 0; i < timeData.length; i++) {
+            csvContent += ${timeData[i]},${accelerationData[i]}\n;
+        }
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "GARRF_SHM01_Vibration_Data.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        speak("Your data file has been downloaded successfully.");
     }
 </script>
 
