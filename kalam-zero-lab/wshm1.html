@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GARRF Kalam ZERO Lab: PZT Lamb Wave Propagation</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f9; margin: 0; padding: 20px; }
+        .dashboard { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+        section { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        canvas { background: #cfd8dc; width: 100%; border: 1px solid #999; border-radius: 4px; }
+        .ai-section { margin-top: 20px; border: 2px dashed #4CAF50; background: #e8f5e9; }
+        button { padding: 10px 20px; background: #003366; color: white; border: none; cursor: pointer; border-radius: 4px; }
+        button:hover { background: #00509e; }
+    </style>
+</head>
+<body>
+    <header>
+        <h2>Experiment 1: PZT Lamb Wave Propagation & Defect Scattering</h2>
+    </header>
+    
+    <div class="dashboard">
+        <!-- Visualization Section -->
+        <section id="simulation-area">
+            <h3>Wave Propagation (Slow Visualization)</h3>
+            <canvas id="waveCanvas" width="600" height="400"></canvas>
+        </section>
+
+        <!-- Controls Section -->
+        <section id="controls-area">
+            <h3>Experiment Controls</h3>
+            <label>Defect Position X: <input type="range" id="defectX" min="100" max="500" value="400"></label><br><br>
+            <label>Wave Speed (Slow-mo): <input type="range" id="waveSpeed" min="1" max="10" value="2"></label><br><br>
+            <button id="fireBtn">Excite PZT Actuator</button>
+            <hr>
+            <h3>A-Scan Data Output</h3>
+            <div id="data-output" style="height: 100px; background: #222; color: #0f0; padding: 10px; font-family: monospace;">
+                Awaiting actuation...
+            </div>
+        </section>
+    </div>
+
+    <!-- AI Agent Section -->
+    <section id="ai-agent-integration" class="ai-section">
+        <h3>AI Assistant Integration (ARJUN)</h3>
+        <div id="ai-chat-placeholder">
+            <!-- Embed your AI Agent iframe or script here -->
+            <p><em>AI Agent ARJUN will analyze the ToF (Time of Flight) here.</em></p>
+        </div>
+    </section>
+
+    <script>
+        const canvas = document.getElementById('waveCanvas');
+        const ctx = canvas.getContext('2d');
+        let waveRadius = 0;
+        let isFiring = false;
+        
+        document.getElementById('fireBtn').onclick = () => {
+            waveRadius = 0;
+            isFiring = true;
+            document.getElementById('data-output').innerText = "Status: Transmitting S0/A0 Modes...";
+        };
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const defectX = document.getElementById('defectX').value;
+            const speed = parseInt(document.getElementById('waveSpeed').value);
+            
+            // Draw Defect
+            ctx.fillStyle = 'red';
+            ctx.beginPath();
+            ctx.arc(defectX, 200, 10, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw Actuator
+            ctx.fillStyle = '#003366';
+            ctx.fillRect(40, 190, 20, 20);
+
+            // Draw Wave
+            if (isFiring) {
+                ctx.strokeStyle = 'rgba(0, 51, 102, 0.5)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(50, 200, waveRadius, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                waveRadius += speed;
+                
+                if (waveRadius > defectX - 50) {
+                    document.getElementById('data-output').innerText = "Status: Defect Echo Received. ToF calculated.";
+                }
+                if (waveRadius > 800) isFiring = false;
+            }
+            requestAnimationFrame(animate);
+        }
+        animate();
+    </script>
+</body>
+</html>
