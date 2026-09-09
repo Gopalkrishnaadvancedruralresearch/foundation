@@ -1,774 +1,150 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PZT Lamb Wave Propagation & Defect Scattering | Kalam Zero Lab</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <style>
-        :root {
-            --primary: #0056b3;
-            --primary-dark: #003d80;
-            --bg-light: #f4f6f9;
-            --card-bg: #ffffff;
-            --text-main: #2c3e50;
-            --text-muted: #6c757d;
-            --terminal-bg: #111827;
-            --terminal-green: #10b981;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: var(--bg-light);
-            color: var(--text-main);
-            line-height: 1.6;
-        }
-
-        .container {
-            max-width: 1280px;
-            margin: 0 auto;
-        }
-
-        /* Top Header Banner */
-        .foundation-header {
-            background: linear-gradient(135deg, #003d80, #0056b3);
-            color: #ffffff;
-            padding: 18px 24px;
-            border-radius: 10px 10px 0 0;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .foundation-brand {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .foundation-brand h2 {
-            margin: 0;
-            font-size: 1.35rem;
-            font-weight: 800;
-            letter-spacing: 0.5px;
-        }
-
-        .header-logo {
-            height: 50px;
-            width: auto;
-            border-radius: 4px;
-            background: white;
-            padding: 2px;
-        }
-
-        .leader-badge {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: rgba(255, 255, 255, 0.15);
-            padding: 8px 14px;
-            border-radius: 6px;
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            font-size: 0.85rem;
-            font-weight: 600;
-            text-align: right;
-        }
-
-        .flag-icon {
-            font-size: 1.4rem;
-        }
-
-        header {
-            background: var(--card-bg);
-            padding: 18px 25px;
-            border-radius: 0 0 10px 10px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-            margin-bottom: 25px;
-            border-left: 6px solid var(--primary);
-        }
-
-        .card {
-            background: var(--card-bg);
-            padding: 24px;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-            margin-bottom: 25px;
-        }
-
-        .card h2 {
-            margin-top: 0;
-            font-size: 1.3rem;
-            color: var(--primary-dark);
-            border-bottom: 2px solid var(--bg-light);
-            padding-bottom: 10px;
-        }
-
-        .section-tag {
-            background: #e0f2fe;
-            color: #0369a1;
-            padding: 3px 10px;
-            border-radius: 4px;
-            font-size: 0.85rem;
-            font-weight: 700;
-            display: inline-block;
-            margin-bottom: 10px;
-        }
-
-        .grid-layout-2col {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 20px;
-        }
-
-        @media (min-width: 992px) {
-            .grid-layout-2col {
-                grid-template-columns: 1fr 1fr;
-            }
-        }
-
-        canvas {
-            background: #111827;
-            border-radius: 8px;
-            display: block;
-            width: 100%;
-            height: auto;
-            cursor: crosshair;
-        }
-
-        #threejs-container {
-            width: 100%;
-            height: 320px;
-            border-radius: 8px;
-            overflow: hidden;
-            background: #111827;
-        }
-
-        .control-group {
-            margin-bottom: 12px;
-        }
-
-        .control-group label {
-            display: block;
-            font-weight: 600;
-            font-size: 0.85rem;
-            margin-bottom: 4px;
-        }
-
-        input[type=range], select, input[type=number] {
-            width: 100%;
-            padding: 6px;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-            accent-color: var(--primary);
-            box-sizing: border-box;
-        }
-
-        .btn-actuate {
-            width: 100%;
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 12px;
-            border-radius: 6px;
-            font-weight: 700;
-            font-size: 1rem;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-
-        .btn-actuate:hover {
-            background: var(--primary-dark);
-        }
-
-        .terminal-box {
-            background: var(--terminal-bg);
-            color: var(--terminal-green);
-            padding: 14px;
-            font-family: monospace;
-            font-size: 0.85rem;
-            border-radius: 6px;
-            min-height: 120px;
-            white-space: pre-wrap;
-        }
-
-        .step-box {
-            background: #f8fafc;
-            border-left: 4px solid var(--primary);
-            padding: 15px;
-            margin-bottom: 15px;
-            border-radius: 0 6px 6px 0;
-        }
-
-        .step-box h4 {
-            margin: 0 0 6px 0;
-            color: var(--primary-dark);
-        }
-
-        .arjun-chip {
-            background: #f1f5f9;
-            border: 1px solid #cbd5e1;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.82rem;
-            font-weight: 600;
-            color: #334155;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        .arjun-chip:hover {
-            background: #e2e8f0;
-            border-color: #94a3b8;
-        }
-
-        footer {
-            background: #1e293b;
-            color: #cbd5e1;
-            text-align: center;
-            padding: 20px;
-            border-radius: 10px;
-            margin-top: 30px;
-            font-size: 0.88rem;
-        }
-
-        footer strong { color: #ffffff; }
-    </style>
-</head>
-<body>
-
-<div class="container">
-
-    <!-- Top Foundation Header Banner -->
-    <div class="foundation-header">
-        <div class="foundation-brand">
-            <img src="logo.jpeg" alt="GARRF Logo" class="header-logo" onerror="this.style.display='none'">
-            <h2>Gopalkrishna Advanced Rural Research Foundation</h2>
+<!-- SECTION 4: INTERACTIVE EXPERIMENTATION -->
+<div class="card">
+    <span class="section-tag">SECTION 4</span>
+    <h2>Interactive Experimentation & Signal Recording</h2>
+    
+    <div class="grid-layout-2col">
+        <div>
+            <h3>2D Wave Field & Damage Plane</h3>
+            <canvas id="waveCanvas" width="550" height="360"></canvas>
         </div>
-        <div class="leader-badge">
-            <span>India's Privately Leading Leader in Virtual Laboratories</span>
-            <span class="flag-icon">🇮🇳</span>
+        <div>
+            <h3>3D Surface Deformation (A0 Mode)</h3>
+            <div id="threejs-container"></div>
         </div>
     </div>
 
-    <!-- Header -->
-    <header>
-        <span class="section-tag">KALAM ZERO LAB • VIRTUAL EXPERIMENT</span>
-        <h1 style="margin: 4px 0; color: var(--primary);">PZT Lamb Wave Propagation & Defect Scattering</h1>
-        <p style="margin: 0; color: var(--text-muted); font-size: 0.9rem;">Interactive Structural Health Monitoring (SHM) Simulation Platform</p>
-    </header>
+    <!-- Dual Trigger Action Buttons -->
+    <div style="display: flex; gap: 15px; margin-top: 15px;">
+        <button id="btnBaseline" class="btn-actuate" style="background: #2563eb;" onclick="recordBaseline()">
+            1️⃣ Record Baseline Signal (Healthy)
+        </button>
+        <button id="btnDamaged" class="btn-actuate" style="background: #d97706;" onclick="recordDamaged()">
+            2️⃣ Record Damaged Signal (Experiment)
+        </button>
+    </div>
 
-    <!-- SECTION 1 -->
-    <div class="card">
-        <span class="section-tag">SECTION 1</span>
-        <h2>What are Waves & What is a Lamb Wave?</h2>
-        <div class="step-box">
-            <h4>1. What is a Wave?</h4>
-            <p>A wave is energy moving through a material without shifting the material permanently. Think of throwing a pebble into a silent pond: ripples spread outward carrying kinetic energy, but the water molecules themselves stay in place after moving up and down.</p>
-        </div>
-        <div class="step-box">
-            <h4>2. What is a Lamb Wave?</h4>
-            <p>When an ultrasonic wave travels through a thin plate (like an aluminum sheet, aircraft skin, or steel girder), it bounces continuously between top and bottom surfaces. This guided elastic wave is called a Lamb Wave.</p>
-        </div>
-        <div class="step-box">
-            <h4>3. Where Do Lamb Waves Exist?</h4>
-            <p>Lamb waves exist throughout the entire thickness of thin plate structures, travelling long distances to detect internal cracks, surface corrosion, and hidden fatigue defects.</p>
+    <h3 style="font-size: 1rem; margin-top: 15px;">A-Scan Oscilloscope Output & Dataset Memory:</h3>
+    <div id="ascanOutput" class="terminal-box">Ready for Step 1: Click "Record Baseline Signal" to capture clean plate reference...</div>
+</div>
+
+<!-- SECTION 7: ARJUN AI RESEARCH ASSISTANT -->
+<div class="card" style="border-top: 4px solid #10b981;">
+    <span class="section-tag" style="background: #d1fae5; color: #047857;">SECTION 7</span>
+    <h2>🤖 ARJUN: Virtual Lab AI Research Assistant</h2>
+    <p style="font-size: 0.9rem; color: var(--text-muted);">
+        ARJUN automatically tracks your experiment runs and baseline data. Ask follow-up questions or upload your data files for advanced structural diagnostics.
+    </p>
+
+    <!-- Chat Container -->
+    <div id="arjunChatBox" style="background: #0f172a; border-radius: 8px; padding: 15px; height: 280px; overflow-y: auto; color: #e2e8f0; font-size: 0.9rem; margin-bottom: 12px; display: flex; flex-direction: column; gap: 10px;">
+        <div id="arjunGreeting" style="background: #1e293b; padding: 12px 14px; border-radius: 8px; border-left: 3px solid #10b981;">
+            <strong>🤖 ARJUN:</strong> Welcome! I am monitoring your experiment in real time. Please run Step 1 (Baseline) and Step 2 (Damaged) above. Once recorded, I will automatically analyze your wave modes and Time-of-Flight values here!
         </div>
     </div>
 
-    <!-- SECTION 2 -->
-    <div class="card">
-        <span class="section-tag">SECTION 2</span>
-        <h2>Understanding Transducers: Actuators vs. Sensors</h2>
-        <div class="grid-layout-2col">
-            <div class="step-box" style="margin-bottom: 0;">
-                <h4 style="color: #ef4444;">🔴 What is a PZT Actuator?</h4>
-                <p>An Actuator converts electrical voltage into mechanical wave vibrations using Piezoelectric ceramic wafers (PZT). It acts as the "speaker" injecting Lamb waves into the plate.</p>
-            </div>
-            <div class="step-box" style="margin-bottom: 0;">
-                <h4 style="color: #10b981;">🟢 What is a PZT Sensor?</h4>
-                <p>A Sensor catches passing mechanical wave vibrations and converts them back into electrical voltage signals so we can display them on an oscilloscope (A-Scan output).</p>
-            </div>
-        </div>
+    <!-- Input Area -->
+    <div style="display: flex; gap: 10px;">
+        <input type="text" id="arjunInput" placeholder="Ask ARJUN about your wave signals or Lamb wave theory..." style="flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.95rem;" onkeypress="if(event.key==='Enter') sendArjunMessage()">
+        <button onclick="sendArjunMessage()" style="background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 700; cursor: pointer;">
+            Send
+        </button>
     </div>
-
-    <!-- SECTION 3 -->
-    <div class="card">
-        <span class="section-tag">SECTION 3</span>
-        <h2>Plate Setup & Sensor Positioning Controls</h2>
-        <p>Modify plate dimensions (1000 mm × 700 mm default) and set transducer coordinates directly or by dragging them on the canvas below.</p>
-        
-        <div class="grid-layout-2col">
-            <div>
-                <h4>Plate Geometry Controls</h4>
-                <div class="control-group">
-                    <label>Plate Length (X): <span id="plateLVal">1000</span> mm</label>
-                    <input type="range" id="plateLSlider" min="500" max="1500" value="1000">
-                </div>
-                <div class="control-group">
-                    <label>Plate Height (Y): <span id="plateHVal">700</span> mm</label>
-                    <input type="range" id="plateHSlider" min="300" max="1000" value="700">
-                </div>
-            </div>
-
-            <div>
-                <h4>Transducer Locations (mm)</h4>
-                <div style="display: flex; gap: 10px;">
-                    <div class="control-group" style="flex: 1;">
-                        <label>Actuator X: <span id="actXVal">150</span></label>
-                        <input type="range" id="actXSlider" min="20" max="980" value="150">
-                    </div>
-                    <div class="control-group" style="flex: 1;">
-                        <label>Actuator Y: <span id="actYVal">350</span></label>
-                        <input type="range" id="actYSlider" min="20" max="680" value="350">
-                    </div>
-                </div>
-                <div style="display: flex; gap: 10px;">
-                    <div class="control-group" style="flex: 1;">
-                        <label>Sensor X: <span id="senXVal">850</span></label>
-                        <input type="range" id="senXSlider" min="20" max="980" value="850">
-                    </div>
-                    <div class="control-group" style="flex: 1;">
-                        <label>Sensor Y: <span id="senYVal">350</span></label>
-                        <input type="range" id="senYSlider" min="20" max="680" value="350">
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div style="margin-top: 10px;">
-            <h4>Damage Type & Severity</h4>
-            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-                <div style="flex: 1; min-width: 200px;">
-                    <select id="damageTypeSelect">
-                        <option value="Circular Hole / Corrosion Pit">Circular Hole / Corrosion Pit</option>
-                        <option value="Transverse Structural Crack">Transverse Structural Crack</option>
-                        <option value="Delamination / Void">Internal Delamination / Void</option>
-                    </select>
-                </div>
-                <div style="flex: 1; min-width: 200px;">
-                    <label style="font-size: 0.85rem; font-weight: 600;">Damage Size: <span id="dmgSizeVal">14</span> mm</label>
-                    <input type="range" id="dmgSizeSlider" min="5" max="30" value="14">
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- SECTION 4 -->
-    <div class="card">
-        <span class="section-tag">SECTION 4</span>
-        <h2>Interactive Experimentation: 2D & 3D Wave Visualizers</h2>
-        <p style="font-size: 0.9rem; color: var(--text-muted);">
-            💡 <strong>Interactive Drag:</strong> Click and drag 🔴 <strong>Actuator</strong>, 🟢 <strong>Sensor</strong>, or 🟡 <strong>Damage</strong> directly on the canvas to reposition them.
-        </p>
-
-        <div class="grid-layout-2col">
-            <div>
-                <h3>2D Wave Field & Damage Plane</h3>
-                <canvas id="waveCanvas" width="550" height="360"></canvas>
-            </div>
-            <div>
-                <h3>3D Surface Deformation (A0 Bending Mode)</h3>
-                <div id="threejs-container"></div>
-            </div>
-        </div>
-
-        <div style="margin-top: 20px;">
-            <button class="btn-actuate" onclick="runSimulation()">⚡ Trigger Actuation & Record Signal</button>
-            <h3 style="font-size: 1rem; margin-top: 15px;">A-Scan Oscilloscope Output:</h3>
-            <div id="ascanOutput" class="terminal-box">Awaiting 150 kHz tone burst actuation...</div>
-        </div>
-    </div>
-
-    <!-- SECTION 5 -->
-    <div class="card">
-        <span class="section-tag">SECTION 5</span>
-        <h2>How to Find Damage Location Using Time-of-Flight (ToF)</h2>
-        
-        <div class="step-box">
-            <h4>Step A: Record Healthy Baseline Signal</h4>
-            <p>Actuate a clean plate without damage. You will see a single primary wave packet arriving at the Sensor at time <strong>t_direct</strong>. This is your <strong>Healthy Baseline Signal</strong>.</p>
-        </div>
-
-        <div class="step-box">
-            <h4>Step B: Observe Damaged Signal Behavior</h4>
-            <p>When damage occurs, part of the wave strikes the damage boundary and bounces back. The Sensor catches two distinct pulses:</p>
-            <p style="margin-left: 15px;">
-                1. <strong>Direct Wave:</strong> Arrives along Actuator → Sensor (time: <strong>t_direct</strong>).<br>
-                2. <strong>Scattered Echo:</strong> Arrives along Actuator → Damage → Sensor (time: <strong>t_echo</strong>).
-            </p>
-        </div>
-
-        <div class="step-box">
-            <h4>Step C: Calculate Damage Distance (Principle)</h4>
-            <p>Using wave speed inside aluminum (<strong>5.4 km/s</strong> or <strong>5400 m/s</strong>), calculate total travel distance:</p>
-            <p style="background: #e2e8f0; padding: 10px; border-radius: 6px; font-weight: bold; text-align: center;">
-                Total Distance = Wave Speed × t_echo
-            </p>
-            <p>By measuring echo arrival times across multiple sensor paths, the exact <strong>(X, Y)</strong> crack coordinates are calculated on the plate surface.</p>
-        </div>
-    </div>
-
-    <!-- SECTION 6 -->
-    <div class="card">
-        <span class="section-tag">SECTION 6</span>
-        <h2>SHM Laboratories Infrastructure in India</h2>
-        <div style="background: #f1f5f9; border: 1px solid #cbd5e1; padding: 16px; border-radius: 8px;">
-            <strong>Where are these physical laboratories available in India?</strong>
-            <p style="margin-bottom: 0;">Physical Structural Health Monitoring (SHM) testbeds and wave propagation research facilities are active across Indian higher educational institutions, including premier technical institutes (various IITs and IISc), premier national aerospace/structural research centers (CSIR laboratories), and select engineering universities.</p>
-        </div>
-    </div>
-
-    <!-- SECTION 7: ARJUN AI ASSISTANT -->
-    <div class="card" style="border-top: 4px solid #10b981;">
-        <span class="section-tag" style="background: #d1fae5; color: #047857;">SECTION 7</span>
-        <h2>🤖 ARJUN: Virtual Lab AI Research Assistant</h2>
-        <p style="font-size: 0.9rem; color: var(--text-muted);">
-            Ask <strong>ARJUN</strong> any technical questions regarding Lamb wave dispersion, Time-of-Flight (ToF) estimation, sensor placement strategies, or damage identification principles.
-        </p>
-
-        <!-- Quick Query Chips -->
-        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 15px;">
-            <button class="arjun-chip" onclick="askArjun('How do I calculate damage position using ToF?')">
-                📍 How do I locate damage using ToF?
-            </button>
-            <button class="arjun-chip" onclick="askArjun('What is the difference between A0 and S0 Lamb wave modes?')">
-                🌊 A0 vs S0 Lamb Wave Modes
-            </button>
-            <button class="arjun-chip" onclick="askArjun('Why do we use 150 kHz tone burst excitation?')">
-                ⚡ Why 150 kHz Tone Burst?
-            </button>
-        </div>
-
-        <!-- Chat Container -->
-        <div id="arjunChatBox" style="background: #0f172a; border-radius: 8px; padding: 15px; height: 260px; overflow-y: auto; color: #e2e8f0; font-size: 0.9rem; margin-bottom: 12px; display: flex; flex-direction: column; gap: 10px;">
-            <div style="background: #1e293b; padding: 10px 14px; border-radius: 8px; border-left: 3px solid #10b981;">
-                <strong>🤖 ARJUN:</strong> Greetings! I am ARJUN, your virtual lab assistant. How can I help you analyze your Lamb wave simulation or wave propagation data today?
-            </div>
-        </div>
-
-        <!-- Input Area -->
-        <div style="display: flex; gap: 10px;">
-            <input type="text" id="arjunInput" placeholder="Ask ARJUN a technical question..." style="flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.95rem;" onkeypress="if(event.key==='Enter') sendArjunMessage()">
-            <button onclick="sendArjunMessage()" style="background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 700; cursor: pointer;">
-                Send
-            </button>
-        </div>
-    </div>
-
-    <!-- Footer -->
-    <footer>
-        <p style="margin: 4px 0;">© Copyright Kalam Zero Lab. All Rights Reserved.</p>
-        <p style="margin: 4px 0;">Developed by <strong>Dr Annamdas Venu Gopal Madhav</strong> & <strong>Annamdas Shantanu Vasudev Krishna</strong></p>
-    </footer>
-
 </div>
 
 <script>
-    let plateL = 1000;
-    let plateH = 700;
+    // Experiment Memory State
+    let baselineData = null;
+    let damagedData = null;
 
-    const canvas = document.getElementById('waveCanvas');
-    const ctx = canvas.getContext('2d');
-    const ascanOutput = document.getElementById('ascanOutput');
+    function recordBaseline() {
+        runSimulation(false, () => {
+            const directDist = Math.hypot(sensor.x - actuator.x, sensor.y - actuator.y);
+            const directToF = (directDist / 5.4).toFixed(1);
+            const timestamp = new Date().toLocaleTimeString();
 
-    const actuator = { x: 150, y: 350, label: "Actuator", radius: 10, color: '#ef4444' };
-    const sensor = { x: 850, y: 350, label: "Sensor", radius: 10, color: '#10b981' };
-    const defect = { x: 500, y: 350, label: "Damage", radius: 14, color: '#f59e0b' };
+            if (confirm(`Baseline Wave Signal Captured!\n\n• Direct ToF: ${directToF} μs\n• Recorded Time: ${timestamp}\n\nDo you want to save this point as your FIRST BASELINE?`)) {
+                baselineData = {
+                    time: timestamp,
+                    actuator: { ...actuator },
+                    sensor: { ...sensor },
+                    directToF: directToF
+                };
 
-    let waveRadius = 0;
-    let scatteredRadius = 0;
-    let isSimulating = false;
-    let dragTarget = null;
-
-    function syncControls() {
-        document.getElementById('actXVal').textContent = actuator.x;
-        document.getElementById('actXSlider').value = actuator.x;
-        document.getElementById('actYVal').textContent = actuator.y;
-        document.getElementById('actYSlider').value = actuator.y;
-
-        document.getElementById('senXVal').textContent = sensor.x;
-        document.getElementById('senXSlider').value = sensor.x;
-        document.getElementById('senYVal').textContent = sensor.y;
-        document.getElementById('senYSlider').value = sensor.y;
+                updateOscilloscope();
+                checkArjunMagic();
+            }
+        });
     }
 
-    function drawBasePlate() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        ctx.fillStyle = '#1f2937'; ctx.fillRect(20, 20, 510, 320);
-        ctx.strokeStyle = '#374151'; ctx.lineWidth = 2; ctx.strokeRect(20, 20, 510, 320);
-
-        const actPx = mmToPx(actuator.x, actuator.y);
-        const senPx = mmToPx(sensor.x, sensor.y);
-        const defPx = mmToPx(defect.x, defect.y);
-
-        ctx.fillStyle = actuator.color; ctx.beginPath(); ctx.arc(actPx.x, actPx.y, 8, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = '#fff'; ctx.font = '11px sans-serif'; ctx.fillText('Actuator', actPx.x - 20, actPx.y - 12);
-
-        ctx.fillStyle = sensor.color; ctx.beginPath(); ctx.arc(senPx.x, senPx.y, 8, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = '#fff'; ctx.fillText('Sensor', senPx.x - 18, senPx.y - 12);
-
-        const dmgType = document.getElementById('damageTypeSelect').value;
-        ctx.fillStyle = defect.color;
-        if (dmgType.includes('Crack')) {
-            ctx.fillRect(defPx.x - 2, defPx.y - 12, 4, 24);
-        } else {
-            ctx.beginPath(); ctx.arc(defPx.x, defPx.y, defect.radius * (510/plateL), 0, Math.PI*2); ctx.fill();
+    function recordDamaged() {
+        if (!baselineData) {
+            alert("Please record your Baseline Signal (Step 1) first before running the Damaged Experiment!");
+            return;
         }
-        ctx.fillStyle = '#fbbf24';
-        ctx.fillText(`Damage (${Math.round(defect.x)}, ${Math.round(defect.y)})`, defPx.x - 30, defPx.y + 22);
+
+        runSimulation(true, () => {
+            const actToDefect = Math.hypot(defect.x - actuator.x, defect.y - actuator.y);
+            const defectToSen = Math.hypot(sensor.x - defect.x, sensor.y - defect.y);
+            const directDist = Math.hypot(sensor.x - actuator.x, sensor.y - actuator.y);
+
+            const directToF = (directDist / 5.4).toFixed(1);
+            const echoToF = ((actToDefect + defectToSen) / 5.4).toFixed(1);
+            const timestamp = new Date().toLocaleTimeString();
+
+            if (confirm(`Damaged State Signal Captured!\n\n• Direct ToF: ${directToF} μs\n• Echo ToF: ${echoToF} μs\n• Saved Time: ${timestamp}\n\nDo you want to save this point as your SECOND EXPERIMENTAL SET?`)) {
+                damagedData = {
+                    time: timestamp,
+                    defect: { ...defect },
+                    damageType: document.getElementById('damageTypeSelect').value,
+                    directToF: directToF,
+                    echoToF: echoToF,
+                    delayToF: (echoToF - directToF).toFixed(1)
+                };
+
+                updateOscilloscope();
+                checkArjunMagic();
+            }
+        });
     }
 
-    function mmToPx(xMM, yMM) {
-        return { x: 20 + (xMM / plateL) * 510, y: 20 + (yMM / plateH) * 320 };
-    }
-
-    function pxToMM(xPX, yPX) {
-        return {
-            x: Math.max(0, Math.min(plateL, ((xPX - 20) / 510) * plateL)),
-            y: Math.max(0, Math.min(plateH, ((yPX - 20) / 320) * plateH))
-        };
-    }
-
-    canvas.addEventListener('mousedown', (e) => {
-        const rect = canvas.getBoundingClientRect();
-        const mouseX = (e.clientX - rect.left) * (canvas.width / rect.width);
-        const mouseY = (e.clientY - rect.top) * (canvas.height / rect.height);
-
-        const actPx = mmToPx(actuator.x, actuator.y);
-        const senPx = mmToPx(sensor.x, sensor.y);
-        const defPx = mmToPx(defect.x, defect.y);
-
-        if (Math.hypot(mouseX - actPx.x, mouseY - actPx.y) < 15) dragTarget = actuator;
-        else if (Math.hypot(mouseX - senPx.x, mouseY - senPx.y) < 15) dragTarget = sensor;
-        else if (Math.hypot(mouseX - defPx.x, mouseY - defPx.y) < 15) dragTarget = defect;
-    });
-
-    canvas.addEventListener('mousemove', (e) => {
-        if (dragTarget) {
-            const rect = canvas.getBoundingClientRect();
-            const mouseX = (e.clientX - rect.left) * (canvas.width / rect.width);
-            const mouseY = (e.clientY - rect.top) * (canvas.height / rect.height);
-            const mm = pxToMM(mouseX, mouseY);
-            dragTarget.x = Math.round(mm.x);
-            dragTarget.y = Math.round(mm.y);
-            syncControls();
-            if (!isSimulating) drawBasePlate();
-            update3DMarkers();
+    function updateOscilloscope() {
+        let text = `===================== EXPERIMENTAL DATASETS RECORDED =====================\n`;
+        if (baselineData) {
+            text += `[RECORD 1 - HEALTHY BASELINE] Timestamp: ${baselineData.time}\n`;
+            text += `  • Actuator Position : (${baselineData.actuator.x}, ${baselineData.actuator.y}) mm\n`;
+            text += `  • Sensor Position   : (${baselineData.sensor.x}, ${baselineData.sensor.y}) mm\n`;
+            text += `  • Direct Wave ToF   : ${baselineData.directToF} μs\n\n`;
         }
-    });
-
-    window.addEventListener('mouseup', () => { dragTarget = null; if (!isSimulating) drawBasePlate(); });
-
-    // THREE.JS 3D ENGINE
-    const container3D = document.getElementById('threejs-container');
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x111827);
-
-    const camera = new THREE.PerspectiveCamera(45, container3D.clientWidth / 320, 0.1, 1000);
-    camera.position.set(0, -160, 150);
-    camera.lookAt(0, 0, 0);
-
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(container3D.clientWidth, 320);
-    container3D.appendChild(renderer.domElement);
-
-    const planeGeo = new THREE.PlaneGeometry(200, 100, 80, 40);
-    const planeMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, wireframe: true });
-    const planeMesh = new THREE.Mesh(planeGeo, planeMat);
-    scene.add(planeMesh);
-
-    function mmTo3D(xMM, yMM) {
-        return { x: (xMM / plateL) * 200 - 100, y: -((yMM / plateH) * 100 - 50) };
-    }
-
-    const actMesh3D = new THREE.Mesh(new THREE.SphereGeometry(3, 16, 16), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
-    const senMesh3D = new THREE.Mesh(new THREE.SphereGeometry(3, 16, 16), new THREE.MeshBasicMaterial({ color: 0x10b981 }));
-    const defMesh3D = new THREE.Mesh(new THREE.SphereGeometry(4, 16, 16), new THREE.MeshBasicMaterial({ color: 0xf59e0b }));
-    scene.add(actMesh3D); scene.add(senMesh3D); scene.add(defMesh3D);
-
-    function update3DMarkers() {
-        const a = mmTo3D(actuator.x, actuator.y);
-        const s = mmTo3D(sensor.x, sensor.y);
-        const d = mmTo3D(defect.x, defect.y);
-        actMesh3D.position.set(a.x, a.y, 2);
-        senMesh3D.position.set(s.x, s.y, 2);
-        defMesh3D.position.set(d.x, d.y, 2);
-    }
-    update3DMarkers();
-
-    function animate3D() {
-        requestAnimationFrame(animate3D);
-        const pos = planeGeo.attributes.position;
-        const time = Date.now() * 0.006;
-
-        const a = mmTo3D(actuator.x, actuator.y);
-        const d = mmTo3D(defect.x, defect.y);
-
-        const scaledWaveR = (waveRadius / plateL) * 200;
-        const scaledScatteredR = (scatteredRadius / plateL) * 200;
-
-        for (let i = 0; i < pos.count; i++) {
-            const u = pos.getX(i);
-            const v = pos.getY(i);
-            let zHeight = 0;
-
-            if (isSimulating) {
-                const distToAct = Math.hypot(u - a.x, v - a.y);
-                if (distToAct < scaledWaveR) {
-                    const waveFrontDiff = scaledWaveR - distToAct;
-                    zHeight += Math.sin(distToAct * 0.25 - time) * 5 * Math.exp(-waveFrontDiff * 0.05);
-                }
-
-                const distToDefect = Math.hypot(u - d.x, v - d.y);
-                const actToDefectDist3D = Math.hypot(d.x - a.x, d.y - a.y);
-                if (scaledWaveR > actToDefectDist3D && distToDefect < scaledScatteredR) {
-                    const scatterDiff = scaledScatteredR - distToDefect;
-                    zHeight += Math.sin(distToDefect * 0.25 - time) * 3 * Math.exp(-scatterDiff * 0.08);
-                }
-            }
-            pos.setZ(i, zHeight);
+        if (damagedData) {
+            text += `[RECORD 2 - DAMAGED EXPERIMENT] Timestamp: ${damagedData.time}\n`;
+            text += `  • Damage Type       : ${damagedData.damageType}\n`;
+            text += `  • Damage Location   : (${damagedData.defect.x}, ${damagedData.defect.y}) mm\n`;
+            text += `  • Direct Wave ToF   : ${damagedData.directToF} μs\n`;
+            text += `  • Scattered Echo ToF: ${damagedData.echoToF} μs\n`;
+            text += `  • Time Difference Δt: ${damagedData.delayToF} μs\n`;
         }
-        pos.needsUpdate = true;
-        renderer.render(scene, camera);
-    }
-    animate3D();
-
-    function runSimulation() {
-        if (isSimulating) return;
-        isSimulating = true;
-        waveRadius = 0; scatteredRadius = 0;
-        ascanOutput.innerHTML = "> Actuating 150 kHz tone burst at Actuator...\n> Propagating Lamb wave field across plate surface...";
-
-        const actToDefectDist = Math.hypot(defect.x - actuator.x, defect.y - actuator.y);
-        const defectToSensorDist = Math.hypot(sensor.x - defect.x, sensor.y - defect.y);
-        const directDist = Math.hypot(sensor.x - actuator.x, sensor.y - actuator.y);
-
-        const groupVelocity = 5.4; // mm/us
-        const directToF = (directDist / groupVelocity).toFixed(1);
-        const echoToF = ((actToDefectDist + defectToSensorDist) / groupVelocity).toFixed(1);
-
-        function animate() {
-            drawBasePlate();
-            const actPx = mmToPx(actuator.x, actuator.y);
-            const defPx = mmToPx(defect.x, defect.y);
-
-            if (waveRadius < plateL * 1.2) {
-                waveRadius += 6;
-                const rPx = (waveRadius / plateL) * 510;
-                ctx.strokeStyle = 'rgba(56, 189, 248, 0.7)'; ctx.lineWidth = 2.5;
-                ctx.beginPath(); ctx.arc(actPx.x, actPx.y, rPx, 0, Math.PI*2); ctx.stroke();
-            }
-
-            if (waveRadius > actToDefectDist) {
-                scatteredRadius += 5;
-                const scPx = (scatteredRadius / plateL) * 510;
-                ctx.strokeStyle = 'rgba(249, 115, 22, 0.8)'; ctx.lineWidth = 2;
-                ctx.beginPath(); ctx.arc(defPx.x, defPx.y, scPx, 0, Math.PI*2); ctx.stroke();
-            }
-
-            if (waveRadius >= directDist) {
-                ascanOutput.innerHTML = 
-`[A-SCAN CAPTURED - PZT SENSOR OUTPUT]
---------------------------------------------------
-Direct Wave ToF (Actuator -> Sensor) : ${directToF} μs
-Defect Echo ToF (Actuator -> Damage -> Sensor) : ${echoToF} μs
-Damage Type Selected                 : ${document.getElementById('damageTypeSelect').value}
-Status                               : Multi-pulse wave packets captured.`;
-            }
-
-            if (waveRadius < plateL * 1.2) {
-                requestAnimationFrame(animate);
-            } else {
-                isSimulating = false;
-            }
-        }
-        animate();
+        ascanOutput.innerHTML = text;
     }
 
-    // ARJUN Assistant Logic
-    function askArjun(questionText) {
-        document.getElementById('arjunInput').value = questionText;
-        sendArjunMessage();
-    }
-
-    function sendArjunMessage() {
-        const inputField = document.getElementById('arjunInput');
-        const query = inputField.value.trim();
-        if (!query) return;
-
-        const chatBox = document.getElementById('arjunChatBox');
-
-        const userMsg = document.createElement('div');
-        userMsg.style.cssText = "background: #0284c7; color: white; padding: 10px 14px; border-radius: 8px; align-self: flex-end; max-width: 80%;";
-        userMsg.innerHTML = `<strong>You:</strong> ${query}`;
-        chatBox.appendChild(userMsg);
-
-        inputField.value = '';
-        chatBox.scrollTop = chatBox.scrollHeight;
-
-        setTimeout(() => {
-            const botMsg = document.createElement('div');
-            botMsg.style.cssText = "background: #1e293b; color: #e2e8f0; padding: 10px 14px; border-radius: 8px; border-left: 3px solid #10b981; align-self: flex-start; max-width: 85%;";
+    function checkArjunMagic() {
+        if (baselineData && damagedData) {
+            const chatBox = document.getElementById('arjunChatBox');
             
-            let responseText = getArjunKnowledgeResponse(query);
-            botMsg.innerHTML = `<strong>🤖 ARJUN:</strong> ${responseText}`;
-            chatBox.appendChild(botMsg);
+            const magicMsg = document.createElement('div');
+            magicMsg.style.cssText = "background: #064e3b; color: #a7f3d0; padding: 12px 14px; border-radius: 8px; border-left: 4px solid #10b981; align-self: flex-start; max-width: 90%; font-size: 0.92rem; margin-top: 5px;";
+            
+            magicMsg.innerHTML = `
+                <strong>✨ ARJUN (Automated Analysis):</strong><br>
+                I noticed you have captured and saved both datasets! Here is what your signals reveal:<br><br>
+                • <strong>Baseline ToF:</strong> ${baselineData.directToF} μs<br>
+                • <strong>Scattered Echo ToF:</strong> ${damagedData.echoToF} μs (Delay Δt = ${damagedData.delayToF} μs)<br>
+                • <strong>Inferred Path Distance:</strong> ${(damagedData.echoToF * 5.4).toFixed(1)} mm via A0 mode velocity (5.4 km/s).<br><br>
+                <em>You can ask me any follow-up questions regarding these signals, Lamb wave modes, or upload your own experimental files for further analysis!</em>
+            `;
+            
+            chatBox.appendChild(magicMsg);
             chatBox.scrollTop = chatBox.scrollHeight;
-        }, 500);
+        }
     }
-
-    function getArjunKnowledgeResponse(text) {
-        const lower = text.toLowerCase();
-        
-        if (lower.includes('tof') || lower.includes('locate') || lower.includes('calculate')) {
-            return "To locate damage using Time-of-Flight (ToF):<br>1. Measure direct wave arrival time (t_direct) from Actuator to Sensor.<br>2. Measure scattered echo arrival time (t_echo) from Actuator → Damage → Sensor.<br>3. Compute path length = Wave Speed × t_echo.<br>4. Intersect distance ellipses from 3 distinct sensor paths to pinpoint the exact (X, Y) crack coordinate.";
-        }
-        if (lower.includes('a0') || lower.includes('s0') || lower.includes('mode')) {
-            return "Lamb waves split into two primary wave modes:<br>• <strong>A0 (Antisymmetric / Bending Mode):</strong> Dominant out-of-plane surface displacement, highly sensitive to surface cracks and delamination at low frequencies.<br>• <strong>S0 (Symmetric / Extensional Mode):</strong> Fast, in-plane extensional wave suitable for long-range inspection.";
-        }
-        if (lower.includes('150') || lower.includes('frequency') || lower.includes('tone burst')) {
-            return "A 150 kHz tone burst excitation is chosen because it minimizes dispersion (wave packet spreading) while ensuring pure A0 and S0 mode excitation in standard 1–3 mm aluminum plates without generating higher-order complex modes.";
-        }
-        
-        return `I have analyzed your query regarding "${text}". You can adjust transducer coordinates or plate parameters using the sliders in Section 3 and click "Trigger Actuation" to observe the A-Scan signal behavior live.`;
-    }
-
-    // Controls Event Listeners
-    document.getElementById('plateLSlider').addEventListener('input', (e) => {
-        plateL = parseFloat(e.target.value);
-        document.getElementById('plateLVal').textContent = plateL;
-        document.getElementById('actXSlider').max = plateL - 20;
-        document.getElementById('senXSlider').max = plateL - 20;
-        drawBasePlate(); update3DMarkers();
-    });
-
-    document.getElementById('plateHSlider').addEventListener('input', (e) => {
-        plateH = parseFloat(e.target.value);
-        document.getElementById('plateHVal').textContent = plateH;
-        document.getElementById('actYSlider').max = plateH - 20;
-        document.getElementById('senYSlider').max = plateH - 20;
-        drawBasePlate(); update3DMarkers();
-    });
-
-    document.getElementById('actXSlider').addEventListener('input', (e) => { actuator.x = parseFloat(e.target.value); syncControls(); drawBasePlate(); update3DMarkers(); });
-    document.getElementById('actYSlider').addEventListener('input', (e) => { actuator.y = parseFloat(e.target.value); syncControls(); drawBasePlate(); update3DFilters(); drawBasePlate(); update3DMarkers(); });
-    document.getElementById('senXSlider').addEventListener('input', (e) => { sensor.x = parseFloat(e.target.value); syncControls(); drawBasePlate(); update3DMarkers(); });
-    document.getElementById('senYSlider').addEventListener('input', (e) => { sensor.y = parseFloat(e.target.value); syncControls(); drawBasePlate(); update3DMarkers(); });
-
-    document.getElementById('dmgSizeSlider').addEventListener('input', (e) => {
-        defect.radius = parseFloat(e.target.value);
-        document.getElementById('dmgSizeVal').textContent = defect.radius;
-        drawBasePlate();
-    });
-
-    document.getElementById('damageTypeSelect').addEventListener('change', () => { drawBasePlate(); });
-
-    syncControls();
-    drawBasePlate();
 </script>
-
-</body>
-</html>
