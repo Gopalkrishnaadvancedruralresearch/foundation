@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GARRF • KALAM ZERO LAB • VIRTUAL EXPERIMENT</title>
-    <!-- Three.js CDN for 3D Wave Simulation -->
+    <!-- Three.js CDN and OrbitControls for Interactive 3D Wave Visualizer -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <style>
         :root {
             --garrf-blue: #0b2545;
             --garrf-accent-blue: #134074;
-            --garrf-light-bg: #eef4f8;
             --bg-primary: #ffffff;
             --bg-card: #f8fafc;
             --text-main: #0f172a;
@@ -83,10 +83,6 @@
             border-radius: 20px;
         }
 
-        .india-flag-icon {
-            font-size: 1.2rem;
-        }
-
         .badge-text {
             font-size: 0.8rem;
             font-weight: 600;
@@ -153,7 +149,7 @@
             font-size: 0.85rem;
         }
 
-        /* FIXED INPUT GRID - NO OVERFLOW */
+        /* FIXED INPUT GRID */
         .controls-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -210,10 +206,12 @@
 
         canvas, #threejs-container {
             width: 100%;
-            height: 300px;
-            background-color: #ffffff;
+            height: 320px;
+            background-color: #0f172a;
             border-radius: 8px;
             border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
         }
 
         .stage-buttons-vertical {
@@ -345,10 +343,9 @@
 </head>
 <body>
 
-<!-- GARRF OFFICIAL TOP BAR NAVIGATION -->
+<!-- GARRF TOP BAR -->
 <div class="garrf-top-bar">
     <div class="garrf-brand">
-        <!-- Default fallback image if logo.jpeg is local -->
         <img src="logo.jpeg" alt="GARRF Logo" class="garrf-logo-img" onerror="this.src='https://garrf.in/logo.png'">
         <div class="brand-text">
             <h1>GopalKrishna Advanced Rural Research Foundation</h1>
@@ -356,14 +353,14 @@
         </div>
     </div>
     <div class="garrf-right-badge">
-        <span class="india-flag-icon">🇮🇳</span>
+        <span style="font-size:1.2rem;">🇮🇳</span>
         <span class="badge-text">Privately Leader in Virtual Experiments</span>
     </div>
 </div>
 
 <div class="container">
 
-    <!-- SECTION 1: STANDALONE THEORY CHAPTER -->
+    <!-- SECTION 1: THEORY -->
     <div class="card">
         <span class="section-tag">SECTION 1</span>
         <h2>1. Theory & Mathematical Foundations</h2>
@@ -402,7 +399,7 @@
         </div>
     </div>
 
-    <!-- SECTION 2: SPECIMEN & SENSOR CONFIGURATION -->
+    <!-- SECTION 2: SPECIMEN CONFIGURATION -->
     <div class="card">
         <span class="section-tag">SECTION 2</span>
         <h2>2. Specimen & Transducer Configuration</h2>
@@ -448,18 +445,18 @@
         </div>
     </div>
 
-    <!-- SECTION 3: VISUALIZER & EXPERIMENTATION -->
+    <!-- SECTION 3: VISUALIZERS -->
     <div class="card">
         <span class="section-tag">SECTION 3</span>
         <h2>3. Live Wave Field & Wave Propagation Visualizer</h2>
 
         <div class="grid-2col">
             <div>
-                <h3 style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 5px;">2D Animated Wave Field (Incident & Scattered Wavefronts)</h3>
-                <canvas id="waveCanvas" width="500" height="300"></canvas>
+                <h3 style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 5px;">2D Animated Wave Field (Incident & Scattered)</h3>
+                <canvas id="waveCanvas" width="500" height="320"></canvas>
             </div>
             <div>
-                <h3 style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 5px;">3D Surface Wave Mesh</h3>
+                <h3 style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 5px;">3D Interactive Dynamic Wave Mesh (Rotate / Zoom)</h3>
                 <div id="threejs-container"></div>
             </div>
         </div>
@@ -505,6 +502,7 @@
 </footer>
 
 <script>
+    // 2D CANVAS VISUALIZER
     const canvas = document.getElementById('waveCanvas');
     const ctx = canvas.getContext('2d');
 
@@ -535,7 +533,7 @@
         for (let x = 0; x < canvas.width; x += 30) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke(); }
         for (let y = 0; y < canvas.height; y += 30) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke(); }
 
-        // Direct Path Line (Dashed)
+        // Direct Path Line
         ctx.strokeStyle = '#cbd5e1';
         ctx.setLineDash([4, 4]);
         ctx.beginPath(); ctx.moveTo(p.act.x, p.act.y); ctx.lineTo(p.sen.x, p.sen.y); ctx.stroke();
@@ -548,7 +546,7 @@
         }
         ctx.setLineDash([]);
 
-        // --- ANIMATED INCIDENT RADIAL WAVES FROM ACTUATOR ---
+        // Animated Waves
         waveRadius = (waveRadius + 1.5) % 350;
         for (let r = waveRadius; r > 0; r -= 30) {
             if (r < 350) {
@@ -560,7 +558,7 @@
             }
         }
 
-        // --- ANIMATED SCATTERED WAVE ECHOS FROM DEFECT ---
+        // Echo Waves
         if (baselineRecord && isDamagedType) {
             const actToDef = Math.hypot(p.def.x - p.act.x, p.def.y - p.act.y);
             if (waveRadius > actToDef) {
@@ -577,17 +575,17 @@
             }
         }
 
-        // Actuator Symbol
+        // Actuator
         ctx.fillStyle = '#2563eb';
         ctx.beginPath(); ctx.arc(p.act.x, p.act.y, 8, 0, Math.PI * 2); ctx.fill();
         ctx.fillStyle = '#0f172a'; ctx.font = 'bold 10px sans-serif'; ctx.fillText('Actuator (PZT)', p.act.x - 30, p.act.y - 12);
 
-        // Sensor Symbol
+        // Sensor
         ctx.fillStyle = '#10b981';
         ctx.beginPath(); ctx.arc(p.sen.x, p.sen.y, 8, 0, Math.PI * 2); ctx.fill();
         ctx.fillStyle = '#0f172a'; ctx.fillText('Sensor (PZT)', p.sen.x - 25, p.sen.y - 12);
 
-        // Defect Symbol
+        // Defect
         if (baselineRecord && isDamagedType) {
             ctx.fillStyle = '#ef4444';
             ctx.beginPath(); ctx.arc(p.def.x, p.def.y, 7, 0, Math.PI * 2); ctx.fill();
@@ -596,39 +594,154 @@
 
         requestAnimationFrame(render2DWaves);
     }
-
     render2DWaves();
 
-    // 3D THREE.JS SURFACE MESH
+    // -------------------------------------------------------------
+    // RESTORED HIGH-QUALITY 3D WAVE SIMULATION (THREE.JS + ORBIT CONTROLS)
+    // -------------------------------------------------------------
     const container3d = document.getElementById('threejs-container');
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xffffff);
+    scene.background = new THREE.Color(0x0f172a);
+
     const camera = new THREE.PerspectiveCamera(45, container3d.clientWidth / container3d.clientHeight, 0.1, 1000);
+    camera.position.set(0, -12, 10);
+
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(container3d.clientWidth, container3d.clientHeight);
+    renderer.shadowMap.enabled = true;
     container3d.appendChild(renderer.domElement);
 
-    const geometry = new THREE.PlaneGeometry(10, 6, 28, 28);
-    const material = new THREE.MeshBasicMaterial({ color: 0x2563eb, wireframe: true });
-    const plane = new THREE.Mesh(geometry, material);
-    scene.add(plane);
-    plane.rotation.x = -Math.PI / 3;
-    camera.position.z = 8;
+    // Orbit Controls for smooth 3D rotation & zoom
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+    scene.add(ambientLight);
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    dirLight.position.set(5, 10, 15);
+    scene.add(dirLight);
+
+    const pointLight = new THREE.PointLight(0x38bdf8, 1.5, 30);
+    pointLight.position.set(0, 0, 5);
+    scene.add(pointLight);
+
+    // 3D Plate Mesh with Vertex Colors for High-Def Dynamic Wave Visualization
+    const gridRes = 90;
+    const planeGeo = new THREE.PlaneGeometry(12, 8, gridRes, gridRes);
+    
+    // Add vertex color attribute
+    const count = planeGeo.attributes.position.count;
+    const colors = new Float32Array(count * 3);
+    planeGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+    const planeMat = new THREE.MeshPhongMaterial({
+        side: THREE.DoubleSide,
+        wireframe: false,
+        flatShading: true,
+        vertexColors: true,
+        shininess: 80
+    });
+
+    const plateMesh = new THREE.Mesh(planeGeo, planeMat);
+    scene.add(plateMesh);
+
+    // Actuator Indicator 3D Marker
+    const actGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.2, 16);
+    const actMat = new THREE.MeshPhongMaterial({ color: 0x2563eb, emissive: 0x1d4ed8 });
+    const act3D = new THREE.Mesh(actGeo, actMat);
+    act3D.rotation.x = Math.PI / 2;
+    act3D.position.set(-3, 0, 0.1);
+    scene.add(act3D);
+
+    // Sensor Indicator 3D Marker
+    const senMat = new THREE.MeshPhongMaterial({ color: 0x10b981, emissive: 0x047857 });
+    const sen3D = new THREE.Mesh(actGeo, senMat);
+    sen3D.rotation.x = Math.PI / 2;
+    sen3D.position.set(3, 0, 0.1);
+    scene.add(sen3D);
+
+    // Defect Indicator 3D Marker
+    const defGeo = new THREE.SphereGeometry(0.3, 16, 16);
+    const defMat = new THREE.MeshPhongMaterial({ color: 0xef4444, emissive: 0xb91c1c });
+    const def3D = new THREE.Mesh(defGeo, defMat);
+    def3D.position.set(0, 1.5, 0.2);
+    scene.add(def3D);
+
+    let phase = 0;
 
     function animate3D() {
         requestAnimationFrame(animate3D);
-        const time = Date.now() * 0.003;
-        const pos = plane.geometry.attributes.position;
+        controls.update();
+
+        phase += 0.08;
+        const pos = planeGeo.attributes.position;
+        const cols = planeGeo.attributes.color;
+
+        const p = getParams();
+        const isDamaged = p.type !== "No Damage (Healthy Baseline)" && baselineRecord !== null;
+        def3D.visible = isDamaged;
+
+        // Actuator location normalized in 3D
+        const actX3D = -3;
+        const actY3D = 0;
+
+        // Defect location normalized in 3D
+        const defX3D = (p.def.x - 250) / 40;
+        const defY3D = -(p.def.y - 150) / 40;
+        def3D.position.set(defX3D, defY3D, 0.2);
+
         for (let i = 0; i < pos.count; i++) {
-            const z = Math.sin(pos.getX(i) * 2 + time) * 0.12;
+            const x = pos.getX(i);
+            const y = pos.getY(i);
+
+            // Radial distance from Actuator
+            const rAct = Math.hypot(x - actX3D, y - actY3D);
+            
+            // Primary incident wave height calculation (A0 flexural wave dispersion)
+            let z = Math.sin(rAct * 3.5 - phase) * Math.exp(-rAct * 0.25) * 0.35;
+
+            // Secondary scattered wave echo from defect
+            if (isDamaged) {
+                const rDef = Math.hypot(x - defX3D, y - defY3D);
+                const echo = Math.sin(rDef * 4.0 - phase + 1.5) * Math.exp(-rDef * 0.5) * 0.25;
+                z += echo;
+            }
+
             pos.setZ(i, z);
+
+            // Dynamic color mapping based on elevation strain
+            const colorObj = new THREE.Color();
+            if (z > 0.05) {
+                colorObj.setHSL(0.58, 0.9, 0.4 + z); // High strain blue peak
+            } else if (z < -0.05) {
+                colorObj.setHSL(0.08, 0.9, 0.4 + Math.abs(z)); // Cyan/Amber trough
+            } else {
+                colorObj.setHSL(0.6, 0.3, 0.15); // Neutral plate baseline
+            }
+
+            cols.setXYZ(i, colorObj.r, colorObj.g, colorObj.b);
         }
-        plane.geometry.attributes.position.needsUpdate = true;
+
+        pos.needsUpdate = true;
+        cols.needsUpdate = true;
+        planeGeo.computeVertexNormals();
+
         renderer.render(scene, camera);
     }
+
     animate3D();
 
-    // STAGE 1: RECORD BASELINE (BLUE)
+    // Resize handler for Three.js
+    window.addEventListener('resize', () => {
+        camera.aspect = container3d.clientWidth / container3d.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container3d.clientWidth, container3d.clientHeight);
+    });
+
+    // STAGE 1: BASELINE RECORD
     function recordBaselineStage() {
         const p = getParams();
         const dist = Math.hypot(p.sen.x - p.act.x, p.sen.y - p.act.y);
@@ -659,7 +772,7 @@
         }
     }
 
-    // STAGE 2: RECORD DAMAGED STATE (AMBER)
+    // STAGE 2: DAMAGED RECORD
     function recordDamagedStage() {
         const p = getParams();
         if (p.type === "No Damage (Healthy Baseline)") {
