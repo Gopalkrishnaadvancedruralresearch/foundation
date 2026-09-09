@@ -164,31 +164,13 @@
             margin-bottom: 6px;
             display: inline-block;
         }
-
-        .institution-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.9rem;
-            margin-top: 10px;
-        }
-
-        .institution-table th, .institution-table td {
-            padding: 10px;
-            border: 1px solid #e5e7eb;
-            text-align: left;
-        }
-
-        .institution-table th {
-            background: #f8fafc;
-            color: var(--primary-dark);
-        }
     </style>
 </head>
 <body>
 
 <div class="container">
 
-    <!-- Header Section with logo.jpeg -->
+    <!-- Header Section -->
     <header>
         <div class="header-title">
             <span class="badge">KALAM ZERO LAB • VIRTUAL EXPERIMENT 01</span>
@@ -200,9 +182,8 @@
         </div>
     </header>
 
-    <!-- Visualizers Row: 2D Plane & 3D Wave Surface -->
+    <!-- Visualizers Row -->
     <div class="grid-layout grid-layout-top" style="display: grid; gap: 20px;">
-        <!-- 2D Visualizer -->
         <div class="card" style="margin-bottom: 0;">
             <h2>1. 2D Wave Field & Defect Plane</h2>
             <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: -5px;">
@@ -211,11 +192,10 @@
             <canvas id="waveCanvas" width="550" height="320"></canvas>
         </div>
 
-        <!-- 3D Visualizer -->
         <div class="card" style="margin-bottom: 0;">
-            <h2>2. 3D Surface Deformation Field ($A_0$ Mode)</h2>
+            <h2>2. Realistic 3D Surface Deformation Field ($A_0$ Mode)</h2>
             <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: -5px;">
-                🌐 <em>Real-time 3D flexural surface displacement mesh visualization.</em>
+                🌐 <em>3D mesh ripples dynamically centered at Actuator location & scattering from Defect.</em>
             </p>
             <div id="threejs-container"></div>
         </div>
@@ -255,54 +235,6 @@
         </div>
     </div>
 
-    <!-- National Landscape Section -->
-    <div class="card" style="margin-top: 20px;">
-        <h2>4. Availability of Physical SHM & Wave Propagation Labs in India</h2>
-        <p>Physical experimental setups for PZT-based Lamb wave inspection and NDT are hosted across premier research facilities in India:</p>
-        
-        <table class="institution-table">
-            <thead>
-                <tr>
-                    <th>Institution</th>
-                    <th>Department / Center</th>
-                    <th>Specialization / Focus Area</th>
-                </tr>
-            </th>
-            <tbody>
-                <tr>
-                    <td><strong>IISc Bangalore</strong></td>
-                    <td>Department of Aerospace Engineering / Civil Engineering</td>
-                    <td>Smart Structures Lab, Piezoelectric SHM, Structural Dynamics</td>
-                </tr>
-                <tr>
-                    <td><strong>IIT Bombay</strong></td>
-                    <td>Department of Mechanical / Civil Engineering</td>
-                    <td>Non-Destructive Evaluation (NDE) Lab, Ultrasonic Guided Waves</td>
-                </tr>
-                <tr>
-                    <td><strong>IIT Madras</strong></td>
-                    <td>Center for Nondestructive Evaluation (CNDE)</td>
-                    <td>Laser Ultrasonics, Transducer Arrays, Guided Wave Inspection</td>
-                </tr>
-                <tr>
-                    <td><strong>IIT Kanpur</strong></td>
-                    <td>Department of Aerospace Engineering</td>
-                    <td>Smart Materials & Structures Lab, Structural Health Monitoring</td>
-                </tr>
-                <tr>
-                    <td><strong>IIT Kharagpur & Delhi</strong></td>
-                    <td>Mechanical & Applied Mechanics Departments</td>
-                    <td>Acoustic Emission, Wave Propagation in Composite Materials</td>
-                </tr>
-                <tr>
-                    <td><strong>CSIR-NAL & SERC</strong></td>
-                    <td>Structural Technologies Division</td>
-                    <td>Full-scale Aircraft & Infrastructure Health Monitoring Testbeds</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-
 </div>
 
 <script>
@@ -338,39 +270,98 @@
         ctx.fillText(`Defect (${Math.round(defect.x)}, ${Math.round(defect.y)})`, defect.x - 30, defect.y + 22);
     }
 
-    // --- 3D THREE.JS ENGINE ---
+    // --- REALISTIC 3D THREE.JS ENGINE ---
     const container3D = document.getElementById('threejs-container');
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x111827);
 
     const camera = new THREE.PerspectiveCamera(45, container3D.clientWidth / 320, 0.1, 1000);
-    camera.position.set(0, -180, 140);
+    camera.position.set(0, -160, 150);
     camera.lookAt(0, 0, 0);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(container3D.clientWidth, 320);
     container3D.appendChild(renderer.domElement);
 
-    const planeGeo = new THREE.PlaneGeometry(200, 100, 60, 30);
+    // Plate geometry normalized to 200 x 100 units
+    const planeGeo = new THREE.PlaneGeometry(200, 100, 80, 40);
     const planeMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, wireframe: true });
     const planeMesh = new THREE.Mesh(planeGeo, planeMat);
     scene.add(planeMesh);
 
+    // Helper functions to map 2D canvas coordinates (0-550, 0-320) to 3D mesh space (-100 to +100, -50 to +50)
+    function canvasTo3DX(canvasX) {
+        return ((canvasX - 20) / 510) * 200 - 100;
+    }
+    function canvasTo3DY(canvasY) {
+        return -(((canvasY - 30) / 260) * 100 - 50);
+    }
+
+    // PZT Actuator marker in 3D
+    const actGeo = new THREE.SphereGeometry(3, 16, 16);
+    const actMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+    const actMesh3D = new THREE.Mesh(actGeo, actMat);
+    scene.add(actMesh3D);
+
+    // PZT Sensor marker in 3D
+    const senGeo = new THREE.SphereGeometry(3, 16, 16);
+    const senMat = new THREE.MeshBasicMaterial({ color: 0x10b981 });
+    const senMesh3D = new THREE.Mesh(senGeo, senMat);
+    scene.add(senMesh3D);
+
+    // Defect marker in 3D
+    const defGeo = new THREE.SphereGeometry(4, 16, 16);
+    const defMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b });
+    const defMesh3D = new THREE.Mesh(defGeo, defMat);
+    scene.add(defMesh3D);
+
+    function update3DMarkers() {
+        actMesh3D.position.set(canvasTo3DX(actuator.x), canvasTo3DY(actuator.y), 2);
+        senMesh3D.position.set(canvasTo3DX(sensor.x), canvasTo3DY(sensor.y), 2);
+        defMesh3D.position.set(canvasTo3DX(defect.x), canvasTo3DY(defect.y), 2);
+    }
+    update3DMarkers();
+
     function animate3D() {
         requestAnimationFrame(animate3D);
-        if (isSimulating) {
-            const pos = planeGeo.attributes.position;
-            const time = Date.now() * 0.005;
-            for (let i = 0; i < pos.count; i++) {
-                const u = pos.getX(i);
-                const v = pos.getY(i);
-                const dist = Math.sqrt(u * u + v * v);
-                if (dist < waveRadius * 0.4) {
-                    pos.setZ(i, Math.sin(dist * 0.2 - time) * 4 * Math.exp(-dist * 0.02));
+        const pos = planeGeo.attributes.position;
+        const time = Date.now() * 0.006;
+
+        const act3DX = canvasTo3DX(actuator.x);
+        const act3DY = canvasTo3DY(actuator.y);
+        const def3DX = canvasTo3DX(defect.x);
+        const def3DY = canvasTo3DY(defect.y);
+
+        const scaledWaveR = (waveRadius / 510) * 200;
+        const scaledScatteredR = (scatteredRadius / 510) * 200;
+
+        for (let i = 0; i < pos.count; i++) {
+            const u = pos.getX(i);
+            const v = pos.getY(i);
+
+            let zHeight = 0;
+
+            if (isSimulating) {
+                // Incident wave ripple centered EXACTLY at Actuator position
+                const distToAct = Math.hypot(u - act3DX, v - act3DY);
+                if (distToAct < scaledWaveR) {
+                    const waveFrontDiff = scaledWaveR - distToAct;
+                    zHeight += Math.sin(distToAct * 0.25 - time) * 5 * Math.exp(-waveFrontDiff * 0.05);
+                }
+
+                // Scattered wave ripple centered EXACTLY at Defect position
+                const distToDefect = Math.hypot(u - def3DX, v - def3DY);
+                const actToDefectDist3D = Math.hypot(def3DX - act3DX, def3DY - act3DY);
+                if (scaledWaveR > actToDefectDist3D && distToDefect < scaledScatteredR) {
+                    const scatterDiff = scaledScatteredR - distToDefect;
+                    zHeight += Math.sin(distToDefect * 0.25 - time) * 3 * Math.exp(-scatterDiff * 0.08);
                 }
             }
-            pos.needsUpdate = true;
+
+            pos.setZ(i, zHeight);
         }
+
+        pos.needsUpdate = true;
         renderer.render(scene, camera);
     }
     animate3D();
@@ -423,8 +414,19 @@ Status          : Waveform stored.`;
     }
 
     // Sliders
-    xSlider.addEventListener('input', (e) => { defect.x = parseFloat(e.target.value); xVal.textContent = defect.x; drawBasePlate(); });
-    ySlider.addEventListener('input', (e) => { defect.y = parseFloat(e.target.value); yVal.textContent = defect.y; drawBasePlate(); });
+    xSlider.addEventListener('input', (e) => { 
+        defect.x = parseFloat(e.target.value); 
+        xVal.textContent = defect.x; 
+        drawBasePlate(); 
+        update3DMarkers();
+    });
+    
+    ySlider.addEventListener('input', (e) => { 
+        defect.y = parseFloat(e.target.value); 
+        yVal.textContent = defect.y; 
+        drawBasePlate(); 
+        update3DMarkers();
+    });
 
     drawBasePlate();
 </script>
