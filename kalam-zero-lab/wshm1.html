@@ -254,6 +254,11 @@
             box-sizing: border-box;
         }
 
+        .disabled-group {
+            opacity: 0.4;
+            pointer-events: none;
+        }
+
         .grid-2col {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -297,37 +302,14 @@
             align-items: center;
         }
 
-        .btn-stage1-active {
-            background-color: #eff6ff;
-            color: #1e40af;
-            border-color: #3b82f6;
+        .btn-record-active {
+            background-color: #2563eb;
+            color: #ffffff;
+            border-color: #1d4ed8;
         }
 
-        .btn-stage1-recorded {
-            background-color: #2563eb !important;
-            color: #ffffff !important;
-            border-color: #1d4ed8 !important;
-        }
-
-        .btn-stage2-disabled {
-            background-color: #f1f5f9;
-            color: #94a3b8;
-            border-color: #e2e8f0;
-            cursor: not-allowed;
-            opacity: 0.6;
-        }
-
-        .btn-stage2-ready {
-            background-color: #fffbe3;
-            color: #b45309;
-            border-color: #f59e0b;
-            cursor: pointer;
-        }
-
-        .btn-stage2-recorded {
-            background-color: #d97706 !important;
-            color: #ffffff !important;
-            border-color: #b45309 !important;
+        .btn-record-active:hover {
+            background-color: #1d4ed8;
         }
 
         .terminal-box {
@@ -457,27 +439,27 @@
 
             <div class="visual-note">
                 💡 <strong>Student Note — "When you see, you will understand!":</strong><br>
-                Look at the two animated diagrams above! In the <strong>$S_0$ mode</strong>, notice how the top and bottom surfaces push and pull symmetrically about the center line (extensional motion in $x$). In contrast, in the <strong>$A_0$ mode</strong>, both surfaces bend together up and down in unison along the $y$-axis (flexural bending). This out-of-plane motion makes $A_0$ highly sensitive to surface cracks!
+                Look at the two animated diagrams above! In the <strong>$S_0$ mode</strong>, notice how the top and bottom surfaces push and pull symmetrically about the center line (extensional motion in $x$). In contrast, in the <strong>$A_0$ mode</strong>, both surfaces bend together up and down in unison along the $y$-axis (flexural bending). This out-of-plane motion makes $A_0$ highly sensitive to structural discontinuities!
             </div>
 
-            <h3>1.2 Time-of-Flight (ToF) & Crack Geometry Physics</h3>
+            <h3>1.2 Time-of-Flight (ToF) & Dynamic Scattering Physics</h3>
             <p>
-                For a direct path between Actuator ($A$) and Sensor ($S$) across distance $d_{AS}$, the baseline Time-of-Flight ($ToF_{\text{direct}}$) is defined as:
+                For a direct path between Actuator ($A$) and Sensor ($S$) across distance $d_{AS}$, the direct wave Time-of-Flight ($ToF_{\text{direct}}$) is defined as:
             </p>
             <div class="formula-box">
                 $$ToF_{\text{direct}} = \frac{d_{AS}}{c_g} = \frac{\sqrt{(X_S - X_A)^2 + (Y_S - Y_A)^2}}{c_g}$$
             </div>
             <p>
-                When a <strong>Surface Crack</strong> with length $\ell_c$ and inclination angle $\theta_c$ is positioned at center $(X_D, Y_D)$ (measured from the left edge $X_0=0$ and bottom $Y_0=0$), the scattered echo path length $d_{\text{scatter}}$ is given by:
+                When a structural flaw with length $\ell_c$ and angle $\theta_c$ is positioned at center $(X_D, Y_D)$ (measured from the left edge $X_0=0$ and bottom $Y_0=0$), the scattered echo path length $d_{\text{scatter}}$ is given by:
             </p>
             <div class="formula-box">
                 $$d_{\text{scatter}} = d_{AD} + d_{DS} = \sqrt{(X_D - X_A)^2 + (Y_D - Y_A)^2} + \sqrt{(X_S - X_D)^2 + (Y_S - Y_D)^2}$$
             </div>
             <div class="formula-box">
-                $$ToF_{\text{scatter}} = \frac{d_{\text{scatter}}}{c_g} \quad \Bigg| \quad \Delta t = ToF_{\text{scatter}} - ToF_{\text{direct}}$$
+                $$ToF_{\text{scatter}} = \frac{d_{\text{scatter}}}{c_g}$$
             </div>
             <p>
-                The scattered wave amplitude $A_{\text{scatter}}$ scales proportionally with the relative crack length $\ell_c$:
+                The scattered wave amplitude $A_{\text{scatter}}$ scales proportionally with relative flaw dimensions:
             </p>
             <div class="formula-box">
                 $$A_{\text{scatter}} \propto A_0 \cdot \left( \frac{\ell_c}{\lambda} \right) \sin(\theta_c)$$
@@ -485,10 +467,10 @@
         </div>
     </div>
 
-    <!-- SECTION 2: SPECIMEN CONFIGURATION & DYNAMIC CRACK CONTROLS -->
+    <!-- SECTION 2: SPECIMEN CONFIGURATION & DYNAMIC CONTROLS -->
     <div class="card">
         <span class="section-tag">SECTION 2</span>
-        <h2>2. Specimen, Transducer & Surface Crack Control</h2>
+        <h2>2. Specimen, Transducer & Flaw Controls</h2>
         
         <div class="controls-grid">
             <div class="control-group">
@@ -516,25 +498,25 @@
             </div>
 
             <div class="control-group">
-                <label>Damage Classification:</label>
-                <select id="damageType" onchange="redrawAll()">
-                    <option value="Surface Crack">Surface Crack</option>
+                <label>Flaw Classification:</label>
+                <select id="damageType" onchange="toggleDamageControls(); redrawAll();">
+                    <option value="Healthy State (No Flaw)">Healthy State (No Flaw)</option>
+                    <option value="Surface Crack" selected>Surface Crack</option>
                     <option value="Corrosion Pit">Corrosion Pit</option>
                     <option value="Debonding / Delamination">Debonding / Delamination</option>
-                    <option value="No Damage (Healthy Baseline)">No Damage (Healthy Baseline)</option>
                 </select>
             </div>
 
-            <div class="control-group">
-                <label>Crack Center Location (From Left $X_D$, Bottom $Y_D$ mm):</label>
+            <div class="control-group" id="groupDefPos">
+                <label>Flaw Location (From Left $X_D$, Bottom $Y_D$ mm):</label>
                 <div class="input-row">
                     <input type="number" id="defX" value="250" min="10" max="490" oninput="redrawAll()">
                     <input type="number" id="defY" value="150" min="10" max="290" oninput="redrawAll()">
                 </div>
             </div>
 
-            <div class="control-group">
-                <label>Crack Geometry: Length $\ell_c$ (mm) / Angle $\theta_c$ (°):</label>
+            <div class="control-group" id="groupDefGeom">
+                <label>Flaw Geometry: Length $\ell_c$ (mm) / Angle $\theta_c$ (°):</label>
                 <div class="input-row">
                     <input type="number" id="crackLength" value="25" min="2" max="100" placeholder="Length (mm)" oninput="redrawAll()">
                     <input type="number" id="crackAngle" value="45" min="0" max="180" placeholder="Angle (°)" oninput="redrawAll()">
@@ -550,7 +532,7 @@
 
         <div class="grid-2col">
             <div>
-                <h3 style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 5px;">2D Wave Field & Precise Crack Orientation</h3>
+                <h3 style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 5px;">2D Wave Field & Precise Flaw Orientation</h3>
                 <canvas id="waveCanvas" width="500" height="320"></canvas>
             </div>
             <div>
@@ -560,34 +542,29 @@
         </div>
 
         <div class="stage-buttons-vertical">
-            <button id="btnStage1" class="btn-bar btn-stage1-active" onclick="recordBaselineStage()">
-                <span>1️⃣ CLICK TO RECORD HEALTHY BASELINE (NO DAMAGE)</span>
-                <span id="badge1" style="font-size: 0.75rem; background: #3b82f6; color: white; padding: 3px 8px; border-radius: 4px;">READY</span>
-            </button>
-
-            <button id="btnStage2" class="btn-bar btn-stage2-disabled" disabled onclick="recordDamagedStage()">
-                <span>2️⃣ CLICK TO RECORD EXPERIMENTAL DAMAGE STATE</span>
-                <span id="badge2" style="font-size: 0.75rem; background: #cbd5e1; color: #475569; padding: 3px 8px; border-radius: 4px;">LOCKED (Complete Stage 1 First)</span>
+            <button id="btnRecord" class="btn-bar btn-record-active" onclick="recordExperimentalData()">
+                <span>📸 RECORD EXPERIMENTAL DATA DATASET</span>
+                <span id="badgeRecord" style="font-size: 0.75rem; background: #ffffff; color: #2563eb; padding: 3px 8px; border-radius: 4px;">READY</span>
             </button>
         </div>
 
         <h3 style="font-size: 0.85rem; color: var(--text-muted); margin-top: 15px;">Oscilloscope Terminal & Dataset Output:</h3>
-        <div id="ascanOutput" class="terminal-box">Waiting for Stage 1: Click "1️⃣ CLICK TO RECORD HEALTHY BASELINE" to capture reference signal...</div>
+        <div id="ascanOutput" class="terminal-box">Ready: Click "📸 RECORD EXPERIMENTAL DATA DATASET" to capture signal analytics...</div>
     </div>
 
     <!-- SECTION 7: DYNAMIC ARJUN AI RESEARCH ASSISTANT -->
     <div class="card" style="border-top: 4px solid #10b981;">
         <span class="section-tag" style="background: #d1fae5; color: #047857;">SECTION 7</span>
-        <h2>🤖 ARJUN: Active GARRF SHM & Crack Analytics Assistant</h2>
+        <h2>🤖 ARJUN: Active GARRF SHM & Wave Analytics Assistant</h2>
 
         <div id="arjunChatBox" class="chat-box">
             <div class="chat-msg msg-arjun">
-                <strong>🤖 ARJUN:</strong> System initialized and online! Observe the animated <strong>$S_0$ vs $A_0$ diagrams</strong> in Section 1.1—when you see them, you will instantly understand the $x$-$y$ plane particle motion! Ask me any questions about crack dimensions, scattering, or wave paths!
+                <strong>🤖 ARJUN:</strong> System initialized and online! Observe the animated <strong>$S_0$ vs $A_0$ diagrams</strong> in Section 1.1—when you see them, you will instantly understand the $x$-$y$ plane particle motion! Select <strong>Healthy State (No Flaw)</strong> or add a flaw in Section 2 to compare baseline behavior against wave scattering. Ask me any questions!
             </div>
         </div>
 
         <div class="chat-input-group">
-            <input type="text" id="arjunInput" class="chat-input" placeholder="Ask ARJUN: 'Explain A0 and S0' or 'Where is the crack located?'" onkeypress="if(event.key==='Enter') sendArjunMessage()">
+            <input type="text" id="arjunInput" class="chat-input" placeholder="Ask ARJUN: 'Explain A0 and S0' or 'Where is the flaw located?'" onkeypress="if(event.key==='Enter') sendArjunMessage()">
             <button style="background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer;" onclick="sendArjunMessage()">Ask ARJUN</button>
         </div>
     </div>
@@ -694,12 +671,25 @@
     const canvas = document.getElementById('waveCanvas');
     const ctx = canvas.getContext('2d');
 
-    let baselineRecord = null;
-    let damagedRecord = null;
+    let expRecord = null;
     const waveSpeed = 5.4; // km/s or mm/µs
 
     let waveRadius = 0;
     let echoRadius = 0;
+
+    function toggleDamageControls() {
+        const type = document.getElementById('damageType').value;
+        const groupPos = document.getElementById('groupDefPos');
+        const groupGeom = document.getElementById('groupDefGeom');
+
+        if (type === 'Healthy State (No Flaw)') {
+            groupPos.classList.add('disabled-group');
+            groupGeom.classList.add('disabled-group');
+        } else {
+            groupPos.classList.remove('disabled-group');
+            groupGeom.classList.remove('disabled-group');
+        }
+    }
 
     function getParams() {
         return {
@@ -722,6 +712,8 @@
 
     function render2DWaves() {
         const p = getParams();
+        const isHealthy = (p.type === "Healthy State (No Flaw)");
+
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -736,9 +728,8 @@
         ctx.setLineDash([4, 4]);
         ctx.beginPath(); ctx.moveTo(p.act.x, p.act.y); ctx.lineTo(p.sen.x, p.sen.y); ctx.stroke();
 
-        const isDamagedType = p.type !== "No Damage (Healthy Baseline)";
-
-        if (baselineRecord && isDamagedType) {
+        // Echo Path Lines (Only when damaged)
+        if (!isHealthy) {
             ctx.strokeStyle = '#fde68a';
             ctx.beginPath(); ctx.moveTo(p.act.x, p.act.y); ctx.lineTo(p.def.x, p.def.y); ctx.lineTo(p.sen.x, p.sen.y); ctx.stroke();
         }
@@ -756,8 +747,8 @@
             }
         }
 
-        // Animated Echo Waves from Defect Center
-        if (baselineRecord && isDamagedType) {
+        // Animated Echo Waves from Flaw Center (Only when damaged)
+        if (!isHealthy) {
             const actToDef = Math.hypot(p.def.x - p.act.x, p.def.y - p.act.y);
             if (waveRadius > actToDef) {
                 echoRadius = (waveRadius - actToDef);
@@ -783,8 +774,8 @@
         ctx.beginPath(); ctx.arc(p.sen.x, p.sen.y, 8, 0, Math.PI * 2); ctx.fill();
         ctx.fillStyle = '#0f172a'; ctx.fillText('Sensor (PZT)', p.sen.x - 25, p.sen.y - 12);
 
-        // Render Surface Crack Geometry or Other Damage Types
-        if (isDamagedType) {
+        // Render Flaw Geometry (Only when damaged)
+        if (!isHealthy) {
             if (p.type === "Surface Crack") {
                 const rad = (p.crackAng * Math.PI) / 180;
                 const halfL = p.crackLen / 2;
@@ -892,8 +883,7 @@
         const cols = planeGeo.attributes.color;
 
         const p = getParams();
-        const isDamaged = p.type !== "No Damage (Healthy Baseline)";
-        def3D.visible = isDamaged;
+        const isHealthy = (p.type === "Healthy State (No Flaw)");
 
         const actX3D = (p.act.x - 250) / 40;
         const actY3D = -(p.act.y - 150) / 40;
@@ -903,6 +893,7 @@
         const senY3D = -(p.sen.y - 150) / 40;
         sen3D.position.set(senX3D, senY3D, 0.1);
 
+        def3D.visible = !isHealthy;
         const defX3D = (p.def.x - 250) / 40;
         const defY3D = -(p.def.y - 150) / 40;
         def3D.position.set(defX3D, defY3D, 0.2);
@@ -916,7 +907,7 @@
             const rAct = Math.hypot(x - actX3D, y - actY3D);
             let z = Math.sin(rAct * 3.5 - phase) * Math.exp(-rAct * 0.25) * 0.35;
 
-            if (isDamaged) {
+            if (!isHealthy) {
                 const rDef = Math.hypot(x - defX3D, y - defY3D);
                 const echoFactor = (p.crackLen / 25.0) * 0.25;
                 const echo = Math.sin(rDef * 4.0 - phase + 1.5) * Math.exp(-rDef * 0.5) * echoFactor;
@@ -952,65 +943,51 @@
         renderer.setSize(container3d.clientWidth, container3d.clientHeight);
     });
 
-    // STAGE 1: BASELINE RECORD
-    function recordBaselineStage() {
+    // RECORD EXPERIMENTAL DATA
+    function recordExperimentalData() {
         const p = getParams();
-        const dist = Math.hypot(p.sen.x - p.act.x, p.sen.y - p.act.y);
-        const tof = (dist / waveSpeed).toFixed(1);
-        const timeStr = new Date().toLocaleTimeString();
+        const isHealthy = (p.type === "Healthy State (No Flaw)");
 
-        if (confirm(`Healthy Baseline Captured!\n\n• Direct Wave Path: ${dist.toFixed(1)} mm\n• Direct Wave ToF: ${tof} μs\n\nSave this point as your HEALTHY BASELINE?`)) {
-            baselineRecord = { time: timeStr, dist: dist.toFixed(1), tof: tof };
+        const directDist = Math.hypot(p.sen.x - p.act.x, p.sen.y - p.act.y);
+        const directToF = (directDist / waveSpeed).toFixed(1);
 
-            const btn1 = document.getElementById('btnStage1');
-            btn1.className = 'btn-bar btn-stage1-recorded';
-            document.getElementById('badge1').innerText = 'RECORDED ✓';
-            document.getElementById('badge1').style.background = '#ffffff';
-            document.getElementById('badge1').style.color = '#2563eb';
-
-            const btn2 = document.getElementById('btnStage2');
-            btn2.disabled = false;
-            btn2.className = 'btn-bar btn-stage2-ready';
-            document.getElementById('badge2').innerText = 'READY FOR STAGE 2';
-            document.getElementById('badge2').style.background = '#f59e0b';
-            document.getElementById('badge2').style.color = '#ffffff';
-
-            updateTerminal();
-        }
-    }
-
-    // STAGE 2: DAMAGED RECORD
-    function recordDamagedStage() {
-        const p = getParams();
-        if (p.type === "No Damage (Healthy Baseline)") {
-            alert("Please select a specific damage condition (e.g., Surface Crack or Corrosion Pit) before recording Stage 2!");
-            return;
+        let actToDef = 0, defToSen = 0, echoPath = 0, echoToF = "N/A";
+        if (!isHealthy) {
+            actToDef = Math.hypot(p.def.x - p.act.x, p.def.y - p.act.y);
+            defToSen = Math.hypot(p.sen.x - p.def.x, p.sen.y - p.def.y);
+            echoPath = actToDef + defToSen;
+            echoToF = (echoPath / waveSpeed).toFixed(1);
         }
 
-        const actToDef = Math.hypot(p.def.x - p.act.x, p.def.y - p.act.y);
-        const defToSen = Math.hypot(p.sen.x - p.def.x, p.sen.y - p.def.y);
-        const echoPath = actToDef + defToSen;
-        const echoToF = (echoPath / waveSpeed).toFixed(1);
         const timeStr = new Date().toLocaleTimeString();
 
-        if (confirm(`Damaged State Captured!\n\n• Damage Type: ${p.type}\n• Crack Length: ${p.crackLen} mm\n• Location: X=${p.def.x} mm, Y=${p.def.y} mm\n• Echo Path: ${echoPath.toFixed(1)} mm\n• Scattered Echo ToF: ${echoToF} μs\n\nSave this point as your SECOND EXPERIMENTAL SET?`)) {
-            damagedRecord = {
+        let confirmMsg = `Experimental Dataset Captured!\n\n• Condition: ${p.type}\n• Direct Path ToF: ${directToF} μs`;
+        if (!isHealthy) {
+            confirmMsg += `\n• Flaw Dimension / Angle: ${p.crackLen} mm @ ${p.crackAng}°\n• Flaw Position: X=${p.def.x} mm, Y=${p.def.y} mm\n• Scattered Echo ToF: ${echoToF} μs`;
+        }
+        confirmMsg += `\n\nSave this point as your active experimental dataset?`;
+
+        if (confirm(confirmMsg)) {
+            expRecord = {
                 time: timeStr,
                 type: p.type,
+                isHealthy: isHealthy,
                 crackLen: p.crackLen,
                 crackAng: p.crackAng,
                 posX: p.def.x,
                 posY: p.def.y,
-                echoPath: echoPath.toFixed(1),
-                echoToF: echoToF,
-                delay: (echoToF - baselineRecord.tof).toFixed(1)
+                directDist: directDist.toFixed(1),
+                directToF: directToF,
+                echoPath: isHealthy ? "N/A" : echoPath.toFixed(1),
+                echoToF: echoToF
             };
 
-            const btn2 = document.getElementById('btnStage2');
-            btn2.className = 'btn-bar btn-stage2-recorded';
-            document.getElementById('badge2').innerText = 'RECORDED ✓';
-            document.getElementById('badge2').style.background = '#ffffff';
-            document.getElementById('badge2').style.color = '#d97706';
+            const btn = document.getElementById('btnRecord');
+            btn.style.backgroundColor = '#10b981';
+            btn.style.borderColor = '#047857';
+            document.getElementById('badgeRecord').innerText = 'RECORDED ✓';
+            document.getElementById('badgeRecord').style.background = '#ffffff';
+            document.getElementById('badgeRecord').style.color = '#10b981';
 
             updateTerminal();
             triggerArjunMagic();
@@ -1019,20 +996,18 @@
 
     function updateTerminal() {
         const out = document.getElementById('ascanOutput');
-        let text = `===================== EXPERIMENTAL DATASETS RECORDED =====================\n`;
-        if (baselineRecord) {
-            text += `[RECORD 1 - HEALTHY BASELINE] Saved at ${baselineRecord.time}\n`;
-            text += `  • Direct Wave Path  : ${baselineRecord.dist} mm\n`;
-            text += `  • Direct Wave ToF   : ${baselineRecord.tof} μs\n\n`;
-        }
-        if (damagedRecord) {
-            text += `[RECORD 2 - DAMAGED EXPERIMENT] Saved at ${damagedRecord.time}\n`;
-            text += `  • Damage Condition  : ${damagedRecord.type}\n`;
-            text += `  • Surface Crack Len : ${damagedRecord.crackLen} mm @ ${damagedRecord.crackAng}°\n`;
-            text += `  • Crack Center (X,Y): X_D = ${damagedRecord.posX} mm (from left edge), Y_D = ${damagedRecord.posY} mm\n`;
-            text += `  • Scattered Echo ToF: ${damagedRecord.echoToF} μs\n`;
-            text += `  • Echo Delay Δt     : ${damagedRecord.delay} μs\n`;
-            text += `  • Total Echo Path   : ${damagedRecord.echoPath} mm\n`;
+        let text = `===================== EXPERIMENTAL DATASET RECORDED =====================\n`;
+        if (expRecord) {
+            text += `[EXPERIMENTAL DATASET] Saved at ${expRecord.time}\n`;
+            text += `  • Structural State    : ${expRecord.type}\n`;
+            text += `  • Direct Wave Path    : ${expRecord.directDist} mm | ToF: ${expRecord.directToF} μs\n`;
+            if (!expRecord.isHealthy) {
+                text += `  • Dimension / Angle   : ${expRecord.crackLen} mm @ ${expRecord.crackAng}°\n`;
+                text += `  • Flaw Position (X,Y) : X_D = ${expRecord.posX} mm, Y_D = ${expRecord.posY} mm\n`;
+                text += `  • Scattered Echo Path : ${expRecord.echoPath} mm | ToF: ${expRecord.echoToF} μs\n`;
+            } else {
+                text += `  • Scattered Echo Path : None (Healthy Specimen Baseline)\n`;
+            }
         }
         out.innerHTML = text;
     }
@@ -1041,16 +1016,29 @@
         const chatBox = document.getElementById('arjunChatBox');
         const msg = document.createElement('div');
         msg.className = 'chat-msg msg-arjun';
+
+        let arjunDetails = "";
+        if (expRecord.isHealthy) {
+            arjunDetails = `
+                • <strong>Structural Condition:</strong> Healthy State (No Flaw)<br>
+                • <strong>Direct Wave ToF ($ToF_{\\text{direct}}$):</strong> ${expRecord.directToF} μs<br>
+                • <strong>Wave Reflection:</strong> Direct incident wave propagation only (no scattering echoes).
+            `;
+        } else {
+            arjunDetails = `
+                • <strong>Flaw Type:</strong> ${expRecord.type}<br>
+                • <strong>Dimension ($\ell_c$):</strong> ${expRecord.crackLen} mm | <strong>Angle ($\theta_c$):</strong> ${expRecord.crackAng}°<br>
+                • <strong>Flaw Coordinates ($X_D, Y_D$):</strong> X = ${expRecord.posX} mm, Y = ${expRecord.posY} mm<br>
+                • <strong>Direct Wave ToF ($ToF_{\\text{direct}}$):</strong> ${expRecord.directToF} μs<br>
+                • <strong>Scattered Echo ToF ($ToF_{\\text{scatter}}$):</strong> ${expRecord.echoToF} μs
+            `;
+        }
+
         msg.innerHTML = `
-            <strong>✨ ARJUN (Automated Crack & Wave Analysis):</strong><br>
-            I have analyzed your updated crack parameters from Section 2:<br><br>
-            • <strong>Damage Classification:</strong> ${damagedRecord.type}<br>
-            • <strong>Crack Length ($\ell_c$):</strong> ${damagedRecord.crackLen} mm<br>
-            • <strong>Crack Inclination Angle ($\theta_c$):</strong> ${damagedRecord.crackAng}°<br>
-            • <strong>Horizontal Position ($X_D$ from Left Edge):</strong> ${damagedRecord.posX} mm<br>
-            • <strong>Vertical Position ($Y_D$ from Bottom):</strong> ${damagedRecord.posY} mm<br>
-            • <strong>Echo Path ($d_{\\text{scatter}}$):</strong> ${damagedRecord.echoPath} mm | <strong>Delay ($\Delta t$):</strong> ${damagedRecord.delay} μs<br><br>
-            You can modify the crack position ($X_D, Y_D$) and length in real-time above!
+            <strong>✨ ARJUN (Automated Wave Analysis):</strong><br>
+            I have recorded your active experimental parameters from Section 2:<br><br>
+            ${arjunDetails}<br><br>
+            Adjust any geometry inputs above to dynamically re-evaluate wave propagation!
         `;
         chatBox.appendChild(msg);
         chatBox.scrollTop = chatBox.scrollHeight;
@@ -1063,6 +1051,8 @@
         if (!text) return;
 
         const p = getParams();
+        const isHealthy = (p.type === "Healthy State (No Flaw)");
+
         const chatBox = document.getElementById('arjunChatBox');
         const userMsg = document.createElement('div');
         userMsg.className = 'chat-msg msg-user';
@@ -1073,13 +1063,15 @@
         setTimeout(() => {
             let response = "";
             if (text.includes("a0") || text.includes("s0") || text.includes("mode")) {
-                response = `Take a look at Section 1.1! The **$S_0$ (Symmetric) Mode** stretches in-plane along the $x$-axis, while the **$A_0$ (Antisymmetric) Mode** undergoes out-of-plane flexural bending across the $x$-$y$ cross-section. Looking at the animated diagrams makes this immediately intuitive!`;
+                response = `Take a look at Section 1.1! The **$S_0$ (Symmetric) Mode** undergoes in-plane stretching along the $x$-axis, while the **$A_0$ (Antisymmetric) Mode** undergoes out-of-plane flexural bending across the $x$-$y$ cross-section. The animated diagrams demonstrate this clearly!`;
+            } else if (isHealthy) {
+                response = `The system is currently set to **Healthy State (No Flaw)**. Only the direct incident wave propagates across the plate from Actuator to Sensor without any secondary scattered echoes. Select a flaw type in Section 2 to introduce structural damage!`;
             } else if (text.includes("length") || text.includes("crack length") || text.includes("size")) {
-                response = `The current **Surface Crack Length ($\ell_c$)** is **${p.crackLen} mm** with an inclination angle of **${p.crackAng}°**.`;
+                response = `The current **Flaw Dimension ($\ell_c$)** is **${p.crackLen} mm** at an angle of **${p.crackAng}°**.`;
             } else if (text.includes("location") || text.includes("where") || text.includes("position") || text.includes("distance") || text.includes("left")) {
-                response = `The crack center is located at:<br>• **Horizontal Distance ($X_D$ from Left Edge):** ${p.def.x} mm<br>• **Vertical Distance ($Y_D$ from Bottom Edge):** ${p.def.y} mm.`;
+                response = `The flaw center is currently located at:<br>• **Horizontal Distance ($X_D$ from Left Edge):** ${p.def.x} mm<br>• **Vertical Distance ($Y_D$ from Bottom Edge):** ${p.def.y} mm.`;
             } else {
-                response = `Currently, the crack center is at **$X_D = ${p.def.x}$ mm** (from left edge) and **$Y_D = ${p.def.y}$ mm** (vertical height), with a length of **$\ell_c = ${p.crackLen}$ mm**. Check Section 1.1 to see how $S_0$ and $A_0$ Lamb wave modes deform across the $x$-$y$ plane!`;
+                response = `The flaw center is at **$X_D = ${p.def.x}$ mm** (from left edge) and **$Y_D = ${p.def.y}$ mm** (vertical height), with a dimension of **$\ell_c = ${p.crackLen}$ mm**. Examine Section 1.1 to see how $S_0$ and $A_0$ Lamb wave modes deform across the $x$-$y$ plane!`;
             }
 
             const arjunMsg = document.createElement('div');
@@ -1090,6 +1082,9 @@
             redrawAll();
         }, 400);
     }
+
+    // Initialize UI control state on load
+    toggleDamageControls();
 </script>
 
 </body>
