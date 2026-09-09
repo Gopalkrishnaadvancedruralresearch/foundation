@@ -6,6 +6,8 @@
     <title>SHM-01: Smartphone Accelerometer Free-Vibration Lab | GARRF Virtual Lab</title>
     <!-- Chart.js for real-time visualization -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- QRCode.js Library for instant QR code generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root {
             --primary-color: #003366;
@@ -123,10 +125,27 @@
             padding: 1.5rem;
             border-radius: 8px;
             margin-top: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
         .qr-section h3 {
             color: #db2777;
             margin-top: 0;
+        }
+        /* Container where the QR code image will be rendered */
+        #qrcode {
+            margin: 1rem auto;
+            background: white;
+            padding: 10px;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: inline-block;
+        }
+        #qrcode img {
+            display: block;
+            margin: 0 auto;
         }
         .btn {
             display: block;
@@ -212,7 +231,7 @@
         <ul>
             <li><strong>Free Vibration & Natural Frequency:</strong> How structures oscillate freely after an initial impact.</li>
             <li><strong>Structural Damping:</strong> How energy dissipates over time through a decaying amplitude wave.</li>
-            <li>data-driven telemetry: Capturing real-world acceleration data for engineering computations and lab reports.</li>
+            <li><strong>Data Telemetry:</strong> Capturing real-world acceleration data for engineering computations and lab reports.</li>
         </ul>
 
         <h3>🔬 Experimental Nature & Procedure</h3>
@@ -228,9 +247,13 @@
         </div>
 
         <div class="qr-section">
-            <h3>📱 Are you on a Desktop or Laptop?</h3>
-            <p style="color: #4b5563; margin-bottom: 0.8rem;">Laptops do not possess mobile motion sensors. To run this live experiment and record data files, please open this exact link on your smartphone browser or scan the URL:</p>
-            <code style="background: #ffffff; padding: 0.4rem 0.8rem; border-radius: 4px; border: 1px solid #cbd5e1; font-weight: bold; color: #003366;">https://garrf.in/kalam-zero-lab/mshm01.html</code>
+            <h3>📱 Scan to Open on Your Mobile Phone</h3>
+            <p style="color: #4b5563; margin-bottom: 0.5rem; font-size: 0.9rem;">Laptops do not possess mobile motion sensors. Scan this QR code with your smartphone camera to open the live experiment instantly:</p>
+            
+            <!-- Live QR Code Container -->
+            <div id="qrcode"></div>
+            
+            <code style="background: #ffffff; padding: 0.3rem 0.6rem; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 0.8rem; font-weight: bold; color: #003366;">https://garrf.in/kalam-zero-lab/mshm01.html</code>
         </div>
 
         <!-- Button for Mobile Users to Jump Straight In -->
@@ -270,6 +293,24 @@
     let selectedVoice = null;
     let startTime = 0;
 
+    // Automatically generate QR code pointing to this exact URL upon page load
+    window.addEventListener('DOMContentLoaded', () => {
+        const currentUrl = window.location.href;
+        new QRCode(document.getElementById("qrcode"), {
+            text: currentUrl,
+            width: 140,
+            height: 140,
+            colorDark: "#003366",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+
+        // AI Voice Assistant welcoming curious visitors
+        setTimeout(() => {
+            speak("Namaste! I am Kushmanda, your AI teacher for structural health monitoring. Welcome to GARRF experiment S H M zero one. Read through the principles of structural damping below, and please scan the QR code with your mobile phone to place it on your test beam and begin recording data.");
+        }, 1000);
+    });
+
     // Load available speech voices for Kushmanda AI Teacher
     function loadVoices() {
         const voices = window.speechSynthesis.getVoices();
@@ -298,13 +339,6 @@
         }
     }
 
-    // Trigger greeting on load for curious visitors (desktop or mobile)
-    window.addEventListener('DOMContentLoaded', () => {
-        setTimeout(() => {
-            speak("Namaste! I am Kushmanda, your AI teacher for structural health monitoring. Welcome to GARRF experiment S H M zero one. Read through the principles of structural damping below, and please open this page on your mobile phone and place it flat on your test beam to begin recording data.");
-        }, 1000);
-    });
-
     // Direct Mobile Sensor Initialization matching working implementations
     function initSensors() {
         if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
@@ -322,7 +356,6 @@
                     alert("Mobile sensors are not accessible on this device. Please open this link directly on your smartphone browser.");
                 });
         } else {
-            // Check if device actually supports motion events or if it's desktop
             window.addEventListener('devicemotion', handleMotionEvent, true);
             launchWorkspace();
         }
