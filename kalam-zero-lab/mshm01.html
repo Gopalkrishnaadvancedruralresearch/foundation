@@ -103,7 +103,6 @@
             color: var(--text-muted);
             font-size: 0.95rem;
         }
-        /* Desktop Block Notice */
         #desktop-notice {
             background: #fffbeb;
             border: 1px solid #fef3c7;
@@ -115,7 +114,6 @@
         #desktop-notice strong {
             color: #b45309;
         }
-        /* Mockup Visualization Preview */
         .preview-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -233,7 +231,7 @@
 
         <!-- Desktop Warning / Mobile Prompt -->
         <div id="desktop-notice">
-            <strong>📱 Notice:</strong> This experiment requires mobile hardware sensors. Please open this web link directly on your smartphone browser via a secure HTTPS connection to run the test.
+            <strong>📱 Notice:</strong> This experiment requires mobile hardware sensors. Please open this web link directly on your smartphone browser via HTTPS to run the test.
         </div>
 
         <!-- Visualization Glimpse / UI Preview -->
@@ -244,8 +242,8 @@
                 <p style="font-size: 0.8rem; margin-top: 0.5rem;">Real-time time-history acceleration curve tracking impact response.</p>
             </div>
             <div class="preview-box">
-                <div class="mockup-screen">👩‍🔬 Voice Assistant: Kushmanda (Indian Female Voice)</div>
-                <p style="font-size: 0.8rem; margin-top: 0.5rem;">Guides students hands-free through telemetry reads and status prompts.</p>
+                <div class="mockup-screen">👩‍🏫 AI Teacher: Kushmanda </div>
+                <p style="font-size: 0.8rem; margin-top: 0.5rem;">Guides students hands-free through structural theory and telemetry updates.</p>
             </div>
         </div>
 
@@ -290,18 +288,22 @@
     let isRecording = false;
     let selectedVoice = null;
 
+    // Load available speech voices and select a sweet Indian English female tone
     function loadVoices() {
         const voices = window.speechSynthesis.getVoices();
-        selectedVoice = voices.find(v => v.lang === 'en-IN' || v.lang.includes('IN')) || 
-                        voices.find(v => v.name.includes('Female') || v.name.includes('Google') || v.name.includes('Zira')) || 
+        // Prioritize Indian English female or soft expressive browser voices
+        selectedVoice = voices.find(v => (v.lang === 'en-IN' || v.lang.includes('IN')) && (v.name.includes('Female') || v.name.includes('Google') || v.name.includes('Rishi') || v.name.includes('Heera'))) ||
+                        voices.find(v => v.lang === 'en-IN' || v.lang.includes('IN')) || 
+                        voices.find(v => v.name.includes('Female') || v.name.includes('Google US English')) || 
                         voices[0];
     }
 
     if ('speechSynthesis' in window) {
         window.speechSynthesis.onvoiceschanged = loadVoices;
+        loadVoices();
     }
 
-    // Voice Assistant named Kushmanda
+    // AI Teacher: Kushmanda (Sweet Indian Female Voice Configuration)
     function speak(text) {
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
@@ -309,28 +311,28 @@
             if (selectedVoice) {
                 utterance.voice = selectedVoice;
             }
-            utterance.rate = 0.95;
-            utterance.pitch = 1.1;
+            utterance.rate = 0.92; // Slightly relaxed, gentle teaching pace
+            utterance.pitch = 1.15; // Soft, bright feminine voice tone
             window.speechSynthesis.speak(utterance);
         }
     }
 
-    // Initialize Mobile Sensors
+    // Sensor initialization aligned with working permission pattern
     function initSensors() {
         if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
-            DeviceMotionEvent.requestPermission().then(permissionState => {
-                if (permissionState === 'granted') {
-                    window.addEventListener('devicemotion', handleMotionEvent);
-                    launchWorkspace();
-                } else {
-                    alert("Motion sensor permission was denied.");
-                }
-            }).catch(console.error);
-        } else if (typeof DeviceMotionEvent !== 'undefined') {
+            DeviceMotionEvent.requestPermission()
+                .then(response => {
+                    if (response === 'granted') {
+                        window.addEventListener('devicemotion', handleMotionEvent);
+                        launchWorkspace();
+                    } else {
+                        alert("Permission denied for motion sensors.");
+                    }
+                })
+                .catch(console.error);
+        } else {
             window.addEventListener('devicemotion', handleMotionEvent);
             launchWorkspace();
-        } else {
-            alert("DeviceMotionEvent is not supported on this browser. Please open this page on a mobile smartphone over HTTPS.");
         }
     }
 
@@ -340,7 +342,9 @@
         document.getElementById('experiment-panel').style.display = 'block';
         loadVoices();
         initChart();
-        speak("Hello, I am Kushmanda, your voice assistant. Sensors are active. Welcome to GARRF experiment S H M zero one. Place your phone flat on the beam and click record vibration.");
+        
+        // Kushmanda AI Teacher Introductory Greeting
+        speak("Namaste! I am Kushmanda, your AI teacher for structural health monitoring. Your smartphone sensors are now active. Welcome to GARRF experiment S H M zero one. Place your phone flat on the beam and click record vibration when you are ready.");
     }
 
     function initChart() {
@@ -374,11 +378,17 @@
     function handleMotionEvent(event) {
         if (!isRecording) return;
         
-        const zAcc = event.acceleration.z || event.accelerationIncludingGravity.z || 0;
+        let zAcc = 0;
+        if (event.acceleration && event.acceleration.z !== null) {
+            zAcc = event.acceleration.z;
+        } else if (event.accelerationIncludingGravity && event.accelerationIncludingGravity.z !== null) {
+            zAcc = event.accelerationIncludingGravity.z;
+        }
+
         const currentTime = ((Date.now() - startTime) / 1000).toFixed(2);
 
         timeData.push(currentTime);
-        accelerationData.push(zAcc);
+        accelerationData.push(Number(zAcc));
 
         chart.data.labels = timeData;
         chart.data.datasets[0].data = accelerationData;
@@ -403,14 +413,16 @@
 
     function analyzeData() {
         if (accelerationData.length === 0) {
-            document.getElementById('results').innerText = "No motion detected. Ensure phone is flat, connected via HTTPS, and try again.";
-            speak("No motion detected. Please check your secure connection and try recording again.");
+            document.getElementById('results').innerText = "No motion data captured. Ensure phone is flat and tap firmly.";
+            speak("I did not detect any motion data. Please ensure your phone is lying flat and try recording again.");
             return;
         }
 
         let maxVal = Math.max(...accelerationData.map(Math.abs));
         document.getElementById('results').innerText = Analysis Complete — Max Peak Acceleration: ${maxVal.toFixed(2)} m/s²;
-        speak(Test complete. Maximum peak acceleration recorded was ${maxVal.toFixed(2)} meters per second squared.);
+        
+        // Kushmanda AI Teacher Telemetry Summary
+        speak(Wonderful! The test is complete. The maximum peak acceleration recorded was ${maxVal.toFixed(2)} meters per second squared. Notice the exponential decay curve on your screen representing structural damping.);
     }
 </script>
 
