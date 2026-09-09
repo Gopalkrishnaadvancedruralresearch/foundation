@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SHM-01: Smartphone Accelerometer Free-Vibration Lab | GARRF Virtual Lab</title>
+    <!-- Chart.js for real-time visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #003366;
+            --accent-color: #0056b3;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 2rem 1rem;
+            text-align: center;
+            border-bottom: 4px solid var(--accent-color);
+        }
+        .header-top {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .mobile-alert-badge {
+            background: #f59e0b;
+            color: white;
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+        header h1 {
+            margin: 0.2rem 0;
+            font-size: 1.5rem;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .logo-img {
+            height: 45px;
+            width: auto;
+            border-radius: 4px;
+            background: #fff;
+            padding: 2px;
+        }
+        header p {
+            margin: 0.5rem 0 0;
+            color: #cbd5e1;
+            font-size: 0.95rem;
+        }
+        .container {
+            max-width: 700px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border-color);
+        }
+        .badge {
+            display: inline-block;
+            background: #e0f2fe;
+            color: #0369a1;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+        }
+        h2 {
+            color: var(--primary-color);
+            font-size: 1.25rem;
+            margin-top: 0;
+        }
+        p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+        /* Desktop Block Notice */
+        #desktop-notice {
+            background: #fffbeb;
+            border: 1px solid #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1.5rem;
+        }
+        #desktop-notice strong {
+            color: #b45309;
+        }
+        /* Mockup Visualization Preview */
+        .preview-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+        @media (max-width: 600px) {
+            .preview-grid { grid-template-columns: 1fr; }
+        }
+        .preview-box {
+            background: #f1f5f9;
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+        }
+        .mockup-screen {
+            width: 100%;
+            height: 120px;
+            background: #0f172a;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #38bdf8;
+            font-family: monospace;
+            font-size: 0.8rem;
+            text-align: center;
+            padding: 0 10px;
+        }
+        .btn {
+            display: block;
+            width: 100%;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 0.85rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            transition: background-color 0.2s;
+            box-sizing: border-box;
+            margin-top: 1rem;
+            text-decoration: none;
+        }
+        .btn:hover { background-color: #004080; }
+        .stats-box {
+            margin-top: 1rem;
+            background: #f8fafc;
+            border: 1px solid var(--border-color);
+            padding: 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+            color: (--primary-color);
+            text-align: center;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 250px;
+            margin-top: 1.5rem;
+        }
+        .founder-contact {
+            margin-top: 1.5rem;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        .founder-contact a {
+            color: var(--accent-color);
+            font-weight: 600;
+            text-decoration: none;
+        }
+        .founder-contact a:hover { text-decoration: underline; }
+        footer {
+            text-align: center;
+            padding: 2rem 1rem;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            border-top: 1px solid var(--border-color);
+            background: #ffffff;
+        }
+        footer .credits {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+        footer a {
+            color: var(--accent-color);
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-top">
+        <span>🇮🇳 Leading Private Virtual Laboratories</span>
+        <span class="mobile-alert-badge">📱 Works Only on Mobile</span>
+    </div>
+    <h1>
+        <img src="logo.jpeg" alt="GARRF Logo" class="logo-img" onerror="this.style.display='none'">
+        Gopalkrishna Advanced Rural Research Foundation
+    </h1>
+    <p>Dr. APJ Abdul Kalam Zero Research Funding Lab • Open-Source SHM Initiative</p>
+</header>
+
+<div class="container">
+
+    <!-- Landing Overview Card -->
+    <div class="card">
+        <span class="badge">Experiment SHM-01</span>
+        <h2>Smartphone Accelerometer Free-Vibration & Damping Analysis</h2>
+        <p>Welcome to GARRF's browser-native structural health monitoring lab. This experiment uses your smartphone’s native internal MEMS accelerometer as a live testing sensor. By placing your phone on a physical beam model, students can study free-vibration decay curves, structural damping, and natural frequencies without expensive hardware.</p>
+
+        <!-- Desktop Warning / Mobile Prompt -->
+        <div id="desktop-notice">
+            <strong>📱 Notice:</strong> This experiment requires mobile hardware sensors. Please open this web link directly on your smartphone browser to run the test.
+        </div>
+
+        <!-- Visualization Glimpse / UI Preview -->
+        <h3>What You Will Measure (Live Visualization Preview):</h3>
+        <div class="preview-grid">
+            <div class="preview-box">
+                <div class="mockup-screen">📈 Live Z-Axis Decaying Waveform</div>
+                <p style="font-size: 0.8rem; margin-top: 0.5rem;">Real-time time-history acceleration curve tracking impact response.</p>
+            </div>
+            <div class="preview-box">
+                <div class="mockup-screen">👩‍🔬 AI Voice Assistant: Kushmanda </div>
+                <p style="font-size: 0.8rem; margin-top: 0.5rem;">Guides students hands-free through telemetry reads and status prompts.</p>
+            </div>
+        </div>
+
+        <div id="permission-section">
+            <p><strong>Ready to begin?</strong> Open this page on your smartphone, place your phone flat on your structural beam model, and tap below to grant sensor access and launch the test interface.</p>
+            <button class="btn" onclick="initSensors()">📱 Activate Mobile Sensors & Start Lab</button>
+        </div>
+
+        <div class="founder-contact">
+            <p>Have questions or collaboration ideas? <a href="mailto:founder@garrf.in">Email founder for more details.</a></p>
+        </div>
+    </div>
+
+    <!-- Active Experiment Instrument Panel (Hidden Until Activated) -->
+    <div class="card" id="experiment-panel" style="display:none;">
+        <h2>Active Instrument Dashboard</h2>
+        <p>Sensors active. Tap the button below, then gently tap your model beam to record vibration response.</p>
+        
+        <button class="btn" onclick="startRecording()">Record Vibration (3 Seconds)</button>
+        
+        <div class="stats-box" id="results">
+            Status: Ready for vibration capture...
+        </div>
+
+        <div class="chart-container">
+            <canvas id="vibrationChart"></canvas>
+        </div>
+    </div>
+
+</div>
+
+<footer>
+    <div class="credits">(Developed by Dr Annamdas Venu Gopal Madhav & Annamdas Shantanu Vasudev Krishna)</div>
+    <p>&copy; 2026 Gopalkrishna Advanced Rural Research Foundation (GARRF). All rights reserved.</p>
+    <p>Powered by Open-Access Frugal Engineering & Zero-Cost Web APIs (<a href="https://garrf.in" target="_blank">garrf.in</a>).</p>
+</footer>
+
+<script>
+    let chart;
+    let accelerationData = [];
+    let timeData = [];
+    let isRecording = false;
+    let selectedVoice = null;
+
+    // Load available voices and pick an Indian English female voice if available
+    function loadVoices() {
+        const voices = window.speechSynthesis.getVoices();
+        // Look for Indian English or female-designated synthetic voices
+        selectedVoice = voices.find(v => v.lang === 'en-IN' || v.lang.includes('IN')) || 
+                        voices.find(v => v.name.includes('Female') || v.name.includes('Google') || v.name.includes('Zira')) || 
+                        voices[0];
+    }
+
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
+
+    // Speech Synthesis Assistant named Kushmanda
+    function speak(text) {
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            if (selectedVoice) {
+                utterance.voice = selectedVoice;
+            }
+            utterance.rate = 0.95; // Natural pace
+            utterance.pitch = 1.1; // Clear feminine tone
+            window.speechSynthesis.speak(utterance);
+        }
+    }
+
+    // Initialize Mobile Sensors
+    function initSensors() {
+        if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+            DeviceMotionEvent.requestPermission().then(permissionState => {
+                if (permissionState === 'granted') {
+                    window.addEventListener('devicemotion', handleMotionEvent);
+                    launchWorkspace();
+                } else {
+                    alert("Motion sensor permission was denied.");
+                }
+            }).catch(console.error);
+        } else if (typeof DeviceMotionEvent !== 'undefined') {
+            window.addEventListener('devicemotion', handleMotionEvent);
+            launchWorkspace();
+        } else {
+            alert("DeviceMotionEvent is not supported on this browser. Please open this page on a mobile smartphone.");
+        }
+    }
+
+    function launchWorkspace() {
+        document.getElementById('permission-section').style.display = 'none';
+        document.getElementById('desktop-notice').style.display = 'none';
+        document.getElementById('experiment-panel').style.display = 'block';
+        loadVoices();
+        initChart();
+        speak("Hello, I am Kushmanda, your voice assistant. Sensors are active. Welcome to GARRF experiment S H M zero one. Place your phone flat on the beam and click record vibration.");
+    }
+
+    function initChart() {
+        const ctx = document.getElementById('vibrationChart').getContext('2d');
+        chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Z-Axis Acceleration (m/s²)',
+                    data: [],
+                    borderColor: '#0056b3',
+                    backgroundColor: 'rgba(0, 86, 179, 0.05)',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    tension: 0.1,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { title: { display: true, text: 'Time (s)' } },
+                    y: { title: { display: true, text: 'Acceleration (m/s²)' } }
+                }
+            }
+        });
+    }
+
+    function handleMotionEvent(event) {
+        if (!isRecording) return;
+        
+        const zAcc = event.acceleration.z || event.accelerationIncludingGravity.z || 0;
+        const currentTime = ((Date.now() - startTime) / 1000).toFixed(2);
+
+        timeData.push(currentTime);
+        accelerationData.push(zAcc);
+
+        chart.data.labels = timeData;
+        chart.data.datasets[0].data = accelerationData;
+        chart.update('none');
+    }
+
+    let startTime;
+    function startRecording() {
+        accelerationData = [];
+        timeData = [];
+        isRecording = true;
+        startTime = Date.now();
+        
+        document.getElementById('results').innerText = "Status: Recording vibration... Tap your structure now!";
+        speak("Recording started. Please tap your beam structure gently.");
+
+        setTimeout(() => {
+            isRecording = false;
+            analyzeData();
+        }, 3000);
+    }
+
+    function analyzeData() {
+        if (accelerationData.length === 0) {
+            document.getElementById('results').innerText = "No motion detected. Ensure phone is flat and try again.";
+            speak("No motion detected. Please try recording again.");
+            return;
+        }
+
+        let maxVal = Math.max(...accelerationData.map(Math.abs));
+        document.getElementById('results').innerText = Analysis Complete — Max Peak Acceleration: ${maxVal.toFixed(2)} m/s²;
+        speak(Test complete. Maximum peak acceleration recorded was ${maxVal.toFixed(2)} meters per second squared.);
+    }
+</script>
+
+</body>
+</html>
