@@ -1,684 +1,1017 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GARRF Virtual Lab — Lamb Wave Structural Health Monitoring (SHM)</title>
-<style>
-:root{
---blue:#0b4f8a;
---dark:#062b4c;
---green:#138a4b;
---orange:#ef8b22;
---red:#c62828;
---purple:#6842a5;
---light:#f4f8fb;
---border:#cdd9e3;
---text:#17324d;
---shadow:0 8px 24px rgba(0,0,0,.10);
-}
-*{box-sizing:border-box;}
-body{margin:0;font-family:Arial,Helvetica,sans-serif;background:linear-gradient(135deg,#eef7fc,#ffffff);color:var(--text);}
-header{background:linear-gradient(135deg,#06345b,#0b6599);color:white;padding:22px 15px;text-align:center;box-shadow:var(--shadow);}
-.logo{width:82px;height:82px;object-fit:contain;border-radius:50%;background:white;padding:5px;}
-header h1{margin:8px 0 4px;font-size:clamp(22px,4vw,34px);}
-header h2{margin:4px 0;font-size:clamp(16px,3vw,22px);font-weight:normal;}
-header p{margin:8px 0;font-size:14px;}
-.container{width:min(1200px,94%);margin:22px auto 50px;}
-.card{background:white;border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:20px;box-shadow:var(--shadow);}
-.card h2{margin-top:0;color:var(--blue);}
-.card h3{color:var(--dark);}
-.badge{display:inline-block;padding:7px 13px;border-radius:20px;background:#e5f4fb;color:#07537d;font-size:13px;font-weight:bold;margin:3px;}
-.objective{background:#edf8f1;border-left:6px solid var(--green);padding:15px;border-radius:8px;}
-.warning{background:#fff7e8;border-left:6px solid var(--orange);padding:15px;border-radius:8px;}
-.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:15px;}
-.control-box{background:#f7fafc;border:1px solid var(--border);border-radius:12px;padding:15px;}
-label{display:block;font-weight:bold;margin-bottom:7px;}
-input[type=range]{width:100%;}
-select{width:100%;padding:10px;border:1px solid #b8c7d3;border-radius:8px;font-size:15px;}
-.value{color:var(--blue);font-weight:bold;}
-button{border:0;border-radius:9px;padding:12px 18px;margin:5px;cursor:pointer;font-weight:bold;font-size:14px;transition:.2s;}
-button:hover{transform:translateY(-1px);box-shadow:0 5px 12px rgba(0,0,0,.15);}
-.primary{background:var(--blue);color:white;}
-.green{background:var(--green);color:white;}
-.orange{background:var(--orange);color:white;}
-.red{background:var(--red);color:white;}
-.dark{background:#18384f;color:white;}
-.center{text-align:center;}
-.status{padding:12px;border-radius:10px;background:#eaf7ef;color:#116a39;font-weight:bold;text-align:center;margin-top:12px;}
-.formula{background:#f1f7fb;border:1px solid #c8dce8;border-radius:10px;padding:13px;margin:10px 0;font-family:Georgia,serif;text-align:center;font-size:18px;}
-.circuit-area{background:#f9fbfd;border:2px solid #d6e2ea;border-radius:15px;padding:12px;overflow:auto;}
-svg{width:100%;min-width:700px;min-height:330px;}
-.results{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;}
-.result{background:#f5f9fc;border:1px solid var(--border);border-radius:12px;padding:15px;text-align:center;}
-.result strong{display:block;font-size:19px;color:var(--blue);margin-top:6px;}
-.graph-container{background:#ffffff;border:1px solid var(--border);border-radius:12px;padding:10px;overflow:hidden;}
-canvas{width:100%;height:380px;display:block;}
-table{width:100%;border-collapse:collapse;margin-top:10px;}
-th,td{border:1px solid #cbd7df;padding:10px;text-align:center;}
-th{background:#e9f3f9;color:#073d64;}
-tr:nth-child(even){background:#f8fbfd;}
-.conclusion{background:#eef9f1;border:2px solid #b9dfc4;border-radius:12px;padding:18px;line-height:1.65;}
-.quiz-question{background:#f7fafc;padding:15px;border:1px solid var(--border);border-radius:10px;margin-bottom:14px;}
-.quiz-question label{font-weight:normal;margin:8px 0;}
-.chitti{background:linear-gradient(135deg,#071d31,#0b5278);color:white;border-radius:16px;padding:22px;box-shadow:var(--shadow);}
-.chitti h2, .chitti h3{color:white;}
-.chitti-tip{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:15px;}
-.small{font-size:13px;color:#607789;}
-
-/* === MANOHAR SYNCHRONIZED LEARNING FLOW === */
-.manohar-highlight{
-outline:4px solid rgba(11,79,138,.22);
-box-shadow:0 0 0 7px rgba(11,79,138,.07), 0 14px 35px rgba(11,79,138,.18);
-transition:box-shadow .35s, outline .35s;
-}
-.manohar-live-badge{display:none;margin:8px auto 0;width:max-content;max-width:100%;padding:7px 12px;border-radius:999px;background:#eaf7ef;color:#116a39;font-size:12px;font-weight:800;}
-.manohar-live-badge.show{display:block}
-
-/* === CLOSED PHONE LAUNCHER + TEACHER PANEL === */
-.shm-config-live-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:20px;align-items:stretch;margin-bottom:20px;}
-.shm-config-live-grid .card{margin-bottom:0;}
-@media(max-width:900px){.shm-config-live-grid{grid-template-columns:1fr;}}
-
-#manoharLauncher{
-position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:99990;margin:0;padding:12px 10px 12px 9px;
-border-radius:16px 0 0 16px;background:linear-gradient(135deg,#0b4f8a,#18384f);color:#fff;
-border:2px solid rgba(255,255,255,.85);box-shadow:0 8px 25px rgba(0,0,0,.25);
-display:flex;flex-direction:column;align-items:center;gap:4px;min-width:64px;font-size:11px;cursor:pointer;
-}
-#manoharLauncher:hover{transform:translateY(-50%) translateX(-3px);}
-#manoharLauncher .ct-phone{font-size:25px;line-height:1;}
-
-#manoharTeacher{
-display:none;position:fixed;right:18px;bottom:18px;width:min(390px,calc(100vw - 28px));
-z-index:99999;background:linear-gradient(145deg,#fffdf7,#ffffff);border:2px solid #0b4f8a;
-border-radius:18px;box-shadow:0 18px 55px rgba(0,0,0,.28);overflow:hidden;font-family:Arial,Helvetica,sans-serif;
-}
-#manoharTeacher.open{display:block}
-#manoharTeacher.minimized .ct-body{display:none}
-#manoharTeacher.minimized{width:250px}
-.ct-head{display:flex;align-items:center;gap:10px;padding:11px 12px;background:linear-gradient(135deg,#0b4f8a,#18384f);color:#fff;}
-.ct-avatar{width:43px;height:43px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#fff;color:#0b4f8a;font-size:24px;border:2px solid rgba(255,255,255,.8);flex:none;}
-.ct-title{flex:1;min-width:0}
-.ct-title strong{display:block;font-size:15px}
-.ct-title span{display:block;font-size:11px;opacity:.9;margin-top:2px}
-.ct-head button{margin:0!important;padding:5px 8px!important;width:auto!important;background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);}
-.ct-body{padding:12px}
-.ct-view{background:#eaf4fb;border-left:5px solid #0b4f8a;padding:9px 10px;border-radius:9px;margin-bottom:9px;font-size:12px;color:#073d64;}
-.ct-view b{display:block;margin-bottom:3px}
-.ct-message{min-height:74px;max-height:145px;overflow:auto;background:#f7f9fc;border:1px solid #d8e1e8;border-radius:10px;padding:11px;line-height:1.45;font-size:13px;color:#24384a;}
-.ct-progress-wrap{margin:9px 0 7px}
-.ct-progress{height:8px;background:#e5e9ed;border-radius:20px;overflow:hidden;}
-.ct-progress-bar{height:100%;width:0%;background:#0b4f8a;transition:.25s;}
-.ct-step{font-size:11px;color:#667788;margin-top:5px;text-align:right;}
-.ct-buttons{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:9px;}
-.ct-buttons button{margin:0!important;padding:8px 5px!important;font-size:11px!important;width:auto!important;}
-.ct-primary{background:#0b4f8a!important;color:#fff}
-.ct-gold{background:#d8a21b!important;color:#fff}
-.ct-dark{background:#18384f!important;color:#fff}
-.ct-light{background:#edf3f7!important;color:#29475d}
-.ct-language{display:flex;gap:7px;align-items:center;margin-top:9px;font-size:11px;color:#536879;}
-.ct-language select{flex:1;padding:7px!important;font-size:12px!important;}
-.ct-status{margin-top:7px;font-size:10px;color:#6c7882;text-align:center;}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GARRF • KALAM ZERO LAB • ARJUN & MANOHAR AI TEACHERS</title>
+    
+    <!-- Three.js CDN and OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- MathJax CDN for Rendering LaTeX Equations & Symbols -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        :root {
+            --garrf-blue: #0b2545;
+            --garrf-accent-blue: #134074;
+            --bg-primary: #ffffff;
+            --bg-card: #f8fafc;
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --accent-green: #10b981;
+            --accent-blue: #2563eb;
+            --accent-amber: #d97706;
+            --border-color: #cbd5e1;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-main);
+            line-height: 1.6;
+        }
+        /* GARRF TOP BAR */
+        .garrf-top-bar {
+            background-color: var(--garrf-blue);
+            color: #ffffff;
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid #00b4d8;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .garrf-brand {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .garrf-logo-img {
+            height: 48px;
+            width: auto;
+            border-radius: 4px;
+            background-color: #ffffff;
+            padding: 2px;
+            object-fit: contain;
+        }
+        .brand-text h1 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: #ffffff;
+        }
+        .brand-text p {
+            font-size: 0.78rem;
+            color: #94a3b8;
+        }
+        .garrf-right-badge {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 6px 14px;
+            border-radius: 20px;
+        }
+        .badge-text {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #e0f2fe;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 20px auto;
+            padding: 0 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+            position: relative;
+        }
+        .section-tag {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: #e2e8f0;
+            color: #475569;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+        h2 {
+            font-size: 1.15rem;
+            margin-bottom: 14px;
+            color: var(--garrf-accent-blue);
+        }
+        /* THEORY CHAPTER & MATH STYLING */
+        .theory-chapter {
+            font-size: 0.95rem;
+            color: #334155;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .theory-chapter h3 {
+            font-size: 1rem;
+            color: #0f172a;
+            margin-top: 10px;
+        }
+        .theory-chapter ul {
+            padding-left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .formula-box {
+            background-color: #f1f5f9;
+            border-left: 4px solid var(--accent-blue);
+            padding: 12px 18px;
+            border-radius: 6px;
+            color: #0f172a;
+            font-size: 1.05rem;
+            margin: 6px 0;
+            overflow-x: auto;
+        }
+        /* MODE DIAGRAM CARDS */
+        .mode-diagram-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .mode-card {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+        }
+        .mode-card h4 {
+            font-size: 0.9rem;
+            color: var(--garrf-accent-blue);
+            margin-bottom: 8px;
+        }
+        .mode-canvas {
+            width: 100%;
+            height: 140px;
+            background-color: #0f172a;
+            border-radius: 6px;
+        }
+        .visual-note {
+            background-color: #eff6ff;
+            border-left: 4px solid #2563eb;
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            color: #1e3a8a;
+            margin-top: 10px;
+        }
+        /* INPUT GRID */
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 15px;
+            width: 100%;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            width: 100%;
+        }
+        .control-group label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: bold;
+        }
+        .input-row {
+            display: flex;
+            gap: 8px;
+            width: 100%;
+        }
+        .input-row input {
+            flex: 1;
+            width: 50%;
+            min-width: 0;
+        }
+        .control-group input, .control-group select {
+            padding: 8px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background-color: #ffffff;
+            color: #0f172a;
+            font-size: 0.85rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .disabled-group {
+            opacity: 0.4;
+            pointer-events: none;
+        }
+        .grid-2col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 850px) {
+            .grid-2col, .mode-diagram-grid { grid-template-columns: 1fr; }
+            .garrf-top-bar { flex-direction: column; align-items: flex-start; gap: 10px; }
+        }
+        canvas, #threejs-container {
+            width: 100%;
+            height: 320px;
+            background-color: #0f172a;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+        }
+        .stage-buttons-vertical {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 15px;
+        }
+        .btn-bar {
+            width: 100%;
+            padding: 14px 20px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .btn-record-active {
+            background-color: #2563eb;
+            color: #ffffff;
+            border-color: #1d4ed8;
+        }
+        .btn-record-active:hover {
+            background-color: #1d4ed8;
+        }
+        .terminal-box {
+            background-color: #0f172a;
+            border: 1px solid #1e293b;
+            border-left: 4px solid var(--accent-green);
+            border-radius: 6px;
+            padding: 15px;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 0.85rem;
+            color: #4ade80;
+            white-space: pre-wrap;
+            margin-top: 15px;
+            max-height: 240px;
+            overflow-y: auto;
+        }
+        /* AI ASSISTANT TABS */
+        .assistant-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: #f1f5f9;
+            color: var(--text-muted);
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        .tab-btn.active-arjun {
+            background: #2563eb;
+            color: white;
+            border-color: #1d4ed8;
+        }
+        .tab-btn.active-manohar {
+            background: #10b981;
+            color: white;
+            border-color: #047857;
+        }
+        .chat-box {
+            background-color: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            height: 260px;
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .chat-msg {
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            max-width: 90%;
+        }
+        .msg-arjun {
+            background-color: #eff6ff;
+            color: #1e40af;
+            align-self: flex-start;
+            border-left: 4px solid #2563eb;
+        }
+        .msg-manohar {
+            background-color: #f0fdf4;
+            color: #166534;
+            align-self: flex-start;
+            border-left: 4px solid #10b981;
+        }
+        .msg-user {
+            background-color: #f1f5f9;
+            color: #0f172a;
+            align-self: flex-end;
+        }
+        .chat-input-group {
+            display: flex;
+            gap: 10px;
+        }
+        .chat-input {
+            flex: 1;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            font-size: 0.9rem;
+        }
+        footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border-color);
+            margin-top: 30px;
+            background-color: #f8fafc;
+        }
+    </style>
 </head>
 <body>
-
-<header>
-<img src="https://garrf.in/images/logo.jpeg" alt="GARRF Logo" class="logo">
-<h1>GopalKrishna Advanced Rural Research Foundation</h1>
-<h2>GARRF Virtual Engineering & Electronics Laboratory</h2>
-<p>KALAM ZERO RESEARCH FUNDING LAB</p>
-<div>
-<span class="badge">LAMB WAVES</span>
-<span class="badge">SHM EXPERIMENT</span>
-<span class="badge">PZT TRANSDUCERS</span>
-<span class="badge">VIRTUAL LAB</span>
+<!-- GARRF TOP BAR -->
+<div class="garrf-top-bar">
+    <div class="garrf-brand">
+        <img src="logo.jpeg" alt="GARRF Logo" class="garrf-logo-img" onerror="this.src='https://garrf.in/logo.png'">
+        <div class="brand-text">
+            <h1>GopalKrishna Advanced Rural Research Foundation</h1>
+            <p>Virtual AISIA R&D Platform • Frugal Engineering Education</p>
+        </div>
+    </div>
+    <div class="garrf-right-badge">
+        <span style="font-size:1.2rem;">🇮🇳</span>
+        <span class="badge-text">Chamundi Template • Dual AI Assistants (Arjun & Manohar)</span>
+    </div>
 </div>
-</header>
-
 <div class="container">
+    <!-- SECTION 1: THEORY CHAPTER -->
+    <div class="card">
+        <span class="section-tag">SECTION 1</span>
+        <h2>1. Theory & Mathematical Foundations</h2>
+        
+        <div class="theory-chapter">
+            <p>
+                <strong>Piezoelectric Guided Waves & Structural Health Monitoring</strong><br>
+                Guided waves are elastic stress waves bounded by structural geometries such as thin metallic or composite plates. Surface-bonded Lead Zirconate Titanate (PZT) transducers convert electrical excitation into high-frequency mechanical strain via the inverse piezoelectric effect, actuating ultrasonic Lamb waves throughout the plate structure.
+            </p>
+            <h3>1.1 Fundamental Lamb Wave Modes ($S_0$ & $A_0$)</h3>
+            <p>
+                Ultrasonic Lamb waves propagate in thin plates through two primary dispersive modes across the plate cross-section ($x$-$y$ plane):
+            </p>
+            <ul>
+                <li><strong>Symmetric ($S_0$ Mode):</strong> Extensional in-plane motion dominating high frequencies with rapid group velocity propagation. Upper and lower surfaces move symmetrically in opposite vertical directions relative to the neutral plane[cite: 2].</li>
+                <li><strong>Antisymmetric ($A_0$ Mode):</strong> Flexural out-of-plane displacement. Upper and lower surfaces move in phase in the same vertical direction, exhibiting extreme sensitivity to surface cracks, corrosion, and debonding[cite: 2].</li>
+            </ul>
+            <!-- VISUAL DIAGRAMS FOR S0 AND A0 MODES -->
+            <div class="mode-diagram-grid">
+                <div class="mode-card">
+                    <h4>Symmetric ($S_0$) Extensional Mode in $x$-$y$ Plane[cite: 2]</h4>
+                    <canvas id="s0Canvas" class="mode-canvas" width="400" height="140"></canvas>
+                    <p style="font-size:0.75rem; color:#475569; margin-top:6px;">In-plane stretching/compression symmetric about neutral axis $y=0$[cite: 2].</p>
+                </div>
+                <div class="mode-card">
+                    <h4>Antisymmetric ($A_0$) Flexural Bending Mode in $x$-$y$ Plane[cite: 2]</h4>
+                    <canvas id="a0Canvas" class="mode-canvas" width="400" height="140"></canvas>
+                    <p style="font-size:0.75rem; color:#475569; margin-top:6px;">Out-of-plane flexural bending across plate thickness in $x$-$y$ plane[cite: 2].</p>
+                </div>
+            </div>
+            <div class="visual-note">
+                💡 <strong>Visualization Note:</strong><br>
+                In the <strong>$S_0$ mode</strong>, notice how the top and bottom surfaces push and pull symmetrically about the center line (extensional motion in $x$). In contrast, in the <strong>$A_0$ mode</strong>, both surfaces bend together up and down in unison along the $y$-axis (flexural bending).
+            </div>
+            <h3>1.2 Time-of-Flight (ToF) & Dynamic Scattering Physics[cite: 2]</h3>
+            <p>
+                For a direct path between Actuator ($A$) and Sensor ($S$) across distance $d_{AS}$, the direct wave Time-of-Flight ($ToF_{\text{direct}}$) is defined as[cite: 2]:
+            </p>
+            <div class="formula-box">
+                $$ToF_{\text{direct}} = \frac{d_{AS}}{c_g} = \frac{\sqrt{(X_S - X_A)^2 + (Y_S - Y_A)^2}}{c_g}$$
+            </div>
+            <p>
+                When a structural flaw with length $\ell_c$ and angle $\theta_c$ is positioned at center $(X_D, Y_D)$ (measured from the left edge $X_0=0$ and bottom $Y_0=0$), the scattered echo path length $d_{\text{scatter}}$ is given by[cite: 2]:
+            </p>
+            <div class="formula-box">
+                $$d_{\text{scatter}} = d_{AD} + d_{DS} = \sqrt{(X_D - X_A)^2 + (Y_D - Y_A)^2} + \sqrt{(X_S - X_D)^2 + (Y_S - Y_D)^2}$$
+            </div>
+            <div class="formula-box">
+                $$ToF_{\text{scatter}} = \frac{d_{\text{scatter}}}{c_g}$$
+            </div>
+        </div>
+    </div>
 
-<!-- INTRODUCTION -->
-<section class="card" id="sectionIntro">
-<h2>⚡ INTRODUCTION — Lamb Wave Structural Health Monitoring (SHM)</h2>
-<p>
-Guided Lamb waves propagate through thin-walled structures like metallic plates and composite panels. 
-Because of their long propagation range and sensitivity to internal structural flaws, they form the cornerstone of advanced Structural Health Monitoring (SHM).
-</p>
-<div class="objective">
-<strong>🎯 Experiment Objective</strong>
-<p>To excite and sense Lamb wave packets (S0 and A0 modes) using piezoelectric (PZT) wafers, measure time-of-flight, and analyze signal attenuation due to structural damage.</p>
-</div>
-<div class="warning">
-<strong>👨‍🎓 Student Challenge</strong>
-<p>Before running the simulation, consider:</p>
-<ul>
-<li>How do excitation frequency and plate thickness affect Lamb wave dispersion?</li>
-<li>What is the difference between symmetric (S0) and antisymmetric (A0) modes?</li>
-<li>How does a localized defect alter the received sensor wave packet amplitude?</li>
-</ul>
-</div>
-</section>
+    <!-- SECTION 2: SPECIMEN CONFIGURATION & CONTROLS -->
+    <div class="card">
+        <span class="section-tag">SECTION 2</span>
+        <h2>2. Specimen, Transducer & Flaw Controls</h2>
+        
+        <div class="controls-grid">
+            <div class="control-group">
+                <label>Plate Length ($L$) / Width ($W$) (mm):</label>
+                <div class="input-row">
+                    <input type="number" id="plateL" value="500" min="200" max="1000" onchange="redrawAll()">
+                    <input type="number" id="plateW" value="300" min="150" max="600" onchange="redrawAll()">
+                </div>
+            </div>
+            <div class="control-group">
+                <label>PZT Actuator $A(X_A, Y_A)$ (mm)[cite: 2]:</label>
+                <div class="input-row">
+                    <input type="number" id="actX" value="80" onchange="redrawAll()">
+                    <input type="number" id="actY" value="150" onchange="redrawAll()">
+                </div>
+            </div>
+            <div class="control-group">
+                <label>PZT Sensor $S(X_S, Y_S)$ (mm)[cite: 2]:</label>
+                <div class="input-row">
+                    <input type="number" id="senX" value="420" onchange="redrawAll()">
+                    <input type="number" id="senY" value="150" onchange="redrawAll()">
+                </div>
+            </div>
+            <div class="control-group">
+                <label>Damage Classification:</label>
+                <select id="damageType" onchange="toggleDamageControls(); redrawAll();">
+                    <option value="No Damage">No Damage</option>
+                    <option value="Surface Crack" selected>Surface Crack</option>
+                    <option value="Corrosion Pit">Corrosion Pit</option>
+                    <option value="Debonding / Delamination">Debonding / Delamination</option>
+                </select>
+            </div>
+            <div class="control-group" id="groupDefPos">
+                <label>Flaw Location (From Left $X_D$, Bottom $Y_D$ mm)[cite: 2]:</label>
+                <div class="input-row">
+                    <input type="number" id="defX" value="250" min="10" max="490" oninput="redrawAll()">
+                    <input type="number" id="defY" value="150" min="10" max="290" oninput="redrawAll()">
+                </div>
+            </div>
+            <div class="control-group" id="groupDefGeom">
+                <label>Flaw Geometry: Length $\ell_c$ (mm) / Angle $\theta_c$ (°)[cite: 2]:</label>
+                <div class="input-row">
+                    <input type="number" id="crackLength" value="25" min="2" max="100" placeholder="Length (mm)" oninput="redrawAll()">
+                    <input type="number" id="crackAngle" value="45" min="0" max="180" placeholder="Angle (°)" oninput="redrawAll()">
+                </div>
+            </div>
+        </div>
+    </div>
 
-<!-- THEORY -->
-<section class="card" id="section1Theory">
-<h2>📚 SECTION 1 — Theory of Guided Lamb Waves</h2>
-<h3>Wave Propagation Principles</h3>
-<p>Lamb waves consist of particle motion constrained between two parallel free surfaces. The governing Rayleigh-Lamb frequency equations define multi-mode propagation:</p>
-<div class="formula">
-$$\frac{\tan(\beta h)}{\tan(\alpha h)} = -\left[ \frac{4\alpha\beta k^2}{(k^2 - \beta^2)^2} \right]^{\pm 1}$$
-</div>
-<h3>Time of Flight & Distance</h3>
-<p>The propagation distance $d$ related to group velocity $C_g$ and time of flight $t$ is expressed as:</p>
-<div class="formula">
-$d = C_g \times t$
-</div>
-<h3>Important Observation</h3>
-<p>At lower frequency-thickness products, the fundamental antisymmetric mode ($A_0$) and symmetric mode ($S_0$) dominate wave signals, allowing precise defect identification via amplitude drop and wave scattering.</p>
-</section>
+    <!-- SECTION 3: VISUALIZERS -->
+    <div class="card">
+        <span class="section-tag">SECTION 3</span>
+        <h2>3. Live Wave Field & Wave Propagation Visualizer</h2>
+        <div class="grid-2col">
+            <div>
+                <h3 style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 5px;">2D Wave Field & Precise Flaw Orientation[cite: 2]</h3>
+                <canvas id="waveCanvas" width="500" height="320"></canvas>
+            </div>
+            <div>
+                <h3 style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 5px;">3D Interactive Dynamic Wave Mesh (Rotate / Zoom)[cite: 2]</h3>
+                <div id="threejs-container"></div>
+            </div>
+        </div>
+        <div class="stage-buttons-vertical">
+            <button id="btnRecord" class="btn-bar btn-record-active" onclick="recordExperimentalData()">
+                <span>📸 RECORD EXPERIMENTAL DATA DATASET</span>
+                <span id="badgeRecord" style="font-size: 0.75rem; background: #ffffff; color: #2563eb; padding: 3px 8px; border-radius: 4px;">RECORD FIRST SIGNAL</span>
+            </button>
+        </div>
+        <h3 style="font-size: 0.85rem; color: var(--text-muted); margin-top: 15px;">Oscilloscope Terminal & Signal Readings Dataset[cite: 2]:</h3>
+        <div id="ascanOutput" class="terminal-box">Ready: Click "📸 RECORD EXPERIMENTAL DATA DATASET" to record the First Signal...</div>
+    </div>
 
-<!-- GRAPH -->
-<section class="card" id="section4Graph">
-<h2>📈 SECTION 4 — Sensor Wave Response vs. Time</h2>
-<div class="graph-container">
-<canvas id="graph"></canvas>
-</div>
-<p class="small">The waveform displays the actuator tone-burst input and the received multi-mode Lamb wave packet response at the PZT sensor node.</p>
-</section>
+    <!-- SECTION 7: DUAL AI ASSISTANTS (ARJUN & MANOHAR) -->
+    <div class="card" style="border-top: 4px solid var(--accent-blue);">
+        <span class="section-tag">SECTION 7</span>
+        <h2>🤖 DUAL AI ASSISTANTS: Choose Your Guide</h2>
+        
+        <!-- Assistant Selector Tabs -->
+        <div class="assistant-tabs">
+            <button id="tabArjun" class="tab-btn active-arjun" onclick="switchAssistant('arjun')">
+                💬 ARJUN (Text-Based AI Assistant)
+            </button>
+            <button id="tabManohar" class="tab-btn" onclick="switchAssistant('manohar')">
+                🎙️ MANOHAR (Voice-Based AI Assistant 🇮🇳)
+            </button>
+        </div>
 
-<!-- CONFIG + LIVE MEASUREMENTS -->
-<div class="shm-config-live-grid">
-<!-- CONTROLS -->
-<section class="card" id="section2Config">
-<h2>🧩 SECTION 2 — PZT & Wave Configuration</h2>
-<div class="controls">
-<div class="control-box">
-<label>Wave Mode</label>
-<select id="mode" onchange="resetSimulation()">
-<option value="s0">S0 Mode (Extensional)</option>
-<option value="a0">A0 Mode (Flexural)</option>
-</select>
-</div>
-<div class="control-box">
-<label>Excitation Voltage: <span id="voltageValue" class="value">50 Vpp</span></label>
-<input type="range" id="voltage" min="10" max="100" step="5" value="50" oninput="updateParameters()">
-</div>
-<div class="control-box">
-<label>Frequency: <span id="freqValue" class="value">150 kHz</span></label>
-<input type="range" id="frequency" min="50" max="300" step="10" value="150" oninput="updateParameters()">
-</div>
-<div class="control-box">
-<label>Sensor Distance: <span id="distValue" class="value">200 mm</span></label>
-<input type="range" id="distance" min="50" max="500" step="25" value="200" oninput="updateParameters()">
-</div>
-</div>
-<div class="center">
-<div class="warning" style="margin:10px auto;max-width:900px;">
-<strong>Manohar Live Instruction:</strong> Set your parameters. When you press <strong>START</strong>, I will guide you through the real-time wave packet transmission and sensor reception.
-</div>
-<button class="green" onclick="startSimulation()">▶ START</button>
-<button class="orange" onclick="pauseSimulation()">⏸ PAUSE</button>
-<button class="primary" onclick="resetSimulation()">↺ RESET</button>
-</div>
-<div class="manohar-live-badge" id="manoharLiveBadge">MANOHAR • LIVE GUIDANCE ACTIVE</div>
-<div id="status" class="status">🟢 Ready. Configure parameters and start the Lamb wave test.</div>
-</section>
+        <!-- Chat Box Interface -->
+        <div id="assistantChatBox" class="chat-box">
+            <div id="msgArjunIntro" class="chat-msg msg-arjun">
+                <strong>🤖 ARJUN (Text-Based AI Assistant):</strong> Hello! I am Arjun, your text-based research assistant. Feel free to ask me any technical questions about $S_0$, $A_0$ wave propagation, coordinates, or calculations[cite: 2]!
+            </div>
+            <div id="msgManoharIntro" class="chat-msg msg-manohar" style="display:none;">
+                <strong>👨‍🏫 MANOHAR (Voice-Based AI Assistant 🇮🇳):</strong> Namaste! I am Manohar, your voice-enabled assistant with Indian English speech synthesis. I will speak my explanations aloud when you interact or record data[cite: 2]!
+            </div>
+        </div>
 
-<!-- RESULTS -->
-<section class="card">
-<h2>📊 Live Measurements</h2>
-<div class="results">
-<div class="result">Time<strong id="timeDisplay">0.00 ms</strong></div>
-<div class="result">Sensor Amplitude<strong id="ampDisplay">0.00 V</strong></div>
-<div class="result">Group Velocity<strong id="velDisplay">5400 m/s</strong></div>
-<div class="result">Time of Flight<strong id="tofDisplay">0.037 ms</strong></div>
-<div class="result">Damage Index<strong id="damageDisplay">0.00 %</strong></div>
-</div>
-</section>
-</div>
-
-<!-- CIRCUIT / SETUP DIAGRAM -->
-<section class="card" id="section3Live">
-<h2>🔌 SECTION 3 — PZT Transducer Setup</h2>
-<div class="circuit-area">
-<svg id="circuitSVG" viewBox="0 0 1000 380" preserveAspectRatio="xMidYMid meet"></svg>
-</div>
-</section>
-
-<!-- TIME CONSTANT / VELOCITY ANALYSIS -->
-<section class="card" id="section5Analysis">
-<h2>⏱ SECTION 5 — Velocity & Dispersion Analysis</h2>
-<div id="tauAnalysis">Run the experiment to analyze wave velocity and arrival times.</div>
-</section>
-
-<!-- OBSERVATION -->
-<section class="card" id="section6Observation">
-<h2>📝 SECTION 6 — Student Observation Record</h2>
-<p>Run the experiment at various distances and frequencies, pause, and record sensor responses.</p>
-<table>
-<thead>
-<tr>
-<th>Trial</th><th>Mode</th><th>Frequency</th><th>Distance</th><th>Velocity</th><th>ToF</th><th>Amplitude</th>
-</tr>
-</thead>
-<tbody id="observationTable"></tbody>
-</table>
-<div class="center">
-<button class="green" onclick="addObservation()">+ ADD OBSERVATION</button>
-<button class="red" onclick="clearObservations()">CLEAR OBSERVATIONS</button>
-</div>
-</section>
-
-<!-- CONCLUSION -->
-<section class="card" id="section8Conclusion">
-<h2>🎓 SECTION 8 — Experiment Conclusion</h2>
-<div class="conclusion" id="conclusion">Complete the experiment to generate engineering conclusions.</div>
-</section>
-
-<!-- QUIZ -->
-<section class="card" id="section9Quiz">
-<h2>❓ SECTION 9 — Student Quiz</h2>
-<div class="quiz-question">
-<strong>Q1. Lamb waves are characterized as:</strong>
-<label><input type="radio" name="q1" value="a"> Electromagnetic waves</label>
-<label><input type="radio" name="q1" value="b"> Guided elastic waves in solid plates</label>
-<label><input type="radio" name="q1" value="c"> Acoustic waves in air</label>
-</div>
-<div class="quiz-question">
-<strong>Q2. Which mode typically exhibits higher in-plane extensional motion at lower frequencies?</strong>
-<label><input type="radio" name="q2" value="a"> A0 Mode</label>
-<label><input type="radio" name="q2" value="b"> Rayleigh Wave</label>
-<label><input type="radio" name="q2" value="c"> S0 Mode</label>
-</div>
-<div class="quiz-question">
-<strong>Q3. If the propagation distance between actuator and sensor increases, Time of Flight (ToF):</strong>
-<label><input type="radio" name="q3" value="a"> Increases</label>
-<label><input type="radio" name="q3" value="b"> Decreases</label>
-<label><input type="radio" name="q3" value="c"> Remains unchanged</label>
-</div>
-<div class="center">
-<button class="green" onclick="checkQuiz()">CHECK QUIZ</button>
-</div>
-<div id="quizResult"></div>
-</section>
-
-<!-- CHITTI -->
-<section class="card chitti" id="section10Chitti">
-<h2>🤖 CHITTI</h2>
-<h3>GARRF Robotics & Engineering AI Mentor</h3>
-<p>Need deeper insights into piezoelectric transduction or SHM algorithms?</p>
-<div class="chitti-tip">
-<strong>💡 Try asking:</strong>
-<p>"Why do Lamb waves experience multi-mode dispersion?"</p>
-<p>"How are PZT patches bonded for optimal wave transmission?"</p>
-</div>
-<div class="center">
-<button class="orange" onclick="askChitti()">🤖 ASK CHITTI</button>
-</div>
-</section>
-
+        <div class="chat-input-group">
+            <input type="text" id="assistantInput" class="chat-input" placeholder="Ask Arjun or Manohar: 'Explain A0 and S0' or 'Where is the flaw?'" onkeypress="if(event.key==='Enter') sendAssistantMessage()">
+            <button id="btnSendAssistant" style="background: #2563eb; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer;" onclick="sendAssistantMessage()">Send Message</button>
+        </div>
+    </div>
 </div>
 
-<!-- =========================================================
-MANOHAR — AI TEACHER (Male Indian Voice)
-========================================================= -->
-<button id="manoharLauncher" type="button" onclick="manoharOpen()" aria-label="Open Manohar AI Teacher" title="Open Manohar AI Teacher">
-<span class="ct-phone">👨🏽‍🏫</span>
-<span>Manohar</span>
-</button>
-
-<div id="manoharTeacher" aria-label="Manohar AI Teacher">
-<div class="ct-head">
-<div class="ct-avatar">👨🏽‍🏫</div>
-<div class="ct-title">
-<strong>MANOHAR</strong>
-<span>AI TEACHER • Lamb Wave SHM</span>
-</div>
-<button type="button" onclick="manoharToggleMinimize()" title="Minimize">−</button>
-<button type="button" onclick="manoharClose()" title="Close">×</button>
-</div>
-
-<div class="ct-body">
-<div class="ct-view">
-<b>CURRENT VIEW</b>
-<span id="manoharCurrentView">Introduction</span>
-</div>
-<div id="manoharMessage" class="ct-message">
-Namaste! I am Manohar, your AI instructor. I am ready to guide you through Lamb Wave Structural Health Monitoring. Press <strong>Start Lesson</strong> when you are ready.
-</div>
-<div class="ct-progress-wrap">
-<div class="ct-progress"><div id="manoharProgressBar" class="ct-progress-bar"></div></div>
-<div id="manoharStepText" class="ct-step">Ready • Step 0 of 6</div>
-</div>
-<div class="ct-buttons">
-<button class="ct-primary" type="button" onclick="manoharStart()">▶ Start Lesson</button>
-<button class="ct-light" type="button" onclick="manoharRestart()">↺ Restart</button>
-<button class="ct-light" type="button" onclick="manoharRepeat()">↻ Repeat</button>
-<button class="ct-primary" type="button" onclick="manoharContinue()">Continue →</button>
-<button class="ct-gold" type="button" onclick="manoharHelp()">❓ Help</button>
-<button class="ct-dark" type="button" onclick="askChitti()">🤖 CHITTI</button>
-</div>
-<div class="ct-language">
-<span>Language</span>
-<select id="manoharLanguage" onchange="manoharSetLanguage(this.value)">
-<option value="en">English</option>
-<option value="hi">हिन्दी</option>
-<option value="te">తెలుగు</option>
-</select>
-</div>
-<div class="ct-status" id="manoharVoiceStatus">Male Indian voice profile preferred</div>
-</div>
-</div>
-
-<footer style="background:#062b4c;color:white;text-align:center;padding:25px 15px;font-size:13px;">
-<img src="https://garrf.in/images/logo.jpeg" alt="GARRF" style="width:55px;height:55px;border-radius:50%;background:white;padding:4px;">
-<p><strong>GopalKrishna Advanced Rural Research Foundation</strong></p>
-<p>Research • Innovation • Education • Advanced Rural Development</p>
-<p>KALAM ZERO RESEARCH FUNDING LAB</p>
-<p>© 2026 GARRF. All Rights Reserved.</p>
+<footer>
+    Developed by Dr Annamdas Venu Gopal Madhav & Annamdas Shantanu Vasudev Krishna<br>
+    Gopalkrishna Advanced Rural Research Foundation (GARRF) • Chamundi Template • All Rights Reserved
 </footer>
 
 <script>
-let running = false;
-let startTime = 0;
-let elapsed = 0;
-let animationFrame = null;
-let observationCount = 0;
-let dataPoints = [];
-let quizCompleted = false;
+    // ACTIVE ASSISTANT STATE ('arjun' or 'manohar')
+    let currentAssistant = 'arjun';
 
-function getParameters(){
-return {
-mode: document.getElementById("mode").value,
-V: parseFloat(document.getElementById("voltage").value),
-freq: parseFloat(document.getElementById("frequency").value),
-dist: parseFloat(document.getElementById("distance").value)
-};
-}
+    function switchAssistant(type) {
+        currentAssistant = type;
+        const tabArjun = document.getElementById('tabArjun');
+        const tabManohar = document.getElementById('tabManohar');
+        const btnSend = document.getElementById('btnSendAssistant');
+        const arjunIntro = document.getElementById('msgArjunIntro');
+        const manoharIntro = document.getElementById('msgManoharIntro');
 
-function updateParameters(){
-const p = getParameters();
-const velocity = p.mode === "s0" ? 5400 : 2500; // m/s approximation
-const tof = (p.dist / 1000) / velocity; // seconds
+        if (type === 'arjun') {
+            tabArjun.className = 'tab-btn active-arjun';
+            tabManohar.className = 'tab-btn';
+            btnSend.style.background = '#2563eb';
+            arjunIntro.style.display = 'block';
+            manoharIntro.style.display = 'none';
+        } else {
+            tabManohar.className = 'tab-btn active-manohar';
+            tabArjun.className = 'tab-btn';
+            btnSend.style.background = '#10b981';
+            manoharIntro.style.display = 'block';
+            arjunIntro.style.display = 'none';
+        }
+    }
 
-document.getElementById("voltageValue").textContent = p.V + " Vpp";
-document.getElementById("freqValue").textContent = p.freq + " kHz";
-document.getElementById("distValue").textContent = p.dist + " mm";
-document.getElementById("velDisplay").textContent = velocity + " m/s";
-document.getElementById("tofDisplay").textContent = (tof * 1000).toFixed(3) + " ms";
+    // MANOHAR VOICE SYNTHESIS (MALE INDIAN VOICE)
+    function speakManohar(text) {
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const cleanText = text.replace(/<[^>]*>?/gm, '').replace(/[\$\*\_]/g, '');
+            const utterance = new SpeechSynthesisUtterance(cleanText);
+            utterance.lang = 'en-IN';
+            utterance.pitch = 0.9; 
+            utterance.rate = 1.0;
+            
+            const voices = window.speechSynthesis.getVoices();
+            const indianVoice = voices.find(v => v.lang === 'en-IN' && (v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('ravi') || v.name.toLowerCase().includes('rishi') || v.name.toLowerCase().includes('hemanth') || !v.name.toLowerCase().includes('female')));
+            if (indianVoice) {
+                utterance.voice = indianVoice;
+            }
+            window.speechSynthesis.speak(utterance);
+        }
+    }
 
-drawCircuit(p);
-updateAnalysis(p, velocity, tof);
-}
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
+    }
 
-function drawCircuit(p){
-const svg = document.getElementById("circuitSVG");
-const modeText = p.mode === "s0" ? "S0 MODE (EXTENSIONAL)" : "A0 MODE (FLEXURAL)";
-svg.innerHTML = `
-<text x="500" y="35" text-anchor="middle" class="component-text" style="font-size:20px;fill:#0b4f8a;font-weight:bold;">LAMB WAVE PZT TRANSDUCTION — ${modeText}</text>
-<rect x="150" y="140" width="700" height="100" rx="10" fill="#e5f4fb" stroke="#0b4f8a" stroke-width="2"/>
-<text x="500" y="195" text-anchor="middle" style="font-size:16px;fill:#17324d;font-weight:bold;">Aluminum Plate / Substrate (Distance: ${p.dist} mm)</text>
-<rect x="200" y="120" width="40" height="20" fill="#ef8b22" stroke="#714b16" stroke-width="1"/>
-<text x="220" y="110" text-anchor="middle" style="font-size:12px;font-weight:bold;">PZT Actuator</text>
-<rect x="${200 + Math.min(500, p.dist * 1.2)}" y="120" width="40" height="20" fill="#138a4b" stroke="#0b4f8a" stroke-width="1"/>
-<text x="${220 + Math.min(500, p.dist * 1.2)}" y="110" text-anchor="middle" style="font-size:12px;font-weight:bold;">PZT Sensor</text>
-<text x="500" y="300" text-anchor="middle" style="font-size:14px;fill:#0b4f8a;font-weight:bold;">Excitation: ${p.V} Vpp @ ${p.freq} kHz</text>
-`;
-}
+    // S0 AND A0 MODE ANIMATION CANVASES
+    const s0Canvas = document.getElementById('s0Canvas');
+    const s0Ctx = s0Canvas.getContext('2d');
+    const a0Canvas = document.getElementById('a0Canvas');
+    const a0Ctx = a0Canvas.getContext('2d');
+    let modePhase = 0;
+    function drawModeDiagrams() {
+        modePhase += 0.08;
+        // Draw S0 Mode
+        s0Ctx.fillStyle = '#0f172a';
+        s0Ctx.fillRect(0, 0, s0Canvas.width, s0Canvas.height);
+        
+        s0Ctx.strokeStyle = '#475569';
+        s0Ctx.setLineDash([4, 4]);
+        s0Ctx.beginPath(); s0Ctx.moveTo(20, 70); s0Ctx.lineTo(380, 70); s0Ctx.stroke();
+        s0Ctx.setLineDash([]);
+        s0Ctx.strokeStyle = '#38bdf8';
+        s0Ctx.lineWidth = 3;
+        s0Ctx.beginPath();
+        for (let x = 20; x <= 380; x += 5) {
+            let stretch = Math.sin((x / 30) - modePhase) * 12;
+            let yTop = 40 - stretch;
+            if (x === 20) s0Ctx.moveTo(x, yTop); else s0Ctx.lineTo(x, yTop);
+        }
+        s0Ctx.stroke();
+        s0Ctx.beginPath();
+        for (let x = 20; x <= 380; x += 5) {
+            let stretch = Math.sin((x / 30) - modePhase) * 12;
+            let yBot = 100 + stretch;
+            if (x === 20) s0Ctx.moveTo(x, yBot); else s0Ctx.lineTo(x, yBot);
+        }
+        s0Ctx.stroke();
+        s0Ctx.fillStyle = '#f8fafc';
+        s0Ctx.font = '11px sans-serif';
+        s0Ctx.fillText('x (Propagation)', 310, 65);
+        s0Ctx.fillText('y (Thickness)', 25, 25);
+        s0Ctx.fillStyle = '#38bdf8';
+        s0Ctx.fillText('Symmetric (S0) — In-Plane Extensional', 100, 25);
 
-function calculateWave(t, p){
-const velocity = p.mode === "s0" ? 5400 : 2500;
-const arrivalTime = (p.dist / 1000) / velocity;
-let amp = 0;
-if(t >= arrivalTime){
-const dt = t - arrivalTime;
-amp = (p.V / 10) * Math.sin(2 * Math.PI * p.freq * 1000 * dt) * Math.exp(-dt * 500);
-}
-return { amp, velocity, arrivalTime };
-}
+        // Draw A0 Mode
+        a0Ctx.fillStyle = '#0f172a';
+        a0Ctx.fillRect(0, 0, a0Canvas.width, a0Canvas.height);
+        a0Ctx.strokeStyle = '#475569';
+        a0Ctx.setLineDash([4, 4]);
+        a0Ctx.beginPath(); a0Ctx.moveTo(20, 70); a0Ctx.lineTo(380, 70); a0Ctx.stroke();
+        a0Ctx.setLineDash([]);
+        a0Ctx.strokeStyle = '#f59e0b';
+        a0Ctx.lineWidth = 3;
+        a0Ctx.beginPath();
+        for (let x = 20; x <= 380; x += 5) {
+            let bend = Math.sin((x / 30) - modePhase) * 16;
+            let yTop = 40 + bend;
+            if (x === 20) a0Ctx.moveTo(x, yTop); else a0Ctx.lineTo(x, yTop);
+        }
+        a0Ctx.stroke();
+        a0Ctx.beginPath();
+        for (let x = 20; x <= 380; x += 5) {
+            let bend = Math.sin((x / 30) - modePhase) * 16;
+            let yBot = 100 + bend;
+            if (x === 20) a0Ctx.moveTo(x, yBot); else a0Ctx.lineTo(x, yBot);
+        }
+        a0Ctx.stroke();
+        a0Ctx.fillStyle = '#f8fafc';
+        a0Ctx.font = '11px sans-serif';
+        a0Ctx.fillText('x (Propagation)', 310, 65);
+        a0Ctx.fillText('y (Thickness)', 25, 25);
+        a0Ctx.fillStyle = '#f59e0b';
+        a0Ctx.fillText('Antisymmetric (A0) — Out-of-Plane Bending', 90, 25);
+        requestAnimationFrame(drawModeDiagrams);
+    }
+    drawModeDiagrams();
 
-function startSimulation(){
-if(running) return;
-running = true;
-startTime = performance.now() - elapsed * 1000;
-document.getElementById("status").textContent = "🟢 Lamb wave propagation running...";
-manoharOnStart();
-animate();
-}
+    // 2D CANVAS VISUALIZER
+    const canvas = document.getElementById('waveCanvas');
+    const ctx = canvas.getContext('2d');
+    const waveSpeed = 5.4; 
+    let waveRadius = 0;
+    let echoRadius = 0;
+    let recordedSignals = [];
+    const signalOrdinalNames = ["First Signal", "Second Signal", "Third Signal", "Fourth Signal", "Fifth Signal"];
 
-function animate(){
-if(!running) return;
-const now = performance.now();
-elapsed = (now - startTime) / 1000;
-const p = getParameters();
-const res = calculateWave(elapsed, p);
+    function toggleDamageControls() {
+        const type = document.getElementById('damageType').value;
+        const groupPos = document.getElementById('groupDefPos');
+        const groupGeom = document.getElementById('groupDefGeom');
+        if (type === 'No Damage') {
+            groupPos.classList.add('disabled-group');
+            groupGeom.classList.add('disabled-group');
+        } else {
+            groupPos.classList.remove('disabled-group');
+            groupGeom.classList.remove('disabled-group');
+        }
+    }
 
-document.getElementById("timeDisplay").textContent = (elapsed * 1000).toFixed(2) + " ms";
-document.getElementById("ampDisplay").textContent = res.amp.toFixed(3) + " V";
-document.getElementById("damageDisplay").textContent = (Math.min(100, elapsed * 5)).toFixed(1) + " %";
+    function getParams() {
+        return {
+            plateL: parseFloat(document.getElementById('plateL').value) || 500,
+            plateW: parseFloat(document.getElementById('plateW').value) || 300,
+            act: { x: parseFloat(document.getElementById('actX').value) || 80, y: parseFloat(document.getElementById('actY').value) || 150 },
+            sen: { x: parseFloat(document.getElementById('senX').value) || 420, y: parseFloat(document.getElementById('senY').value) || 150 },
+            def: { x: parseFloat(document.getElementById('defX').value) || 250, y: parseFloat(document.getElementById('defY').value) || 150 },
+            crackLen: parseFloat(document.getElementById('crackLength').value) || 25,
+            crackAng: parseFloat(document.getElementById('crackAngle').value) || 45,
+            type: document.getElementById('damageType').value
+        };
+    }
 
-dataPoints.push({ t: elapsed, v: res.amp });
-if(dataPoints.length > 500) dataPoints.shift();
-drawGraph();
+    function redrawAll() {
+        if (MathJax && MathJax.typesetPromise) {
+            MathJax.typesetPromise();
+        }
+    }
 
-if(elapsed > 0.015){
-running = false;
-document.getElementById("status").textContent = "🟢 Simulation complete.";
-return;
-}
-animationFrame = requestAnimationFrame(animate);
-}
+    function render2DWaves() {
+        const p = getParams();
+        const isNoDamage = (p.type === "No Damage");
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.strokeStyle = '#f1f5f9';
+        ctx.lineWidth = 1;
+        for (let x = 0; x < canvas.width; x += 30) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke(); }
+        for (let y = 0; y < canvas.height; y += 30) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke(); }
+        
+        ctx.strokeStyle = '#cbd5e1';
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath(); ctx.moveTo(p.act.x, p.act.y); ctx.lineTo(p.sen.x, p.sen.y); ctx.stroke();
+        
+        if (!isNoDamage) {
+            ctx.strokeStyle = '#fde68a';
+            ctx.beginPath(); ctx.moveTo(p.act.x, p.act.y); ctx.lineTo(p.def.x, p.def.y); ctx.lineTo(p.sen.x, p.sen.y); ctx.stroke();
+        }
+        ctx.setLineDash([]);
+        
+        waveRadius = (waveRadius + 1.5) % 350;
+        for (let r = waveRadius; r > 0; r -= 30) {
+            if (r < 350) {
+                ctx.strokeStyle = `rgba(37, 99, 235, ${Math.max(0, 1 - r / 350)})`;
+                ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.arc(p.act.x, p.act.y, r, 0, Math.PI * 2); ctx.stroke();
+            }
+        }
+        
+        if (!isNoDamage) {
+            const actToDef = Math.hypot(p.def.x - p.act.x, p.def.y - p.act.y);
+            if (waveRadius > actToDef) {
+                echoRadius = (waveRadius - actToDef);
+                for (let er = echoRadius; er > 0; er -= 25) {
+                    if (er < 250) {
+                        ctx.strokeStyle = `rgba(217, 119, 6, ${Math.max(0, 1 - er / 250)})`;
+                        ctx.lineWidth = 2;
+                        ctx.beginPath(); ctx.arc(p.def.x, p.def.y, er, 0, Math.PI * 2); ctx.stroke();
+                    }
+                }
+            }
+        }
+        
+        ctx.fillStyle = '#2563eb';
+        ctx.beginPath(); ctx.arc(p.act.x, p.act.y, 8, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#0f172a'; ctx.font = 'bold 10px sans-serif'; ctx.fillText('Actuator (PZT)', p.act.x - 30, p.act.y - 12);
+        
+        ctx.fillStyle = '#10b981';
+        ctx.beginPath(); ctx.arc(p.sen.x, p.sen.y, 8, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#0f172a'; ctx.fillText('Sensor (PZT)', p.sen.x - 25, p.sen.y - 12);
+        
+        if (!isNoDamage) {
+            if (p.type === "Surface Crack") {
+                const rad = (p.crackAng * Math.PI) / 180;
+                const halfL = p.crackLen / 2;
+                const x1 = p.def.x - halfL * Math.cos(rad);
+                const y1 = p.def.y - halfL * Math.sin(rad);
+                const x2 = p.def.x + halfL * Math.cos(rad);
+                const y2 = p.def.y + halfL * Math.sin(rad);
+                ctx.strokeStyle = '#ef4444';
+                ctx.lineWidth = 4;
+                ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+                ctx.fillStyle = '#dc2626';
+                ctx.beginPath(); ctx.arc(p.def.x, p.def.y, 4, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#b91c1c';
+                ctx.fillText(`Crack (${p.crackLen}mm @ ${p.crackAng}°)`, p.def.x - 30, p.def.y - 12);
+            } else {
+                ctx.fillStyle = '#ef4444';
+                ctx.beginPath(); ctx.arc(p.def.x, p.def.y, 8, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#b91c1c';
+                ctx.fillText(`${p.type}`, p.def.x - 25, p.def.y - 12);
+            }
+        }
+        requestAnimationFrame(render2DWaves);
+    }
+    render2DWaves();
 
-function pauseSimulation(){
-running = false;
-if(animationFrame) cancelAnimationFrame(animationFrame);
-document.getElementById("status").textContent = "⏸ Simulation paused.";
-}
+    // 3D WAVE SIMULATION
+    const container3d = document.getElementById('threejs-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0f172a);
+    const camera = new THREE.PerspectiveCamera(45, container3d.clientWidth / container3d.clientHeight, 0.1, 1000);
+    camera.position.set(0, -12, 10);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(container3d.clientWidth, container3d.clientHeight);
+    container3d.appendChild(renderer.domElement);
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    
+    scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    dirLight.position.set(5, 10, 15);
+    scene.add(dirLight);
 
-function resetSimulation(){
-running = false;
-elapsed = 0;
-dataPoints = [];
-if(animationFrame) cancelAnimationFrame(animationFrame);
-updateParameters();
-drawGraph();
-document.getElementById("status").textContent = "🟢 Reset complete.";
-}
+    const gridRes = 90;
+    const planeGeo = new THREE.PlaneGeometry(12, 8, gridRes, gridRes);
+    const colors = new Float32Array(planeGeo.attributes.position.count * 3);
+    planeGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    const planeMat = new THREE.MeshPhongMaterial({ side: THREE.DoubleSide, vertexColors: true, shininess: 80 });
+    const plateMesh = new THREE.Mesh(planeGeo, planeMat);
+    scene.add(plateMesh);
 
-function drawGraph(){
-const canvas = document.getElementById("graph");
-const rect = canvas.getBoundingClientRect();
-const ctx = canvas.getContext("2d");
-canvas.width = rect.width;
-canvas.height = rect.height;
-ctx.clearRect(0,0,canvas.width,canvas.height);
+    const actGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.2, 16);
+    const act3D = new THREE.Mesh(actGeo, new THREE.MeshPhongMaterial({ color: 0x2563eb, emissive: 0x1d4ed8 }));
+    act3D.rotation.x = Math.PI / 2;
+    scene.add(act3D);
 
-ctx.strokeStyle="#cbd7df";
-ctx.lineWidth=1;
-ctx.beginPath();
-ctx.moveTo(50, canvas.height/2);
-ctx.lineTo(canvas.width-20, canvas.height/2);
-ctx.stroke();
+    const sen3D = new THREE.Mesh(actGeo, new THREE.MeshPhongMaterial({ color: 0x10b981, emissive: 0x047857 }));
+    sen3D.rotation.x = Math.PI / 2;
+    scene.add(sen3D);
 
-ctx.strokeStyle="#0b4f8a";
-ctx.lineWidth=2;
-ctx.beginPath();
-for(let i=0; i<dataPoints.length; i++){
-const x = 50 + (dataPoints[i].t / 0.015) * (canvas.width - 70);
-const y = (canvas.height/2) - (dataPoints[i].v * 15);
-if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-}
-ctx.stroke();
-}
+    const def3D = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.15, 0.3), new THREE.MeshPhongMaterial({ color: 0xef4444, emissive: 0xb91c1c }));
+    scene.add(def3D);
 
-function updateAnalysis(p, velocity, tof){
-document.getElementById("tauAnalysis").innerHTML = `
-<p>For mode <strong>${p.mode.toUpperCase()}</strong> at <strong>${p.freq} kHz</strong>:</p>
-<ul>
-<li>Group Velocity: <strong>${velocity} m/s</strong></li>
-<li>Calculated Time of Flight across ${p.dist} mm: <strong>${(tof*1000).toFixed(4)} ms</strong></li>
-</ul>
-`;
-}
+    let phase = 0;
+    function animate3D() {
+        requestAnimationFrame(animate3D);
+        controls.update();
+        phase += 0.08;
+        const pos = planeGeo.attributes.position;
+        const cols = planeGeo.attributes.color;
+        const p = getParams();
+        const isNoDamage = (p.type === "No Damage");
+        
+        const actX3D = (p.act.x - 250) / 40;
+        const actY3D = -(p.act.y - 150) / 40;
+        act3D.position.set(actX3D, actY3D, 0.1);
+        
+        const senX3D = (p.sen.x - 250) / 40;
+        const senY3D = -(p.sen.y - 150) / 40;
+        sen3D.position.set(senX3D, senY3D, 0.1);
+        
+        def3D.visible = !isNoDamage;
+        const defX3D = (p.def.x - 250) / 40;
+        const defY3D = -(p.def.y - 150) / 40;
+        def3D.position.set(defX3D, defY3D, 0.2);
+        def3D.rotation.z = -(p.crackAng * Math.PI) / 180;
+        def3D.scale.set(p.crackLen / 25, 1, 1);
 
-function addObservation(){
-const p = getParameters();
-const velocity = p.mode === "s0" ? 5400 : 2500;
-const tof = (p.dist / 1000) / velocity;
-observationCount++;
-const row = document.createElement("tr");
-row.innerHTML = `<td>${observationCount}</td><td>${p.mode.toUpperCase()}</td><td>${p.freq} kHz</td><td>${p.dist} mm</td><td>${velocity} m/s</td><td>${(tof*1000).toFixed(3)} ms</td><td>${p.V} Vpp</td>`;
-document.getElementById("observationTable").appendChild(row);
-}
+        for (let i = 0; i < pos.count; i++) {
+            const x = pos.getX(i);
+            const y = pos.getY(i);
+            const rAct = Math.hypot(x - actX3D, y - actY3D);
+            let z = Math.sin(rAct * 3.5 - phase) * Math.exp(-rAct * 0.25) * 0.35;
+            if (!isNoDamage) {
+                const rDef = Math.hypot(x - defX3D, y - defY3D);
+                const echoFactor = (p.crackLen / 25.0) * 0.25;
+                z += Math.sin(rDef * 4.0 - phase + 1.5) * Math.exp(-rDef * 0.5) * echoFactor;
+            }
+            pos.setZ(i, z);
+            const colorObj = new THREE.Color();
+            if (z > 0.05) colorObj.setHSL(0.58, 0.9, 0.4 + z);
+            else if (z < -0.05) colorObj.setHSL(0.08, 0.9, 0.4 + Math.abs(z));
+            else colorObj.setHSL(0.6, 0.3, 0.15);
+            cols.setXYZ(i, colorObj.r, colorObj.g, colorObj.b);
+        }
+        pos.needsUpdate = true;
+        cols.needsUpdate = true;
+        planeGeo.computeVertexNormals();
+        renderer.render(scene, camera);
+    }
+    animate3D();
 
-function clearObservations(){
-document.getElementById("observationTable").innerHTML="";
-observationCount=0;
-}
+    window.addEventListener('resize', () => {
+        camera.aspect = container3d.clientWidth / container3d.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container3d.clientWidth, container3d.clientHeight);
+    });
 
-function checkQuiz(){
-quizCompleted = true;
-const answers = { q1:"b", q2:"c", q3:"a" };
-let score = 0;
-for(const q in answers){
-const sel = document.querySelector(`input[name="${q}"]:checked`);
-if(sel && sel.value === answers[q]) score++;
-}
-document.getElementById("quizResult").innerHTML = `<div class="status">🎓 Quiz Score: <strong>${score}/3</strong></div>`;
-}
+    // RECORD EXPERIMENTAL DATASET
+    function recordExperimentalData() {
+        if (recordedSignals.length >= 5) {
+            alert("Maximum limit of 5 signal readings reached! Check your dataset in the oscilloscope terminal below[cite: 2].");
+            return;
+        }
+        const currentIndex = recordedSignals.length;
+        const currentLabel = signalOrdinalNames[currentIndex];
+        const p = getParams();
+        const isNoDamage = (p.type === "No Damage");
+        const directDist = Math.hypot(p.sen.x - p.act.x, p.sen.y - p.act.y);
+        const directToF = (directDist / waveSpeed).toFixed(1);
+        let echoPath = 0, echoToF = "N/A";
+        if (!isNoDamage) {
+            echoPath = Math.hypot(p.def.x - p.act.x, p.def.y - p.act.y) + Math.hypot(p.sen.x - p.def.x, p.sen.y - p.def.y);
+            echoToF = (echoPath / waveSpeed).toFixed(1);
+        }
+        const timeStr = new Date().toLocaleTimeString();
+        let promptText = `Recording [ ${currentLabel} ]:\n\n• Condition: ${p.type}\n• Direct Path ToF: ${directToF} μs`;
+        if (!isNoDamage) {
+            promptText += `\n• Flaw Dimension / Angle: ${p.crackLen} mm @ ${p.crackAng}°\n• Position: X=${p.def.x} mm, Y=${p.def.y} mm\n• Scattered Echo ToF: ${echoToF} μs`;
+        }
+        promptText += `\n\nSave this point and proceed?`;
 
-function askChitti(){
-window.open("https://garrf.in/robotics.html","_blank","noopener,noreferrer");
-}
+        if (confirm(promptText)) {
+            const newRecord = {
+                label: currentLabel,
+                readingNumber: currentIndex + 1,
+                time: timeStr,
+                type: p.type,
+                isNoDamage: isNoDamage,
+                crackLen: p.crackLen,
+                crackAng: p.crackAng,
+                posX: p.def.x,
+                posY: p.def.y,
+                directDist: directDist.toFixed(1),
+                directToF: directToF,
+                echoPath: isNoDamage ? "N/A" : echoPath.toFixed(1),
+                echoToF: echoToF
+            };
+            recordedSignals.push(newRecord);
+            const badge = document.getElementById('badgeRecord');
+            if (recordedSignals.length < 5) {
+                badge.innerText = `RECORD ${signalOrdinalNames[recordedSignals.length].toUpperCase()}`;
+            } else {
+                badge.innerText = `COMPLETED (5/5 READINGS) ✓`;
+                document.getElementById('btnRecord').style.backgroundColor = '#10b981';
+            }
+            updateTerminal();
+            triggerAssistantFeedback(newRecord);
+        }
+    }
 
-/* =========================================================
-MANOHAR AI TEACHER LOGIC (Male Indian Voice)
-========================================================= */
-const manoharSteps = [
-{ title: "Introduction", view: "Introduction", target: "sectionIntro", text: "Welcome to the Lamb Wave Structural Health Monitoring experiment. Guided waves allow large area inspection of aerospace and civil structures." },
-{ title: "Theory", view: "Section 1 — Theory", target: "section1Theory", text: "In this section, review the Rayleigh-Lamb frequency equations and how symmetric and antisymmetric modes propagate." },
-{ title: "Configuration", view: "Section 2 — Configuration", target: "section2Config", text: "Configure your excitation mode, voltage, frequency, and sensor distance. Then press Start to launch wave propagation." },
-{ title: "Live Wave", view: "Section 3 — Live Setup", target: "section3Live", text: "Observe how the actuator transmits the tone burst packet and how the sensor captures the wave packet after time of flight." },
-{ title: "Analysis & Quiz", view: "Section 9 — Quiz", target: "section9Quiz", text: "Complete the student quiz to test your understanding of wave propagation and SHM principles." }
-];
+    function updateTerminal() {
+        const out = document.getElementById('ascanOutput');
+        let text = `===================== EXPERIMENTAL SIGNALS DATASET =====================\n`;
+        text += `Total Recorded Readings: ${recordedSignals.length} / 5\n\n`;
+        recordedSignals.forEach((rec) => {
+            text += `--- [ ${rec.label.toUpperCase()} ] (Recorded at ${rec.time}) ---\n`;
+            text += `  • Condition           : ${rec.type}\n`;
+            text += `  • Direct Wave Path    : ${rec.directDist} mm | ToF: ${rec.directToF} μs\n`;
+            if (!rec.isNoDamage) {
+                text += `  • Dimension / Angle   : ${rec.crackLen} mm @ ${rec.crackAng}°\n`;
+                text += `  • Flaw Position (X,Y) : X_D = ${rec.posX} mm, Y_D = ${rec.posY} mm\n`;
+                text += `  • Scattered Echo Path : ${rec.echoPath} mm | ToF: ${rec.echoToF} μs\n`;
+            } else {
+                text += `  • Scattered Echo Path : None (Healthy Specimen Baseline)\n`;
+            }
+            text += `\n`;
+        });
+        out.innerHTML = text;
+    }
 
-let manoharStep = 0;
-let manoharStarted = false;
-let manoharLanguage = "en";
-let manoharMuted = false;
+    function triggerAssistantFeedback(rec) {
+        const chatBox = document.getElementById('assistantChatBox');
+        const msg = document.createElement('div');
+        let responseText = "";
+        
+        if (currentAssistant === 'arjun') {
+            msg.className = 'chat-msg msg-arjun';
+            responseText = `<strong>🤖 ARJUN (Text-Based AI):</strong><br>Successfully logged <strong>${rec.label}</strong> (${rec.readingNumber}/5).<br>• Condition: ${rec.type}<br>• Direct ToF: ${rec.directToF} μs${rec.isNoDamage ? '' : '<br>• Scattered Echo ToF: ' + rec.echoToF + ' μs'}`;
+        } else {
+            msg.className = 'chat-msg msg-manohar';
+            responseText = `<strong>👨‍🏫 MANOHAR (Voice-Based AI 🇮🇳):</strong><br>Successfully logged <strong>${rec.label}</strong> (${rec.readingNumber}/5).<br>• Condition: ${rec.type}<br>• Direct ToF: ${rec.directToF} μs${rec.isNoDamage ? '' : '<br>• Scattered Echo ToF: ' + rec.echoToF + ' μs'}`;
+            speakManohar(`Successfully logged ${rec.label}. Direct time of flight is ${rec.directToF} microseconds.`);
+        }
+        chatBox.appendChild(msg);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
 
-function manoharStopVoice(){
-if("speechSynthesis" in window) window.speechSynthesis.cancel();
-}
+    function sendAssistantMessage() {
+        const input = document.getElementById('assistantInput');
+        const text = input.value.trim();
+        if (!text) return;
+        const chatBox = document.getElementById('assistantChatBox');
+        
+        const userMsg = document.createElement('div');
+        userMsg.className = 'chat-msg msg-user';
+        userMsg.innerHTML = `<strong>You:</strong> ${text}`;
+        chatBox.appendChild(userMsg);
+        input.value = '';
 
-function manoharSpeak(text){
-if(manoharMuted || !("speechSynthesis" in window)) return;
-window.speechSynthesis.cancel();
-const speakNow = () => {
-const voices = window.speechSynthesis.getVoices();
-const maleWords = ["male", "man", "david", "mark", "george", "daniel", "ravi", "prabhat", "kumar", "raj", "en-in"];
-function scoreVoice(v){
-const name = (v.name || "").toLowerCase();
-const lang = (v.lang || "").toLowerCase();
-let score = 0;
-if(maleWords.some(w => name.includes(w) || lang.includes(w))) score += 100;
-if(name.includes("google") || name.includes("microsoft")) score += 20;
-return score;
-}
-const ranked = [...voices].sort((a,b) => scoreVoice(b) - scoreVoice(a));
-const utterance = new SpeechSynthesisUtterance(text);
-if(ranked.length) { utterance.voice = ranked[0]; utterance.lang = ranked[0].lang || "en-IN"; }
-utterance.rate = 0.90;
-utterance.pitch = 0.98; // Male voice modulation
-utterance.volume = 0.85;
-window.speechSynthesis.speak(utterance);
-};
-const voices = window.speechSynthesis.getVoices();
-if(voices.length) speakNow();
-else window.speechSynthesis.addEventListener("voiceschanged", speakNow, {once:true});
-}
+        setTimeout(() => {
+            const p = getParams();
+            const replyMsg = document.createElement('div');
+            let response = "";
 
-function manoharRender(){
-const msg = document.getElementById("manoharMessage");
-const view = document.getElementById("manoharCurrentView");
-const bar = document.getElementById("manoharProgressBar");
-const stepText = document.getElementById("manoharStepText");
-if(!manoharStarted){
-msg.innerHTML = "<strong>Introduction</strong><br>Press <b>Start Lesson</b> to begin the guided session with Manohar.";
-view.textContent = "Introduction";
-bar.style.width = "0%";
-stepText.textContent = "Ready • Step 0";
-return;
-}
-const s = manoharSteps[manoharStep];
-msg.innerHTML = "<strong>" + s.title + "</strong><br>" + s.text;
-view.textContent = s.view;
-bar.style.width = ((manoharStep + 1) / manoharSteps.length * 100) + "%";
-stepText.textContent = "Step " + (manoharStep + 1) + " of " + manoharSteps.length;
-}
+            if (currentAssistant === 'arjun') {
+                replyMsg.className = 'chat-msg msg-arjun';
+                response = `<strong>🤖 ARJUN (Text-Based AI):</strong> Based on your current plate configuration ($L=${p.plateL}$ mm, $W=${p.plateW}$ mm), the actuator and sensor paths are actively calculated. The $S_0$ mode provides fast in-plane readings, while the $A_0$ flexural mode handles out-of-plane scattering[cite: 2].`;
+            } else {
+                replyMsg.className = 'chat-msg msg-manohar';
+                response = `<strong>👨‍🏫 MANOHAR (Voice-Based AI 🇮🇳):</strong> Namaste! Looking at your experiment, your current damage state is set to <strong>${p.type}</strong>. Feel free to record your dataset or check Section 1.1 for mode shapes[cite: 2]!`;
+                speakManohar(`Your current damage state is set to ${p.type}. Check the wave propagation models for details.`);
+            }
+            replyMsg.innerHTML = response;
+            chatBox.appendChild(replyMsg);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }, 400);
+    }
 
-function manoharStart(){
-manoharStarted = true;
-manoharStep = 0;
-manoharRender();
-manoharSpeak(manoharSteps[manoharStep].text);
-}
-
-function manoharRestart(){
-manoharStopVoice();
-manoharStarted = true;
-manoharStep = 0;
-manoharRender();
-manoharSpeak(manoharSteps[manoharStep].text);
-}
-
-function manoharRepeat(){
-if(manoharStarted && manoharStep < manoharSteps.length){
-manoharSpeak(manoharSteps[manoharStep].text);
-}
-}
-
-function manoharContinue(){
-if(!manoharStarted){ manoharStart(); return; }
-manoharStopVoice();
-if(manoharStep < manoharSteps.length - 1){
-manoharStep++;
-manoharRender();
-manoharSpeak(manoharSteps[manoharStep].text);
-} else {
-manoharSpeak("You have completed the Manohar guided session for Lamb Wave SHM.");
-}
-}
-
-function manoharHelp(){
-manoharSpeak("Use Continue to move forward, Repeat to listen again, or open CHITTI for further AI assistance.");
-}
-
-function manoharOpen(){
-document.getElementById("manoharTeacher").classList.add("open");
-manoharRender();
-}
-
-function manoharClose(){
-manoharStopVoice();
-document.getElementById("manoharTeacher").classList.remove("open");
-}
-
-function manoharSetLanguage(lang){
-manoharLanguage = lang;
-}
-
-function manoharOnStart(){
-manoharStarted = true;
-manoharStep = 2; // Jump to live config/wave step
-manoharRender();
-document.getElementById("manoharTeacher").classList.add("open");
-manoharSpeak("The experiment is running. Notice how the wave packet travels from actuator to sensor.");
-}
-
-updateParameters();
-drawGraph();
+    toggleDamageControls();
 </script>
 </body>
 </html>
