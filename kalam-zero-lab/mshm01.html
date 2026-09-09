@@ -24,7 +24,6 @@
             padding: 0;
             line-height: 1.6;
         }
-        /* Prominent Top Mobile-Only Banner */
         .top-mobile-banner {
             background-color: #b91c1c;
             color: white;
@@ -70,7 +69,7 @@
             font-size: 0.9rem;
         }
         .container {
-            max-width: 700px;
+            max-width: 750px;
             margin: 2rem auto;
             padding: 0 1rem;
         }
@@ -98,9 +97,36 @@
             font-size: 1.25rem;
             margin-top: 0;
         }
-        p {
+        h3 {
+            color: var(--accent-color);
+            font-size: 1.1rem;
+            margin-top: 1.2rem;
+        }
+        p, li {
             color: var(--text-muted);
             font-size: 0.95rem;
+        }
+        ul {
+            padding-left: 1.2rem;
+        }
+        .instruction-box {
+            background: #f1f5f9;
+            border-left: 4px solid var(--accent-color);
+            padding: 1rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+        }
+        .qr-section {
+            text-align: center;
+            background: #fdf2f8;
+            border: 1px dashed #f472b6;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-top: 1.5rem;
+        }
+        .qr-section h3 {
+            color: #db2777;
+            margin-top: 0;
         }
         .btn {
             display: block;
@@ -159,7 +185,7 @@
 
 <!-- Top Mandatory Mobile-Only Notice Banner -->
 <div class="top-mobile-banner">
-    📱 Supports only Mobile Phones with Motion Sensors (Not for Laptops/Desktops)
+    📱 Supports only Mobile Phones with Motion Sensors (Desktop/Laptops must open on Mobile)
 </div>
 
 <header>
@@ -174,16 +200,44 @@
 </header>
 
 <div class="container">
-    <!-- Landing & Permission Card -->
-    <div class="card" id="permission-section">
+    
+    <!-- Informational Landing Card (Visible to all, perfectly detailed for Desktop visitors) -->
+    <div class="card" id="intro-card">
         <span class="badge">Experiment SHM-01</span>
         <h2>Smartphone Accelerometer Free-Vibration & Damping Analysis</h2>
-        <p>Welcome to GARRF's browser-native structural health monitoring lab. This experiment uses your smartphone’s internal MEMS accelerometer as a live testing sensor. Place your phone flat on a structural model beam and tap below to grant sensor access and launch the interactive test panel.</p>
         
-        <button class="btn" onclick="initSensors()">📱 Activate Mobile Sensors & Start Lab</button>
+        <p>Welcome to GARRF's browser-native structural health monitoring virtual laboratory. This experiment converts your mobile device into a precision testing accelerometer to analyze structural dynamics without expensive instrumentation.</p>
+
+        <h3>🎯 What You Will Learn</h3>
+        <ul>
+            <li><strong>Free Vibration & Natural Frequency:</strong> How structures oscillate freely after an initial impact.</li>
+            <li><strong>Structural Damping:</strong> How energy dissipates over time through a decaying amplitude wave.</li>
+            <li>data-driven telemetry: Capturing real-world acceleration data for engineering computations and lab reports.</li>
+        </ul>
+
+        <h3>🔬 Experimental Nature & Procedure</h3>
+        <p>In structural engineering, accelerometers are mounted on beams or bridges to measure dynamic response. In this zero-cost frugal experiment:</p>
+        
+        <div class="instruction-box">
+            <strong>How to Mount Your Phone on the Structure:</strong>
+            <ol style="margin: 0.5rem 0 0 0; padding-left: 1.2rem;">
+                <li>Setup your physical lab beam model (cantilever or simply supported beam).</li>
+                <li>Place your smartphone <strong>flat on top</strong> of the beam structure near the free end.</li>
+                <li>Ensure the phone is stable so it moves strictly with the beam's deflection.</li>
+            </ol>
+        </div>
+
+        <div class="qr-section">
+            <h3>📱 Are you on a Desktop or Laptop?</h3>
+            <p style="color: #4b5563; margin-bottom: 0.8rem;">Laptops do not possess mobile motion sensors. To run this live experiment and record data files, please open this exact link on your smartphone browser or scan the URL:</p>
+            <code style="background: #ffffff; padding: 0.4rem 0.8rem; border-radius: 4px; border: 1px solid #cbd5e1; font-weight: bold; color: #003366;">https://garrf.in/kalam-zero-lab/mshm01.html</code>
+        </div>
+
+        <!-- Button for Mobile Users to Jump Straight In -->
+        <button class="btn" id="mobile-start-btn" onclick="initSensors()">📱 I am on a Mobile Phone — Launch Instrument Panel</button>
     </div>
 
-    <!-- Active Instrument Dashboard -->
+    <!-- Active Instrument Dashboard (Revealed upon mobile activation) -->
     <div class="card" id="experiment-panel" style="display:none;">
         <h2>Active Instrument Dashboard</h2>
         <p>Sensors are active. Tap the button below, then gently tap your model beam to record vibration response.</p>
@@ -244,6 +298,13 @@
         }
     }
 
+    // Trigger greeting on load for curious visitors (desktop or mobile)
+    window.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+            speak("Namaste! I am Kushmanda, your AI teacher for structural health monitoring. Welcome to GARRF experiment S H M zero one. Read through the principles of structural damping below, and please open this page on your mobile phone and place it flat on your test beam to begin recording data.");
+        }, 1000);
+    });
+
     // Direct Mobile Sensor Initialization matching working implementations
     function initSensors() {
         if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
@@ -258,21 +319,22 @@
                 })
                 .catch(err => {
                     console.error(err);
-                    alert("Error requesting sensor permissions: " + err);
+                    alert("Mobile sensors are not accessible on this device. Please open this link directly on your smartphone browser.");
                 });
         } else {
+            // Check if device actually supports motion events or if it's desktop
             window.addEventListener('devicemotion', handleMotionEvent, true);
             launchWorkspace();
         }
     }
 
     function launchWorkspace() {
-        document.getElementById('permission-section').style.display = 'none';
+        document.getElementById('intro-card').style.display = 'none';
         document.getElementById('experiment-panel').style.display = 'block';
         loadVoices();
         initChart();
         
-        speak("Namaste! I am Kushmanda, your AI teacher for structural health monitoring. Your smartphone sensors are now active. Welcome to GARRF experiment S H M zero one. Place your phone flat on the beam and click record vibration when you are ready.");
+        speak("Your smartphone sensors are now active. Welcome to active testing mode. Place your phone flat on the beam and click record vibration when you are ready.");
     }
 
     function initChart() {
