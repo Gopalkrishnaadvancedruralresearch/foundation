@@ -3,219 +3,441 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Experiment 1: PZT Lamb Wave Propagation & Defect Scattering</title>
+    <title>Experiment 1: PZT Lamb Wave Propagation & Defect Scattering | Kalam Zero Lab</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.5; background: #f4f6f9; }
-        header { border-bottom: 2px solid #333; margin-bottom: 20px; padding-bottom: 10px; }
-        .grid-container { display: flex; gap: 20px; flex-wrap: wrap; }
-        section { background: #fff; padding: 20px; border-radius: 8px; flex: 1; min-width: 300px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        canvas { background: #1a1a24; border-radius: 6px; display: block; margin-top: 10px; width: 100%; max-width: 600px; cursor: pointer; }
-        .ascan-box { background: #181e24; color: #00ffcc; border: 1px solid #333; padding: 12px; min-height: 100px; font-family: monospace; border-radius: 4px; overflow-y: auto; }
-        .arjun-box { background: #eef6ff; border-left: 4px solid #0066cc; padding: 15px; margin-top: 10px; min-height: 60px; border-radius: 0 6px 6px 0; }
-        button { background: #0066cc; color: #fff; border: none; padding: 10px 18px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        button:hover { background: #004999; }
-        .controls-group { margin-bottom: 15px; }
-        .slider-label { font-size: 13px; font-weight: bold; color: #444; }
+        :root {
+            --primary: #0056b3;
+            --primary-dark: #003d80;
+            --bg-light: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-main: #2c3e50;
+            --text-muted: #6c757d;
+            --terminal-bg: #111827;
+            --terminal-green: #10b981;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--bg-light);
+            color: var(--text-main);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: var(--card-bg);
+            padding: 24px 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            margin-bottom: 25px;
+            border-left: 6px solid var(--primary);
+        }
+
+        header h1 {
+            margin: 0 0 6px 0;
+            font-size: 1.8rem;
+            color: var(--primary);
+        }
+
+        header p {
+            margin: 0;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 25px;
+        }
+
+        @media (min-width: 992px) {
+            .grid-layout {
+                grid-template-columns: 7fr 5fr;
+            }
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 24px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            margin-bottom: 25px;
+        }
+
+        .card h2 {
+            margin-top: 0;
+            font-size: 1.3rem;
+            color: var(--primary-dark);
+            border-bottom: 2px solid var(--bg-light);
+            padding-bottom: 10px;
+        }
+
+        /* Canvas Styles */
+        canvas {
+            background: #111827;
+            border-radius: 8px;
+            display: block;
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+            cursor: crosshair;
+        }
+
+        /* Controls & Output */
+        .control-group {
+            margin-bottom: 18px;
+        }
+
+        .control-group label {
+            display: block;
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-bottom: 6px;
+            color: var(--text-main);
+        }
+
+        input[type=range] {
+            width: 100%;
+            accent-color: var(--primary);
+        }
+
+        .btn-actuate {
+            width: 100%;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .btn-actuate:hover {
+            background: var(--primary-dark);
+        }
+
+        .terminal-box {
+            background: var(--terminal-bg);
+            color: var(--terminal-green);
+            padding: 16px;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 0.88rem;
+            border-radius: 6px;
+            min-height: 120px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+
+        /* AI Assistant Box */
+        .arjun-box {
+            background: #eff6ff;
+            border-left: 5px solid #3b82f6;
+            padding: 18px;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .arjun-box h3 {
+            margin: 0 0 8px 0;
+            font-size: 1.1rem;
+            color: #1e40af;
+        }
+
+        /* Theory Sections */
+        .theory-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        @media (min-width: 768px) {
+            .theory-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .badge {
+            display: inline-block;
+            background: #e0f2fe;
+            color: #0369a1;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
     </style>
 </head>
 <body>
 
+<div class="container">
+
+    <!-- Header Section -->
     <header>
-        <h2>Experiment 1: PZT Lamb Wave Propagation & Defect Scattering</h2>
+        <span class="badge">KALAM ZERO LAB • VIRTUAL EXPERIMENT 01</span>
+        <h1>PZT Lamb Wave Propagation & Defect Scattering</h1>
+        <p>Active Structural Health Monitoring (SHM) using Piezoelectric Wafer Active Sensors (PWAS)</p>
     </header>
-    
-    <div class="grid-container">
-        <!-- Visualization Area -->
-        <section>
-            <h3>Wave Propagation (Slow Visualization)</h3>
-            <p style="font-size: 12px; color: #666;">💡 <em>Click and drag the yellow defect circle directly on the plate to move it!</em></p>
-            <canvas id="waveCanvas" width="600" height="400"></canvas>
-        </section>
 
-        <!-- Control & Data Output Panel -->
-        <section>
-            <h3>Experiment Controls</h3>
-            
-            <!-- Defect Position Sliders -->
-            <div class="controls-group">
-                <label class="slider-label">Defect X Position: <span id="xVal">320</span> px</label><br>
-                <input type="range" id="xSlider" min="100" max="500" value="320" style="width:100%"><br><br>
-                <label class="slider-label">Defect Y Position: <span id="yVal">200</span> px</label><br>
-                <input type="range" id="ySlider" min="70" max="330" value="200" style="width:100%">
+    <!-- Main Workspace Grid -->
+    <div class="grid-layout">
+        
+        <!-- Left Column: Visualizer -->
+        <div>
+            <div class="card">
+                <h2>1. Wave Propagation Visualizer</h2>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: -5px;">
+                    💡 <strong>Interactive Plate:</strong> Click and drag the yellow defect circle anywhere on the plate surface to simulate structural damage.
+                </p>
+                <canvas id="waveCanvas" width="600" height="400"></canvas>
             </div>
+        </div>
 
-            <button id="actuateBtn" onclick="runSimulation()">Trigger Actuation</button>
-            <br><br>
-            <hr>
-            <h3>A-Scan Data Output</h3>
-            <div id="ascanOutput" class="ascan-box">
-                Awaiting actuation...
+        <!-- Right Column: Controls & Terminal -->
+        <div>
+            <div class="card">
+                <h2>2. Actuation & Data Output</h2>
+                
+                <div class="control-group">
+                    <label>Defect X-Position (Length): <span id="xVal">320</span> mm</label>
+                    <input type="range" id="xSlider" min="100" max="500" value="320">
+                </div>
+
+                <div class="control-group">
+                    <label>Defect Y-Position (Width): <span id="yVal">200</span> mm</label>
+                    <input type="range" id="ySlider" min="70" max="330" value="200">
+                </div>
+
+                <button class="btn-actuate" id="actuateBtn" onclick="runSimulation()">⚡ Trigger Ultrasonic Actuation</button>
+
+                <h3 style="font-size: 0.95rem; margin-top: 20px; margin-bottom: 8px;">A-Scan Oscilloscope Output</h3>
+                <div id="ascanOutput" class="terminal-box">Awaiting 150 kHz tone-burst actuation...</div>
             </div>
-        </section>
+        </div>
+
     </div>
 
-    <!-- AI Integration Section -->
-    <section style="margin-top: 20px;">
-        <h3>AI Assistant Integration (ARJUN)</h3>
-        <div id="arjunPanel" class="arjun-box">
-            <p><em>AI Agent ARJUN will analyze the ToF (Time of Flight) here.</em></p>
+    <!-- AI Integration Panel -->
+    <div class="card arjun-box">
+        <h3>🤖 AI Assistant Integration (ARJUN)</h3>
+        <div id="arjunPanel">
+            <p style="margin: 0; color: #1e3a8a;">
+                <em>AI Agent ARJUN will analyze the Time of Flight (ToF) and signal scattering features here.</em>
+            </p>
         </div>
-    </section>
+    </div>
 
-    <script>
-        const canvas = document.getElementById('waveCanvas');
-        const ctx = canvas.getContext('2d');
-        const ascanOutput = document.getElementById('ascanOutput');
+    <!-- Theory, Concepts, and Module Rationale -->
+    <div class="card">
+        <h2>3. Experiment Background & Physics</h2>
         
-        const xSlider = document.getElementById('xSlider');
-        const ySlider = document.getElementById('ySlider');
-        const xVal = document.getElementById('xVal');
-        const yVal = document.getElementById('yVal');
+        <div class="theory-grid">
+            <div>
+                <h3>What is a Lamb Wave?</h3>
+                <p>
+                    Lamb waves are guided elastic stress waves that propagate through thin, plate-like solid structures bounded by two parallel free surfaces. Unlike simple bulk acoustic waves, Lamb waves are guided by the plate's upper and lower boundaries, causing the entire cross-section of the plate to vibrate as the wave travels.
+                </p>
+                <p><strong>Two Fundamental Propagation Modes:</strong></p>
+                <ul>
+                    <li><strong>Symmetric Mode (S₀):</strong> In-plane stretching and compression along the plate's neutral axis (accordion motion).</li>
+                    <li><strong>Asymmetric Mode (A₀):</strong> Out-of-plane flexural and bending motion, creating microscopic surface ripples.</li>
+                </ul>
+            </div>
 
-        // Setup Experiment Geometry
-        const actuator = { x: 80, y: 200, label: "PZT Actuator" };
-        const sensor = { x: 520, y: 200, label: "PZT Sensor" };
-        const defect = { x: 320, y: 200, radius: 14, label: "Crack / Defect" };
+            <div>
+                <h3>Why is this Virtual Experiment Required?</h3>
+                <p>
+                    Piezoelectric Structural Health Monitoring (SHM) allows engineers to evaluate structural integrity without destroying components. This virtual module provides key operational benefits:
+                </p>
+                <ul>
+                    <li><strong>Visual Intuition:</strong> Ultrasonic Lamb waves travel at several kilometers per second. This virtual canvas slows down high-speed wave mechanics for real-time observation.</li>
+                    <li><strong>Damage Localization (ToF):</strong> Demonstrates how to locate structural defects using Time-of-Flight ($\text{ToF} = \frac{\text{Distance}}{\text{Group Velocity}}$) and echo-scattering analysis.</li>
+                    <li><strong>Open Educational Access:</strong> Replicates expensive physical hardware (arbitrary function generators, high-bandwidth DSOs, and PZT transducers) inside a light, accessible web browser interface.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
 
-        let waveRadius = 0;
-        let scatteredRadius = 0;
-        let isSimulating = false;
-        let isDragging = false;
+</div>
 
-        function drawBasePlate() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+<script>
+    const canvas = document.getElementById('waveCanvas');
+    const ctx = canvas.getContext('2d');
+    const ascanOutput = document.getElementById('ascanOutput');
+    
+    const xSlider = document.getElementById('xSlider');
+    const ySlider = document.getElementById('ySlider');
+    const xVal = document.getElementById('xVal');
+    const yVal = document.getElementById('yVal');
 
-            // Metallic Plate
-            ctx.fillStyle = '#2a2e3d';
-            ctx.fillRect(30, 50, 540, 300);
-            ctx.strokeStyle = '#4a5168';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(30, 50, 540, 300);
+    // Transducer & Geometry Config (In Plate Coordinates)
+    const actuator = { x: 80, y: 200, label: "Actuator (PZT 1)" };
+    const sensor = { x: 520, y: 200, label: "Sensor (PZT 2)" };
+    const defect = { x: 320, y: 200, radius: 14, label: "Structural Defect" };
 
-            // Actuator (Red PZT)
-            ctx.fillStyle = '#ff4d4d';
-            ctx.beginPath(); ctx.arc(actuator.x, actuator.y, 10, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = '#ffffff'; ctx.font = '11px Arial'; ctx.fillText('Actuator', actuator.x - 20, actuator.y - 15);
+    let waveRadius = 0;
+    let scatteredRadius = 0;
+    let isSimulating = false;
+    let isDragging = false;
 
-            // Sensor (Green PZT)
-            ctx.fillStyle = '#00cc66';
-            ctx.beginPath(); ctx.arc(sensor.x, sensor.y, 10, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = '#ffffff'; ctx.fillText('Sensor', sensor.x - 15, sensor.y - 15);
+    // Draw Complete Plate & Transducers
+    function drawBasePlate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Defect Hole (Movable)
-            ctx.fillStyle = isDragging ? '#ffffff' : '#ffcc00';
-            ctx.beginPath(); ctx.arc(defect.x, defect.y, defect.radius, 0, Math.PI * 2); ctx.fill();
-            ctx.strokeStyle = '#ff9900'; ctx.lineWidth = 2; ctx.stroke();
-            ctx.fillStyle = '#ffcc00'; ctx.fillText(`Defect (${Math.round(defect.x)}, ${Math.round(defect.y)})`, defect.x - 25, defect.y + 25);
+        // Aluminum Plate Boundary
+        ctx.fillStyle = '#1f2937';
+        ctx.fillRect(30, 50, 540, 300);
+        ctx.strokeStyle = '#374151';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(30, 50, 540, 300);
+
+        // Grid lines for engineering scale
+        ctx.strokeStyle = '#283344';
+        ctx.lineWidth = 1;
+        for (let x = 80; x < 570; x += 50) {
+            ctx.beginPath(); ctx.moveTo(x, 50); ctx.lineTo(x, 350); ctx.stroke();
+        }
+        for (let y = 100; y < 350; y += 50) {
+            ctx.beginPath(); ctx.moveTo(30, y); ctx.lineTo(570, y); ctx.stroke();
         }
 
-        // Mouse Drag Controls
-        canvas.addEventListener('mousedown', (e) => {
+        // PZT Actuator (Red Transducer)
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath(); ctx.arc(actuator.x, actuator.y, 10, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#ffffff'; ctx.font = '11px sans-serif'; ctx.fillText('PZT-Actuator', actuator.x - 30, actuator.y - 15);
+
+        // PZT Sensor (Green Transducer)
+        ctx.fillStyle = '#10b981';
+        ctx.beginPath(); ctx.arc(sensor.x, sensor.y, 10, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#ffffff'; ctx.fillText('PZT-Sensor', sensor.x - 25, sensor.y - 15);
+
+        // Interactive Defect (Yellow Circle)
+        ctx.fillStyle = isDragging ? '#ffffff' : '#f59e0b';
+        ctx.beginPath(); ctx.arc(defect.x, defect.y, defect.radius, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#d97706'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.fillStyle = '#fbbf24'; ctx.fillText(`Defect (${Math.round(defect.x)}, ${Math.round(defect.y)})`, defect.x - 35, defect.y + 26);
+    }
+
+    // Mouse Interaction (Drag and Drop Defect)
+    canvas.addEventListener('mousedown', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const mouseX = (e.clientX - rect.left) * scaleX;
+        const mouseY = (e.clientY - rect.top) * scaleY;
+
+        const dist = Math.hypot(mouseX - defect.x, mouseY - defect.y);
+        if (dist <= defect.radius + 8) {
+            isDragging = true;
+        }
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+        if (isDragging) {
             const rect = canvas.getBoundingClientRect();
-            const mouseX = e.clientX - rect.left;
-            const mouseY = e.clientY - rect.top;
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            let mouseX = (e.clientX - rect.left) * scaleX;
+            let mouseY = (e.clientY - rect.top) * scaleY;
 
-            const dist = Math.hypot(mouseX - defect.x, mouseY - defect.y);
-            if (dist <= defect.radius + 5) {
-                isDragging = true;
-            }
-        });
+            defect.x = Math.max(60, Math.min(540, mouseX));
+            defect.y = Math.max(70, Math.min(330, mouseY));
 
-        canvas.addEventListener('mousemove', (e) => {
-            if (isDragging) {
-                const rect = canvas.getBoundingClientRect();
-                let mouseX = e.clientX - rect.left;
-                let mouseY = e.clientY - rect.top;
+            xSlider.value = Math.round(defect.x);
+            ySlider.value = Math.round(defect.y);
+            xVal.textContent = Math.round(defect.x);
+            yVal.textContent = Math.round(defect.y);
 
-                // Constrain drag within plate bounds
-                defect.x = Math.max(50, Math.min(550, mouseX));
-                defect.y = Math.max(70, Math.min(330, mouseY));
-
-                xSlider.value = defect.x;
-                ySlider.value = defect.y;
-                xVal.textContent = Math.round(defect.x);
-                yVal.textContent = Math.round(defect.y);
-
-                if (!isSimulating) drawBasePlate();
-            }
-        });
-
-        window.addEventListener('mouseup', () => { isDragging = false; if (!isSimulating) drawBasePlate(); });
-
-        // Slider Input Listeners
-        xSlider.addEventListener('input', (e) => {
-            defect.x = parseFloat(e.target.value);
-            xVal.textContent = defect.x;
             if (!isSimulating) drawBasePlate();
-        });
-
-        ySlider.addEventListener('input', (e) => {
-            defect.y = parseFloat(e.target.value);
-            yVal.textContent = defect.y;
-            if (!isSimulating) drawBasePlate();
-        });
-
-        function runSimulation() {
-            if (isSimulating) return;
-            isSimulating = true;
-            waveRadius = 0;
-            scatteredRadius = 0;
-            ascanOutput.innerHTML = "Generating 150kHz Actuation Signal...<br>";
-
-            // Compute distance from actuator to defect
-            const actToDefectDist = Math.hypot(defect.x - actuator.x, defect.y - actuator.y);
-            const defectToSensorDist = Math.hypot(sensor.x - defect.x, sensor.y - defect.y);
-            const directDist = Math.hypot(sensor.x - actuator.x, sensor.y - actuator.y);
-
-            const directToF = (directDist * 0.185).toFixed(1);
-            const echoToF = ((actToDefectDist + defectToSensorDist) * 0.185).toFixed(1);
-
-            function animate() {
-                drawBasePlate();
-
-                // Incident Wave Propagation
-                if (waveRadius < 550) {
-                    waveRadius += 3;
-                    ctx.strokeStyle = 'rgba(0, 204, 255, 0.7)';
-                    ctx.lineWidth = 3;
-                    ctx.beginPath();
-                    ctx.arc(actuator.x, actuator.y, waveRadius, 0, Math.PI * 2);
-                    ctx.stroke();
-                }
-
-                // Wave Hits Defect -> Scattered Wave Reflection
-                if (waveRadius > actToDefectDist) {
-                    scatteredRadius += 2.5;
-                    ctx.strokeStyle = 'rgba(255, 102, 0, 0.8)';
-                    ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    ctx.arc(defect.x, defect.y, scatteredRadius, 0, Math.PI * 2);
-                    ctx.stroke();
-                }
-
-                // Check Arrival at Sensor
-                if (actuator.x + waveRadius >= sensor.x) {
-                    ascanOutput.innerHTML = `
-                        [Data Stream Received]<br>
-                        - Defect Coordinates: (${Math.round(defect.x)}, ${Math.round(defect.y)})<br>
-                        - Direct Wave ToF: ${directToF} μs<br>
-                        - Defect Reflection ToF: ${echoToF} μs<br>
-                        - Peak Amplitude: 0.82 V<br>
-                        - Status: Wave Packet Captured successfully.
-                    `;
-                }
-
-                if (waveRadius < 550) {
-                    requestAnimationFrame(animate);
-                } else {
-                    isSimulating = false;
-                }
-            }
-            animate();
         }
+    });
 
-        // Render initial static layout
-        drawBasePlate();
-    </script>
+    window.addEventListener('mouseup', () => { isDragging = false; if (!isSimulating) drawBasePlate(); });
+
+    // Slider Listeners
+    xSlider.addEventListener('input', (e) => {
+        defect.x = parseFloat(e.target.value);
+        xVal.textContent = defect.x;
+        if (!isSimulating) drawBasePlate();
+    });
+
+    ySlider.addEventListener('input', (e) => {
+        defect.y = parseFloat(e.target.value);
+        yVal.textContent = defect.y;
+        if (!isSimulating) drawBasePlate();
+    });
+
+    // Actuation & Wave Propagation Simulation
+    function runSimulation() {
+        if (isSimulating) return;
+        isSimulating = true;
+        waveRadius = 0;
+        scatteredRadius = 0;
+        ascanOutput.innerHTML = "> Actuating 150 kHz 5-cycle sine burst...\n> Transmitting incident Lamb wave...";
+
+        const actToDefectDist = Math.hypot(defect.x - actuator.x, defect.y - actuator.y);
+        const defectToSensorDist = Math.hypot(sensor.x - defect.x, sensor.y - defect.y);
+        const directDist = Math.hypot(sensor.x - actuator.x, sensor.y - actuator.y);
+
+        // Calculate Time-of-Flight values
+        const groupVelocity = 5.4; // mm/microsecond
+        const directToF = (directDist / groupVelocity).toFixed(1);
+        const echoToF = ((actToDefectDist + defectToSensorDist) / groupVelocity).toFixed(1);
+
+        function animate() {
+            drawBasePlate();
+
+            // Incident Circular Wavefront
+            if (waveRadius < 560) {
+                waveRadius += 3;
+                ctx.strokeStyle = 'rgba(56, 189, 248, 0.7)';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(actuator.x, actuator.y, waveRadius, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            // Scattered Wavefront from Defect
+            if (waveRadius > actToDefectDist) {
+                scatteredRadius += 2.5;
+                ctx.strokeStyle = 'rgba(249, 115, 22, 0.8)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(defect.x, defect.y, scatteredRadius, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            // Sensor Reception Data Output
+            if (actuator.x + waveRadius >= sensor.x) {
+                ascanOutput.innerHTML = 
+`[A-SCAN SIGNAL CAPTURED]
+------------------------------------
+Defect Location : (${Math.round(defect.x)} mm, ${Math.round(defect.y)} mm)
+Direct Wave ToF : ${directToF} μs
+Defect Echo ToF : ${echoToF} μs
+Signal Status   : Waveform recorded successfully.`;
+            }
+
+            if (waveRadius < 560) {
+                requestAnimationFrame(animate);
+            } else {
+                isSimulating = false;
+            }
+        }
+        animate();
+    }
+
+    // Initial Render
+    drawBasePlate();
+</script>
+
 </body>
 </html>
