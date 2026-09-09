@@ -135,6 +135,35 @@
             color: #38bdf8;
         }
 
+        /* PARAMETER CONTROLS GRID */
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .control-group label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .control-group input, .control-group select {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background-color: #020617;
+            color: white;
+            font-size: 0.85rem;
+        }
+
         /* LAYOUT GRID */
         .grid-2col {
             display: grid;
@@ -285,14 +314,67 @@
         </div>
     </header>
 
-    <!-- SECTION 1: EXPERIMENTAL PRINCIPLES -->
+    <!-- SECTION 1: THEORY -->
     <div class="card">
         <span class="section-tag">SECTION 1</span>
         <h2>Piezoelectric Guided Lamb Wave & SHM Theory</h2>
         <p style="font-size: 0.9rem; color: var(--text-muted);">
-            Structural Health Monitoring (SHM) utilizes Piezoelectric Wafer Active Sensors (PWAS) to generate high-frequency Lamb waves in metallic plates. 
-            By capturing clean baseline signals and comparing them against damaged states, Time-of-Flight (ToF) variations reveal the presence and location of structural defects.
+            Configure your specimen geometry, transducer network, and damage conditions below. By capturing healthy baseline signals and comparing them against damaged states, Time-of-Flight (ToF) variations reveal structural defects.
         </p>
+    </div>
+
+    <!-- SECTION 3: EXPERIMENTAL SETUP & PARAMETERS -->
+    <div class="card">
+        <span class="section-tag">SECTION 3</span>
+        <h2>Specimen, Transducer & Defect Controls</h2>
+        
+        <div class="controls-grid">
+            <!-- Plate Dimensions -->
+            <div class="control-group">
+                <label>Plate Width (Length mm):</label>
+                <input type="number" id="plateWidth" value="500" min="200" max="1000" onchange="updateParameters()">
+            </div>
+            <div class="control-group">
+                <label>Plate Height (Width mm):</label>
+                <input type="number" id="plateHeight" value="300" min="150" max="600" onchange="updateParameters()">
+            </div>
+            
+            <!-- Actuator Coordinates -->
+            <div class="control-group">
+                <label>Actuator X, Y (mm):</label>
+                <div style="display: flex; gap: 5px;">
+                    <input type="number" id="actX" value="80" onchange="updateParameters()">
+                    <input type="number" id="actY" value="150" onchange="updateParameters()">
+                </div>
+            </div>
+
+            <!-- Sensor Coordinates -->
+            <div class="control-group">
+                <label>Sensor X, Y (mm):</label>
+                <div style="display: flex; gap: 5px;">
+                    <input type="number" id="senX" value="420" onchange="updateParameters()">
+                    <input type="number" id="senY" value="150" onchange="updateParameters()">
+                </div>
+            </div>
+
+            <!-- Defect Type & Coordinates -->
+            <div class="control-group">
+                <label>Damage / Defect Type:</label>
+                <select id="damageType" onchange="updateParameters()">
+                    <option value="Corrosion Pit">Corrosion Pit</option>
+                    <option value="Surface Crack">Surface Crack</option>
+                    <option value="Debonding / Delamination">Debonding / Delamination</option>
+                    <option value="Hole / Through-Defect">Hole / Through-Defect</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label>Defect X, Y (mm):</label>
+                <div style="display: flex; gap: 5px;">
+                    <input type="number" id="defX" value="250" onchange="updateParameters()">
+                    <input type="number" id="defY" value="90" onchange="updateParameters()">
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- SECTION 4: INTERACTIVE EXPERIMENTATION -->
@@ -302,11 +384,11 @@
 
         <div class="grid-2col">
             <div>
-                <h3 style="font-size: 0.9rem; margin-bottom: 8px; color: var(--text-muted);">2D Wave Field Plane (Drag Actuator/Sensor/Defect)</h3>
+                <h3 style="font-size: 0.9rem; margin-bottom: 8px; color: var(--text-muted);">2D Wave Field Plane</h3>
                 <canvas id="waveCanvas" width="550" height="320"></canvas>
             </div>
             <div>
-                <h3 style="font-size: 0.9rem; margin-bottom: 8px; color: var(--text-muted);">3D Surface Deformation (A0 Mode Visualization)</h3>
+                <h3 style="font-size: 0.9rem; margin-bottom: 8px; color: var(--text-muted);">3D Surface Deformation (A0 Mode)</h3>
                 <div id="threejs-container"></div>
             </div>
         </div>
@@ -356,13 +438,25 @@
     const canvas = document.getElementById('waveCanvas');
     const ctx = canvas.getContext('2d');
 
-    let actuator = { x: 100, y: 160 };
-    let sensor = { x: 450, y: 160 };
-    let defect = { x: 280, y: 100 };
+    let actuator = { x: 80, y: 150 };
+    let sensor = { x: 420, y: 150 };
+    let defect = { x: 250, y: 90 };
+    let damageType = "Corrosion Pit";
     let waveGroupVelocity = 5.4; // km/s (or mm/μs)
 
     let baselineData = null;
     let damagedData = null;
+
+    function updateParameters() {
+        actuator.x = parseFloat(document.getElementById('actX').value) || 80;
+        actuator.y = parseFloat(document.getElementById('actY').value) || 150;
+        sensor.x = parseFloat(document.getElementById('senX').value) || 420;
+        sensor.y = parseFloat(document.getElementById('senY').value) || 150;
+        defect.x = parseFloat(document.getElementById('defX').value) || 250;
+        defect.y = parseFloat(document.getElementById('defY').value) || 90;
+        damageType = document.getElementById('damageType').value;
+        drawCanvas();
+    }
 
     function drawCanvas() {
         ctx.fillStyle = '#020617';
@@ -401,7 +495,7 @@
         // Defect
         ctx.fillStyle = '#ef4444';
         ctx.beginPath(); ctx.arc(defect.x, defect.y, 8, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = '#ffffff'; ctx.fillText('Defect/Crack', defect.x - 25, defect.y - 12);
+        ctx.fillStyle = '#ffffff'; ctx.fillText(damageType, defect.x - 25, defect.y - 12);
     }
 
     drawCanvas();
@@ -470,10 +564,11 @@
         const echoToF = ((actToDefect + defectToSen) / waveGroupVelocity).toFixed(1);
         const timestamp = new Date().toLocaleTimeString();
 
-        if (confirm(`Damaged State Signal Captured!\n\n• Direct Wave ToF: ${directToF} μs\n• Scattered Echo ToF: ${echoToF} μs\n• Saved Time: ${timestamp}\n\nDo you want to save this point as your SECOND EXPERIMENTAL SET?`)) {
+        if (confirm(`Damaged State Signal Captured!\n\n• Damage Type: ${damageType}\n• Direct Wave ToF: ${directToF} μs\n• Scattered Echo ToF: ${echoToF} μs\n• Saved Time: ${timestamp}\n\nDo you want to save this point as your SECOND EXPERIMENTAL SET?`)) {
             damagedData = {
                 time: timestamp,
                 defect: { ...defect },
+                damageType: damageType,
                 directToF: directToF,
                 echoToF: echoToF,
                 delayToF: (echoToF - directToF).toFixed(1),
@@ -496,6 +591,7 @@
         }
         if (damagedData) {
             text += `[RECORD 2 - DAMAGED EXPERIMENT] Timestamp: ${damagedData.time}\n`;
+            text += `  • Damage Type       : ${damagedData.damageType}\n`;
             text += `  • Defect Location   : (${damagedData.defect.x}, ${damagedData.defect.y}) mm\n`;
             text += `  • Direct Wave ToF   : ${damagedData.directToF} μs\n`;
             text += `  • Scattered Echo ToF: ${damagedData.echoToF} μs\n`;
@@ -515,11 +611,12 @@
             magicMsg.innerHTML = `
                 <strong>✨ ARJUN (Automated Laboratory Analysis):</strong><br>
                 I have received and evaluated both of your saved datasets! Here is what your wave signals indicate:<br><br>
+                • <strong>Damage Condition:</strong> ${damagedData.damageType} at (${damagedData.defect.x}, ${damagedData.defect.y}) mm<br>
                 • <strong>Healthy Baseline ToF:</strong> ${baselineData.directToF} μs<br>
                 • <strong>Scattered Echo ToF:</strong> ${damagedData.echoToF} μs (Delay Δt = ${damagedData.delayToF} μs)<br>
                 • <strong>Inferred Wave Speed:</strong> 5.4 km/s (A0 Lamb Mode)<br>
                 • <strong>Calculated Scattered Path:</strong> ${damagedData.scatteredPath} mm<br><br>
-                My interpretation is that a localized structural discontinuity (crack/corrosion) is creating a secondary wave reflection. You can ask me any further questions regarding wave propagation, or upload external data files for comparative diagnostics!
+                My interpretation is that the simulated ${damagedData.damageType} creates a localized stiffness change and secondary scatter signature. You can ask me any further questions regarding wave propagation or upload your own experimental files for comparative diagnostics!
             `;
             
             chatBox.appendChild(magicMsg);
