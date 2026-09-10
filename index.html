@@ -1871,6 +1871,21 @@ footer p {
     .yashokirti-next{right:8px !important;}
 }
 
+
+.yashokirti-progress-loader{
+    grid-column:1/-1;
+    min-height:90px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border:1px dashed #cbd6df;
+    border-radius:12px;
+    color:#526b80;
+    font-size:13px;
+    font-weight:700;
+    background:#fbfcfd;
+}
+
 </style>
 </head>
 <body>
@@ -3030,7 +3045,7 @@ The first photograph loads immediately for speed. Click it to open the complete 
 <div class="yashokirti-empty">Loading photographs from <strong>images/Ba/</strong>…</div>
 </div>
 <div class="yashokirti-gallery-note">
-    Select any thumbnail to open the full-size photograph. The viewer loads photographs one at a time.
+    Photographs appear progressively for faster loading. Select any thumbnail to open the full-size photograph; only the selected full-size photograph is loaded.
 </div>
 <div class="yashokirti-gallery-actions">
 <a href="https://sites.google.com/view/aisia/yasho"
@@ -3092,129 +3107,120 @@ document.querySelectorAll("#navLinks a").forEach(function(link) {
     });
 });
 
-async function openYashokirtiGallery() {
-    const modal = document.getElementById("yashokirtiModal");
-    const grid = document.getElementById("yashokirtiGalleryGrid");
-    modal.classList.add("active");
-    document.body.style.overflow = "hidden";
-    grid.innerHTML = '<div class="yashokirti-empty">Opening the photo gallery…</div>';
-
-    try {
-        const response = await fetch("images/Ba/", {cache:"no-store"});
-        if (!response.ok) throw new Error("Folder listing unavailable");
-        const html = await response.text();
-
-        const doc = new DOMParser().parseFromString(html, "text/html");
-        const links = Array.from(doc.querySelectorAll("a[href]"))
-            .map(a => a.getAttribute("href"))
-            .filter(href => href && /^I.*\.jpe?g$/i.test(decodeURIComponent(href.split("/").pop())));
-
-        const unique = [...new Set(links.map(href => {
-            const name = decodeURIComponent(href.split("/").pop());
-            return "images/Ba/" + encodeURIComponent(name);
-        }))];
-
-        unique.sort((a,b) => a.localeCompare(b, undefined, {numeric:true, sensitivity:"base"}));
-
-        if (unique.length) {
-            renderYashokirtiPhotos(unique);
-            return;
-        }
-    } catch (error) {
-        console.info("Yashokirti folder listing was not available; using sequential filename fallback.");
-    }
-
-    /* Fallback for servers that do not expose directory listings.
-       The HTML itself is hosted in the foundation folder, so the correct
-       relative image folder is foundation/images/Ba/ -> "images/Ba/".
-       This fallback discovers sequential I*.jpeg / I*.jpg photographs
-       without requiring a JSON file or manifest. */
-    const fallback = [];
-    let consecutiveMissing = 0;
-
-    for (let i = 1; i <= 250; i++) {
-        const candidates = [
-            "images/Ba/I" + i + ".jpeg",
-            "images/Ba/I" + i + ".jpg"
-        ];
-
-        let found = false;
-        for (const url of candidates) {
-            if (await imageExists(url)) {
-                fallback.push(url);
-                found = true;
-                break;
-            }
-        }
-
-        if (found) {
-            consecutiveMissing = 0;
-        } else {
-            consecutiveMissing++;
-            if (fallback.length && consecutiveMissing >= 5) break;
-        }
-    }
-
-    if (fallback.length) {
-        renderYashokirtiPhotos(fallback);
-    } else {
-        grid.innerHTML = `
-            <div class="yashokirti-empty" style="grid-column:1/-1;">
-                No <strong>I*.jpeg</strong> photographs could be loaded from
-                <strong>images/Ba/</strong>.<br>
-                Please confirm that the files are uploaded in
-                <strong>images/Ba/</strong> and begin with <strong>I</strong> or <strong>i</strong>
-                with a <strong>.jpg</strong> or <strong>.jpeg</strong> extension.
-            </div>`;
-    }
-}
-
-function imageExists(url) {
-    return new Promise(resolve => {
-        const img = new Image();
-        img.onload = () => resolve(true);
-        img.onerror = () => resolve(false);
-        img.src = url + "?v=" + Date.now();
-    });
-}
-
 let yashokirtiPhotoUrls = [];
 let yashokirtiPhotoIndex = 0;
+let yashokirtiLoading = false;
 
-function renderYashokirtiPhotos(urls) {
+/*
+  FAST / PROGRESSIVE GALLERY
+  1. Open modal immediately.
+  2. Load I1 only.
+  3. As each thumbnail becomes available, add I2, I3, I4... one at a time.
+  4. Never wait for the complete folder before showing the first photograph.
+*/
+function openYashokirtiGallery() {
+    const modal = document.getElementById("yashokirtiModal");
     const grid = document.getElementById("yashokirtiGalleryGrid");
-    yashokirtiPhotoUrls = urls.slice();
+
+    modal.classList.add("active");
+    document.body.style.overflow = "hidden";
+
+    yashokirtiPhotoUrls = [];
+    yashokirtiPhotoIndex = 0;
+    yashokirtiLoading = true;
     grid.innerHTML = "";
 
-    urls.forEach((url, index) => {
-        const name = decodeURIComponent(url.split("/").pop());
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "yashokirti-photo";
-        button.setAttribute("aria-label", "Open " + name);
-        button.onclick = () => openYashokirtiPhoto(index);
+    // I1 is shown immediately. No directory listing is required first.
+    loadNextYashokirtiThumbnail(1);
+}
 
-        const img = document.createElement("img");
-        img.src = url;
-        img.alt = "Yashokirti Award 2026 photograph " + (index + 1);
-        img.loading = "lazy";
-        img.decoding = "async";
-        img.decoding = "async";
+function findImageUrl(number) {
+    return new Promise(resolve => {
+        const jpeg = "images/Ba/I" + number + ".jpeg";
+        const jpg = "images/Ba/I" + number + ".jpg";
 
-        const caption = document.createElement("div");
-        caption.className = "yashokirti-photo-caption";
-        caption.textContent = name;
-
-        button.appendChild(img);
-        button.appendChild(caption);
-        grid.appendChild(button);
+        const test = new Image();
+        test.onload = () => resolve(jpeg);
+        test.onerror = () => {
+            const testJpg = new Image();
+            testJpg.onload = () => resolve(jpg);
+            testJpg.onerror = () => resolve(null);
+            testJpg.src = jpg + "?v=" + Date.now();
+        };
+        test.src = jpeg + "?v=" + Date.now();
     });
+}
+
+async function loadNextYashokirtiThumbnail(number) {
+    const url = await findImageUrl(number);
+
+    if (!url) {
+        // After five missing numbers, stop probing.
+        if (number <= 5) {
+            // Try the next number so a missing filename does not block the gallery.
+            loadNextYashokirtiThumbnail(number + 1);
+        } else {
+            yashokirtiLoading = false;
+            showYashokirtiLoadingComplete();
+        }
+        return;
+    }
+
+    addYashokirtiThumbnail(url);
+
+    // Immediately begin looking for the next photograph.
+    loadNextYashokirtiThumbnail(number + 1);
+}
+
+function addYashokirtiThumbnail(url) {
+    const grid = document.getElementById("yashokirtiGalleryGrid");
+    const index = yashokirtiPhotoUrls.length;
+
+    yashokirtiPhotoUrls.push(url);
+
+    const name = decodeURIComponent(url.split("/").pop());
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "yashokirti-photo";
+    button.setAttribute("aria-label", "Open " + name);
+    button.onclick = () => openYashokirtiPhoto(index);
+
+    const img = document.createElement("img");
+    img.src = url;
+    img.alt = "Yashokirti Award 2026 photograph " + (index + 1);
+    img.loading = index === 0 ? "eager" : "lazy";
+    img.decoding = "async";
+
+    const caption = document.createElement("div");
+    caption.className = "yashokirti-photo-caption";
+    caption.textContent = name;
+
+    button.appendChild(img);
+    button.appendChild(caption);
+    grid.appendChild(button);
+
+    // Remove the temporary loader once the first real thumbnail appears.
+    const loader = grid.querySelector(".yashokirti-progress-loader");
+    if (loader) loader.remove();
+}
+
+function showYashokirtiLoadingComplete() {
+    const note = document.querySelector(".yashokirti-gallery-note");
+    if (note) {
+        note.textContent =
+            "Select any thumbnail to enlarge it. The enlarged viewer loads only the selected full-size photograph.";
+    }
 }
 
 function openYashokirtiPhoto(index) {
     if (!yashokirtiPhotoUrls.length) return;
 
-    yashokirtiPhotoIndex = Math.max(0, Math.min(index, yashokirtiPhotoUrls.length - 1));
+    yashokirtiPhotoIndex = Math.max(
+        0,
+        Math.min(index, yashokirtiPhotoUrls.length - 1)
+    );
+
     const lightbox = document.getElementById("yashokirtiLightbox");
     lightbox.classList.add("active");
     updateYashokirtiLightbox();
@@ -3222,28 +3228,40 @@ function openYashokirtiPhoto(index) {
 
 function updateYashokirtiLightbox() {
     const url = yashokirtiPhotoUrls[yashokirtiPhotoIndex];
+    if (!url) return;
+
     const name = decodeURIComponent(url.split("/").pop());
     const image = document.getElementById("yashokirtiLightboxImage");
 
-    /* Only the currently selected full-size image is requested. */
+    // Only this selected full-size image is requested.
     image.src = url;
-    image.alt = "Yashokirti Award 2026 photograph " + (yashokirtiPhotoIndex + 1);
+    image.alt =
+        "Yashokirti Award 2026 photograph " +
+        (yashokirtiPhotoIndex + 1);
+
     document.getElementById("yashokirtiLightboxCaption").textContent =
-        name + "  •  " + (yashokirtiPhotoIndex + 1) + " / " + yashokirtiPhotoUrls.length;
+        name + "  •  " +
+        (yashokirtiPhotoIndex + 1) +
+        " / " +
+        yashokirtiPhotoUrls.length;
 
     const prev = document.getElementById("yashokirtiPrev");
     const next = document.getElementById("yashokirtiNext");
 
     prev.disabled = yashokirtiPhotoIndex === 0;
     next.disabled = yashokirtiPhotoIndex === yashokirtiPhotoUrls.length - 1;
-    prev.style.visibility = yashokirtiPhotoUrls.length > 1 ? "visible" : "hidden";
-    next.style.visibility = yashokirtiPhotoUrls.length > 1 ? "visible" : "hidden";
+
+    prev.style.visibility =
+        yashokirtiPhotoUrls.length > 1 ? "visible" : "hidden";
+    next.style.visibility =
+        yashokirtiPhotoUrls.length > 1 ? "visible" : "hidden";
 }
 
 function showYashokirtiPhoto(direction) {
     if (!yashokirtiPhotoUrls.length) return;
 
     const newIndex = yashokirtiPhotoIndex + direction;
+
     if (newIndex < 0 || newIndex >= yashokirtiPhotoUrls.length) return;
 
     yashokirtiPhotoIndex = newIndex;
@@ -3253,12 +3271,14 @@ function showYashokirtiPhoto(direction) {
 function closeYashokirtiPhoto() {
     const lightbox = document.getElementById("yashokirtiLightbox");
     lightbox.classList.remove("active");
-    /* Release the full-size image so it is not kept loaded after closing. */
+
+    // Release the large image after closing.
     document.getElementById("yashokirtiLightboxImage").src = "";
 }
 
 function closeYashokirtiGallery() {
     closeYashokirtiPhoto();
+
     const modal = document.getElementById("yashokirtiModal");
     modal.classList.remove("active");
     document.body.style.overflow = "";
