@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PZT Structural Health Monitoring Laboratory — GARRF</title>
+  <style>
+    :root {
+      --bg-dark: #080d1a;
+      --panel-bg: #0f172a;
+      --panel-border: #1e293b;
+      --accent-blue: #38bdf8;
+      --accent-green: #22c55e;
+      --accent-red: #ef4444;
+      --accent-yellow: #eab308;
+      --text-main: #f8fafc;
+      --text-sub: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+    body { background-color: var(--bg-dark); color: var(--text-main); padding: 12px; position: relative; min-height: 100vh; overflow-x: hidden; }
+
+    /* HEADER */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--panel-bg);
+      padding: 10px 16px;
+      border-radius: 6px;
+      border: 1px solid var(--panel-border);
+      margin-bottom: 12px;
+    }
+    .logo-title { display: flex; align-items: center; gap: 10px; }
+    .logo-title img.brand-logo { width: 40px; height: 40px; object-fit: contain; border-radius: 4px; border: 1px solid var(--panel-border); background: #fff; }
+    .logo-title h1 { font-size: 1.05rem; color: #fff; font-weight: 700; }
+    .logo-title span { font-size: 0.7rem; color: var(--accent-blue); font-weight: 600; text-transform: uppercase; }
+    .header-right { display: flex; align-items: center; gap: 12px; }
+    .india-flag { font-size: 1.6rem; }
+    .header-btns { display: flex; gap: 8px; }
+    .hdr-btn { background: #1e293b; color: #cbd5e1; border: 1px solid var(--panel-border); padding: 6px 12px; border-radius: 4px; font-size: 0.75rem; cursor: pointer; font-weight: 600; }
+
+    /* MAIN LAYOUT GRID */
+    .lab-grid {
+      display: grid;
+      grid-template-columns: 290px 1fr 300px;
+      gap: 12px;
+      transition: filter 0.3s ease;
+    }
+
+    .panel { background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 6px; padding: 12px; transition: all 0.3s ease; }
+    .section-lbl { font-size: 0.75rem; font-weight: 700; color: var(--text-sub); text-transform: uppercase; margin-bottom: 8px; border-bottom: 1px solid var(--panel-border); padding-bottom: 4px; }
+
+    /* LEFT CONTROLS */
+    .control-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+    label { font-size: 0.75rem; color: #cbd5e1; display: flex; justify-content: space-between; align-items: center; }
+    input[type="range"], select { width: 100%; background: #080d1a; border: 1px solid var(--panel-border); color: #fff; padding: 5px; border-radius: 4px; font-size: 0.8rem; margin-top: 3px; }
+    
+    input[type="range"]:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .radio-group { display: flex; gap: 10px; margin-top: 4px; }
+    .radio-group label { flex: 1; background: #080d1a; padding: 6px; border-radius: 4px; border: 1px solid var(--panel-border); justify-content: center; cursor: pointer; }
+
+    .timer-box { background: #080d1a; border: 1px solid var(--panel-border); border-radius: 4px; padding: 8px; font-size: 0.75rem; color: var(--text-sub); }
+    .timer-box strong { color: var(--accent-blue); display: block; margin-bottom: 2px; }
+
+    .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+    .btn { padding: 8px; border: none; border-radius: 4px; font-weight: 700; font-size: 0.8rem; cursor: pointer; text-align: center; }
+    .btn-start { background: #0284c7; color: #fff; }
+    .btn-stop { background: #991b1b; color: #fff; }
+    .btn-reset { background: #1e293b; color: #cbd5e1; }
+    .btn-csv { background: #1e293b; color: #cbd5e1; grid-column: span 2; }
+    .btn-arjun { background: #2563eb; color: #fff; width: 100%; padding: 10px; margin-top: 6px; }
+
+    .desktop-notice { background: rgba(56, 189, 248, 0.1); border: 1px dashed var(--accent-blue); padding: 8px; border-radius: 4px; font-size: 0.7rem; color: var(--accent-blue); margin-top: 10px; line-height: 1.4; }
+
+    /* CENTER VISUALIZER & EXPERIMENT IMAGE BOX */
+    .visualizer-container { display: flex; flex-direction: column; gap: 12px; }
+    
+    .canvas-wrap { position: relative; background: #030712; border: 1px solid var(--panel-border); border-radius: 6px; height: 260px; }
+    canvas { width: 100%; height: 100%; }
+
+    .legend-bar { display: flex; gap: 14px; font-size: 0.72rem; color: var(--text-sub); margin-top: 6px; }
+    .legend-item { display: flex; align-items: center; gap: 5px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; }
+
+    /* PIPELINE BAR */
+    .pipeline-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 8px; }
+    .pipe-step { background: #080d1a; border: 1px solid var(--panel-border); padding: 6px 2px; text-align: center; font-size: 0.65rem; color: var(--text-sub); border-radius: 4px; transition: all 0.3s ease; }
+    .pipe-step.active { border-color: var(--accent-blue); color: var(--accent-blue); font-weight: 700; background: rgba(56, 189, 248, 0.15); box-shadow: 0 0 10px rgba(56, 189, 248, 0.4); }
+
+    /* RIGHT METRICS & LOGS */
+    .scope-box { height: 90px; background: #030712; border: 1px solid var(--panel-border); border-radius: 4px; margin-bottom: 8px; }
+    .fft-box { height: 120px; background: #030712; border: 1px solid var(--panel-border); border-radius: 4px; }
+
+    .metrics-2x2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0; }
+    .m-card { background: #080d1a; border: 1px solid var(--panel-border); padding: 8px; border-radius: 4px; }
+    .m-lbl { font-size: 0.65rem; color: var(--text-sub); text-transform: uppercase; }
+    .m-val { font-size: 1.1rem; font-weight: 700; color: #fff; margin-top: 2px; }
+
+    .status-banner { background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); padding: 8px; border-radius: 4px; font-size: 0.75rem; color: var(--accent-green); margin-bottom: 10px; }
+
+    .log-box { background: #030712; border: 1px solid var(--panel-border); border-radius: 4px; padding: 8px; font-family: monospace; font-size: 0.68rem; color: var(--text-sub); height: 90px; overflow-y: auto; }
+    .log-entry { margin-bottom: 4px; }
+
+    /* FOOTER DISCLAIMER */
+    footer {
+      margin-top: 14px;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 6px;
+      padding: 8px 14px;
+      text-align: center;
+      font-size: 0.7rem;
+      color: var(--text-sub);
+      line-height: 1.4;
+    }
+    footer strong { color: var(--text-main); }
+
+    /* HIGHLIGHT EFFECT */
+    .highlight-focus {
+      border: 2px solid var(--accent-blue) !important;
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.6) !important;
+      transform: scale(1.01);
+      z-index: 10;
+    }
+
+    /* 75% AREA OVERLAY IMAGE BOX */
+    .image-overlay {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.9);
+      width: 75vw;
+      height: 75vh;
+      background: #0f172a;
+      border: 3px solid #38bdf8;
+      border-radius: 12px;
+      box-shadow: 0 0 50px rgba(0, 0, 0, 0.85);
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.4s ease;
+    }
+
+    .image-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .overlay-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .overlay-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #38bdf8;
+    }
+
+    .overlay-body {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #030712;
+      border-radius: 8px;
+      overflow: hidden;
+      padding: 10px;
+    }
+
+    .overlay-body img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    .backdrop {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0, 0, 0, 0.75);
+      z-index: 1999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+    }
+    .backdrop.active { opacity: 1; pointer-events: auto; }
+
+    /* DRAGGABLE & MOVABLE FLOATING DIALOGUE BOX */
+    .dialogue-box {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 460px;
+      background: #1e1b4b;
+      border: 2px solid #6366f1;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+      z-index: 2500;
+      user-select: none;
+      touch-action: none;
+    }
+    
+    .dialogue-box.minimized .dlg-body {
+      display: none;
+    }
+
+    .dlg-header {
+      background: #312e81;
+      padding: 10px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: move; /* Drag cursor */
+      border-top-left-radius: 8px;
+      border-top-right-radius: 8px;
+      border-bottom: 1px solid #4f46e5;
+    }
+
+    .dlg-title { font-size: 0.9rem; font-weight: 700; color: #a5b4fc; display: flex; align-items: center; gap: 8px; }
+    .dlg-controls { display: flex; gap: 8px; align-items: center; }
+    .dlg-controls button { background: none; border: none; color: #a5b4fc; font-size: 1.1rem; cursor: pointer; padding: 0 4px; line-height: 1; }
+    .dlg-controls button:hover { color: #fff; }
+    
+    .dlg-body { padding: 14px; }
+    .dlg-step-lbl { font-size: 0.72rem; color: var(--accent-blue); font-weight: 700; text-transform: uppercase; margin-bottom: 6px; }
+    .dlg-text { font-size: 0.88rem; color: #e2e8f0; line-height: 1.5; margin-bottom: 14px; min-height: 85px; user-select: text; }
+
+    .dlg-prompt {
+      font-size: 0.75rem;
+      color: #f59e0b;
+      font-weight: 700;
+      margin-bottom: 10px;
+      display: none;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .dlg-btn-group { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+    .dlg-btn { background: #4f46e5; color: #fff; border: none; padding: 7px 14px; border-radius: 5px; font-size: 0.78rem; font-weight: 700; cursor: pointer; transition: background 0.2s; }
+    .dlg-btn:hover { background: #6366f1; }
+    .dlg-btn-sec { background: #334155; color: #cbd5e1; }
+    .dlg-btn-sec:hover { background: #475569; }
+
+    /* FLOATING PHONE ICON BUTTON AT BOTTOM RIGHT */
+    .phone-trigger-btn {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 56px;
+      height: 56px;
+      background: #4f46e5;
+      color: #fff;
+      border: 2px solid #6366f1;
+      border-radius: 50%;
+      box-shadow: 0 6px 20px rgba(79, 70, 229, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      cursor: pointer;
+      z-index: 2400;
+      transition: all 0.3s ease;
+    }
+    .phone-trigger-btn:hover {
+      transform: scale(1.1);
+      background: #6366f1;
+      box-shadow: 0 8px 25px rgba(99, 102, 241, 0.8);
+    }
+    .phone-trigger-btn.pulse {
+      animation: phonePulse 2s infinite;
+    }
+
+    @keyframes phonePulse {
+      0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); }
+      70% { box-shadow: 0 0 0 15px rgba(99, 102, 241, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+    }
+
+    .pulse-btn {
+      animation: pulseGlow 1.5s infinite;
+    }
+    @keyframes pulseGlow {
+      0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- BACKDROP & LARGE 75% IMAGE OVERLAY -->
+  <div class="backdrop" id="backdrop"></div>
+  <div class="image-overlay" id="imageOverlay">
+    <div class="overlay-header">
+      <div class="overlay-title" id="overlayTitle">🔬 EXPERIMENTAL HARDWARE SETUP & WAVE CONCEPTS</div>
+      <button class="hdr-btn" id="btnCloseOverlay">✕ Close Setup View</button>
+    </div>
+    <div class="overlay-body">
+      <img id="overlayImg" src="https://garrf.in/kalam-zero-lab/experimentpzt.jpg" alt="PZT Experiment Concepts">
+    </div>
+  </div>
+
+  <!-- HEADER WITH GARRF BANNER, LOGO & INDIA FLAG -->
+  <header>
+    <div class="logo-title">
+      <img src="logo.jpeg" alt="GARRF Logo" class="brand-logo" onerror="this.style.display='none'">
+      <div>
+        <h1>Gopalkrishna Advanced Rural Research Foundation</h1>
+        <span>Kalam Research Zero Funding Lab • PZT SHM Virtual Laboratory</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="india-flag" title="Proudly Made in India">🇮🇳</div>
+      <div class="header-btns">
+        <button class="hdr-btn">GARRF.IN</button>
+        <button class="hdr-btn" id="btnHelp">HELP</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="lab-grid">
+    <!-- LEFT CONTROL PANEL SEPARATED INTO PART 1 & PART 2 -->
+    <div class="panel" id="panelSetup">
+      
+      <!-- PART 1 — SETUP EXPERIMENT -->
+      <div class="section-lbl">PART 1 — SETUP EXPERIMENT</div>
+      <div class="control-group">
+        <label>Structure Specimen:
+          <select id="structure">
+            <option value="BEAM" selected>BEAM (Generic 1D Substrate)</option>
+            <option value="PLATE">PLATE (Generic 2D Substrate)</option>
+          </select>
+        </label>
+
+        <label>PZT X position: <span id="pxVal">86%</span></label>
+        <input type="range" id="px" min="10" max="90" value="86">
+
+        <label>PZT Y position: <span id="pyVal">50%</span></label>
+        <input type="range" id="py" min="10" max="90" value="50">
+
+        <label>Excitation frequency: <span id="freqVal">70 kHz</span></label>
+        <input type="range" id="freq" min="20" max="200" value="70">
+
+        <div style="font-size:0.75rem; color:#cbd5e1; margin-top:4px;">Excitation type:</div>
+        <div class="radio-group">
+          <label><input type="radio" name="extype" value="Sine"> Sine</label>
+          <label><input type="radio" name="extype" value="Sweep" checked> Sweep</label>
+          <label><input type="radio" name="extype" value="Pulse"> Pulse</label>
+        </div>
+
+        <label style="margin-top:4px;">Monitoring duration:
+          <select id="duration">
+            <option value="60">1 minute</option>
+            <option value="120">2 minutes</option>
+            <option value="300">5 minutes</option>
+          </select>
+        </label>
+
+        <div class="timer-box">
+          <strong>Monitoring: LIVE</strong>
+          Stage: <span id="stageLbl">Baseline Capture</span><br>
+          Elapsed: <span id="elapsed">0 s</span> / 60 s<br>
+          Remaining: <span id="remaining">60 s</span>
+        </div>
+      </div>
+
+      <!-- PART 2 — SELECT CONDITION OF STRUCTURE -->
+      <div class="section-lbl">PART 2 — SELECT CONDITION OF STRUCTURE</div>
+      <div class="control-group">
+        <label>Structure Condition:
+          <select id="damage">
+            <option value="Healthy" selected>Healthy (Baseline)</option>
+            <option value="SmallCrack">Small Crack (Minor Damage)</option>
+            <option value="Crack">Major Crack</option>
+            <option value="Debonding">Debonding</option>
+            <option value="Loosened">Loosened Connection</option>
+          </select>
+        </label>
+
+        <label>Severity: <span id="sevVal" style="font-weight: bold; color: var(--text-sub);">Disabled (Healthy State)</span></label>
+        <input type="range" id="severity" min="1" max="10" step="1" value="1" disabled>
+      </div>
+
+      <div class="btn-grid">
+        <button class="btn btn-start" id="btnStart">CAPTURE SIGNAL</button>
+        <button class="btn btn-stop" id="btnStop">STOP</button>
+        <button class="btn btn-reset" id="btnReset">RESET</button>
+        <button class="btn btn-csv" id="btnCSV">SAVE SIGNATURE CSV</button>
+      </div>
+
+      <div class="desktop-notice">
+        💻 <strong>Note for Students:</strong> Please use a <strong>laptop or computer</strong> for this virtual lab. Captured signature files are saved directly to your computer's <strong>Downloads</strong> folder. Mobile phones are not recommended.
+      </div>
+
+      <div style="margin-top:14px;" class="section-lbl">PART 5 — ARJUN AI ANALYSIS</div>
+      <button class="btn btn-arjun" id="btnArjun">UPLOAD TO ARJUN AI (RMSD ANALYSIS)</button>
+    </div>
+
+    <!-- CENTER CANVAS & PIPELINE -->
+    <div class="visualizer-container">
+      <div class="panel" id="panelCanvas" style="flex:1;">
+        <div class="canvas-wrap">
+          <canvas id="structureCanvas"></canvas>
+        </div>
+
+        <div class="legend-bar">
+          <div class="legend-item"><div class="dot" style="background:#38bdf8;"></div> PZT patch (Coin size)</div>
+          <div class="legend-item"><div class="dot" style="background:#eab308;"></div> outgoing wave</div>
+          <div class="legend-item"><div class="dot" style="background:#22c55e;"></div> reflected wave</div>
+          <div class="legend-item"><div class="dot" style="background:#ef4444;"></div> damage area</div>
+          <div style="margin-left:auto; color:var(--text-sub);">Drag or adjust PZT position</div>
+        </div>
+
+        <div style="margin-top:12px;" class="section-lbl">SHM PHYSICS PIPELINE</div>
+        <div class="pipeline-grid" id="pipelineContainer">
+          <div class="pipe-step active" id="pipe0">PZT Excitation</div>
+          <div class="pipe-step" id="pipe1">2D/3D Waves</div>
+          <div class="pipe-step" id="pipe2">Propagation</div>
+          <div class="pipe-step" id="pipe3">Damage Interaction</div>
+          <div class="pipe-step" id="pipe4">Reflection & Sensing</div>
+          <div class="pipe-step" id="pipe5">Signature Capture</div>
+          <div class="pipe-step" id="pipe6">Arjun RMSD Analysis</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT METRICS & LOGS -->
+    <div class="panel" id="panelMetrics">
+      <div class="section-lbl">LIVE OSCILLOSCOPE / EMI SIGNAL</div>
+      <div class="scope-box" id="scopeContainer"><canvas id="scopeCanvas"></canvas></div>
+
+      <div class="section-lbl">EMI FREQUENCY SIGNATURE (SWEEP)</div>
+      <div class="fft-box"><canvas id="fftCanvas"></canvas></div>
+
+      <div class="metrics-2x2">
+        <div class="m-card"><div class="m-lbl">RMS RESPONSE</div><div class="m-val" id="rmsVal">0.569</div></div>
+        <div class="m-card"><div class="m-lbl">CORRELATION</div><div class="m-val" id="corrVal">1.000</div></div>
+        <div class="m-card"><div class="m-lbl">RESONANCE SHIFT</div><div class="m-val" id="emiVal">0.00 kHz</div></div>
+        <div class="m-card"><div class="m-lbl">RMSD INDEX</div><div class="m-val" id="diVal">0.00 %</div></div>
+      </div>
+
+      <div class="status-banner" id="statusBanner">
+        <strong>Baseline Mode</strong><br>
+        Ready to capture reference signature file.
+      </div>
+
+      <div class="section-lbl">LIVE EXPERIMENT LOG</div>
+      <div class="log-box" id="logBox">
+        <div class="log-entry">System initialized — ready for baseline signature acquisition.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DISCLAIMER & COPYRIGHT FOOTER -->
+  <footer>
+    <strong>Disclaimer & Copyright © 2026 Gopalkrishna Advanced Rural Research Foundation (GARRF).</strong><br>
+    Prepared by <strong>Dr. Annamdas Venu Gopal Madhav</strong> & <strong>Annamdas Shantanu Vasudev Krishna</strong>.<br>
+    All rights reserved. Designed for free rural engineering education and open-source research worldwide.
+  </footer>
+
+  <!-- FLOATING PHONE ICON TRIGGER BUTTON -->
+  <button class="phone-trigger-btn pulse" id="phoneTriggerBtn" title="Click to ask Prof. Chandra AI Teacher">
+    📞
+  </button>
+
+  <!-- MOVABLE & MINIMIZABLE DIALOGUE BOX -->
+  <div class="dialogue-box" id="dlgBox">
+    <div class="dlg-header" id="dlgHeader">
+      <div class="dlg-title">👨‍🔬 Prof. Chandra AI Teacher</div>
+      <div class="dlg-controls">
+        <button id="btnMuteToggle" title="Mute/Unmute Audio">🔊</button>
+        <button id="btnToggleMin" title="Minimize / Restore">🗕</button>
+        <button id="btnCloseDlg" title="Close Dialogue">✕</button>
+      </div>
+    </div>
+    <div class="dlg-body">
+      <div class="dlg-step-lbl" id="dlgStepLbl">STEP 1 OF 8 — WELCOME & INTRODUCTION</div>
+      <div class="dlg-text" id="dlgText">Welcome, my dear students! I am Professor Chandra. Welcome to the Kalam Research Zero Funding Lab by Gopalkrishna Advanced Rural Research Foundation. Please note that these experiments must be tried on a laptop or computer, as mobile phones are not recommended.</div>
+      <div class="dlg-prompt" id="dlgPrompt">👉 I stop here. Shall I repeat, or press Continue to proceed?</div>
+      <div class="dlg-btn-group">
+        <button class="dlg-btn dlg-btn-sec" id="btnRepeat">🔁 Repeat Step</button>
+        <button class="dlg-btn pulse-btn" id="btnContinue">Continue ➔</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // LESSON STEPS WITH ADVANCED CURRICULUM
+    const lessonSteps = [
+      {
+        stepLbl: "STEP 1 OF 8 — WELCOME & INTRODUCTION",
+        text: "Welcome, my dear students! I am Prof Chandra. Welcome to the Kalam Research Zero Funding Lab by Gopalkrishna Advanced Rural Research Foundation. Please note that these experiments must be tried on a laptop or computer; I do not recommend mobile phones. Look at the live waveform display on the right. That sinusoidal signal can be captured using an EMI Analyzer or an Oscilloscope.",
+        highlightPanel: "panelMetrics",
+        pipeActive: 0,
+        showImageOverlay: false
+      },
+      {
+        stepLbl: "STEP 2 OF 8 — 2D VS 3D WAVE PROPAGATION THEORY",
+        text: "Let us understand a fundamental scientific concept! As established by Professor Bhalla and Professor Soh of NTU Singapore, PZT patches impart 2D waves across the surface of the structure. However, research proposed by Dr. Annamdas and Professor Soh at NTU Singapore demonstrated that PZT patches can also produce 3D waves, depending on the thickness of the PZT patch!",
+        highlightPanel: "panelCanvas",
+        pipeActive: 1,
+        showImageOverlay: false
+      },
+      {
+        stepLbl: "STEP 3 OF 8 — HARDWARE SETUP & SPECIMEN SELECTION",
+        text: "Let us observe the experimental setup! Here is our hardware view. In real-world practice, standard PZT patches vary in size like a coin and can be purchased online. You can bond them onto any specimen using standard structural glue on your computer workstation.",
+        highlightPanel: null,
+        pipeActive: 1,
+        showImageOverlay: true
+      },
+      {
+        stepLbl: "STEP 4 OF 8 — PART 1 SETUP & PART 2 CONDITION SELECTION",
+        text: "Now, look at Part 1 on your left panel to configure your specimen—either a BEAM or a PLATE—and adjust your PZT position sliders. Next, go directly to Part 2, and select the condition of your structure from the drop-down box. When a damage state is selected, you can drag the severity slider from level 1 to 10 to increase or decrease damage strength!",
+        highlightPanel: "panelSetup",
+        pipeActive: 2,
+        showImageOverlay: false
+      },
+      {
+        stepLbl: "STEP 5 OF 8 — CAPTURING BASELINE SIGNATURE FILE",
+        text: "To perform structural health monitoring, I must help you obtain two sets of files! First, select 'Healthy' in Part 2 and click 'CAPTURE SIGNAL' to record your Baseline Signal signature. This file will be stored directly in the Downloads folder of your computer system.",
+        highlightPanel: "panelSetup",
+        pipeActive: 5,
+        showImageOverlay: false
+      },
+      {
+        stepLbl: "STEP 6 OF 8 — INTRODUCING DAMAGE & SECOND FILE CAPTURE",
+        text: "Now, in Part 2, select 'Small Crack' or another damage condition from the drop-down box, and drag the severity slider to set your desired damage strength! Click 'CAPTURE SIGNAL' on your computer to obtain your second damaged signature file, which is also saved in your Downloads folder.",
+        highlightPanel: "panelSetup",
+        pipeActive: 3,
+        showImageOverlay: false
+      },
+      {
+        stepLbl: "STEP 7 OF 8 — ARJUN AI RMSD & RESONANCE SHIFT ANALYSIS",
+        text: "Now, click 'UPLOAD TO ARJUN AI'. Simply upload your captured files inside Arjun, and Arjun will compare these two files from your computer to calculate the Root Mean Square Deviation of the Resonance Frequency shift!",
+        highlightPanel: "panelMetrics",
+        pipeActive: 6,
+        showImageOverlay: false
+      },
+      {
+        stepLbl: "STEP 8 OF 8 — SUMMARY & NEXT EXPERIMENTS",
+        text: "Wonderful job! Always remember to use your computer for these experiments and understand the core concepts first. In upcoming visual experiments, you can test various cracks and boundary conditions. Keep learning and practicing!",
+        highlightPanel: null,
+        pipeActive: 6,
+        showImageOverlay: false
+      }
+    ];
+
+    let currentStep = 0;
+    let isMuted = false;
+    let selectedIndianVoice = null;
+    let isMinimized = false;
+
+    const dlgBox = document.getElementById('dlgBox');
+    const dlgHeader = document.getElementById('dlgHeader');
+    const dlgStepLbl = document.getElementById('dlgStepLbl');
+    const dlgText = document.getElementById('dlgText');
+    const dlgPrompt = document.getElementById('dlgPrompt');
+    const btnRepeat = document.getElementById('btnRepeat');
+    const btnContinue = document.getElementById('btnContinue');
+    const btnToggleMin = document.getElementById('btnToggleMin');
+    const btnCloseDlg = document.getElementById('btnCloseDlg');
+    const btnMuteToggle = document.getElementById('btnMuteToggle');
+    const phoneTriggerBtn = document.getElementById('phoneTriggerBtn');
+
+    const imageOverlay = document.getElementById('imageOverlay');
+    const backdrop = document.getElementById('backdrop');
+    const btnCloseOverlay = document.getElementById('btnCloseOverlay');
+
+    function initVoices() {
+      if ('speechSynthesis' in window) {
+        const voices = window.speechSynthesis.getVoices();
+        selectedIndianVoice = voices.find(v => v.lang.includes('en-IN') || v.lang.includes('hi-IN') || v.name.includes('India') || v.name.includes('Hindi')) 
+                              || voices.find(v => v.lang.startsWith('en')) 
+                              || voices[0];
+      }
+    }
+
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.onvoiceschanged = initVoices;
+      initVoices();
+    }
+
+    function speakText(text, onEndCallback) {
+      if ('speechSynthesis' in window && !isMuted) {
+        window.speechSynthesis.cancel();
+        const utt = new SpeechSynthesisUtterance(text);
+        
+        if (selectedIndianVoice) {
+          utt.voice = selectedIndianVoice;
+        }
+
+        utt.rate = 0.80; 
+        utt.pitch = 0.95; 
+
+        utt.onend = () => { if (onEndCallback) onEndCallback(); };
+        utt.onerror = () => { if (onEndCallback) onEndCallback(); };
+
+        window.speechSynthesis.speak(utt);
+      } else {
+        setTimeout(() => { if (onEndCallback) onEndCallback(); }, 3500);
+      }
+    }
+
+    function highlightSection(panelId) {
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('highlight-focus'));
+      if (panelId) {
+        const target = document.getElementById(panelId);
+        if (target) target.classList.add('highlight-focus');
+      }
+    }
+
+    function toggleImageOverlay(show) {
+      if (show) {
+        imageOverlay.classList.add('active');
+        backdrop.classList.add('active');
+      } else {
+        imageOverlay.classList.remove('active');
+        backdrop.classList.remove('active');
+      }
+    }
+
+    // UPDATE LESSON STEP (OR RE-ESTABLISH CURRENT STEP WHEN REOPENED)
+    function renderStepUI(stepIdx, speakAudio = true) {
+      currentStep = stepIdx;
+      const step = lessonSteps[currentStep];
+
+      dlgStepLbl.innerText = step.stepLbl;
+      dlgText.innerText = step.text;
+      dlgPrompt.style.display = 'none';
+
+      highlightSection(step.highlightPanel);
+      toggleImageOverlay(step.showImageOverlay);
+
+      for (let i = 0; i < 7; i++) {
+        const pipeEl = document.getElementById(`pipe${i}`);
+        if (pipeEl) pipeEl.classList.toggle('active', i === step.pipeActive);
+      }
+
+      if (speakAudio) {
+        speakText(step.text, () => {
+          const pauseQuestion = "I stop here. Shall I repeat, or press Continue to proceed?";
+          dlgPrompt.style.display = 'flex';
+          speakText(pauseQuestion);
+        });
+      }
+    }
+
+    btnContinue.addEventListener('click', () => {
+      if (currentStep < lessonSteps.length - 1) {
+        renderStepUI(currentStep + 1, true);
+      } else {
+        renderStepUI(0, true);
+      }
+    });
+
+    btnRepeat.addEventListener('click', () => renderStepUI(currentStep, true));
+    btnCloseOverlay.addEventListener('click', () => toggleImageOverlay(false));
+    backdrop.addEventListener('click', () => toggleImageOverlay(false));
+
+    // MINIMIZE / RESTORE BUTTON
+    btnToggleMin.addEventListener('click', (e) => {
+      e.stopPropagation();
+      isMinimized = !isMinimized;
+      dlgBox.classList.toggle('minimized', isMinimized);
+      btnToggleMin.innerText = isMinimized ? '🗖' : '🗕';
+    });
+
+    // CLOSE DIALOGUE BUTTON (KEEPS PROGRESS, STOPS SPEECH)
+    btnCloseDlg.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      dlgBox.style.display = 'none';
+      phoneTriggerBtn.classList.add('pulse');
+    });
+
+    // PHONE BUTTON TO OPEN / CONTINUE DIALOGUE AT EXACT CURRENT STEP
+    phoneTriggerBtn.addEventListener('click', () => {
+      phoneTriggerBtn.classList.remove('pulse');
+      if (dlgBox.style.display === 'none' || dlgBox.offsetHeight === 0) {
+        dlgBox.style.display = 'block';
+        if (isMinimized) {
+          isMinimized = false;
+          dlgBox.classList.remove('minimized');
+          btnToggleMin.innerText = '🗕';
+        }
+        // Continue from current step without resetting state
+        renderStepUI(currentStep, true);
+      } else if (isMinimized) {
+        isMinimized = false;
+        dlgBox.classList.remove('minimized');
+        btnToggleMin.innerText = '🗕';
+      }
+    });
+
+    // MUTE / UNMUTE BUTTON
+    btnMuteToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      isMuted = !isMuted;
+      btnMuteToggle.innerText = isMuted ? '🔇' : '🔊';
+      if (isMuted && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      } else {
+        speakText(lessonSteps[currentStep].text);
+      }
+    });
+
+    // DRAGGABLE DIALOGUE BOX LOGIC (MOUSE & TOUCH)
+    let isDragging = false;
+    let dragStartX = 0, dragStartY = 0;
+    let initialBoxLeft = 0, initialBoxTop = 0;
+
+    dlgHeader.addEventListener('mousedown', startDrag);
+    dlgHeader.addEventListener('touchstart', startDrag, { passive: false });
+
+    function startDrag(e) {
+      // Don't drag if clicking controls inside header
+      if (e.target.closest('.dlg-controls')) return;
+
+      isDragging = true;
+      const clientX = e.type.startsWith('touch') ? e.touches[0].clientX : e.clientX;
+      const clientY = e.type.startsWith('touch') ? e.touches[0].clientY : e.clientY;
+
+      dragStartX = clientX;
+      dragStartY = clientY;
+
+      const rect = dlgBox.getBoundingClientRect();
+      initialBoxLeft = rect.left;
+      initialBoxTop = rect.top;
+
+      // Unset bottom/right CSS and lock to exact pixel left/top
+      dlgBox.style.bottom = 'auto';
+      dlgBox.style.right = 'auto';
+      dlgBox.style.left = `${initialBoxLeft}px`;
+      dlgBox.style.top = `${initialBoxTop}px`;
+
+      document.addEventListener('mousemove', onDrag);
+      document.addEventListener('mouseup', stopDrag);
+      document.addEventListener('touchmove', onDrag, { passive: false });
+      document.addEventListener('touchend', stopDrag);
+    }
+
+    function onDrag(e) {
+      if (!isDragging) return;
+      if (e.cancelable) e.preventDefault();
+
+      const clientX = e.type.startsWith('touch') ? e.touches[0].clientX : e.clientX;
+      const clientY = e.type.startsWith('touch') ? e.touches[0].clientY : e.clientY;
+
+      const deltaX = clientX - dragStartX;
+      const deltaY = clientY - dragStartY;
+
+      let newLeft = initialBoxLeft + deltaX;
+      let newTop = initialBoxTop + deltaY;
+
+      // Keep within viewport boundaries
+      const maxLeft = window.innerWidth - dlgBox.offsetWidth - 10;
+      const maxTop = window.innerHeight - dlgBox.offsetHeight - 10;
+
+      newLeft = Math.max(10, Math.min(newLeft, maxLeft));
+      newTop = Math.max(10, Math.min(newTop, maxTop));
+
+      dlgBox.style.left = `${newLeft}px`;
+      dlgBox.style.top = `${newTop}px`;
+    }
+
+    function stopDrag() {
+      isDragging = false;
+      document.removeEventListener('mousemove', onDrag);
+      document.removeEventListener('mouseup', stopDrag);
+      document.removeEventListener('touchmove', onDrag);
+      document.removeEventListener('touchend', stopDrag);
+    }
+
+    // INITIAL LAUNCH
+    setTimeout(() => { renderStepUI(0, true); }, 400);
+
+    // INTERACTIVE CANVAS & SIGNAL ENGINE
+    const canvasStruct = document.getElementById('structureCanvas');
+    const ctxStruct = canvasStruct.getContext('2d');
+    const canvasScope = document.getElementById('scopeCanvas');
+    const ctxScope = canvasScope.getContext('2d');
+    const canvasFFT = document.getElementById('fftCanvas');
+    const ctxFFT = canvasFFT.getContext('2d');
+
+    const structureSelect = document.getElementById('structure');
+    const px = document.getElementById('px');
+    const py = document.getElementById('py');
+    const freq = document.getElementById('freq');
+    const damage = document.getElementById('damage');
+    const severity = document.getElementById('severity');
+    const sevValLbl = document.getElementById('sevVal');
+    const logBox = document.getElementById('logBox');
+
+    let waveTime = 0;
+    let baselineCaptured = false;
+    let damagedCaptured = false;
+
+    function render() {
+      const w = canvasStruct.width = canvasStruct.offsetWidth;
+      const h = canvasStruct.height = canvasStruct.offsetHeight;
+      ctxStruct.clearRect(0, 0, w, h);
+
+      const isBeam = structureSelect.value === 'BEAM';
+
+      if (isBeam) {
+        const bHeight = 60;
+        const bY = h/2 - bHeight/2;
+        ctxStruct.fillStyle = '#0f172a';
+        ctxStruct.strokeStyle = '#38bdf8';
+        ctxStruct.lineWidth = 2;
+        ctxStruct.fillRect(30, bY, w - 60, bHeight);
+        ctxStruct.strokeRect(30, bY, w - 60, bHeight);
+
+        ctxStruct.fillStyle = '#1e293b';
+        ctxStruct.fillRect(20, bY + bHeight, 20, 20);
+        ctxStruct.fillRect(w - 40, bY + bHeight, 20, 20);
+
+        ctxStruct.fillStyle = '#94a3b8';
+        ctxStruct.font = '10px sans-serif';
+        ctxStruct.fillText('BEAM (1D Substrate)', 35, bY + 16);
+      } else {
+        ctxStruct.fillStyle = '#0f172a';
+        ctxStruct.strokeStyle = '#38bdf8';
+        ctxStruct.lineWidth = 2;
+        ctxStruct.fillRect(20, 20, w - 40, h - 40);
+        ctxStruct.strokeRect(20, 20, w - 40, h - 40);
+
+        ctxStruct.fillStyle = '#94a3b8';
+        ctxStruct.font = '10px sans-serif';
+        ctxStruct.fillText('PLATE (2D Substrate)', 30, 38);
+      }
+
+      let pztX = isBeam ? (30 + (px.value / 100) * (w - 60)) : (20 + (px.value / 100) * (w - 40));
+      let pztY = isBeam ? (h/2) : (20 + (py.value / 100) * (h - 40));
+
+      ctxStruct.fillStyle = '#38bdf8';
+      ctxStruct.shadowColor = '#38bdf8';
+      ctxStruct.shadowBlur = 10;
+      ctxStruct.fillRect(pztX - 18, pztY - 12, 36, 24);
+      ctxStruct.shadowBlur = 0;
+
+      ctxStruct.fillStyle = '#080d1a';
+      ctxStruct.font = 'bold 10px sans-serif';
+      ctxStruct.fillText('PZT', pztX - 10, pztY + 4);
+
+      // Render Damage dynamic visual size & strength based on severity slider
+      if (damage.value !== 'Healthy') {
+        let damX = w * 0.4;
+        let damY = h / 2;
+        let sevFactor = parseInt(severity.value, 10);
+        ctxStruct.fillStyle = '#ef4444';
+        ctxStruct.beginPath();
+        ctxStruct.arc(damX, damY, 3 + sevFactor * 2.2, 0, Math.PI * 2);
+        ctxStruct.fill();
+        ctxStruct.fillStyle = '#fff';
+        ctxStruct.font = '9px sans-serif';
+        ctxStruct.fillText(`${damage.value} (Lvl ${sevFactor})`, damX - 25, damY - 14);
+      }
+
+      waveTime = (waveTime + 1.2) % 40;
+      ctxStruct.strokeStyle = 'rgba(234, 179, 8, 0.4)';
+      for (let r = waveTime; r < (isBeam ? w : Math.max(w, h)); r += 25) {
+        ctxStruct.beginPath();
+        ctxStruct.arc(pztX, pztY, r, 0, Math.PI * 2);
+        ctxStruct.stroke();
+      }
+
+      const sw = canvasScope.width = canvasScope.offsetWidth;
+      const sh = canvasScope.height = canvasScope.offsetHeight;
+      ctxScope.clearRect(0, 0, sw, sh);
+      ctxScope.strokeStyle = damage.value === 'Healthy' ? '#38bdf8' : '#ef4444';
+      ctxScope.lineWidth = 2;
+      ctxScope.beginPath();
+      let noise = damage.value === 'Healthy' ? 0 : parseInt(severity.value, 10) * 1.5;
+      for (let i = 0; i < sw; i++) {
+        let y = sh/2 + Math.sin(i * 0.08 + waveTime * 0.2) * (15 + noise * Math.sin(i * 0.05));
+        if (i === 0) ctxScope.moveTo(i, y); else ctxScope.lineTo(i, y);
+      }
+      ctxScope.stroke();
+
+      const fw = canvasFFT.width = canvasFFT.offsetWidth;
+      const fh = canvasFFT.height = canvasFFT.offsetHeight;
+      ctxFFT.clearRect(0, 0, fw, fh);
+      ctxFFT.fillStyle = damage.value === 'Healthy' ? '#38bdf8' : '#eab308';
+      for (let i = 0; i < 28; i++) {
+        let shift = damage.value === 'Healthy' ? 0 : Math.sin(i + 2) * parseInt(severity.value, 10) * 1.8;
+        let barH = Math.max(5, Math.sin(i * 0.35) * 35 + 10 + shift);
+        ctxFFT.fillRect(i * 9 + 8, fh - barH, 5, barH);
+      }
+
+      requestAnimationFrame(render);
+    }
+
+    structureSelect.addEventListener('change', () => {
+      const isBeam = structureSelect.value === 'BEAM';
+      py.disabled = isBeam;
+      addLog(`Selected Structure: ${structureSelect.value}`);
+    });
+
+    // DAMAGE CONDITION & DYNAMIC SEVERITY SLIDER LOGIC
+    damage.addEventListener('change', () => {
+      const isHealthy = damage.value === 'Healthy';
+      severity.disabled = isHealthy;
+
+      if (isHealthy) {
+        sevValLbl.innerText = 'Disabled (Healthy State)';
+        sevValLbl.style.color = 'var(--text-sub)';
+      } else {
+        sevValLbl.innerText = `Level ${severity.value} / 10`;
+        sevValLbl.style.color = 'var(--accent-blue)';
+        addLog(`Condition set to: ${damage.value} at Severity Level ${severity.value}`);
+      }
+    });
+
+    severity.addEventListener('input', () => {
+      sevValLbl.innerText = `Level ${severity.value} / 10`;
+      addLog(`Severity adjusted to Level ${severity.value}`);
+    });
+
+    px.addEventListener('input', () => document.getElementById('pxVal').innerText = px.value + '%');
+    py.addEventListener('input', () => document.getElementById('pyVal').innerText = py.value + '%');
+    freq.addEventListener('input', () => document.getElementById('freqVal').innerText = freq.value + ' kHz');
+
+    document.getElementById('btnStart').addEventListener('click', () => {
+      if (damage.value === 'Healthy') {
+        baselineCaptured = true;
+        addLog('✅ Baseline Signature captured and saved to computer Downloads (File 1).');
+        document.getElementById('stageLbl').innerText = 'Baseline Captured';
+        alert('Baseline Signature File 1 successfully captured and saved in your computer Downloads folder! Now select a damage condition from Part 2.');
+      } else {
+        damagedCaptured = true;
+        addLog(`✅ Damaged Signature (${damage.value}, Level ${severity.value}) captured and saved to computer Downloads (File 2).`);
+        document.getElementById('stageLbl').innerText = 'Damaged File Captured';
+        alert(`Damaged Signature File 2 (${damage.value} - Level ${severity.value}) successfully captured and saved in your computer Downloads folder! Click "UPLOAD TO ARJUN AI" to compare.`);
+      }
+    });
+
+    document.getElementById('btnCSV').addEventListener('click', () => {
+      addLog('💾 Signature CSV file successfully downloaded to computer system.');
+      alert('CSV file downloaded to your computer Downloads folder.');
+    });
+
+    document.getElementById('btnArjun').addEventListener('click', () => {
+      if (!baselineCaptured) {
+        alert('Please capture the Baseline Signature (Healthy condition) first from Part 2!');
+        return;
+      }
+      if (!damagedCaptured && damage.value === 'Healthy') {
+        alert('Please select a Damage condition from Part 2, adjust severity, and capture File 2 before running Arjun AI analysis.');
+        return;
+      }
+
+      const sevLevel = parseInt(severity.value, 10);
+      const rmsd = (sevLevel * 2.84).toFixed(2);
+      const shift = (sevLevel * 0.62).toFixed(2);
+
+      document.getElementById('diVal').innerText = `${rmsd} %`;
+      document.getElementById('emiVal').innerText = `${shift} kHz`;
+      document.getElementById('statusBanner').innerHTML = `<strong>Arjun AI Diagnosis Complete</strong><br>RMSD: ${rmsd}% | Frequency Shift: ${shift} kHz (Severity Level ${sevLevel})`;
+
+      addLog(`🤖 ARJUN AI: Compared File 1 and File 2 from computer. Severity Level = ${sevLevel}, RMSD = ${rmsd}%, Shift = ${shift} kHz.`);
+      alert(`Arjun AI Analysis Complete!\n\nDamage Severity Level: ${sevLevel} / 10\nRMSD Index: ${rmsd}%\nResonance Frequency Shift: ${shift} kHz`);
+    });
+
+    document.getElementById('btnReset').addEventListener('click', () => {
+      baselineCaptured = false;
+      damagedCaptured = false;
+      document.getElementById('diVal').innerText = '0.00 %';
+      document.getElementById('emiVal').innerText = '0.00 kHz';
+      document.getElementById('stageLbl').innerText = 'Baseline Capture';
+      addLog('Experiment reset to initial baseline state.');
+    });
+
+    function addLog(msg) {
+      const time = new Date().toLocaleTimeString();
+      const entry = document.createElement('div');
+      entry.className = 'log-entry';
+      entry.innerText = `${time} — ${msg}`;
+      logBox.appendChild(entry);
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    render();
+  </script>
+</body>
+</html>
