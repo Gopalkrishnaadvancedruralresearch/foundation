@@ -72,7 +72,6 @@
     .btn-csv { background: #1e293b; color: #cbd5e1; grid-column: span 2; }
     .btn-arjun { background: #2563eb; color: #fff; width: 100%; padding: 10px; margin-top: 6px; }
 
-    /* NOTICE BOX FOR DESKTOP */
     .desktop-notice { background: rgba(56, 189, 248, 0.1); border: 1px dashed var(--accent-blue); padding: 8px; border-radius: 4px; font-size: 0.7rem; color: var(--accent-blue); margin-top: 10px; line-height: 1.4; }
 
     /* CENTER VISUALIZER & EXPERIMENT IMAGE BOX */
@@ -194,41 +193,45 @@
     }
     .backdrop.active { opacity: 1; pointer-events: auto; }
 
-    /* FLOATING DIALOGUE BOX (PROF MANOHAR) */
+    /* DRAGGABLE & MOVABLE FLOATING DIALOGUE BOX */
     .dialogue-box {
       position: fixed;
       bottom: 20px;
       right: 20px;
-      width: 480px;
+      width: 460px;
       background: #1e1b4b;
       border: 2px solid #6366f1;
       border-radius: 10px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
       z-index: 2500;
-      transition: all 0.3s ease;
+      user-select: none;
+      touch-action: none;
     }
-    .dialogue-box.minimized {
-      height: 42px;
-      overflow: hidden;
-      width: 280px;
+    
+    .dialogue-box.minimized .dlg-body {
+      display: none;
     }
+
     .dlg-header {
       background: #312e81;
       padding: 10px 14px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      cursor: pointer;
+      cursor: move; /* Drag cursor */
+      border-top-left-radius: 8px;
+      border-top-right-radius: 8px;
       border-bottom: 1px solid #4f46e5;
     }
+
     .dlg-title { font-size: 0.9rem; font-weight: 700; color: #a5b4fc; display: flex; align-items: center; gap: 8px; }
     .dlg-controls { display: flex; gap: 8px; align-items: center; }
-    .dlg-controls button { background: none; border: none; color: #a5b4fc; font-size: 1rem; cursor: pointer; padding: 0 4px; }
+    .dlg-controls button { background: none; border: none; color: #a5b4fc; font-size: 1.1rem; cursor: pointer; padding: 0 4px; line-height: 1; }
     .dlg-controls button:hover { color: #fff; }
     
     .dlg-body { padding: 14px; }
     .dlg-step-lbl { font-size: 0.72rem; color: var(--accent-blue); font-weight: 700; text-transform: uppercase; margin-bottom: 6px; }
-    .dlg-text { font-size: 0.88rem; color: #e2e8f0; line-height: 1.5; margin-bottom: 14px; min-height: 90px; }
+    .dlg-text { font-size: 0.88rem; color: #e2e8f0; line-height: 1.5; margin-bottom: 14px; min-height: 85px; user-select: text; }
 
     .dlg-prompt {
       font-size: 0.75rem;
@@ -245,6 +248,41 @@
     .dlg-btn:hover { background: #6366f1; }
     .dlg-btn-sec { background: #334155; color: #cbd5e1; }
     .dlg-btn-sec:hover { background: #475569; }
+
+    /* FLOATING PHONE ICON BUTTON AT BOTTOM RIGHT */
+    .phone-trigger-btn {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 56px;
+      height: 56px;
+      background: #4f46e5;
+      color: #fff;
+      border: 2px solid #6366f1;
+      border-radius: 50%;
+      box-shadow: 0 6px 20px rgba(79, 70, 229, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      cursor: pointer;
+      z-index: 2400;
+      transition: all 0.3s ease;
+    }
+    .phone-trigger-btn:hover {
+      transform: scale(1.1);
+      background: #6366f1;
+      box-shadow: 0 8px 25px rgba(99, 102, 241, 0.8);
+    }
+    .phone-trigger-btn.pulse {
+      animation: phonePulse 2s infinite;
+    }
+
+    @keyframes phonePulse {
+      0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); }
+      70% { box-shadow: 0 0 0 15px rgba(99, 102, 241, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+    }
 
     .pulse-btn {
       animation: pulseGlow 1.5s infinite;
@@ -347,7 +385,7 @@
           </select>
         </label>
 
-        <label>Severity: <span id="sevVal" style="font-weight: bold; color: var(--accent-blue);">Disabled (Healthy State)</span></label>
+        <label>Severity: <span id="sevVal" style="font-weight: bold; color: var(--text-sub);">Disabled (Healthy State)</span></label>
         <input type="range" id="severity" min="1" max="10" step="1" value="1" disabled>
       </div>
 
@@ -428,13 +466,18 @@
     All rights reserved. Designed for free rural engineering education and open-source research worldwide.
   </footer>
 
-  <!-- FLOATING DIALOGUE BOX (PROF MANOHAR) -->
+  <!-- FLOATING PHONE ICON TRIGGER BUTTON -->
+  <button class="phone-trigger-btn pulse" id="phoneTriggerBtn" title="Click to ask Prof. Manohar AI Teacher">
+    📞
+  </button>
+
+  <!-- MOVABLE & MINIMIZABLE DIALOGUE BOX -->
   <div class="dialogue-box" id="dlgBox">
     <div class="dlg-header" id="dlgHeader">
       <div class="dlg-title">👨‍🔬 Prof. Manohar AI Teacher</div>
       <div class="dlg-controls">
         <button id="btnMuteToggle" title="Mute/Unmute Audio">🔊</button>
-        <button id="btnToggleMin" title="Minimize">_</button>
+        <button id="btnToggleMin" title="Minimize / Restore">🗕</button>
         <button id="btnCloseDlg" title="Close Dialogue">✕</button>
       </div>
     </div>
@@ -513,6 +556,7 @@
     let currentStep = 0;
     let isMuted = false;
     let selectedIndianVoice = null;
+    let isMinimized = false;
 
     const dlgBox = document.getElementById('dlgBox');
     const dlgHeader = document.getElementById('dlgHeader');
@@ -524,6 +568,7 @@
     const btnToggleMin = document.getElementById('btnToggleMin');
     const btnCloseDlg = document.getElementById('btnCloseDlg');
     const btnMuteToggle = document.getElementById('btnMuteToggle');
+    const phoneTriggerBtn = document.getElementById('phoneTriggerBtn');
 
     const imageOverlay = document.getElementById('imageOverlay');
     const backdrop = document.getElementById('backdrop');
@@ -582,7 +627,8 @@
       }
     }
 
-    function updateStep(stepIdx) {
+    // UPDATE LESSON STEP (OR RE-ESTABLISH CURRENT STEP WHEN REOPENED)
+    function renderStepUI(stepIdx, speakAudio = true) {
       currentStep = stepIdx;
       const step = lessonSteps[currentStep];
 
@@ -598,36 +644,63 @@
         if (pipeEl) pipeEl.classList.toggle('active', i === step.pipeActive);
       }
 
-      speakText(step.text, () => {
-        const pauseQuestion = "I stop here. Shall I repeat, or press Continue to proceed?";
-        dlgPrompt.style.display = 'flex';
-        speakText(pauseQuestion);
-      });
+      if (speakAudio) {
+        speakText(step.text, () => {
+          const pauseQuestion = "I stop here. Shall I repeat, or press Continue to proceed?";
+          dlgPrompt.style.display = 'flex';
+          speakText(pauseQuestion);
+        });
+      }
     }
 
     btnContinue.addEventListener('click', () => {
       if (currentStep < lessonSteps.length - 1) {
-        updateStep(currentStep + 1);
+        renderStepUI(currentStep + 1, true);
       } else {
-        updateStep(0);
+        renderStepUI(0, true);
       }
     });
 
-    btnRepeat.addEventListener('click', () => updateStep(currentStep));
+    btnRepeat.addEventListener('click', () => renderStepUI(currentStep, true));
     btnCloseOverlay.addEventListener('click', () => toggleImageOverlay(false));
     backdrop.addEventListener('click', () => toggleImageOverlay(false));
 
+    // MINIMIZE / RESTORE BUTTON
     btnToggleMin.addEventListener('click', (e) => {
       e.stopPropagation();
-      dlgBox.classList.toggle('minimized');
+      isMinimized = !isMinimized;
+      dlgBox.classList.toggle('minimized', isMinimized);
+      btnToggleMin.innerText = isMinimized ? '🗖' : '🗕';
     });
 
+    // CLOSE DIALOGUE BUTTON (KEEPS PROGRESS, STOPS SPEECH)
     btnCloseDlg.addEventListener('click', (e) => {
       e.stopPropagation();
       if ('speechSynthesis' in window) window.speechSynthesis.cancel();
       dlgBox.style.display = 'none';
+      phoneTriggerBtn.classList.add('pulse');
     });
 
+    // PHONE BUTTON TO OPEN / CONTINUE DIALOGUE AT EXACT CURRENT STEP
+    phoneTriggerBtn.addEventListener('click', () => {
+      phoneTriggerBtn.classList.remove('pulse');
+      if (dlgBox.style.display === 'none' || dlgBox.offsetHeight === 0) {
+        dlgBox.style.display = 'block';
+        if (isMinimized) {
+          isMinimized = false;
+          dlgBox.classList.remove('minimized');
+          btnToggleMin.innerText = '🗕';
+        }
+        // Continue from current step without resetting state
+        renderStepUI(currentStep, true);
+      } else if (isMinimized) {
+        isMinimized = false;
+        dlgBox.classList.remove('minimized');
+        btnToggleMin.innerText = '🗕';
+      }
+    });
+
+    // MUTE / UNMUTE BUTTON
     btnMuteToggle.addEventListener('click', (e) => {
       e.stopPropagation();
       isMuted = !isMuted;
@@ -639,9 +712,75 @@
       }
     });
 
-    dlgHeader.addEventListener('click', () => dlgBox.classList.toggle('minimized'));
+    // DRAGGABLE DIALOGUE BOX LOGIC (MOUSE & TOUCH)
+    let isDragging = false;
+    let dragStartX = 0, dragStartY = 0;
+    let initialBoxLeft = 0, initialBoxTop = 0;
 
-    setTimeout(() => { updateStep(0); }, 400);
+    dlgHeader.addEventListener('mousedown', startDrag);
+    dlgHeader.addEventListener('touchstart', startDrag, { passive: false });
+
+    function startDrag(e) {
+      // Don't drag if clicking controls inside header
+      if (e.target.closest('.dlg-controls')) return;
+
+      isDragging = true;
+      const clientX = e.type.startsWith('touch') ? e.touches[0].clientX : e.clientX;
+      const clientY = e.type.startsWith('touch') ? e.touches[0].clientY : e.clientY;
+
+      dragStartX = clientX;
+      dragStartY = clientY;
+
+      const rect = dlgBox.getBoundingClientRect();
+      initialBoxLeft = rect.left;
+      initialBoxTop = rect.top;
+
+      // Unset bottom/right CSS and lock to exact pixel left/top
+      dlgBox.style.bottom = 'auto';
+      dlgBox.style.right = 'auto';
+      dlgBox.style.left = `${initialBoxLeft}px`;
+      dlgBox.style.top = `${initialBoxTop}px`;
+
+      document.addEventListener('mousemove', onDrag);
+      document.addEventListener('mouseup', stopDrag);
+      document.addEventListener('touchmove', onDrag, { passive: false });
+      document.addEventListener('touchend', stopDrag);
+    }
+
+    function onDrag(e) {
+      if (!isDragging) return;
+      if (e.cancelable) e.preventDefault();
+
+      const clientX = e.type.startsWith('touch') ? e.touches[0].clientX : e.clientX;
+      const clientY = e.type.startsWith('touch') ? e.touches[0].clientY : e.clientY;
+
+      const deltaX = clientX - dragStartX;
+      const deltaY = clientY - dragStartY;
+
+      let newLeft = initialBoxLeft + deltaX;
+      let newTop = initialBoxTop + deltaY;
+
+      // Keep within viewport boundaries
+      const maxLeft = window.innerWidth - dlgBox.offsetWidth - 10;
+      const maxTop = window.innerHeight - dlgBox.offsetHeight - 10;
+
+      newLeft = Math.max(10, Math.min(newLeft, maxLeft));
+      newTop = Math.max(10, Math.min(newTop, maxTop));
+
+      dlgBox.style.left = `${newLeft}px`;
+      dlgBox.style.top = `${newTop}px`;
+    }
+
+    function stopDrag() {
+      isDragging = false;
+      document.removeEventListener('mousemove', onDrag);
+      document.removeEventListener('mouseup', stopDrag);
+      document.removeEventListener('touchmove', onDrag);
+      document.removeEventListener('touchend', stopDrag);
+    }
+
+    // INITIAL LAUNCH
+    setTimeout(() => { renderStepUI(0, true); }, 400);
 
     // INTERACTIVE CANVAS & SIGNAL ENGINE
     const canvasStruct = document.getElementById('structureCanvas');
