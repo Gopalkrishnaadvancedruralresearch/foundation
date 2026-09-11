@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Multi-Structural EMI Lab - GARRF.IN</title>
+    <!-- Three.js & OrbitControls for Zoomable 3D Structural Visualization -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg-dark: #0f172a;
+            --card-bg: #1e293b;
+            --border: #334155;
+            --text-light: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #38bdf8;
+            --healthy-color: #16a34a;
+            --damaged-color: #dc2626;
+            --compensated-color: #9333ea;
+            --gold: #f59e0b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+        body { background-color: var(--bg-dark); color: var(--text-light); display: flex; flex-direction: column; min-height: 100vh; overflow-x: hidden; }
+
+        header { background-color: var(--card-bg); border-bottom: 1px solid var(--border); padding: 0.75rem 1.5rem; display: flex; justify-content: space-between; align-items: center; }
+        .header-brand { display: flex; align-items: center; gap: 0.85rem; }
+        .brand-logo { width: 42px; height: 42px; border-radius: 6px; object-fit: cover; border: 1px solid var(--accent); background-color: #ffffff; }
+        .brand-titles h1 { font-size: 1.15rem; color: var(--accent); }
+        .brand-titles h2 { font-size: 0.78rem; color: var(--text-muted); }
+
+        .container { display: grid; grid-template-columns: 360px 1fr; gap: 1.25rem; padding: 1.25rem; flex: 1; }
+        @media (max-width: 1100px) { .container { grid-template-columns: 1fr; } }
+
+        .panel { background-color: var(--card-bg); border-radius: 0.5rem; border: 1px solid var(--border); padding: 1.25rem; display: flex; flex-direction: column; gap: 0.85rem; max-height: calc(100vh - 120px); overflow-y: auto; }
+        .panel-title { font-size: 0.85rem; font-weight: 600; border-bottom: 1px solid var(--border); padding-bottom: 0.3rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; }
+
+        .control-group { display: flex; flex-direction: column; gap: 0.25rem; }
+        label { font-size: 0.8rem; color: var(--text-muted); }
+        input[type="number"], select { width: 100%; padding: 0.45rem; background-color: var(--bg-dark); border: 1px solid var(--border); border-radius: 0.375rem; color: var(--text-light); font-size: 0.825rem; }
+        input[type="range"] { width: 100%; accent-color: var(--primary); }
+        input:disabled, select:disabled, button:disabled { opacity: 0.4; cursor: not-allowed !important; }
+        .range-val { font-size: 0.75rem; color: var(--text-muted); text-align: right; }
+
+        .highlight-step { border: 2px solid var(--gold) !important; box-shadow: 0 0 10px rgba(245, 158, 11, 0.6); }
+
+        button { width: 100%; padding: 0.60rem 0.85rem; border-radius: 0.375rem; border: none; font-weight: 600; font-size: 0.825rem; cursor: pointer; transition: all 0.2s; }
+        .btn-healthy { background-color: #22c55e; color: #052e16; }
+        .btn-healthy:hover:not(:disabled) { background-color: #16a34a; }
+        .btn-damage { background-color: var(--gold); color: #451a03; }
+        .btn-damage:hover:not(:disabled) { background-color: #d97706; }
+        .btn-reset { background-color: #ef4444; color: #ffffff; font-weight: 700; margin-top: 0.4rem; }
+        .btn-reset:hover { background-color: #dc2626; }
+        .btn-secondary { background-color: transparent; border: 1px solid var(--border); color: var(--text-light); }
+        .btn-secondary:hover:not(:disabled) { background-color: var(--border); }
+        .btn-action { background-color: var(--primary); color: #ffffff; margin-top: 0.5rem; }
+        .btn-action:hover { background-color: var(--primary-hover); }
+
+        .display-area { display: flex; flex-direction: column; gap: 1rem; }
+        
+        .section-3d { background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0.75rem; height: 260px; display: flex; flex-direction: column; position: relative; }
+        #canvas3D { width: 100%; height: 100%; border-radius: 0.375rem; background-color: #ffffff; display: block; cursor: grab; }
+        #canvas3D:active { cursor: grabbing; }
+        .overlay-tag { position: absolute; top: 15px; left: 15px; background: rgba(255, 255, 255, 0.9); border: 1px solid #cbd5e1; padding: 0.25rem 0.6rem; border-radius: 4px; font-size: 0.75rem; color: #0369a1; font-weight: 600; pointer-events: none; }
+        .zoom-hint { position: absolute; bottom: 15px; right: 15px; background: rgba(255, 255, 255, 0.9); border: 1px solid #cbd5e1; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.7rem; color: #b45309; font-weight: 600; pointer-events: none; }
+
+        .visualizer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        @media (max-width: 900px) { .visualizer-grid { grid-template-columns: 1fr; } }
+
+        .canvas-container { background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0.75rem; display: flex; flex-direction: column; height: 250px; }
+        .canvas-header { font-size: 0.8rem; font-weight: 600; color: #0f172a; margin-bottom: 0.4rem; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
+        canvas { width: 100%; height: 100%; display: block; flex: 1; }
+
+        .theory-box { background-color: var(--bg-dark); border: 1px solid var(--border); border-radius: 0.375rem; padding: 0.65rem 0.85rem; font-size: 0.78rem; color: #cbd5e1; line-height: 1.45; }
+        .theory-box strong { color: var(--accent); }
+
+        .metrics-screen { background-color: var(--card-bg); border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.85rem; }
+        .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.65rem; margin-top: 0.4rem; }
+        @media (max-width: 768px) { .metrics-grid { grid-template-columns: repeat(2, 1fr); } }
+
+        .metric-card { background-color: var(--bg-dark); border: 1px solid var(--border); border-radius: 0.375rem; padding: 0.6rem; text-align: center; }
+        .metric-card .title { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; }
+        .metric-card .value { font-size: 1.05rem; font-weight: 700; color: var(--gold); margin: 0.2rem 0; }
+        .metric-card .sub { font-size: 0.62rem; color: var(--text-muted); }
+
+        .phone-fab { position: fixed; bottom: 24px; right: 24px; width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #2563eb, #38bdf8); border: 2px solid #ffffff; box-shadow: 0 4px 20px rgba(56, 189, 248, 0.5); display: flex; align-items: center; justify-content: center; font-size: 1.6rem; cursor: pointer; z-index: 99; }
+        .phone-fab:hover { transform: scale(1.08); }
+
+        /* Draggable Movable AI Assistant Modal */
+        .ai-modal { 
+            position: fixed; 
+            bottom: 95px; 
+            right: 24px; 
+            width: 420px; 
+            background-color: var(--card-bg); 
+            border: 2px solid var(--accent); 
+            border-radius: 0.75rem; 
+            padding: 1.25rem; 
+            box-shadow: 0 12px 35px rgba(0,0,0,0.7); 
+            display: none; 
+            flex-direction: column; 
+            gap: 0.75rem; 
+            z-index: 1000; 
+            user-select: none;
+        }
+        .ai-modal.show { display: flex; }
+        
+        .modal-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border-bottom: 1px solid var(--border); 
+            padding-bottom: 0.5rem; 
+            cursor: move; 
+            background: rgba(255,255,255,0.03);
+            margin: -1.25rem -1.25rem 0.5rem -1.25rem;
+            padding: 0.85rem 1.25rem;
+            border-top-left-radius: 0.75rem;
+            border-top-right-radius: 0.75rem;
+        }
+        .modal-header h3 { font-size: 0.95rem; color: var(--accent); display: flex; align-items: center; gap: 0.5rem; }
+        .modal-close { background: none; border: none; color: var(--text-muted); font-size: 1.3rem; cursor: pointer; width: auto; padding: 0; }
+        .modal-body { font-size: 0.84rem; color: #cbd5e1; line-height: 1.48; max-height: 280px; overflow-y: auto; user-select: text; }
+        .modal-actions { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+
+        .legend { display: flex; gap: 0.6rem; font-size: 0.68rem; color: #475569; }
+        .legend-item { display: flex; align-items: center; gap: 0.25rem; }
+        .legend-color { width: 9px; height: 9px; border-radius: 2px; }
+
+        footer { border-top: 1px solid var(--border); padding: 0.8rem; text-align: center; background-color: var(--card-bg); font-size: 0.78rem; color: var(--text-muted); line-height: 1.4; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-brand">
+            <img src="logo.jpeg" alt="GARRF Logo" class="brand-logo" onerror="this.style.display='none'">
+            <div class="brand-titles">
+                <h1>Gopalkrishna Advanced Rural Research Foundation (GARRF.IN)</h1>
+                <h2>Kalam Research ZERO FUNDING Lab Initiative | 3D Structural EMI Simulator</h2>
+            </div>
+        </div>
+        <div>🇮🇳 <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">India</span></div>
+    </header>
+
+    <div class="container">
+        <!-- Controls Panel -->
+        <div class="panel">
+            <h2 class="panel-title">1. Structural & Sensor Setup</h2>
+
+            <div class="control-group">
+                <label for="stateType">Target Mounting Structure (3 Experiment Types)</label>
+                <select id="stateType" class="highlight-step">
+                    <option value="" disabled selected>-- Choose Experiment Type --</option>
+                    <option value="free">1. Free Unbonded PZT Patch (Air Baseline)</option>
+                    <option value="beam">2. PZT Bonded on Steel Beam Structure</option>
+                    <option value="plate">3. PZT Bonded on Aluminum Plate Structure</option>
+                </select>
+            </div>
+
+            <div class="control-group" id="locGroup">
+                <label for="pztLoc">PZT Sensor Location</label>
+                <select id="pztLoc">
+                    <option value="root">Near Support / Root (High Strain Zone)</option>
+                    <option value="mid">Mid-Span (Bending Zone)</option>
+                    <option value="tip">Free Tip (Low Strain Zone)</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="freqSweep">Frequency Sweep Range (3 Bands)</label>
+                <select id="freqSweep" disabled>
+                    <option value="" disabled selected>-- Choose Frequency Range --</option>
+                    <option value="10-100">10 kHz - 100 kHz (Low Dynamic Band)</option>
+                    <option value="100-300">100 kHz - 300 kHz (Standard EMI Band)</option>
+                    <option value="300-500">300 kHz - 500 kHz (High Sensitivity Band)</option>
+                </select>
+            </div>
+
+            <button class="btn-healthy" id="btnRecordBaseline" disabled>1. Record Baseline Signature (@ 25°C)</button>
+
+            <h2 class="panel-title" style="margin-top: 0.3rem;">2. Real-World Environmental & Defect Controls</h2>
+
+            <div id="envControls" style="display: flex; flex-direction: column; gap: 0.65rem;">
+                <div class="control-group">
+                    <label for="tempSlider">Real-Life Ambient Temperature (°C)</label>
+                    <input type="range" id="tempSlider" min="10" max="65" value="25" step="1" disabled>
+                    <span class="range-val" id="tempVal">25°C (Nominal Lab Baseline)</span>
+                </div>
+
+                <div class="control-group">
+                    <label for="damageSlider">Defect / Patch Damage Severity (%)</label>
+                    <input type="range" id="damageSlider" min="0" max="80" value="0" step="5" disabled>
+                    <span class="range-val" id="damageVal">0% (Intact / Healthy Sensor)</span>
+                </div>
+
+                <button class="btn-damage" id="btnApplyShift" disabled>2. Measure EMI & Filter Thermal Shift</button>
+            </div>
+
+            <button class="btn-reset" id="btnReset">🔄 RESET Lab Session (Start New Trial)</button>
+        </div>
+
+        <!-- Display Area -->
+        <div class="display-area">
+            <!-- 3D Visualizer -->
+            <div class="section-3d" id="sec3D">
+                <div class="overlay-tag" id="3dTag">3D View: Select Experiment Type</div>
+                <div class="zoom-hint">🔍 Scroll to Zoom | Drag to Rotate & Pan</div>
+                <div id="canvas3D"></div>
+            </div>
+
+            <div class="theory-box">
+                <strong>Physics Dimensions & Theory:</strong> Electrical Admittance $Y(\omega) = G(\omega) + j B(\omega)$.
+                <strong>X-Axis:</strong> Excitation Frequency $f$ ($\text{kHz}$). 
+                <strong>Y-Axis:</strong> Real Conductance $G$ ($\text{mS}$). Conductance directly reflects structural mechanical impedance.
+            </div>
+
+            <div class="visualizer-grid">
+                <!-- Conductance Canvas 1 -->
+                <div class="canvas-container" id="secRaw">
+                    <div class="canvas-header">
+                        <span>Raw Measured Conductance $G(\omega)$</span>
+                        <div class="legend">
+                            <div class="legend-item"><div class="legend-color" style="background:#16a34a;"></div>Base (25°C)</div>
+                            <div class="legend-item"><div class="legend-color" style="background:#dc2626;"></div>Raw Current</div>
+                        </div>
+                    </div>
+                    <canvas id="rawCanvas"></canvas>
+                </div>
+
+                <!-- Conductance Canvas 2 -->
+                <div class="canvas-container" id="secComp">
+                    <div class="canvas-header">
+                        <span>Compensated Signature (True Condition)</span>
+                        <div class="legend">
+                            <div class="legend-item"><div class="legend-color" style="background:#16a34a;"></div>Base (25°C)</div>
+                            <div class="legend-item"><div class="legend-color" style="background:#9333ea;"></div>Cleaned</div>
+                        </div>
+                    </div>
+                    <canvas id="compCanvas"></canvas>
+                </div>
+            </div>
+
+            <!-- Metrics Screen -->
+            <div class="metrics-screen">
+                <div class="canvas-header" style="color: var(--gold);">
+                    <span>EMI Health Metrics & CSV Storage</span>
+                    <button id="btnCSVExport" style="width: auto; padding: 0.2rem 0.6rem; font-size: 0.72rem; background: var(--primary);">⬇ Save Experiment CSV File</button>
+                </div>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="title">Mounting Setup</div>
+                        <div class="value" id="valState" style="font-size: 0.85rem; color: var(--accent);">--</div>
+                        <div class="sub" id="subState">Location: --</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="title">Raw Apparent RMSD</div>
+                        <div class="value" id="valRawRMSD">0.00 %</div>
+                        <div class="sub">Thermal Drift + Damage</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="title">True Structural RMSD</div>
+                        <div class="value" id="valTrueRMSD" style="color: #a855f7;">0.00 %</div>
+                        <div class="sub">Post Temperature Filtering</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="title">Thermal Frequency Shift</div>
+                        <div class="value" id="valFreqShift" style="color: var(--accent);">0.00 kHz</div>
+                        <div class="sub">Baseline Frequency Drift</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Assistant Floating Button -->
+    <div class="phone-fab" id="btnPhone" title="Call AI Assistant">📞</div>
+
+    <!-- Draggable Movable AI Assistant Modal -->
+    <div class="ai-modal show" id="aiModal">
+        <div class="modal-header" id="modalHeader">
+            <h3><span>✋</span> GARRF AI Lab Assistant</h3>
+            <button class="modal-close" id="btnCloseModal">&times;</button>
+        </div>
+        <div class="modal-body" id="modalText">
+            Welcome to the Kalam EMI Research Simulator! I am Prof. Manohar. I am on standby to guide you step-by-step.<br><br>
+            <strong>Step 1:</strong> Please start by selecting one of the 3 experiment mounting structures from the first dropdown.
+        </div>
+        <div class="modal-actions" id="modalActions" style="display: none;">
+            <button class="btn-action" id="btnModalNext">Next Step ▶</button>
+            <button class="btn-secondary" id="btnModalContinue">Close Dialogue & Test</button>
+        </div>
+    </div>
+
+    <footer>
+        <p><strong>Gopalkrishna Advanced Rural Research Foundation (GARRF.IN)</strong> | Kalam Research ZERO FUNDING Lab Initiative</p>
+        <p>Developed by <strong>Dr. Annamdas Venu Gopal Madhav</strong> & <strong>Annamdas Shantanu Vasudev Krishna</strong> 🇮🇳</p>
+    </footer>
+
+    <script>
+        // Canvases
+        const rawCanvas = document.getElementById('rawCanvas');
+        const rawCtx = rawCanvas.getContext('2d');
+        const compCanvas = document.getElementById('compCanvas');
+        const compCtx = compCanvas.getContext('2d');
+
+        // Controls
+        const stateType = document.getElementById('stateType');
+        const pztLoc = document.getElementById('pztLoc');
+        const locGroup = document.getElementById('locGroup');
+        const freqSweep = document.getElementById('freqSweep');
+        const btnRecordBaseline = document.getElementById('btnRecordBaseline');
+        const tempSlider = document.getElementById('tempSlider');
+        const damageSlider = document.getElementById('damageSlider');
+        const tempVal = document.getElementById('tempVal');
+        const damageVal = document.getElementById('damageVal');
+        const btnApplyShift = document.getElementById('btnApplyShift');
+        const btnReset = document.getElementById('btnReset');
+        const btnCSVExport = document.getElementById('btnCSVExport');
+
+        // Metrics
+        const valState = document.getElementById('valState');
+        const subState = document.getElementById('subState');
+        const valRawRMSD = document.getElementById('valRawRMSD');
+        const valTrueRMSD = document.getElementById('valTrueRMSD');
+        const valFreqShift = document.getElementById('valFreqShift');
+        const overlay3DTag = document.getElementById('3dTag');
+
+        // Modal Elements & Buttons
+        const btnPhone = document.getElementById('btnPhone');
+        const aiModal = document.getElementById('aiModal');
+        const modalHeader = document.getElementById('modalHeader');
+        const btnCloseModal = document.getElementById('btnCloseModal');
+        const modalText = document.getElementById('modalText');
+        const modalActions = document.getElementById('modalActions');
+        const btnModalNext = document.getElementById('btnModalNext');
+        const btnModalContinue = document.getElementById('btnModalContinue');
+
+        // Data Storage
+        let baselineData = null;
+        let rawCurrentData = null;
+        let compensatedData = null;
+        let experimentHistory = [];
+        let wizardStep = 1;
+
+        // -------------------------------------------------------------
+        // DRAGGABLE / MOVABLE DIALOGUE BOX FUNCTIONALITY
+        // -------------------------------------------------------------
+        let isDragging = false;
+        let startX, startY, initialLeft, initialTop;
+
+        modalHeader.addEventListener('mousedown', (e) => {
+            if (e.target.id === 'btnCloseModal') return;
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            
+            const rect = aiModal.getBoundingClientRect();
+            initialLeft = rect.left;
+            initialTop = rect.top;
+
+            aiModal.style.bottom = 'auto';
+            aiModal.style.right = 'auto';
+            aiModal.style.left = `${initialLeft}px`;
+            aiModal.style.top = `${initialTop}px`;
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            aiModal.style.left = `${initialLeft + dx}px`;
+            aiModal.style.top = `${initialTop + dy}px`;
+        });
+
+        document.addEventListener('mouseup', () => { isDragging = false; });
+
+        // -------------------------------------------------------------
+        // THREE.JS 3D VISUALIZER
+        // -------------------------------------------------------------
+        let scene, camera, renderer, controls, pztGroup, structGroup, defectMesh;
+
+        function init3D() {
+            const container = document.getElementById('canvas3D');
+            const w = container.clientWidth;
+            const h = container.clientHeight;
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xffffff);
+
+            camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 1000);
+            camera.position.set(0, 7, 16);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(w, h);
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.minDistance = 2;
+            controls.maxDistance = 45;
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+            dirLight.position.set(10, 20, 10);
+            scene.add(dirLight);
+
+            update3DModel();
+            animate3D();
+        }
+
+        function update3DModel() {
+            if (!scene) return;
+
+            if (pztGroup) scene.remove(pztGroup);
+            if (structGroup) scene.remove(structGroup);
+            if (defectMesh) scene.remove(defectMesh);
+
+            const state = stateType.value;
+            const loc = pztLoc.value;
+            const damage = parseFloat(damageSlider.value);
+
+            pztGroup = new THREE.Group();
+            const pztGeo = new THREE.BoxGeometry(0.8, 0.15, 0.8, 4, 2, 4);
+            const pztMat = new THREE.MeshStandardMaterial({ 
+                color: damage > 0 && state === 'free' ? 0x991b1b : 0xdc2626, 
+                metalness: 0.3, 
+                roughness: 0.4 
+            });
+            const pztMesh = new THREE.Mesh(pztGeo, pztMat);
+            
+            const pztWireGeo = new THREE.WireframeGeometry(pztGeo);
+            const pztWireMat = new THREE.LineBasicMaterial({ color: 0x7f1d1d, linewidth: 1 });
+            const pztWireframe = new THREE.LineSegments(pztWireGeo, pztWireMat);
+            
+            pztGroup.add(pztMesh);
+            pztGroup.add(pztWireframe);
+
+            if (!state) {
+                overlay3DTag.textContent = '3D View: Select Experiment Type to Load Model';
+                return;
+            }
+
+            if (state === 'free') {
+                locGroup.style.display = 'none';
+                overlay3DTag.textContent = damage > 0 ? 
+                    `3D View: Free Unbonded PZT Patch with ${damage}% Surface Micro-Crack/Degradation` :
+                    '3D View: Free Unbonded PZT Patch Floating in Air (Intact)';
+                pztGroup.position.set(0, 0, 0);
+                scene.add(pztGroup);
+            } else if (state === 'beam') {
+                locGroup.style.display = 'flex';
+                
+                structGroup = new THREE.Group();
+                const beamGeo = new THREE.BoxGeometry(12, 0.4, 1.2, 40, 4, 6);
+                const beamMat = new THREE.MeshStandardMaterial({ color: 0x1e3a8a, metalness: 0.4, roughness: 0.4 });
+                const beamMesh = new THREE.Mesh(beamGeo, beamMat);
+                
+                const beamWireGeo = new THREE.WireframeGeometry(beamGeo);
+                const beamWireMat = new THREE.LineBasicMaterial({ color: 0x93c5fd, opacity: 0.45, transparent: true });
+                const beamWireframe = new THREE.LineSegments(beamWireGeo, beamWireMat);
+
+                structGroup.add(beamMesh);
+                structGroup.add(beamWireframe);
+                scene.add(structGroup);
+
+                let pztX = loc === 'root' ? -5.0 : loc === 'mid' ? 0.0 : 5.0;
+                pztGroup.position.set(pztX, 0.275, 0);
+                scene.add(pztGroup);
+
+                overlay3DTag.textContent = `3D View: Red PZT Bonded on Blue Steel Beam (${loc.toUpperCase()})`;
+
+                if (damage > 0) {
+                    const defGeo = new THREE.BoxGeometry(0.3, 0.5, 1.3);
+                    const defMat = new THREE.MeshStandardMaterial({ color: 0xb91c1c });
+                    defectMesh = new THREE.Mesh(defGeo, defMat);
+                    defectMesh.position.set(1.5, 0, 0);
+                    scene.add(defectMesh);
+                }
+            } else if (state === 'plate') {
+                locGroup.style.display = 'flex';
+                
+                structGroup = new THREE.Group();
+                const plateGeo = new THREE.BoxGeometry(8, 0.3, 8, 20, 3, 20);
+                const plateMat = new THREE.MeshStandardMaterial({ color: 0x1d4ed8, metalness: 0.4, roughness: 0.4 });
+                const plateMesh = new THREE.Mesh(plateGeo, plateMat);
+                
+                const plateWireGeo = new THREE.WireframeGeometry(plateGeo);
+                const plateWireMat = new THREE.LineBasicMaterial({ color: 0x93c5fd, opacity: 0.45, transparent: true });
+                const plateWireframe = new THREE.LineSegments(plateWireGeo, plateWireMat);
+
+                structGroup.add(plateMesh);
+                structGroup.add(plateWireframe);
+                scene.add(structGroup);
+
+                let pztX = loc === 'root' ? -3.0 : loc === 'mid' ? 0.0 : 3.0;
+                let pztZ = loc === 'root' ? -3.0 : loc === 'mid' ? 0.0 : 3.0;
+                pztGroup.position.set(pztX, 0.225, pztZ);
+                scene.add(pztGroup);
+
+                overlay3DTag.textContent = `3D View: Red PZT Bonded on Blue Aluminum Plate (${loc.toUpperCase()})`;
+
+                if (damage > 0) {
+                    const defGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.4, 16);
+                    const defMat = new THREE.MeshStandardMaterial({ color: 0xb91c1c });
+                    defectMesh = new THREE.Mesh(defGeo, defMat);
+                    defectMesh.position.set(1.0, 0, 1.0);
+                    scene.add(defectMesh);
+                }
+            }
+        }
+
+        function animate3D() {
+            requestAnimationFrame(animate3D);
+            if (controls) controls.update();
+            if (renderer && scene && camera) renderer.render(scene, camera);
+        }
+
+        // -------------------------------------------------------------
+        // REALISTIC INDIAN VOICE SYNTHESIS
+        // -------------------------------------------------------------
+        function speakAIAssistant(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text.replace(/<[^>]*>?/gm, ''));
+                const voices = window.speechSynthesis.getVoices();
+                
+                const selectVoice = voices.find(v => v.lang.includes('en-IN') || v.name.includes('India') || v.name.includes('Indian')) ||
+                                    voices.find(v => v.lang.includes('en-GB')) ||
+                                    voices.find(v => v.lang.includes('en'));
+                
+                if (selectVoice) utterance.voice = selectVoice;
+                utterance.rate = 0.88;
+                utterance.pitch = 0.98;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        btnPhone.addEventListener('click', () => {
+            aiModal.classList.toggle('show');
+            if (aiModal.classList.contains('show')) speakAIAssistant(modalText.innerText);
+        });
+
+        // Closing dialogue keeps data alive, reassures student
+        btnCloseModal.addEventListener('click', () => {
+            aiModal.classList.remove('show');
+            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        });
+
+        function updateTeacherMessage(text, showActions = false, actionLabel = "Next Step ▶") {
+            modalText.innerHTML = text;
+            if (showActions) {
+                btnModalNext.textContent = actionLabel;
+                modalActions.style.display = 'flex';
+            } else {
+                modalActions.style.display = 'none';
+            }
+            aiModal.classList.add('show');
+            speakAIAssistant(modalText.innerText);
+        }
+
+        // -------------------------------------------------------------
+        // WIZARD STEP WORKFLOW
+        // -------------------------------------------------------------
+        stateType.addEventListener('change', () => {
+            update3DModel();
+            if (wizardStep === 1) {
+                wizardStep = 2;
+                stateType.classList.remove('highlight-step');
+                freqSweep.disabled = false;
+                freqSweep.classList.add('highlight-step');
+
+                updateTeacherMessage(
+                    `Well done! You selected: <strong>${stateType.options[stateType.selectedIndex].text}</strong>.<br><br>` +
+                    `I am on standby with you. <strong>Step 2:</strong> Please select one of the 3 Frequency Sweep Ranges from the next dropdown.`
+                );
+            }
+        });
+
+        // ADDED EVENT LISTENER FOR PZT LOCATION SELECTION
+        pztLoc.addEventListener('change', () => {
+            update3DModel();
+        });
+
+        freqSweep.addEventListener('change', () => {
+            if (wizardStep === 2) {
+                wizardStep = 3;
+                freqSweep.classList.remove('highlight-step');
+                btnRecordBaseline.disabled = false;
+                btnRecordBaseline.classList.add('highlight-step');
+
+                updateTeacherMessage(
+                    `Great job! Frequency sweep range is set to: <strong>${freqSweep.options[freqSweep.selectedIndex].text}</strong>.<br><br>` +
+                    `<strong>Understanding the Visualizations:</strong><br>` +
+                    `1. <strong>Top 3D Scene:</strong> Interactive zoomable setup.<br>` +
+                    `2. <strong>First Plot (Raw $G$):</strong> Shows frequency vs conductance, reflecting both thermal drift and damage.<br>` +
+                    `3. <strong>Second Plot (Compensated):</strong> Filters ambient heat to reveal true structural damage.<br><br>` +
+                    `Now click <strong>"1. Record Baseline Signature"</strong> to start!`,
+                    true,
+                    "Got It, Start Experiment ▶"
+                );
+            }
+        });
+
+        btnModalNext.addEventListener('click', () => {
+            aiModal.classList.remove('show');
+            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        });
+
+        btnModalContinue.addEventListener('click', () => {
+            aiModal.classList.remove('show');
+            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        });
+
+        window.addEventListener('load', () => {
+            init3D();
+            resizeCanvases();
+            setTimeout(() => {
+                updateTeacherMessage(
+                    `Greetings! I am Prof. Manohar, sitting right here on standby to guide you step-by-step.<br><br>` +
+                    `<strong>Step 1:</strong> Please select one of the 3 experiment mounting structures from the first dropdown to begin.`
+                );
+            }, 500);
+        });
+
+        // -------------------------------------------------------------
+        // EMI SPECTRUM GENERATION & PLOTTING
+        // -------------------------------------------------------------
+        tempSlider.addEventListener('input', (e) => {
+            tempVal.textContent = `${e.target.value}°C ${e.target.value == 25 ? '(Nominal Lab Baseline)' : ''}`;
+        });
+        damageSlider.addEventListener('input', (e) => {
+            const v = e.target.value;
+            const state = stateType.value;
+            if (state === 'free') {
+                damageVal.textContent = `${v}% ${v == 0 ? '(Intact PZT Patch)' : '(Patch Micro-Crack / Degradation)'}`;
+            } else {
+                damageVal.textContent = `${v}% ${v == 0 ? '(Healthy Structure)' : v < 30 ? '(Minor Structural Defect)' : '(Severe Structural Damage)'}`;
+            }
+            update3DModel();
+        });
+
+        function resizeCanvases() {
+            [rawCanvas, compCanvas].forEach(c => {
+                const rect = c.parentElement.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                c.width = rect.width * dpr;
+                c.height = (rect.height - 35) * dpr;
+            });
+            drawAll();
+        }
+        window.addEventListener('resize', resizeCanvases);
+
+        function generateEMISpectrum(state, loc, temp, damagePct, shiftOffset = 0, numPoints = 400) {
+            const data = [];
+            const deltaT = temp - 25;
+            const tempShift = deltaT * 1.1; 
+            const ampScale = 1 + (deltaT * 0.0025); 
+
+            let locSensitivity = loc === 'root' ? 1.0 : loc === 'mid' ? 0.7 : 0.35;
+
+            for (let i = 0; i < numPoints; i++) {
+                const f = i + tempShift - shiftOffset;
+                let G = 0;
+
+                if (state === 'free') {
+                    let pztPeak = 30 * Math.exp(-Math.pow((f - 200) / 25, 2));
+                    G = (0.01 * f) + pztPeak;
+                    if (damagePct > 0) {
+                        let patchCrackShift = (damagePct / 100) * 15;
+                        let patchAtten = 1 - (damagePct / 100) * 0.35;
+                        G = (G * patchAtten) + (5 * (damagePct / 100) * Math.sin(i / 10));
+                    }
+                } else if (state === 'beam') {
+                    let p1 = 14 * Math.exp(-Math.pow((f - 80) / 10, 2));
+                    let p2 = 26 * Math.exp(-Math.pow((f - 190) / 14, 2));
+                    let p3 = 20 * Math.exp(-Math.pow((f - 300) / 11, 2));
+                    G = (0.015 * f) + (p1 + p2 + p3) * locSensitivity;
+                } else if (state === 'plate') {
+                    let p1 = 10 * Math.exp(-Math.pow((f - 60) / 8, 2));
+                    let p2 = 18 * Math.exp(-Math.pow((f - 140) / 10, 2));
+                    let p3 = 24 * Math.exp(-Math.pow((f - 230) / 12, 2));
+                    let p4 = 21 * Math.exp(-Math.pow((f - 320) / 9, 2));
+                    G = (0.018 * f) + (p1 + p2 + p3 + p4) * locSensitivity;
+                }
+
+                if (damagePct > 0 && state !== 'free') {
+                    const dFactor = (damagePct / 100) * locSensitivity;
+                    let damPeak = (22 * dFactor) * Math.exp(-Math.pow((i - (150 + dFactor * 40)) / (7 + dFactor * 4), 2));
+                    let attenuation = 1 - (dFactor * 0.22 * Math.sin(i / 25));
+                    G = (G * attenuation) + damPeak;
+                }
+
+                data.push(Math.max(0, G * ampScale));
+            }
+            return data;
+        }
+
+        function calculateRMSD(sigBase, sigCurrent) {
+            let diffSq = 0, baseSq = 0;
+            for (let i = 0; i < sigBase.length; i++) {
+                let d = sigCurrent[i] - sigBase[i];
+                diffSq += d * d;
+                baseSq += sigBase[i] * sigBase[i];
+            }
+            return Math.sqrt(diffSq / baseSq) * 100;
+        }
+
+        function drawSpectrum(canvas, ctx, baseSig, currentSig, currentColor) {
+            const width = canvas.parentElement.getBoundingClientRect().width;
+            const height = canvas.parentElement.getBoundingClientRect().height - 35;
+            const padL = 40, padB = 25;
+
+            ctx.clearRect(0, 0, width, height);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, width, height);
+
+            ctx.strokeStyle = '#e2e8f0'; 
+            ctx.lineWidth = 1; 
+            ctx.beginPath();
+            for (let x = padL; x < width; x += (width - padL) / 5) {
+                ctx.moveTo(x, 0); ctx.lineTo(x, height - padB);
+            }
+            for (let y = 10; y < height - padB; y += (height - padB) / 4) {
+                ctx.moveTo(padL, y); ctx.lineTo(width, y);
+            }
+            ctx.stroke();
+
+            ctx.fillStyle = '#475569'; 
+            ctx.font = '10px sans-serif';
+            ctx.fillText('Frequency f (kHz)', width / 2 - 25, height - 5);
+
+            ctx.save();
+            ctx.translate(12, height / 2 + 30);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('Conductance G (mS)', 0, 0);
+            ctx.restore();
+
+            if (baseSig) {
+                ctx.strokeStyle = '#16a34a'; ctx.lineWidth = 2; ctx.beginPath();
+                for (let i = 0; i < baseSig.length; i++) {
+                    const x = padL + (i / (baseSig.length - 1)) * (width - padL);
+                    const y = (height - padB) - (baseSig[i] / 45) * (height - padB - 10);
+                    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+            }
+
+            if (currentSig) {
+                ctx.strokeStyle = currentColor; ctx.lineWidth = 2; ctx.beginPath();
+                for (let i = 0; i < currentSig.length; i++) {
+                    const x = padL + (i / (currentSig.length - 1)) * (width - padL);
+                    const y = (height - padB) - (currentSig[i] / 45) * (height - padB - 10);
+                    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+            }
+        }
+
+        function drawAll() {
+            drawSpectrum(rawCanvas, rawCtx, baselineData, rawCurrentData, '#dc2626');
+            drawSpectrum(compCanvas, compCtx, baselineData, compensatedData, '#9333ea');
+        }
+
+        // Record Baseline Event
+        btnRecordBaseline.addEventListener('click', () => {
+            const state = stateType.value;
+            const loc = pztLoc.value;
+
+            btnRecordBaseline.classList.remove('highlight-step');
+            baselineData = generateEMISpectrum(state, loc, 25, 0, 0);
+            rawCurrentData = [...baselineData];
+            compensatedData = [...baselineData];
+
+            tempSlider.disabled = false;
+            damageSlider.disabled = false;
+            btnApplyShift.disabled = false;
+            btnApplyShift.classList.add('highlight-step');
+
+            stateType.disabled = true;
+            pztLoc.disabled = true;
+            freqSweep.disabled = true;
+
+            valState.textContent = state === 'free' ? 'Free PZT' : state === 'beam' ? 'Steel Beam' : 'Aluminum Plate';
+            subState.textContent = state === 'free' ? 'Unbonded (Air)' : `Location: ${loc.toUpperCase()}`;
+
+            valRawRMSD.textContent = "0.00 %";
+            valTrueRMSD.textContent = "0.00 %";
+            valFreqShift.textContent = "0.00 kHz";
+
+            drawAll();
+
+            let freeNote = state === 'free' ? 
+                `<i>Note: For Free Unbonded PZT, damage severity models sensor micro-cracks or internal patch degradation.</i><br><br>` : ``;
+
+            updateTeacherMessage(
+                `Well done! Baseline signature recorded at 25°C!<br><br>${freeNote}` +
+                `Now, change the <strong>Temperature Slider</strong> or <strong>Defect Severity Slider</strong>, then click <strong>"2. Measure EMI & Filter Thermal Shift"</strong>.`
+            );
+        });
+
+        // Download CSV Function
+        function downloadCSV() {
+            if (experimentHistory.length === 0) {
+                alert("No measurement trials recorded yet. Please run an experiment trial first.");
+                return;
+            }
+            let csv = "Timestamp,Mounting_State,Sensor_Location,Freq_Band,Temperature_C,Damage_Pct,Raw_RMSD_Pct,True_RMSD_Pct,Freq_Shift_kHz\n";
+            experimentHistory.forEach(r => {
+                csv += `${r.timestamp},${r.state},${r.loc},${r.freqBand},${r.temp},${r.damage},${r.rawRMSD},${r.trueRMSD},${r.shiftKHz}\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = `GARRF_EMI_Lab_Data_${Date.now()}.csv`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        }
+
+        // Apply Shift Event
+        btnApplyShift.addEventListener('click', () => {
+            if (!baselineData) return;
+
+            btnApplyShift.classList.remove('highlight-step');
+            btnReset.classList.add('highlight-step');
+
+            const state = stateType.value;
+            const loc = pztLoc.value;
+            const freqBand = freqSweep.value;
+            const temp = parseFloat(tempSlider.value);
+            const damage = parseFloat(damageSlider.value);
+
+            rawCurrentData = generateEMISpectrum(state, loc, temp, damage, 0);
+            const estimatedShift = (temp - 25) * 1.1;
+            compensatedData = generateEMISpectrum(state, loc, temp, damage, estimatedShift);
+
+            const rawRMSD = calculateRMSD(baselineData, rawCurrentData).toFixed(2);
+            const trueRMSD = calculateRMSD(baselineData, compensatedData).toFixed(2);
+            const shiftKHz = (estimatedShift * 0.25).toFixed(2);
+
+            valRawRMSD.textContent = `${rawRMSD} %`;
+            valTrueRMSD.textContent = `${trueRMSD} %`;
+            valFreqShift.textContent = `${shiftKHz} kHz`;
+
+            // Append run history without resetting past entries
+            experimentHistory.push({
+                timestamp: new Date().toLocaleTimeString(),
+                state, loc, freqBand, temp, damage, rawRMSD, trueRMSD, shiftKHz
+            });
+
+            drawAll();
+
+            updateTeacherMessage(
+                `Well done! Trial completed and logged! Total recorded trials in CSV: <strong>${experimentHistory.length}</strong>.<br><br>` +
+                `<strong>To start your next experiment:</strong><br>` +
+                `Please click <strong>"🔄 RESET Lab Session"</strong> highlighted in red on the panel. Don't worry—your recorded CSV data is completely safe in memory!`,
+                true,
+                "Understood, Ready to Reset ▶"
+            );
+        });
+
+        // Save CSV Button Click
+        btnCSVExport.addEventListener('click', downloadCSV);
+
+        // Reset Lab Session
+        btnReset.addEventListener('click', () => {
+            wizardStep = 1;
+            baselineData = null; rawCurrentData = null; compensatedData = null;
+            
+            btnReset.classList.remove('highlight-step');
+            stateType.disabled = false; pztLoc.disabled = false; freqSweep.disabled = true;
+            stateType.selectedIndex = 0; freqSweep.selectedIndex = 0;
+            
+            stateType.classList.add('highlight-step'); 
+            freqSweep.classList.remove('highlight-step'); 
+            btnRecordBaseline.classList.remove('highlight-step');
+
+            tempSlider.disabled = true; damageSlider.disabled = true; btnApplyShift.disabled = true; btnRecordBaseline.disabled = true;
+
+            tempSlider.value = 25; damageSlider.value = 0;
+            tempVal.textContent = "25°C (Nominal Lab Baseline)"; damageVal.textContent = "0% (Intact / Healthy Sensor)";
+
+            valState.textContent = "--"; subState.textContent = "Location: --";
+            valRawRMSD.textContent = "0.00 %"; valTrueRMSD.textContent = "0.00 %"; valFreqShift.textContent = "0.00 kHz";
+
+            update3DModel();
+            drawAll();
+
+            updateTeacherMessage(
+                `Well done! Lab session successfully reset.<br><br>` +
+                `Your past <strong>${experimentHistory.length} trial(s)</strong> are safely stored in CSV background memory.<br><br>` +
+                `<strong>Step 1:</strong> Please select a new mounting structure from the first dropdown to begin your next test sequence.`
+            );
+        });
+    </script>
+</body>
+</html>
