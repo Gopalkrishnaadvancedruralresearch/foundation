@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Whitepaper 4: Structural Health Monitoring — GARRF</title>
+
+<!-- MathJax for LaTeX Formulations -->
+<script>
+    window.MathJax = {
+        tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)']],
+            displayMath: [['$$', '$$'], ['\\[', '\\]']]
+        },
+        svg: { fontCache: 'global' }
+    };
+</script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<style>
+    :root {
+        --garrf-blue: #0b2545;
+        --garrf-dark: #061224;
+        --garrf-card: #0f1d33;
+        --text-main: #f8fafc;
+        --text-muted: #94a3b8;
+        --accent-cyan: #38bdf8;
+        --accent-gold: #f59e0b;
+        --accent-green: #10b981;
+        --border-color: #1e3a5f;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body { background-color: #020712; color: var(--text-main); display: flex; flex-direction: column; min-height: 100vh; }
+
+    /* TOP BAR */
+    .top-nav {
+        background-color: var(--garrf-blue);
+        border-bottom: 2px solid var(--accent-cyan);
+        padding: 10px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    }
+    .brand-group {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .brand-logo {
+        height: 44px;
+        width: 44px;
+        border-radius: 6px;
+        background: #fff;
+        padding: 2px;
+        object-fit: contain;
+    }
+    .brand-title h1 { font-size: 1rem; color: #fff; font-weight: 800; letter-spacing: 0.5px; }
+    .brand-title p { font-size: 0.72rem; color: #7dd3fc; }
+    .pub-tag {
+        font-size: 0.75rem;
+        background: rgba(56, 189, 248, 0.15);
+        border: 1px solid var(--accent-cyan);
+        color: var(--accent-cyan);
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-weight: 700;
+    }
+
+    /* BOOK WRAPPER */
+    .book-outer {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px 15px;
+    }
+    .book-container {
+        width: 100%;
+        max-width: 960px;
+        min-height: 720px;
+        background: var(--garrf-card);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.7), 0 0 35px rgba(56, 189, 248, 0.12);
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        overflow: hidden;
+    }
+
+    /* BOOK PAGES */
+    .page {
+        display: none;
+        padding: 35px 40px;
+        flex: 1;
+        animation: pageTurn 0.3s ease-out;
+        overflow-y: auto;
+        max-height: 780px;
+    }
+    .page.active {
+        display: block;
+    }
+    @keyframes pageTurn {
+        from { opacity: 0; transform: translateX(15px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+
+    /* TYPOGRAPHY */
+    h2.page-heading {
+        color: var(--accent-cyan);
+        font-size: 1.4rem;
+        border-bottom: 2px solid var(--border-color);
+        padding-bottom: 8px;
+        margin-bottom: 16px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    h3.sub-heading {
+        color: var(--accent-gold);
+        font-size: 1.05rem;
+        margin: 18px 0 8px 0;
+    }
+    p, li {
+        font-size: 0.92rem;
+        line-height: 1.65;
+        color: #cbd5e1;
+        margin-bottom: 10px;
+    }
+    ul { padding-left: 22px; margin-bottom: 14px; }
+    
+    .formula-card {
+        background: #061325;
+        border-left: 4px solid var(--accent-cyan);
+        padding: 12px 18px;
+        border-radius: 6px;
+        margin: 12px 0;
+        overflow-x: auto;
+        font-size: 1.05rem;
+    }
+    .notice-box {
+        background: rgba(16, 185, 129, 0.1);
+        border: 1px solid var(--accent-green);
+        border-radius: 8px;
+        padding: 14px 18px;
+        margin: 15px 0;
+        font-size: 0.88rem;
+        color: #6ee7b7;
+    }
+    .workflow-box {
+        background: #0b172a;
+        border: 1px dashed var(--accent-cyan);
+        border-radius: 8px;
+        padding: 15px;
+        font-family: monospace;
+        font-size: 0.8rem;
+        color: #7dd3fc;
+        white-space: pre-wrap;
+        margin: 12px 0;
+        line-height: 1.5;
+    }
+
+    /* FOOTER CONTROLS / PAGINATION */
+    .book-footer {
+        background: #081426;
+        border-top: 1px solid var(--border-color);
+        padding: 12px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .page-nav-btn {
+        background: var(--garrf-blue);
+        color: #ffffff;
+        border: 1px solid var(--accent-cyan);
+        padding: 8px 18px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 700;
+        font-size: 0.85rem;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .page-nav-btn:hover:not(:disabled) {
+        background: var(--accent-cyan);
+        color: #020712;
+    }
+    .page-nav-btn:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+        border-color: var(--border-color);
+    }
+    .page-indicator {
+        font-size: 0.82rem;
+        color: var(--text-muted);
+        font-weight: 700;
+        letter-spacing: 1px;
+    }
+
+    /* COVER SPECIFIC STYLES */
+    .cover-page {
+        padding: 0 !important;
+        display: none;
+        height: 100%;
+    }
+    .cover-page.active {
+        display: flex;
+        flex-direction: column;
+    }
+    .cover-svg-container {
+        width: 100%;
+        height: auto;
+    }
+
+    /* CALL MANOHAR BANNER */
+    .cta-banner {
+        background: linear-gradient(135deg, #0b2545, #134074);
+        border: 2px solid var(--accent-cyan);
+        border-radius: 12px;
+        padding: 24px;
+        text-align: center;
+        margin-top: 25px;
+    }
+    .btn-call-manohar {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        background: #087f45;
+        color: #fff;
+        padding: 14px 28px;
+        border-radius: 50px;
+        font-size: 1.05rem;
+        font-weight: 800;
+        text-decoration: none;
+        box-shadow: 0 6px 20px rgba(8, 127, 69, 0.4);
+        margin-top: 15px;
+        transition: transform 0.2s, background 0.2s;
+    }
+    .btn-call-manohar:hover {
+        background: #0aa359;
+        transform: translateY(-2px);
+    }
+</style>
+</head>
+<body>
+
+<!-- TOP INSTITUTIONAL BAR -->
+<header class="top-nav">
+    <div class="brand-group">
+        <img src="https://garrf.in/kalam-zero-lab/logo.jpeg" alt="GARRF Logo" class="brand-logo" onerror="this.src='https://garrf.in/logo.png'">
+        <div class="brand-title">
+            <h1>Gopalkrishna Advanced Rural Research Foundation</h1>
+            <p>Virtual AISIA Lab • Kalam Zero Research Initiative</p>
+        </div>
+    </div>
+    <div class="pub-tag">
+        WHITEPAPER 4 • ISSN/REF: GARRF-SHM-WP04 • © 2026 GARRF
+    </div>
+</header>
+
+<!-- MAIN BOOK WRAPPER -->
+<main class="book-outer">
+    <div class="book-container">
+
+        <!-- ================= PAGE 1: VECTOR BOOK COVER ================= -->
+        <div class="page cover-page active" id="page-1">
+            <svg class="cover-svg-container" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1700" width="100%" height="100%">
+              <defs>
+                <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#061224" />
+                  <stop offset="45%" stop-color="#0a1f3d" />
+                  <stop offset="100%" stop-color="#020712" />
+                </linearGradient>
+                <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#d97706" />
+                  <stop offset="50%" stop-color="#f59e0b" />
+                  <stop offset="100%" stop-color="#fbbf24" />
+                </linearGradient>
+                <linearGradient id="cyanGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#0284c7" />
+                  <stop offset="50%" stop-color="#38bdf8" />
+                  <stop offset="100%" stop-color="#7dd3fc" />
+                </linearGradient>
+                <linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#112240" stop-opacity="0.95" />
+                  <stop offset="100%" stop-color="#0a1628" stop-opacity="0.95" />
+                </linearGradient>
+                <filter id="glowCyan" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="6" result="blur" />
+                  <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+                </filter>
+                <filter id="glowGold" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="5" result="blur" />
+                  <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+                </filter>
+                <pattern id="isoGrid" width="40" height="40" patternUnits="userSpaceOnUse">
+                  <path d="M 40 0 L 0 40 M 0 0 L 40 40" fill="none" stroke="#1e3a5f" stroke-width="0.75" opacity="0.4" />
+                </pattern>
+              </defs>
+
+              <rect width="1200" height="1700" fill="url(#bgGrad)" />
+              <rect width="1200" height="1700" fill="url(#isoGrid)" />
+              <rect x="0" y="0" width="1200" height="16" fill="url(#cyanGrad)" />
+
+              <!-- HEADER -->
+              <g transform="translate(100, 80)">
+                <image href="https://garrf.in/kalam-zero-lab/logo.jpeg" x="0" y="0" width="80" height="80" preserveAspectRatio="xMidYMid meet" />
+                <rect x="0" y="0" width="80" height="80" rx="8" fill="none" stroke="#38bdf8" stroke-width="2" />
+                <text x="105" y="32" font-size="28" font-weight="900" fill="#ffffff" letter-spacing="1.5">GOPALKRISHNA ADVANCED RURAL RESEARCH FOUNDATION</text>
+                <text x="105" y="62" font-size="19" font-weight="700" fill="#38bdf8" letter-spacing="2">WHITEPAPER 4 • A PUBLICATION OF GARRF • © 2026</text>
+              </g>
+
+              <line x1="100" y1="190" x2="1100" y2="190" stroke="#1e3a5f" stroke-width="2" />
+
+              <!-- TITLES -->
+              <g transform="translate(100, 260)">
+                <rect x="0" y="0" width="375" height="34" rx="17" fill="#0f294a" stroke="#38bdf8" stroke-width="1.5" />
+                <text x="20" y="23" font-size="13" font-weight="800" fill="#7dd3fc" letter-spacing="1.5">WHITEPAPER 4 • M.E. / M.TECH PEDAGOGY</text>
+
+                <text x="0" y="95" font-size="62" font-weight="900" fill="#ffffff" letter-spacing="1">STRUCTURAL HEALTH</text>
+                <text x="0" y="165" font-size="62" font-weight="900" fill="url(#cyanGrad)" letter-spacing="1">MONITORING</text>
+                
+                <text x="0" y="220" font-size="27" font-weight="700" fill="#f8fafc">Guided Waves, PZT Transduction &amp; Electromechanical Impedance</text>
+                <text x="0" y="255" font-size="17" font-weight="500" fill="#94a3b8">Master Coursebook &amp; Virtual Laboratory Manual for Aerospace, Mechanical &amp; Civil Engineering</text>
+              </g>
+
+              <!-- ISOMETRIC BEAM & WAVE VISUALIZATION -->
+              <g transform="translate(600, 750)">
+                <polygon points="-420,0 240,-160 480,-40 -180,120" fill="#132338" stroke="#38bdf8" stroke-width="2" />
+                <polygon points="-420,0 -180,120 -180,155 -420,35" fill="#0c1726" stroke="#1e3a5f" stroke-width="1.5" />
+                <polygon points="-180,120 480,-40 480,-5 -180,155" fill="#080f1a" stroke="#1e3a5f" stroke-width="1.5" />
+
+                <g transform="translate(-240, 20)">
+                  <ellipse cx="0" cy="0" rx="34" ry="16" fill="#0284c7" stroke="#38bdf8" stroke-width="2.5" filter="url(#glowCyan)" />
+                  <text x="-16" y="5" font-size="11" font-weight="900" fill="#ffffff">PZT</text>
+                  <ellipse cx="0" cy="0" rx="140" ry="60" fill="none" stroke="#38bdf8" stroke-width="2.5" stroke-dasharray="10 5" opacity="0.9" filter="url(#glowCyan)" />
+                  <ellipse cx="0" cy="0" rx="260" ry="110" fill="none" stroke="#38bdf8" stroke-width="2" stroke-dasharray="8 6" opacity="0.6" />
+                  <ellipse cx="0" cy="0" rx="80" ry="34" fill="none" stroke="#f59e0b" stroke-width="3" opacity="0.85" filter="url(#glowGold)" />
+                  <ellipse cx="0" cy="0" rx="180" ry="76" fill="none" stroke="#f59e0b" stroke-width="2" opacity="0.5" />
+                </g>
+
+                <g transform="translate(100, -50)">
+                  <line x1="-30" y1="15" x2="30" y2="-15" stroke="#ef4444" stroke-width="6" stroke-linecap="round" />
+                  <circle cx="0" cy="0" r="6" fill="#dc2626" />
+                  <text x="-40" y="-22" font-size="14" font-weight="800" fill="#f87171">Damage Discontinuity (X_D, Y_D)</text>
+                  <ellipse cx="0" cy="0" rx="80" ry="35" fill="none" stroke="#ef4444" stroke-width="2" stroke-dasharray="6 4" opacity="0.8" />
+                </g>
+
+                <g transform="translate(280, -90)">
+                  <ellipse cx="0" cy="0" rx="26" ry="12" fill="#10b981" stroke="#34d399" stroke-width="2" />
+                  <text x="-14" y="4" font-size="10" font-weight="900" fill="#ffffff">S_1</text>
+                </g>
+
+                <!-- Oscilloscope Frame -->
+                <g transform="translate(-400, 180)">
+                  <rect x="0" y="0" width="800" height="155" rx="12" fill="#0a1526" stroke="#334155" stroke-width="2" />
+                  <text x="25" y="30" font-size="13" font-weight="800" fill="#38bdf8" letter-spacing="1">REAL-TIME A-SCAN SYNTHESIS &amp; DUAL-MODE TOF KINEMATICS</text>
+                  <line x1="20" y1="95" x2="780" y2="95" stroke="#1e293b" stroke-width="1.5" />
+                  <path d="M 30,95 Q 60,95 80,95 Q 90,20 100,165 Q 110,35 120,150 Q 130,55 140,135 Q 150,80 160,95 L 310,95 Q 320,40 330,145 Q 340,55 350,135 Q 360,80 370,95 L 480,95 Q 495,15 510,175 Q 525,30 540,160 Q 555,60 570,130 Q 585,85 600,95 L 770,95" fill="none" stroke="#38bdf8" stroke-width="2.5" />
+                  <text x="85" y="180" font-size="12" font-weight="700" fill="#94a3b8">Actuation Burst</text>
+                  <text x="315" y="180" font-size="12" font-weight="700" fill="#38bdf8">Direct S0 Arrival</text>
+                  <text x="495" y="180" font-size="12" font-weight="700" fill="#f59e0b">Direct A0 Arrival</text>
+                </g>
+              </g>
+
+              <!-- INSET PEDAGOGY CARD -->
+              <g transform="translate(100, 1160)">
+                <rect x="0" y="0" width="1000" height="230" rx="16" fill="url(#cardGrad)" stroke="#38bdf8" stroke-width="2" />
+                <rect x="35" y="26" width="460" height="32" rx="8" fill="#1e3a8a" stroke="#60a5fa" stroke-width="1.5" />
+                <text x="50" y="48" font-size="13" font-weight="900" fill="#ffffff" letter-spacing="1">★ SPECIAL PEDAGOGICAL ARCHITECTURE</text>
+                <text x="35" y="94" font-size="24" font-weight="900" fill="#ffffff">Two-Mode AI Professor System • Featuring Prof. Manohar</text>
+                <text x="35" y="122" font-size="14" font-weight="500" fill="#cbd5e1">Seamlessly choose your learning style before conducting advanced SHM experiments:</text>
+                
+                <g transform="translate(35, 140)">
+                  <rect x="0" y="0" width="440" height="58" rx="10" fill="#2d1215" stroke="#ef4444" stroke-width="1.5" />
+                  <circle cx="28" cy="29" r="10" fill="#ef4444" />
+                  <text x="48" y="26" font-size="13" font-weight="900" fill="#fca5a5">STRICT PROFESSOR MODE</text>
+                  <text x="48" y="46" font-size="11" font-weight="500" fill="#fecaca">Rigorous checking, calculation validation, demanding evidence</text>
+                </g>
+                <g transform="translate(515, 140)">
+                  <rect x="0" y="0" width="450" height="58" rx="10" fill="#0f2942" stroke="#38bdf8" stroke-width="1.5" />
+                  <circle cx="28" cy="29" r="10" fill="#38bdf8" />
+                  <text x="48" y="26" font-size="13" font-weight="900" fill="#7dd3fc">INTERACTIVE PROFESSOR MODE</text>
+                  <text x="48" y="46" font-size="11" font-weight="500" fill="#bae6fd">Socratic guided inquiry, exploratory learning, progressive hints</text>
+                </g>
+              </g>
+
+              <!-- COST SAVINGS BANNER -->
+              <g transform="translate(100, 1420)">
+                <rect x="0" y="0" width="1000" height="85" rx="12" fill="#0d1e33" stroke="#f59e0b" stroke-width="1.5" />
+                <text x="30" y="34" font-size="16" font-weight="800" fill="url(#goldGrad)">ZERO-CAPITAL EXPERIMENTAL MASTERY: SAVING LAKHS IN PHYSICAL HARDWARE</text>
+                <text x="30" y="62" font-size="13.5" font-weight="500" fill="#e2e8f0">Master real SHM principles by conducting dozens of trials across 4 Virtual Laboratories at zero hardware cost.</text>
+              </g>
+
+              <!-- EDITOR & AUTHORSHIP -->
+              <g transform="translate(100, 1555)">
+                <text x="0" y="24" font-size="14" font-weight="800" fill="#94a3b8" letter-spacing="1">EDITOR &amp; PRINCIPAL INVESTIGATOR:</text>
+                <text x="0" y="56" font-size="25" font-weight="900" fill="#ffffff">Dr. Annamdas Venu Gopal Madhav</text>
+                <text x="0" y="82" font-size="15" font-weight="600" fill="#38bdf8">Founder &amp; Research Director, Virtual AISIA Lab &amp; GARR Foundation</text>
+
+                <text x="700" y="56" font-size="20" font-weight="800" fill="#e2e8f0">Shantanu Vasudev Krishna</text>
+                <text x="700" y="82" font-size="15" font-weight="600" fill="#94a3b8">Virtual AISIA Lab Collaboration</text>
+              </g>
+
+              <rect x="0" y="1684" width="1200" height="16" fill="url(#goldGrad)" />
+            </svg>
+        </div>
+
+        <!-- ================= PAGE 2: SYLLABUS & CURRICULUM ================= -->
+        <div class="page" id="page-2">
+            <h2 class="page-heading">Syllabus &amp; 4-Suite Laboratory Roadmap</h2>
+            <p>Welcome to <strong>Whitepaper 4</strong>, a publication of the Gopalkrishna Advanced Rural Research Foundation (GARRF). This coursebook bridges elastodynamic wave equations and electromechanical coupling with hands-on practice across four specialized virtual laboratories[cite: 1, 2].</p>
+
+            <div class="workflow-box">
+================================================================================
+                    WHITEPAPER 4: PEDAGOGICAL ROADMAP
+================================================================================
+[Module 1: Elastic Wave Mechanics & Lamb Waves] ──► [Lab Suite 1: SHMPROF1.html][cite: 1, 2]
+[Module 2: Piezoelectric Sensing & Transduction] ──► [Lab Suite 3: SHMPROF3.html][cite: 1, 2]
+[Module 3: Electromechanical Impedance (EMI)]    ──► [Lab Suite 2: SHMPROF2.html][cite: 1, 2]
+[Module 4: Environmental Compensation & 3D SHM]  ──► [Lab Suite 4: SHMPROF4.html][cite: 1, 2]
+================================================================================
+            </div>
+
+            <h3 class="sub-heading">Module Descriptions:</h3>
+            <ul>
+                <li><strong>Module 1:</strong> Wave propagation in bounded plates, Rayleigh–Lamb characteristic relations, Symmetric ($S_0$) vs. Antisymmetric ($A_0$) modes, dispersion curves, and Time-of-Flight (ToF) kinematics[cite: 1, 5].</li>
+                <li><strong>Module 2:</strong> Piezoelectric active sensing, tone-burst wave synthesis, Hanning windowing, and A-scan oscilloscope baseline subtraction[cite: 1, 5].</li>
+                <li><strong>Module 3:</strong> 1D and 2D Electromechanical Impedance (EMI) modeling, Liang and Bhalla–Soh formulations, Annamdas–Soh multi-directional formulations, and RMSD damage indexing[cite: 1, 2].</li>
+                <li><strong>Module 4:</strong> Thermal drift, frequency shifting mechanisms, numerical cross-correlation compensation, and multi-sensor inverse localization[cite: 1, 2].</li>
+            </ul>
+
+            <div class="notice-box">
+                💡 <strong>Educational Value:</strong> Setting up a physical ultrasonic guided-wave or EMI laboratory requires function generators, impedance analyzers, digitizers, and PZT transducers costing several lakhs of rupees. This 4-suite virtual curriculum enables postgraduate students to learn by performing unlimited interactive trials at zero hardware expense[cite: 1, 2].
+            </div>
+        </div>
+
+        <!-- ================= PAGE 3: CHAPTER 1 — ELASTODYNAMICS & LAMB WAVES ================= -->
+        <div class="page" id="page-3">
+            <h2 class="page-heading">Chapter 1: Elastodynamics, Dispersion &amp; Lamb Waves</h2>
+            <p>Guided elastic waves in plates represent bounded solutions to Navier's dynamic equilibrium equations[cite: 5]:</p>
+            <div class="formula-card">
+                $$(\lambda + \mu)\nabla(\nabla \cdot \mathbf{u}) + \mu \nabla^2 \mathbf{u} = \rho \frac{\partial^2 \mathbf{u}}{\partial t^2}$$
+            </div>
+            <p>Enforcing traction-free boundaries ($\sigma_{yy} = 0, \tau_{xy} = 0$) at plate surfaces $y = \pm h$ (thickness $d = 2h$) yields the transcendental Rayleigh–Lamb relations[cite: 1, 5]:</p>
+            
+            <div class="formula-card">
+                $$\text{Symmetric Mode }(S): \quad \frac{\tan(qh)}{\tan(ph)} + \frac{4k^2 pq}{(k^2 - q^2)^2} = 0$$
+            </div>
+            <div class="formula-card">
+                $$\text{Antisymmetric Mode }(A): \quad \frac{\tan(qh)}{\tan(ph)} + \frac{(k^2 - q^2)^2}{4k^2 pq} = 0$$
+            </div>
+            <p>where $p^2 = \frac{\omega^2}{c_L^2} - k^2$ and $q^2 = \frac{\omega^2}{c_T^2} - k^2$[cite: 1, 5]. Bulk longitudinal speed is $c_L = \sqrt{(\lambda+2\mu)/\rho}$ and shear speed is $c_T = \sqrt{\mu/\rho}$[cite: 1, 5].</p>
+
+            <h3 class="sub-heading">Phase Velocity ($c_p$) vs. Group Velocity ($c_g$):</h3>
+            <p>In dispersive media, monochromatic wave crests move at phase velocity $c_p = \omega/k$, whereas wavepacket envelope energy propagates at group velocity[cite: 1, 5]:</p>
+            <div class="formula-card">
+                $$c_g = \frac{d\omega}{dk} = c_p + k \frac{dc_p}{dk} = c_p \left(1 - \frac{\lambda_w}{c_p}\frac{dc_p}{d\lambda_w}\right)$$
+            </div>
+            <p><strong>Experimental Rule:</strong> Wavepacket envelope arrivals and Time-of-Flight (ToF) damage localization are governed by group velocity $c_g$[cite: 1, 5].</p>
+        </div>
+
+        <!-- ================= PAGE 4: CHAPTER 2 — LAB SUITE 1 PRACTICUM ================= -->
+        <div class="page" id="page-4">
+            <h2 class="page-heading">Chapter 2: Laboratory Suite 1 — SHMPROF1.html</h2>
+            <p><strong>Primary Lab:</strong> Guided Lamb Waves, Dispersion &amp; Multi-Path Triangulation[cite: 1, 2]  
+            <br><strong>Teacher:</strong> Prof. Manohar (Two-Mode: Strict / Interactive)[cite: 2]</p>
+
+            <div class="workflow-box">
+================================================================================
+PRACTICUM WORKFLOW: SHMPROF1.HTML[cite: 2]
+================================================================================
+1. Select AI Personality:
+   ├── Strict Mode: Formal verification, rigorous derivation checks[cite: 2]
+   └── Interactive Mode: Guided inquiry and progressive hints[cite: 2]
+2. Material Selection: Select Aluminum 6061-T6, Steel, or Titanium[cite: 5]
+3. Numerical Dispersion Curve: Examine S0 and A0 velocity separation[cite: 1, 5]
+4. Conduct 5-Trial Protocol:
+   ├── Trial 1: Baseline Healthy Reference (No Damage)[cite: 1, 5]
+   ├── Trial 2: Spatial Location Effect (Move crack position X_D, Y_D)[cite: 1, 5]
+   ├── Trial 3: Defect Severity (Increase crack length L_c: 15 mm -> 40 mm)[cite: 1, 5]
+   ├── Trial 4: Directivity (Vary crack orientation angle theta_c: 0° -> 90°)[cite: 1, 5]
+   └── Trial 5: Multi-Path Triangulation (Non-linear least-squares reconstruction)[cite: 5]
+5. Digital Signal Processing: Apply Hilbert Envelope and Baseline Subtraction[cite: 5]
+6. Output: Populate Master Observation Matrix and Export CSV[cite: 1, 5]
+================================================================================
+            </div>
+
+            <h3 class="sub-heading">ToF Kinematics:</h3>
+            <div class="formula-card">
+                $$d_{\text{direct}} = \|\mathbf{x}_S - \mathbf{x}_A\|_2, \quad \text{ToF}_{\text{direct}} = \frac{d_{\text{direct}}}{c_g}$$
+                $$d_{\text{scatter}} = d_{AD} + d_{DS}, \quad \text{ToF}_{\text{scatter}} = \frac{d_{AD} + d_{DS}}{c_g}$$
+                $$\Delta \text{ToF} = \text{ToF}_{\text{scatter}} - \text{ToF}_{\text{direct}} = \frac{d_{\text{scatter}} - d_{\text{direct}}}{c_g}$$
+            </div>
+        </div>
+
+        <!-- ================= PAGE 5: CHAPTER 3 — EMI FORMULATION & ANNAMDAS-SOH MODELS ================= -->
+        <div class="page" id="page-5">
+            <h2 class="page-heading">Chapter 3: Electromechanical Impedance &amp; Annamdas-Soh Formulations</h2>
+            <p>The Electromechanical Impedance (EMI) technique uses the converse and direct piezoelectric effects simultaneously via high-frequency structural interrogation[cite: 1, 2].</p>
+
+            <h3 class="sub-heading">1D Formulation (Liang et al.):</h3>
+            <div class="formula-card">
+                $$Y(\omega) = j\omega \frac{w_a \ell_a}{h_a} \left[ \bar{\varepsilon}_{33}^T - d_{31}^2 \bar{Y}^E + \left( \frac{Z_a}{Z_s + Z_a} \right) d_{31}^2 \bar{Y}^E \left( \frac{\tan(\kappa \ell_a)}{\kappa \ell_a} \right) \right]$$
+            </div>
+
+            <h3 class="sub-heading">Multi-Directional Formulations by Annamdas and Soh:</h3>
+            <p>Real-world structures exhibit multi-axial dynamic stress states. Annamdas and Soh developed three-dimensional, multi-directional elastodynamic formulations for both surface-bonded and embedded PZT transducers:</p>
+            
+            <div class="formula-card">
+                $$Y(\omega) = j\omega \frac{w_a \ell_a}{h_a} \left[ \bar{\varepsilon}_{33}^T - \frac{2 d_{31}^2 \bar{Y}^E}{1 - \nu} + \frac{d_{31}^2 \bar{Y}^E}{1 - \nu} \left( \frac{Z_{a,x} Z_{a,y}}{Z_{s,x} Z_{s,y} - Z_{a,x} Z_{a,y}} \right) \psi_{2D}(\kappa_x \ell_a, \kappa_y w_a) \right]$$
+            </div>
+            <p>Their work also established closed-form solutions for <strong>embedded PZT transducers</strong> in massive concrete and composite structures, accounting for spherical wave dissipation and normal/shear coupling impedances ($Z_{s,zz}, Z_{s,xz}, Z_{s,yz}$).</p>
+
+            <h3 class="sub-heading">Damage Quantification Metric (RMSD):</h3>
+            <div class="formula-card">
+                $$\text{RMSD} (\%) = \sqrt{\frac{\sum_{i=1}^{M} [G(\omega_i) - G_0(\omega_i)]^2}{\sum_{i=1}^{M} [G_0(\omega_i)]^2}} \times 100$$
+            </div>
+        </div>
+
+        <!-- ================= PAGE 6: CHAPTER 4 — LAB SUITES 2 & 3 PRACTICUM ================= -->
+        <div class="page" id="page-6">
+            <h2 class="page-heading">Chapter 4: Laboratory Suites 2 &amp; 3 — SHMPROF2 &amp; SHMPROF3</h2>
+            <p><strong>Lab Suite 2:</strong> Guided PZT-SHM Damage Simulator (Prof. Nanjunda)[cite: 1, 2]  
+            <br><strong>Lab Suite 3:</strong> Piezoelectric Wave Simulator &amp; Multi-Waveform Excitation (Prof. Chandra)[cite: 1, 2]</p>
+
+            <div class="workflow-box">
+================================================================================
+LAB WORKFLOW 2 & 3: SHMPROF2.HTML & SHMPROF3.HTML[cite: 1, 2]
+================================================================================
+1. Excitation Setup:
+   ├── Frequency Mode: Single Frequency vs. Continuous Frequency Sweep[cite: 1]
+   └── Waveform Types: Pure Sine, Linear Chirp, Square Wave, Hanning Burst[cite: 1]
+2. Transducer Configuration: Surface-bonded PZT array spacing
+3. Controlled Experimental Investigation:
+   ├── Step 1: Record Baseline Healthy Signal (S0 pristine reference)[cite: 1, 2]
+   ├── Step 2: Choose Testing Protocol:
+   │     ├── Type 1: Fixed Distance -> Incrementally increase damage depth[cite: 1]
+   │     └── Type 2: Fixed Severity -> Move defect away from PZT patch[cite: 1]
+   └── Step 3: Sequentially execute Exp #2, #3, #4, and #5[cite: 1, 2]
+4. Quantification:
+   ├── Compute RMSD index across resonance bands[cite: 1, 2]
+   └── Download structured CSV dataset for laboratory assessment[cite: 1, 2]
+================================================================================
+            </div>
+
+            <div class="notice-box">
+                💡 <strong>Practical Insight:</strong> Notice how increasing damage severity significantly attenuates transmitted mechanical strain, shifting local resonance peaks and producing sharp increases in RMSD metric curves[cite: 1, 2].
+            </div>
+        </div>
+
+        <!-- ================= PAGE 7: CHAPTER 5 — THERMAL COMPENSATION & SUITE 4 ================= -->
+        <div class="page" id="page-7">
+            <h2 class="page-heading">Chapter 5: Thermal Compensation &amp; SHMPROF4 Lab</h2>
+            <p><strong>Lab Suite 4:</strong> 3D Multi-Structural EMI &amp; Thermal Compensation Lab (Prof. Ananth)[cite: 1, 2]</p>
+            
+            <p>Ambient temperature variations introduce false-positive damage indicators by altering dielectric permittivity ($\varepsilon_{33}^T$) and softening structural stiffness ($E$), which shifts baseline resonance peaks downward[cite: 1, 2].</p>
+
+            <h3 class="sub-heading">Effective Frequency Shift (EFS) Compensation:</h3>
+            <p>To isolate true structural damage, the damaged signature is shifted across frequency increments $\Delta \omega$ to maximize cross-correlation with baseline $G_0$[cite: 1, 2]:</p>
+            <div class="formula-card">
+                $$CC(\Delta \omega) = \frac{\sum_{i=1}^M [G_0(\omega_i) - \bar{G}_0][G(\omega_i + \Delta \omega) - \bar{G}]}{\sqrt{\sum_{i=1}^M [G_0(\omega_i) - \bar{G}_0]^2 \sum_{i=1}^M [G(\omega_i + \Delta \omega) - \bar{G}]^2}}$$
+            </div>
+
+            <h3 class="sub-heading">Compensated Damage Index:</h3>
+            <div class="formula-card">
+                $$\text{RMSD}_{\text{comp}} = \sqrt{\frac{\sum_{i=1}^M [G(\omega_i + \Delta \omega^*) - G_0(\omega_i)]^2}{\sum_{i=1}^M [G_0(\omega_i)]^2}} \times 100$$
+            </div>
+
+            <div class="workflow-box">
+================================================================================
+LAB WORKFLOW 4: SHMPROF4.HTML[cite: 1, 2]
+================================================================================
+1. Select 3D Specimen Geometry: Plate, Beam, or Frame Structure[cite: 1]
+2. Thermal Drift Setup: Impose delta-T (+10°C to +50°C offset)[cite: 1]
+3. Simulate Defect: Introduce structural notch
+4. Signal Analysis:
+   ├── Inspect uncompensated Raw RMSD (distorted by temperature)[cite: 1]
+   ├── Apply Cross-Correlation Peak Alignment (EFS algorithm)[cite: 1, 2]
+   └── Compute Compensated RMSD to confirm true structural integrity[cite: 1, 2]
+================================================================================
+            </div>
+        </div>
+
+        <!-- ================= PAGE 8: CHAPTER 6 — REFERENCES & CALL PROF. MANOHAR ================= -->
+        <div class="page" id="page-8">
+            <h2 class="page-heading">Chapter 6: References &amp; Interactive Learning</h2>
+            
+            <h3 class="sub-heading">Academic References:</h3>
+            <ul>
+                <li><strong>Annamdas, V. G. M., &amp; Soh, C. K. (2007).</strong> An electromechanical impedance model of a piezoceramic transducer-structure system. <em>Journal of Applied Mechanics</em>, 74(3), 522–533.</li>
+                <li><strong>Annamdas, V. G. M., &amp; Soh, C. K. (2010).</strong> Three-dimensional electromechanical impedance formulations for structural health monitoring. <em>Journal of Intelligent Material Systems and Structures</em>, 21(1), 41–55.</li>
+                <li><strong>Bhalla, S., &amp; Soh, C. K. (2004).</strong> Electromechanical impedance modeling for adhesively bonded piezo-transducers. <em>Journal of Aerospace Engineering</em>, 17(4), 142–150.</li>
+                <li><strong>Liang, C., Sun, F. P., &amp; Rogers, C. A. (1994).</strong> Coupled electro-mechanical analysis of adaptive material systems. <em>J. Intell. Mater. Syst. Struct.</em>, 5(1), 12–20.</li>
+                <li><strong>Rose, J. L. (2014).</strong> <em>Ultrasonic Guided Waves in Solid Media</em>. Cambridge University Press.</li>
+                <li><strong>Giurgiutiu, V. (2014).</strong> <em>Structural Health Monitoring with Piezoelectric Wafer Active Sensors</em> (2nd ed.). Academic Press.</li>
+            </ul>
+
+            <div class="cta-banner">
+                <h3 style="color:#ffffff; font-size:1.3rem; margin-bottom:8px;">Ready to Begin Your Virtual Experiments?</h3>
+                <p style="color:#cbd5e1; font-size:0.92rem; max-width:650px; margin:0 auto;">Connect with Prof. Manohar, your AI Teacher and Advisor, to unlock the complete virtual laboratory suite and start your interactive sessions[cite: 2].</p>
+                <a href="https://garrf.in/kalam-zero-lab/ProfManohar.html" target="_blank" class="btn-call-manohar">
+                    <span>📞</span>
+                    <span>CALL PROF. MANOHAR (AI TEACHER)</span>
+                </a>
+            </div>
+
+            <div style="margin-top: 30px; text-align: center; border-top: 1px solid var(--border-color); padding-top: 15px;">
+                <p style="font-size:0.75rem; color:var(--text-muted);">
+                    <strong>Whitepaper 4</strong> • A Publication of Gopalkrishna Advanced Rural Research Foundation (GARRF)<br>
+                    Editor: <strong>Dr. Annamdas Venu Gopal Madhav</strong> • © 2026 GARRF. All rights reserved.
+                </p>
+            </div>
+        </div>
+
+        <!-- ================= BOOK FOOTER: NAVIGATION ================= -->
+        <footer class="book-footer">
+            <button class="page-nav-btn" id="prevBtn" onclick="changePage(-1)" disabled>
+                <span>&#8592;</span> Previous Page
+            </button>
+            <div class="page-indicator" id="pageIndicator">
+                PAGE 1 OF 8 (COVER)
+            </div>
+            <button class="page-nav-btn" id="nextBtn" onclick="changePage(1)">
+                Next Page <span>&#8594;</span>
+            </button>
+        </footer>
+
+    </div>
+</main>
+
+<script>
+    let currentPage = 1;
+    const totalPages = 8;
+
+    const pageTitles = [
+        "PAGE 1 OF 8 (COVER)",
+        "PAGE 2 OF 8 (ROADMAP)",
+        "PAGE 3 OF 8 (ELASTODYNAMICS)",
+        "PAGE 4 OF 8 (LAB SUITE 1)",
+        "PAGE 5 OF 8 (EMI FORMULATION)",
+        "PAGE 6 OF 8 (LAB SUITES 2 & 3)",
+        "PAGE 7 OF 8 (LAB SUITE 4)",
+        "PAGE 8 OF 8 (REFERENCES & AI TEACHER)"
+    ];
+
+    function changePage(direction) {
+        const currentEl = document.getElementById(`page-${currentPage}`);
+        if (currentEl) currentEl.classList.remove('active');
+
+        currentPage += direction;
+        if (currentPage < 1) currentPage = 1;
+        if (currentPage > totalPages) currentPage = totalPages;
+
+        const nextEl = document.getElementById(`page-${currentPage}`);
+        if (nextEl) {
+            nextEl.classList.add('active');
+            nextEl.scrollTop = 0;
+        }
+
+        // Update Buttons & Indicator
+        document.getElementById('prevBtn').disabled = (currentPage === 1);
+        document.getElementById('nextBtn').disabled = (currentPage === totalPages);
+        document.getElementById('pageIndicator').innerText = pageTitles[currentPage - 1];
+
+        // Trigger MathJax re-render for formulas on page turn
+        if (window.MathJax && MathJax.typesetPromise) {
+            MathJax.typesetPromise();
+        }
+    }
+
+    // Keyboard Arrow Navigation
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'ArrowLeft' && currentPage > 1) {
+            changePage(-1);
+        } else if (e.key === 'ArrowRight' && currentPage < totalPages) {
+            changePage(1);
+        }
+    });
+</script>
+
+</body>
+</html>
