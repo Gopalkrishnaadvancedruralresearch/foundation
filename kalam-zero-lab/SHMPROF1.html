@@ -1,648 +1,2028 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GARRF • KALAM ZERO LAB • PZT Lamb-Wave SHM • Two-Mode Teaching</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GARRF • KALAM ZERO LAB • MULTI-MODE (S0 & A0) LAMB-WAVE SIMULATION MODULE</title>
+    
+    <!-- Three.js and OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <!-- MathJax CDN -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
-<!-- External visual/math libraries. The laboratory remains a single HTML file. -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script>
-window.MathJax = {
-  tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']]},
-  svg:{fontCache:'global'}
-};
-</script>
-<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-
-<style>
-:root{
-  --navy:#0b2545; --blue:#2563eb; --blue2:#134074;
-  --green:#059669; --green-soft:#ecfdf5;
-  --red:#b91c1c; --red-soft:#fef2f2;
-  --amber:#d97706; --amber-soft:#fffbeb;
-  --ink:#0f172a; --muted:#475569; --line:#cbd5e1;
-  --card:#f8fafc; --white:#fff; --cyan:#0891b2;
-  --shadow:0 8px 24px rgba(15,23,42,.08);
-}
-*{box-sizing:border-box;margin:0;padding:0;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
-html{scroll-behavior:smooth}
-body{background:#fff;color:var(--ink);line-height:1.55}
-button,input,select{font:inherit}
-button{cursor:pointer}
-.topbar{
-  background:var(--navy);color:#fff;padding:11px 24px;display:flex;
-  justify-content:space-between;align-items:center;gap:20px;border-bottom:3px solid #00b4d8
-}
-.brand{display:flex;align-items:center;gap:13px;min-width:0}
-.logo{height:46px;width:auto;max-width:130px;background:#fff;border-radius:5px;padding:2px;object-fit:contain}
-.brand h1{font-size:1.06rem;line-height:1.25}
-.brand p{font-size:.75rem;color:#b9c7d8}
-.badge{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
-.badge span:first-child{font-size:.8rem;font-weight:700;color:#e0f2fe}
-.badge span:last-child{font-size:.68rem;color:#fde68a}
-.container{max-width:1200px;margin:18px auto;padding:0 18px;display:flex;flex-direction:column;gap:18px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:22px;position:relative;box-shadow:0 2px 8px rgba(15,23,42,.03)}
-.card h2{font-size:1.12rem;color:var(--blue2);margin-bottom:10px}
-.card h3{font-size:.9rem;color:var(--muted);margin:12px 0 7px}
-.tag{position:absolute;right:17px;top:14px;background:#e2e8f0;color:#475569;padding:2px 8px;border-radius:5px;font-size:.67rem;font-weight:800}
-.theory{font-size:.9rem;color:#334155;display:flex;flex-direction:column;gap:10px}
-.formula{background:#fff;border-left:4px solid var(--blue);padding:11px 15px;border-radius:7px;overflow:auto}
-.note{background:#eff6ff;border-left:4px solid var(--blue);padding:11px 14px;border-radius:7px;color:#1e3a8a;font-size:.84rem}
-.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:13px}
-.group{display:flex;flex-direction:column;gap:5px}
-.group label{font-size:.76rem;color:var(--muted);font-weight:800}
-.group input,.group select,#arjunInput{
-  width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--ink);font-size:.82rem
-}
-.row{display:flex;gap:7px}.row>*{flex:1;min-width:0}
-.disabled{opacity:.42;filter:grayscale(.2);pointer-events:none}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-canvas,#threejs-container{width:100%;height:315px;border:1px solid var(--line);border-radius:9px;background:#0f172a;display:block}
-.small-canvas{height:250px}
-.table-wrap{overflow:auto}
-table{width:100%;border-collapse:collapse;background:#fff;font-size:.78rem;min-width:900px}
-th{background:#e2e8f0;color:#0f172a;text-align:left;font-weight:800}
-th,td{padding:7px 9px;border:1px solid var(--line)}
-tr:nth-child(even) td{background:#f8fafc}
-.action{
-  width:100%;padding:13px 18px;border:2px solid #1d4ed8;border-radius:9px;
-  background:var(--blue);color:#fff;font-weight:800;display:flex;justify-content:space-between;align-items:center
-}
-.action:hover{background:#1d4ed8}
-.action.complete{background:var(--green);border-color:var(--green)}
-.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:999px;font-size:.7rem;font-weight:800}
-.pill.green{background:#dcfce7;color:#166534}.pill.red{background:#fee2e2;color:#991b1b}.pill.blue{background:#dbeafe;color:#1e40af}
-.status-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:10px}
-.status-box{background:#fff;border:1px solid var(--line);border-radius:8px;padding:9px;font-size:.77rem}
-.status-box b{display:block;font-size:.68rem;color:var(--muted);margin-bottom:2px}
-.teaching-banner{
-  border:2px solid #10b981;background:linear-gradient(90deg,#ecfdf5,#eff6ff);
-  border-radius:13px;padding:16px 18px;display:grid;grid-template-columns:1.2fr 1fr;gap:15px
-}
-.teaching-banner h2{color:#065f46;font-size:1.02rem;margin-bottom:4px}
-.mode-card{border-radius:10px;padding:11px 13px;border:1px solid var(--line);background:#fff}
-.mode-card.strict{border-left:5px solid var(--red)}.mode-card.interactive{border-left:5px solid var(--blue)}
-.mode-card b{font-size:.82rem}.mode-card p{font-size:.76rem;color:var(--muted);margin-top:2px}
-.fab{
- position:fixed;right:22px;bottom:22px;z-index:9998;border:0;border-radius:999px;
- background:linear-gradient(135deg,#047857,#10b981);color:#fff;padding:13px 19px;font-weight:800;
- box-shadow:0 8px 25px rgba(16,185,129,.35)
-}
-.teacher{
- position:fixed;right:22px;bottom:22px;width:430px;max-width:calc(100vw - 28px);background:#fff;
- border:2px solid #10b981;border-radius:15px;box-shadow:0 15px 45px rgba(15,23,42,.25);
- z-index:9999;display:none;overflow:hidden
-}
-.teacher-head{background:linear-gradient(135deg,#065f46,#10b981);color:#fff;padding:9px 12px;display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:.82rem;cursor:move}
-.teacher-body{padding:12px;display:flex;flex-direction:column;gap:9px}
-.mode-select{display:grid;grid-template-columns:1fr 1fr;gap:7px;background:#f1f5f9;padding:7px;border:1px solid var(--line);border-radius:8px}
-.mode-btn{border:2px solid transparent;border-radius:7px;padding:8px 5px;font-size:.7rem;font-weight:900}
-.mode-btn.strict{background:#fee2e2;color:#991b1b}.mode-btn.interactive{background:#dbeafe;color:#1e40af}
-.mode-btn.active.strict{background:#b91c1c;color:#fff}.mode-btn.active.interactive{background:#1d4ed8;color:#fff}
-.transcript{background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:10px;font-size:.79rem;min-height:98px;max-height:180px;overflow:auto}
-.teacher-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-.teacher-actions button{border:0;border-radius:6px;padding:7px 3px;background:#10b981;color:#fff;font-size:.68rem;font-weight:800}
-.teacher-actions button:nth-child(3){background:#2563eb}.teacher-actions button:nth-child(4){background:#ef4444}
-.chat{height:190px;overflow:auto;border:1px solid var(--line);border-radius:8px;background:#fff;padding:10px;display:flex;flex-direction:column;gap:8px}
-.msg{padding:8px 10px;border-radius:8px;font-size:.78rem;max-width:92%}.msg.ai{background:#eff6ff;color:#1e40af;border-left:4px solid #2563eb}.msg.you{background:#f1f5f9;align-self:flex-end}
-.chat-row{display:flex;gap:7px}.chat-row button{background:#2563eb;color:#fff;border:0;border-radius:7px;padding:8px 14px;font-weight:800}
-footer{text-align:center;padding:24px 18px;margin-top:20px;background:#f8fafc;border-top:1px solid var(--line);color:var(--muted);font-size:.76rem}
-.help-box{background:#fff;border:1px solid var(--line);border-radius:9px;padding:12px;font-size:.8rem}
-.kpi{font-size:1.05rem;font-weight:900;color:var(--blue2)}
-@media(max-width:850px){.grid2,.teaching-banner{grid-template-columns:1fr}.topbar{flex-direction:column;align-items:flex-start}.badge{align-items:flex-start}.teacher{right:10px;bottom:10px}.fab{right:10px;bottom:10px}.container{padding:0 10px}.card{padding:17px}}
-</style>
+    <style>
+        :root {
+            --garrf-blue: #0b2545;
+            --garrf-accent-blue: #134074;
+            --bg-primary: #ffffff;
+            --bg-card: #f8fafc;
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --accent-green: #10b981;
+            --accent-blue: #2563eb;
+            --accent-amber: #d97706;
+            --accent-red: #ef4444;
+            --border-color: #cbd5e1;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-main);
+            line-height: 1.6;
+            scroll-behavior: smooth;
+        }
+        .garrf-top-bar {
+            background-color: var(--garrf-blue);
+            color: #ffffff;
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid #00b4d8;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .garrf-brand {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .garrf-logo-img {
+            height: 48px;
+            width: 48px;
+            border-radius: 4px;
+            background-color: #ffffff;
+            padding: 2px;
+            object-fit: contain;
+        }
+        .brand-text h1 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: #ffffff;
+        }
+        .brand-text p {
+            font-size: 0.78rem;
+            color: #94a3b8;
+        }
+        .garrf-right-badge {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 2px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 6px 14px;
+            border-radius: 20px;
+        }
+        .badge-text {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #e0f2fe;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+            position: relative;
+            transition: all 0.4s ease;
+        }
+        .card.manohar-highlight {
+            border: 3px solid #10b981;
+            box-shadow: 0 0 25px rgba(16, 185, 129, 0.3);
+            background-color: #f0fdf4;
+            transform: scale(1.005);
+        }
+        .section-tag {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: #e2e8f0;
+            color: #475569;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+        h2 {
+            font-size: 1.15rem;
+            margin-bottom: 14px;
+            color: var(--garrf-accent-blue);
+        }
+        .theory-chapter {
+            font-size: 0.92rem;
+            color: #334155;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .formula-box {
+            background-color: #f1f5f9;
+            border-left: 4px solid var(--accent-blue);
+            padding: 12px 18px;
+            border-radius: 6px;
+            color: #0f172a;
+            font-size: 1rem;
+            margin: 6px 0;
+            overflow-x: auto;
+        }
+        .mode-diagram-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .mode-card {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+        }
+        .mode-card h4 {
+            font-size: 0.88rem;
+            color: var(--garrf-accent-blue);
+            margin-bottom: 8px;
+        }
+        .mode-canvas {
+            width: 100%;
+            height: 140px;
+            background-color: #0f172a;
+            border-radius: 6px;
+        }
+        .visual-note {
+            background-color: #eff6ff;
+            border-left: 4px solid #2563eb;
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-size: 0.88rem;
+            color: #1e3a8a;
+            margin-top: 10px;
+        }
+        .academic-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82rem;
+            margin: 12px 0;
+            background: #ffffff;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+        .academic-table th {
+            background-color: #e2e8f0;
+            color: #0f172a;
+            padding: 8px 10px;
+            text-align: left;
+            font-weight: 700;
+            border: 1px solid var(--border-color);
+        }
+        .academic-table td {
+            padding: 7px 10px;
+            border: 1px solid var(--border-color);
+            color: #334155;
+        }
+        .academic-table tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+            width: 100%;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            width: 100%;
+        }
+        .control-group label {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            font-weight: bold;
+        }
+        .control-group input, .control-group select {
+            padding: 8px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background-color: #ffffff;
+            color: #0f172a;
+            font-size: 0.82rem;
+            width: 100%;
+        }
+        .input-row {
+            display: flex;
+            gap: 8px;
+            width: 100%;
+        }
+        .input-row input {
+            flex: 1;
+            width: 50%;
+            min-width: 0;
+        }
+        .disabled-group {
+            opacity: 0.4;
+            pointer-events: none;
+        }
+        .grid-2col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 850px) {
+            .grid-2col, .mode-diagram-grid { grid-template-columns: 1fr; }
+            .garrf-top-bar { flex-direction: column; align-items: flex-start; gap: 10px; }
+        }
+        canvas, #threejs-container {
+            width: 100%;
+            height: 320px;
+            background-color: #0f172a;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            position: relative;
+        }
+        .btn-bar {
+            width: 100%;
+            padding: 14px 20px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .btn-record-active {
+            background-color: #2563eb;
+            color: #ffffff;
+            border-color: #1d4ed8;
+        }
+        .btn-record-active:hover {
+            background-color: #1d4ed8;
+        }
+        .btn-secondary {
+            background-color: #475569;
+            color: #ffffff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.82rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-secondary:hover {
+            background-color: #334155;
+        }
+        .call-fab {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            color: white;
+            border: none;
+            padding: 14px 22px;
+            border-radius: 50px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+            cursor: pointer;
+            z-index: 9998;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .chamundi-dialogue-overlay {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            width: 420px;
+            background: #ffffff;
+            border: 2px solid #10b981;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.25);
+            z-index: 9999;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .chamundi-header {
+            background: linear-gradient(135deg, #065f46 0%, #10b981 100%);
+            color: white;
+            padding: 10px 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 700;
+            font-size: 0.88rem;
+            cursor: move;
+            user-select: none;
+        }
+        .chamundi-body {
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .mode-selection-panel {
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 8px;
+            display: flex;
+            gap: 8px;
+        }
+        .mode-btn {
+            flex: 1;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        .mode-btn.strict { background: #fee2e2; color: #991b1b; }
+        .mode-btn.interactive { background: #dbeafe; color: #1e40af; }
+        .mode-btn.active-strict { background: #b91c1c; color: #fff; }
+        .mode-btn.active-interactive { background: #1d4ed8; color: #fff; }
+        .chamundi-msg {
+            font-size: 0.85rem;
+            color: #065f46;
+            line-height: 1.45;
+            max-height: 140px;
+            overflow-y: auto;
+        }
+        .chamundi-actions {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+        }
+        .chamundi-btn {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 6px 4px;
+            border-radius: 6px;
+            font-size: 0.72rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .chat-box {
+            background-color: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            height: 180px;
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .chat-msg {
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            max-width: 90%;
+        }
+        .msg-arjun {
+            background-color: #eff6ff;
+            color: #1e40af;
+            align-self: flex-start;
+            border-left: 4px solid #2563eb;
+        }
+        .msg-user {
+            background-color: #f1f5f9;
+            color: #0f172a;
+            align-self: flex-end;
+        }
+        footer {
+            text-align: center;
+            padding: 24px 20px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border-color);
+            margin-top: 30px;
+            background-color: #f8fafc;
+            margin-bottom: 90px;
+        }
+    </style>
 </head>
-
 <body>
 
-<header class="topbar">
-  <div class="brand">
-    <img class="logo" src="logo.jpeg" alt="GARRF Logo" onerror="this.style.display='none'">
-    <div>
-      <h1>GopalKrishna Advanced Rural Research Foundation</h1>
-      <p>🇮🇳 Kalam Zero Lab • Advanced Postgraduate Laboratory: PZT Lamb-Wave Structural Health Monitoring</p>
+<div class="garrf-top-bar">
+    <div class="garrf-brand">
+        <img class="garrf-logo-img" src="logo.jpeg" alt="GARRF Logo">
+        <div class="brand-text">
+            <h1>GopalKrishna Advanced Rural Research Foundation</h1>
+            <p>Kalam Zero Lab • Postgraduate Simulation Module: Dual-Mode Lamb Wave SHM</p>
+        </div>
     </div>
-  </div>
-  <div class="badge">
-    <span>Guided Lamb Waves in SHM</span>
-    <span>Two-Mode Teaching • M.E./M.Tech Research Training</span>
-  </div>
-</header>
-
-<button class="fab" id="callManoharBtn" onclick="callManoharTeacher()">📞 Call Prof. Manohar</button>
-
-<div class="teacher" id="teacherBox">
-  <div class="teacher-head" id="teacherHead">
-    <span>📞 PROF. MANOHAR • TWO-WAY AI TEACHER</span>
-    <button onclick="hangUp()" style="background:transparent;border:0;color:#fff;font-size:1.1rem">×</button>
-  </div>
-  <div class="teacher-body">
-    <div class="mode-select">
-      <button id="strictBtn" class="mode-btn strict active strict" onclick="setMode('strict')">🔴 STRICT PROFESSOR</button>
-      <button id="interactiveBtn" class="mode-btn interactive" onclick="setMode('interactive')">🔵 INTERACTIVE PROFESSOR</button>
+    <div class="garrf-right-badge">
+        <span class="badge-text">Multimodal (S0 & A0) Lamb Waves in SHM</span>
+        <span style="font-size: 0.7rem; color: #38bdf8; font-weight: bold;">M.E./M.Tech Numerical Simulation • Educational Prototype</span>
     </div>
-    <div class="transcript" id="teacherTranscript">
-      <b>Prof. Manohar:</b> Welcome. Select your teaching style. Strict mode protects the experimental sequence; Interactive mode teaches through questions, hints and discussion.
-    </div>
-    <div class="teacher-actions">
-      <button onclick="repeatTeacher()">🔄 REPEAT</button>
-      <button onclick="nextTeacher()">▶ NEXT</button>
-      <button onclick="resumeTeacher()">🔊 RESUME</button>
-      <button onclick="muteTeacher()">⏹ MUTE</button>
-    </div>
-  </div>
 </div>
 
-<main class="container">
+<button id="callManoharBtn" class="call-fab" onclick="callManoharTeacher()">
+    <span style="font-size: 1.2rem;">📞</span>
+    <span>Call Prof. Manohar, AI Teacher</span>
+</button>
 
-<section class="teaching-banner">
-  <div>
-    <h2>🎓 TWO-WAY TEACHING MODULE</h2>
-    <p style="font-size:.82rem;color:#334155">
-      The same laboratory supports two different student behaviours without changing the scientific experiment.
-      Prof. Manohar adapts the teaching interaction while the student remains responsible for the experimental result.
-    </p>
-  </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-    <div class="mode-card strict"><b>🔴 STRICT PROFESSOR</b><p>Protocol-first • prerequisite checks • no shortcutting • challenges unsupported conclusions.</p></div>
-    <div class="mode-card interactive"><b>🔵 INTERACTIVE PROFESSOR</b><p>Question-led • hints • explanations • encourages exploration and interpretation.</p></div>
-  </div>
-</section>
-
-<section id="section-1" class="card">
-  <span class="tag">SECTION 1</span>
-  <h2>1. Theory & Mathematical Foundations</h2>
-  <div class="theory">
-    <p><strong>Guided Stress Waves in Bounded Elastic Media:</strong><br>
-      Guided waves represent traction-free boundary-condition solutions to elastodynamic Navier equations within plate geometries.
-      Surface-bonded Lead Zirconate Titanate ($PZT$) transducers actuate ultrasonic Lamb modes through localized dynamic surface tractions.
-    </p>
-    <h3>1.1 Rayleigh–Lamb Characteristic Equations</h3>
-    <p>For an isotropic elastic plate of total thickness $d=2h$, density $\rho$, and Lamé parameters $\lambda,\mu$:</p>
-    <div class="formula">$$\text{Symmetric Mode }(S):\quad \frac{\tan(qh)}{\tan(ph)}
-      =-\frac{4k^2pq}{(k^2-q^2)^2}$$</div>
-    <div class="formula">$$\text{Antisymmetric Mode }(A):\quad \frac{\tan(qh)}{\tan(ph)}
-      =-\frac{(k^2-q^2)^2}{4k^2pq}$$</div>
-    <p>where $p^2=\frac{\omega^2}{c_L^2}-k^2$, $q^2=\frac{\omega^2}{c_T^2}-k^2$,
-      $c_L=\sqrt{(\lambda+2\mu)/\rho}$ and $c_T=\sqrt{\mu/\rho}$.</p>
-    <div class="note">💡 <strong>Arrival physics:</strong>
-      phase velocity $c_p$ describes phase-front propagation. For a narrowband packet, envelope/energy arrival is primarily associated with group velocity $c_g$.
-      In real measurements, packet picking also depends on bandwidth, mode content, thresholding and signal processing.
+<div id="manoharDialogueBox" class="chamundi-dialogue-overlay">
+    <div id="manoharHeader" class="chamundi-header">
+        <span id="manoharSectionBadge" style="margin-left:10px;font-size:0.72rem;padding:4px 8px;border-radius:10px;background:#e2e8f0;color:#334155;font-weight:700;">STRICT • Section 1 — Theory</span>
+        <div style="display:flex; align-items:center; gap:6px;">
+            <span>📞</span>
+            <span>PROF. MANOHAR (Guided Teaching Assistant) [Drag Header]</span>
+        </div>
+        <div>
+            <button onclick="hangUpManoharCall()" style="background:transparent; border:none; color:white; font-size:1rem; cursor:pointer;">×</button>
+        </div>
     </div>
-  </div>
-</section>
+    <div id="chamundiBodyContent" class="chamundi-body">
+        <div class="mode-selection-panel">
+            <button id="btnModeStrict" class="mode-btn strict active-strict" onclick="setManoharMode('strict')">
+                🔴 STRICT PROFESSOR — GUIDED SCRIPT
+            </button>
+            <button id="btnModeInteractive" class="mode-btn interactive" onclick="setManoharMode('interactive')">
+                🔵 INTERACTIVE PROFESSOR — DISCUSSION SCRIPT
+            </button>
+        </div>
 
-<section id="section-2" class="card">
-  <span class="tag">SECTION 2</span>
-  <h2>2. Computational Dispersion-Curve Experiment</h2>
-  <p style="font-size:.84rem;color:var(--muted);margin-bottom:10px">
-    Use this section to establish the operating point before A-scan interpretation. The browser model provides an educational approximation;
-    research claims should be validated against a numerical Rayleigh–Lamb solver or experimental data.
-  </p>
-  <div class="controls">
-    <div class="group"><label>Plate Material</label>
-      <select id="matSelect" onchange="updateDispersion()">
-        <option value="al">Aluminum 6061-T6 (cL=6320, cT=3130 m/s)</option>
-        <option value="steel">Structural Steel (cL=5940, cT=3200 m/s)</option>
-        <option value="ti">Titanium Ti-6Al-4V (cL=6070, cT=3125 m/s)</option>
-      </select>
+        <div id="manoharLiveTranscript" class="chamundi-msg">
+            <strong>Prof. Manohar:</strong> Welcome to the Lamb wave simulation module. We will proceed in sequence: theory first, dispersion second, then the actuator and sensor/PZT arrangement, followed by A-scan measurement, SHM analysis and inverse localization. No sensor question will be asked before the sensor arrangement is introduced.
+        </div>
+        <div class="chamundi-actions">
+            <button class="chamundi-btn" onclick="repeatManoharSpeech()">🔄 REPEAT</button>
+            <button class="chamundi-btn" onclick="continueManoharSpeech()">▶ NEXT</button>
+            <button class="chamundi-btn" onclick="resumeManoharSession()" style="background:#2563eb;">🔊 RESUME</button>
+            <button class="chamundi-btn" onclick="stopManoharSpeech()" style="background:#ef4444;">⏹ MUTE</button>
+        </div>
     </div>
-    <div class="group"><label>Plate Thickness d (mm)</label><input id="plateThick" type="number" value="2" min=".5" max="10" step=".5" onchange="updateDispersion()"></div>
-    <div class="group"><label>Center Frequency f (kHz)</label><input id="actFreq" type="number" value="150" min="20" max="1000" step="10" onchange="updateDispersion()"></div>
-    <div class="group"><label>Teaching Check</label><select id="dispCheck"><option>Identify S0 group velocity</option><option>Identify A0 group velocity</option><option>Explain f·d</option></select></div>
-  </div>
-  <canvas id="dispersionCanvas" class="small-canvas" width="1000" height="250"></canvas>
-  <div class="formula" id="dispersionOutput" style="margin-top:10px">Calculating...</div>
-</section>
+</div>
 
-<section id="section-3" class="card">
-  <span class="tag">SECTION 3</span>
-  <h2>3. Specimen, Multi-Sensor Array & Flaw Controls</h2>
-  <div class="controls">
-    <div class="group"><label>Plate Dimensions L × W (mm)</label><div class="row"><input id="plateL" type="number" value="500"><input id="plateW" type="number" value="300"></div></div>
-    <div class="group"><label>Actuator A (X,Y) mm</label><div class="row"><input id="actX" type="number" value="80"><input id="actY" type="number" value="150"></div></div>
-    <div class="group"><label>Primary Sensor S1 (X,Y) mm</label><div class="row"><input id="senX" type="number" value="420"><input id="senY" type="number" value="150"></div></div>
-    <div class="group"><label>Discontinuity / Damage State</label>
-      <select id="damageType" onchange="toggleDamage(); redraw()">
-        <option value="No Damage">No Damage — Healthy Baseline</option>
-        <option value="Surface Crack" selected>Surface Crack</option>
-        <option value="Corrosion Pit">Corrosion Pit</option>
-      </select>
+<div class="container">
+
+    <!-- SECTION 1: THEORY -->
+    <div id="section-1" class="card manohar-highlight">
+        <span class="section-tag">SECTION 1</span>
+        <h2>1. Theoretical Foundations & Model Classification</h2>
+        
+        <div class="theory-chapter">
+            <p>
+                <strong>Guided Stress Waves in Bounded Plates:</strong><br>
+                Guided waves satisfy traction-free boundary conditions for elastodynamic Navier equations across plate geometries. In this module, the fundamental symmetric and antisymmetric Lamb-wave modes are first studied theoretically; the actuator and sensor/PZT arrangement is introduced later in the specimen setup section.
+            </p>
+            
+            <h3>1.1 Rayleigh-Lamb Characteristic Equations</h3>
+            <p>
+                For an isotropic elastic plate of total thickness $d$ (half-thickness $h = d/2$), density $\rho$, and bulk wave speeds $c_L, c_T$, the characteristic relations are:
+            </p>
+            <div class="formula-box">
+                $$\text{Symmetric Mode }(S): \quad \frac{\tan(qh)}{\tan(ph)} + \frac{4k^2 pq}{(k^2 - q^2)^2} = 0$$
+            </div>
+            <div class="formula-box">
+                $$\text{Antisymmetric Mode }(A): \quad \frac{\tan(qh)}{\tan(ph)} + \frac{(k^2 - q^2)^2}{4k^2 pq} = 0$$
+            </div>
+            <p>
+                where $p^2 = \frac{\omega^2}{c_L^2} - k^2$ and $q^2 = \frac{\omega^2}{c_T^2} - k^2$. Phase velocity is defined as $c_p = \frac{\omega}{k}$, and wavepacket envelope propagation follows the group velocity $c_g = \frac{d\omega}{dk}$.
+            </p>
+
+            <div class="mode-diagram-grid">
+                <div class="mode-card">
+                    <h4>Symmetric ($S_0$) Extensional Mode</h4>
+                    <canvas id="s0Canvas" class="mode-canvas" width="400" height="140"></canvas>
+                    <p style="font-size:0.75rem; color:#475569; margin-top:6px;">In-plane displacement dominant; faster propagation velocity; symmetric about neutral plane $y=0$.</p>
+                </div>
+                <div class="mode-card">
+                    <h4>Antisymmetric ($A_0$) Flexural Mode</h4>
+                    <canvas id="a0Canvas" class="mode-canvas" width="400" height="140"></canvas>
+                    <p style="font-size:0.75rem; color:#475569; margin-top:6px;">Out-of-plane bending dominant; slower, dispersive velocity; sensitive to surface-breaking defects.</p>
+                </div>
+            </div>
+
+            <div class="visual-note">
+                💡 <strong>M.E./M.Tech Model-Fidelity Notice:</strong><br>
+                This module is designed for classroom study and simulation of SHM principles. The dispersion engine numerically evaluates the fundamental Rayleigh–Lamb S0/A0 characteristic relations for an isotropic plate. A-scan damage echoes remain a synthetic instructional scattering model; they are not experimentally calibrated fracture mechanics or FEM results.
+            </div>
+        </div>
     </div>
-    <div class="group" id="damagePos"><label>Flaw Position D (X,Y) mm</label><div class="row"><input id="defX" type="number" value="250"><input id="defY" type="number" value="150"></div></div>
-    <div class="group" id="damageGeom"><label>Crack Length Lc / Angle θc</label><div class="row"><input id="crackLength" type="number" value="25" min="2" max="100"><input id="crackAngle" type="number" value="45" min="0" max="180"></div></div>
-  </div>
-  <div class="status-grid">
-    <div class="status-box"><b>STUDENT RULE</b><span id="damageRule">Damage parameters are active.</span></div>
-    <div class="status-box"><b>SENSORS</b>A → S1, S2, S3</div>
-    <div class="status-box"><b>BASELINE</b>Required first in Strict mode</div>
-  </div>
-</section>
 
-<section id="section-4" class="card">
-  <span class="tag">SECTION 4</span>
-  <h2>4. Virtual A-Scan Oscilloscope & Digital Signal Processing</h2>
-  <p style="font-size:.84rem;color:var(--muted);margin-bottom:8px">
-    This is a simulated browser-generated A-scan, not a live oscilloscope. It is intended for learning signal acquisition, arrival picking,
-    filtering, baseline subtraction and envelope interpretation.
-  </p>
-  <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:8px">
-    <button class="pill blue" onclick="toggleDSP('filter')">Bandpass 100–200 kHz</button>
-    <button class="pill green" onclick="toggleDSP('envelope')">Envelope</button>
-    <button class="pill" style="background:#fef3c7;color:#92400e" onclick="toggleDSP('baseline')">Baseline Subtraction</button>
-    <span id="dspStatus" class="pill" style="background:#f1f5f9;color:#475569">Raw RF Waveform</span>
-  </div>
-  <canvas id="ascanCanvas" width="1000" height="250"></canvas>
-  <div class="status-grid">
-    <div class="status-box"><b>CURSOR TIME</b><span id="curTime">0.00</span> μs</div>
-    <div class="status-box"><b>SIMULATED DIRECT ToF</b><span id="valDirect">0.00</span> μs</div>
-    <div class="status-box"><b>SIMULATED SCATTER ToF</b><span id="valScatter">—</span></div>
-    <div class="status-box"><b>SNR</b><span id="valSNR">—</span> dB</div>
-    <div class="status-box"><b>DAMAGE INDEX</b><span id="valDI">0.000</span></div>
-  </div>
-</section>
+    <!-- SECTION 2: DISPERSION-CURVE EXPERIMENT -->
+    <div id="section-2" class="card">
+        <span class="section-tag">SECTION 2</span>
+        <h2>2. Rayleigh–Lamb Numerical Dispersion Solver & Operating Mode Selection</h2>
+        <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 12px;">
+            Select material, plate thickness, and center frequency to calculate frequency-thickness ($f \cdot d$) and evaluate mode velocities.
+        </p>
+        
+        <div class="controls-grid">
+            <div class="control-group">
+                <label>Plate Material:</label>
+                <select id="matSelect" onchange="updateDispersionCalc()">
+                    <option value="al" selected>Aluminum 6061-T6 (cL=6320 m/s, cT=3130 m/s, ρ=2700 kg/m³)</option>
+                    <option value="steel">Structural Steel (cL=5940 m/s, cT=3200 m/s, ρ=7850 kg/m³)</option>
+                    <option value="titanium">Titanium Ti-6Al-4V (cL=6070 m/s, cT=3125 m/s, ρ=4430 kg/m³)</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label>Plate Thickness $d$ (mm):</label>
+                <input type="number" id="plateThick" value="2.0" step="0.5" min="0.5" max="10" onchange="updateDispersionCalc()">
+            </div>
+            <div class="control-group">
+                <label>Actuation Center Frequency $f$ (kHz):</label>
+                <input type="number" id="actFreq" value="150" step="10" min="20" max="1000" onchange="updateDispersionCalc()">
+            </div>
+            <div class="control-group">
+                <label>Tone Burst Cycles ($N$):</label>
+                <input type="number" id="toneCycles" value="5" min="3" max="12" onchange="redrawAll()">
+            </div>
+            <div class="control-group">
+                <label>Measurement Noise / SNR (dB):</label>
+                <input type="number" id="snrDb" value="30" min="10" max="60" step="1" onchange="redrawAll()">
+            </div>
+            <div class="control-group">
+                <label>Solver Model:</label>
+                <select id="solverMode" onchange="updateDispersionCalc()">
+                    <option value="exact" selected>Rayleigh–Lamb numerical roots</option>
+                    <option value="fallback">Approximate engineering model</option>
+                </select>
+            </div>
+        </div>
 
-<section id="section-5" class="card">
-  <span class="tag">SECTION 5</span>
-  <h2>5. 2D Wave Propagation, Multi-Path Localization & Five-Trial Protocol</h2>
-  <div class="grid2">
-    <div><h3>2D Wavefronts & Localization Loci</h3><canvas id="waveCanvas" width="600" height="340"></canvas></div>
-    <div><h3>Qualitative 3D Dynamic Wavefield</h3><div id="threejs-container"></div></div>
-  </div>
+        <div style="margin-top: 15px;">
+            <canvas id="dispersionCanvas" width="900" height="260" style="height: 260px;"></canvas>
+        </div>
 
-  <div style="margin-top:13px">
-    <button id="recordBtn" class="action" onclick="recordTrial()">
-      <span>📸 ACQUIRE SIMULATED DATA POINT</span><span id="recordBadge" style="background:#fff;color:#2563eb;padding:3px 8px;border-radius:5px">TRIAL 1 / 5</span>
-    </button>
-  </div>
-
-  <h3>Controlled Five-Trial Protocol</h3>
-  <div class="table-wrap">
-  <table>
-    <thead><tr><th>Trial</th><th>Objective</th><th>Configuration Protocol</th></tr></thead>
-    <tbody>
-      <tr><td><b>1</b></td><td>Healthy Baseline Reference</td><td>Set No Damage. Establish the reference signature before damage comparison.</td></tr>
-      <tr><td><b>2</b></td><td>Flaw Spatial Location</td><td>Introduce a flaw near (250,150) mm and inspect the scattered arrival.</td></tr>
-      <tr><td><b>3</b></td><td>Flaw Severity & Aperture</td><td>Increase crack length while keeping position and angle controlled.</td></tr>
-      <tr><td><b>4</b></td><td>Scattering Directivity</td><td>Change crack orientation and examine the echo response.</td></tr>
-      <tr><td><b>5</b></td><td>Multi-Path Inverse Localization</td><td>Use three actuator-sensor paths to reduce spatial ambiguity.</td></tr>
-    </tbody>
-  </table>
-  </div>
-
-  <h3>Master Observation & Quantitative Error Matrix</h3>
-  <div class="table-wrap">
-  <table style="min-width:1100px">
-    <thead><tr><th>#</th><th>Condition</th><th>Flaw (X,Y)</th><th>Theo ToF</th><th>Measured ToF</th><th>Abs Error</th><th>ToF Err%</th><th>Measured cg</th><th>Velocity Err%</th><th>Measured Scatter</th><th>ΔToF</th><th>Localization Error</th></tr></thead>
-    <tbody id="matrixBody"><tr><td colspan="12" style="text-align:center;color:#94a3b8">No data recorded yet. In Strict mode, Trial 1 must establish the healthy baseline.</td></tr></tbody>
-  </table>
-  </div>
-</section>
-
-<section id="section-6" class="card">
-  <span class="tag">SECTION 6</span>
-  <h2>6. Inverse Problem Formulation & ARJUN Assistant</h2>
-  <div class="theory">
-    <p><strong>Inverse Kinematic Formulation:</strong><br>
-      A single pitch-catch pair constrains damage location to an ellipse with actuator and sensor as foci.</p>
-    <div class="formula">$$\frac{(x-x_0)^2}{a^2}+\frac{(y-y_0)^2}{b^2}=1,
-      \qquad 2a=d_{\mathrm{scatter}}=c_g\,ToF_{\mathrm{scatter}}$$</div>
-    <p>Multiple independent, non-collinear paths reduce spatial ambiguity. The estimated point should be reported separately from the known simulated damage coordinate.</p>
-    <div class="note"><strong>Academic honesty:</strong> all measurements in this browser laboratory are simulated. They are not substitutes for experimental PZT/DAQ measurements or validated FEM results.</div>
-  </div>
-
-  <div class="chat" id="arjunChat">
-    <div class="msg ai"><b>🤖 ARJUN:</b> I am the local laboratory assistant. Ask me about f·d, phase/group velocity, ToF, envelope processing, baseline subtraction, error, or multi-path localization.</div>
-  </div>
-  <div class="chat-row">
-    <input id="arjunInput" placeholder="Ask ARJUN: Why is group velocity used for packet arrival?" onkeydown="if(event.key==='Enter')sendArjun()">
-    <button onclick="sendArjun()">Send</button>
-  </div>
-</section>
-
-<section class="card">
-  <span class="tag">STUDENT GUIDE</span>
-  <h2>7. Two-Way Teaching: How Each Mode Works</h2>
-  <div class="grid2">
-    <div class="mode-card strict">
-      <b>🔴 STRICT PROFESSOR — for disciplined/protocol-driven students</b>
-      <p style="margin-top:6px">
-        Prof. Manohar checks the sequence. Trial 1 must be Healthy. He asks the student to justify dispersion, ToF and velocity errors,
-        discourages unsupported conclusions, and requires completion of the protocol before declaring the experiment complete.
-      </p>
+        <div id="dispersionOutputBox" class="formula-box" style="margin-top: 10px; font-size: 0.88rem;">
+            Computing dispersion parameters...
+        </div>
     </div>
-    <div class="mode-card interactive">
-      <b>🔵 INTERACTIVE PROFESSOR — for exploratory/concept-driven students</b>
-      <p style="margin-top:6px">
-        Prof. Manohar uses questions, hints and explanations. Students may explore parameters, compare damage conditions,
-        repeat observations and discuss why the waveform or localization changes.
-      </p>
-    </div>
-  </div>
-  <div class="help-box" style="margin-top:10px">
-    <b>Recommended learning sequence:</b>
-    Theory → dispersion operating point → healthy baseline → damage introduction → A-scan/DSP → ToF → group velocity → multi-path localization → error analysis → conclusion.
-  </div>
-</section>
 
-</main>
+    <!-- SECTION 3: SPECIMEN & DAMAGE CONTROLS -->
+    <div id="section-3" class="card">
+        <span class="section-tag">SECTION 3</span>
+        <h2>3. Specimen Geometry, Transducer Array & Flaw Parameters</h2>
+
+        <div class="visual-note" style="margin-bottom:14px;">
+            <strong>3.1 Actuator & Sensor Introduction — Read This First</strong><br>
+            The specimen now introduces the physical measurement arrangement used in this SHM simulation.
+            A surface-bonded piezoelectric wafer (PZT) is used as an <strong>actuator</strong> to launch guided Lamb waves,
+            while receiving PZT elements are used as <strong>sensors</strong> to detect the propagating wave packet and
+            damage-scattered response. The actuator and sensors are placed at defined coordinates on the plate.
+            Only after understanding this arrangement should you change the coordinates or investigate damage.
+        </div>
+
+        <table class="academic-table" style="margin-bottom:15px;">
+            <thead>
+                <tr>
+                    <th>Element</th>
+                    <th>Role in this simulation</th>
+                    <th>What the student observes</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Actuator A</strong></td>
+                    <td>Excites the guided Lamb-wave packet</td>
+                    <td>Launch point of S0 and A0 propagation</td>
+                </tr>
+                <tr>
+                    <td><strong>Sensor S1</strong></td>
+                    <td>Primary receiving transducer</td>
+                    <td>Direct arrivals and damage-scattered response</td>
+                </tr>
+                <tr>
+                    <td><strong>Sensors S2 & S3</strong></td>
+                    <td>Additional receiving paths for localization</td>
+                    <td>Multiple path measurements used by the inverse solver</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="visual-note" style="margin-bottom:14px;">
+            <strong>Teaching sequence:</strong> First understand A, S1, S2 and S3 and their roles.
+            Then inspect the geometry. Only then introduce or modify the flaw parameters.
+        </div>
+
+        <div class="controls-grid">
+            <div class="control-group">
+                <label>Plate Dimensions $L \times W$ (mm):</label>
+                <div class="input-row">
+                    <input type="number" id="plateL" value="500" min="200" max="1000" onchange="redrawAll()">
+                    <input type="number" id="plateW" value="300" min="150" max="600" onchange="redrawAll()">
+                </div>
+            </div>
+            <div class="control-group">
+                <label>Actuator $A(X_A, Y_A)$ (mm):</label>
+                <div class="input-row">
+                    <input type="number" id="actX" value="80" onchange="redrawAll()">
+                    <input type="number" id="actY" value="150" onchange="redrawAll()">
+                </div>
+            </div>
+            <div class="control-group">
+                <label>Primary Sensor $S_1(X_{S1}, Y_{S1})$ (mm):</label>
+                <div class="input-row">
+                    <input type="number" id="senX" value="420" onchange="redrawAll()">
+                    <input type="number" id="senY" value="150" onchange="redrawAll()">
+                </div>
+            </div>
+            <div class="control-group">
+                <label>Discontinuity / Damage State:</label>
+                <select id="damageType" onchange="toggleDamageControls(); redrawAll();">
+                    <option value="No Damage">No Damage (Baseline Reference)</option>
+                    <option value="Surface Crack" selected>Surface Crack</option>
+                    <option value="Corrosion Pit">Corrosion Pit</option>
+                </select>
+            </div>
+            <div class="control-group" id="groupDefPos">
+                <label>Nominal Flaw Position $D(X_D, Y_D)$ (mm):</label>
+                <div class="input-row">
+                    <input type="number" id="defX" value="250" min="10" max="490" oninput="redrawAll()">
+                    <input type="number" id="defY" value="150" min="10" max="290" oninput="redrawAll()">
+                </div>
+            </div>
+            <div class="control-group" id="groupDefGeom">
+                <label>Crack Length $L_c$ (mm) / Angle $\theta_c$ (°):</label>
+                <div class="input-row">
+                    <input type="number" id="crackLength" value="25" min="2" max="100" oninput="redrawAll()">
+                    <input type="number" id="crackAngle" value="45" min="0" max="180" oninput="redrawAll()">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 4: REAL A-SCAN & DUAL-MODE OSCILLOSCOPE -->
+    <div id="section-4" class="card">
+        <span class="section-tag">SECTION 4</span>
+        <h2>4. A-Scan Oscilloscope, Tone-Burst Signal Processing & Measurement Study</h2>
+        <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 8px;">
+            Dual-mode A-scan synthesized via Hanning-windowed sinusoidal wavepackets. Track $S_0$ and $A_0$ arrivals, Hilbert envelope, and baseline subtraction.
+        </p>
+
+        <div style="display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
+            <button class="chamundi-btn" onclick="toggleFilter()" style="padding:6px 12px; background:#2563eb;">Toggle Bandpass Filter</button>
+            <button class="chamundi-btn" onclick="toggleEnvelope()" style="padding:6px 12px; background:#059669;">Toggle Envelope Detector</button>
+            <button class="chamundi-btn" onclick="toggleBaselineSub()" style="padding:6px 12px; background:#d97706;">Baseline Subtraction</button>
+            <span id="dspStatus" style="font-size:0.8rem; color:#475569; align-self:center;">Mode: Raw Synthesized Waveform</span>
+        </div>
+
+        <canvas id="ascanCanvas" width="900" height="230" style="height: 230px;"></canvas>
+
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap:10px; margin-top:10px; font-size:0.8rem; background:#ffffff; padding:10px; border-radius:6px; border:1px solid #cbd5e1;">
+            <div><strong>Cursor Time:</strong> <span id="curTime">0.00</span> $\mu\text{s}$</div>
+            <div><strong>Direct $S_0$ Arrival ($ToF_{d}^{S0}$):</strong> <span id="valDirectS0" style="color:#2563eb; font-weight:bold;">0.00</span> $\mu\text{s}$</div>
+            <div><strong>Direct $A_0$ Arrival ($ToF_{d}^{A0}$):</strong> <span id="valDirectA0" style="color:#d97706; font-weight:bold;">0.00</span> $\mu\text{s}$</div>
+            <div><strong>Scattered $S_0$ Echo ($ToF_s$):</strong> <span id="valScatterToF">—</span></div>
+            <div><strong>Signal-to-Noise Ratio (SNR):</strong> <span id="valSNR">31.2</span> dB</div>
+            <div><strong>Damage Index (DI):</strong> <span id="valDI">0.000</span></div>
+            <div><strong>Model:</strong> <span id="valModel">Rayleigh–Lamb numerical roots</span></div>
+        </div>
+    </div>
+
+    <!-- SECTION 5: WAVE FIELD & LOCALIZATION -->
+    <div id="section-5" class="card">
+        <span class="section-tag">SECTION 5</span>
+        <h2>5. 2D Dual Wavefront Propagation, Noise Study & Non-Linear Inverse Localization</h2>
+        <div class="grid-2col">
+            <div>
+                <h3 style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 5px;">2D Normalized Wavefronts & Multi-Path Ellipses</h3>
+                <canvas id="waveCanvas" width="500" height="320"></canvas>
+            </div>
+            <div>
+                <h3 style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 5px;">3D Dynamic Strain Wavefield</h3>
+                <div id="threejs-container"></div>
+            </div>
+        </div>
+        
+        <div style="margin-top: 15px; display:flex; gap:12px; flex-wrap:wrap;">
+            <button id="btnRecord" class="btn-bar btn-record-active" style="flex:2; min-width:280px;" onclick="recordExperimentalData()">
+                <span>📸 RECORD SIMULATION DATA POINT (5 Trials Maximum)</span>
+                <span id="badgeRecord" style="font-size: 0.75rem; background: #ffffff; color: #2563eb; padding: 3px 8px; border-radius: 4px;">RECORD TRIAL 1 / 5</span>
+            </button>
+            <button class="btn-secondary" onclick="exportTrialsCSV()">📥 EXPORT CSV</button>
+            <button class="btn-secondary" onclick="resetAllTrials()">🔄 RESET TRIALS</button>
+        </div>
+
+        <h3 style="font-size: 0.88rem; color: var(--text-muted); margin-top: 15px;">Controlled 5-Trial Protocol Reference:</h3>
+        <div class="visual-note" style="margin-bottom:10px;">
+            <strong>Recommended sequence:</strong> Trial 1 = healthy baseline → Trial 2 = location → Trial 3 = severity → Trial 4 = angle → Trial 5 = inverse localization. The interface records five states; the instructor may repeat the protocol after resetting.
+        </div>
+        <table class="academic-table">
+            <thead>
+                <tr>
+                    <th>Trial</th>
+                    <th>Objective Under Investigation</th>
+                    <th>Configuration Protocol</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Trial 1</strong></td>
+                    <td>Healthy Baseline Dual-Mode Reference</td>
+                    <td>Set Damage State to "No Damage". Calibrate pristine baseline.</td>
+                </tr>
+                <tr>
+                    <td><strong>Trial 2</strong></td>
+                    <td>Flaw Spatial Location</td>
+                    <td>Introduce crack at $(250, 150)$ mm. Inspect scattered arrival and single-path ellipse.</td>
+                </tr>
+                <tr>
+                    <td><strong>Trial 3</strong></td>
+                    <td>Flaw Severity & Aperture</td>
+                    <td>Increase crack length $L_c$ from $15 \to 40\text{ mm}$ at constant angle.</td>
+                </tr>
+                <tr>
+                    <td><strong>Trial 4</strong></td>
+                    <td>Scattering Directivity & Angle</td>
+                    <td>Vary crack angle $\theta_c$ from $0^\circ \to 90^\circ$ relative to actuator ray.</td>
+                </tr>
+                <tr>
+                    <td><strong>Trial 5</strong></td>
+                    <td>Multi-Path Inverse Localization</td>
+                    <td>Execute bounded least-squares solver to reconstruct $(X^*, Y^*)$ and localization error.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- MASTER OBSERVATION MATRIX -->
+        <h3 style="font-size: 0.88rem; color: var(--text-muted); margin-top: 15px;">Dual-Mode ($S_0$ & $A_0$) Simulation Observation & Inverse Solver Matrix:</h3>
+        <table class="academic-table" id="observationMatrixTable">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Condition</th>
+                    <th>Flaw $(X, Y)$</th>
+                    <th>Theo $ToF_d^{S0}$</th>
+                    <th>Obs $ToF_d^{S0}$</th>
+                    <th>$c_g^{S0}$ (m/s)</th>
+                    <th>Theo $ToF_d^{A0}$</th>
+                    <th>Obs $ToF_d^{A0}$</th>
+                    <th>$c_g^{A0}$ (m/s)</th>
+                    <th>Obs $ToF_s$</th>
+                    <th>$\Delta ToF^{S0}$</th>
+                    <th>Reconstructed $(X^*, Y^*)$</th>
+                    <th>Loc. Residual (mm)</th><th>S0 ToF Error (%)</th>
+                </tr>
+            </thead>
+            <tbody id="matrixTableBody">
+                <tr><td colspan="14" style="text-align: center; color: #94a3b8;">No simulation trial recorded yet. Execute Trial 1 to populate baseline.</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- SECTION 6: INVERSE PROBLEM & ARJUN -->
+    <div id="section-6" class="card" style="border-top: 4px solid var(--accent-blue);">
+        <span class="section-tag">SECTION 6</span>
+        <h2>6. Inverse Problem Formulation & ARJUN Assistant</h2>
+        <div class="theory-chapter">
+            <p>
+                <strong>Inverse Formulation & Non-Linear Least-Squares:</strong><br>
+                For actuator $\mathbf{x}_A$ and sensor $\mathbf{x}_{Si}$, the objective function minimized across $N$ paths is:
+            </p>
+            <div class="formula-box">
+                $$\min_{x_D, y_D} \sum_{i=1}^{N} \left( \sqrt{(x_D - x_A)^2 + (y_D - y_A)^2} + \sqrt{(x_{Si} - x_D)^2 + (y_{Si} - y_D)^2} - c_g \cdot ToF_{s,i} \right)^2$$
+            </div>
+            <p>
+                The numerical optimization iteratively identifies coordinates within specimen boundaries $[0, L] \times [0, W]$. The reconstructed coordinate is shown on the 2D visualization plane.
+            </p>
+        </div>
+
+        <div id="arjunChatBox" class="chat-box" style="margin-top: 15px;">
+            <div class="chat-msg msg-arjun">
+                <strong>🤖 ARJUN (Rule-Based Guide):</strong> Assistant ready. Ask questions regarding dispersion, group vs phase velocity, baseline subtraction, or multi-sensor triangulation.
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+            <input type="text" id="arjunInput" style="flex:1; padding:10px; border-radius:6px; border:1px solid #cbd5e1;" placeholder="Ask ARJUN: e.g., 'What is group velocity?'" onkeypress="if(event.key==='Enter') sendArjunMessage()">
+            <button style="background: #2563eb; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer;" onclick="sendArjunMessage()">Send</button>
+        </div>
+    </div>
+
+    <!-- SECTION 7: M.E./M.Tech LAB OUTCOMES -->
+    <div id="section-8" class="card">
+        <span class="section-tag">SECTION 7</span>
+        <h2>7. M.E./M.Tech Experimental Tasks, Validation & Viva</h2>
+        <div class="theory-chapter">
+            <ol style="padding-left:20px;">
+                <li><strong>Dispersion:</strong> vary $f\cdot d$ and plot $c_p$ and $c_g$ for S0 and A0. Explain dispersion and mode selection.</li>
+                <li><strong>ToF:</strong> calculate direct-path ToF and percentage error between theoretical and observed values.</li>
+                <li><strong>Noise sensitivity:</strong> repeat localization at 40, 30, 20 and 10 dB SNR and compare residual error.</li>
+                <li><strong>Damage sensitivity:</strong> vary crack length and angle; relate the synthetic damage index and scattered amplitude to the imposed parameters.</li>
+                <li><strong>Inverse localization:</strong> hide the true coordinates conceptually, use multi-sensor ToF, and evaluate reconstructed position and localization error.</li>
+            </ol>
+            <div class="visual-note">
+                <strong>Assessment requirement:</strong> Students should report equations, input parameters, dispersion plots, A-scans, ToF calculations, SNR, reconstructed coordinates, residuals, and a short discussion of numerical limitations.
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 8: REFERENCES -->
+
+    <div id="section-7" class="card">
+        <span class="section-tag">SECTION 8</span>
+        <h2>8. Academic References & Technical Documentation</h2>
+        <div class="theory-chapter">
+            <ul>
+                <li><strong>Rose, J. L. (2014).</strong> <em>Ultrasonic Guided Waves in Solid Media</em>. Cambridge University Press.</li>
+                <li><strong>Giurgiutiu, V. (2014).</strong> <em>Structural Health Monitoring with Piezoelectric Wafer Active Sensors</em> (2nd ed.). Academic Press.</li>
+                <li><strong>Su, Z., & Ye, L. (2009).</strong> <em>Identification of Damage Using Lamb Waves: From Fundamentals to Applications</em>. Springer-Verlag.</li>
+                <li><strong>Viktorov, I. A. (1967).</strong> <em>Rayleigh and Lamb Waves: Physical Theory and Applications</em>. Plenum Press.</li>
+            </ul>
+        </div>
+    </div>
+
+</div>
 
 <footer>
-  Developed by Dr Annamdas Venu Gopal Madhav & Annamdas Shantanu Vasudev Krishna<br>
-  Gopalkrishna Advanced Rural Research Foundation (GARRF) • Kalam Zero Lab • Advanced Postgraduate SHM Laboratory
+    Developed by Dr Annamdas Venu Gopal Madhav & Annamdas Shantanu Vasudev Krishna<br>
+    Gopalkrishna Advanced Rural Research Foundation (GARRF) • Kalam Zero Lab • M.E./M.Tech Educational Numerical Simulation Module
 </footer>
 
 <script>
-/* ============================================================
-   GARRF PZT LAMB-WAVE SHM — TWO-MODE TEACHING ENGINE
-   The browser calculations are intentionally identified as
-   simulated/educational calculations.
-   ============================================================ */
-
-let currentCg=5200,currentCp=5600,fdValue=0;
-let dsp={filter:false,envelope:false,baseline:false};
-let recordedSignals=[];
-let teachingMode='strict';
-let callActive=false,lastSpeech='';
-let teacherStep=0;
-const teacherSteps=[
-  {strict:"Establish the healthy baseline first. A damaged response without a reference is scientifically incomplete.",
-   interactive:"What do you think the healthy baseline gives you? Compare it with a damaged signal before changing parameters."},
-  {strict:"Verify the frequency-thickness product and explain why group velocity is relevant to a wave-packet arrival.",
-   interactive:"Look at f·d and the S0/A0 curves. Which velocity would you use to estimate an envelope arrival, and why?"},
-  {strict:"Do not call a browser-generated value an experimental measurement. Record it as simulated data.",
-   interactive:"Notice the distinction between theoretical ToF and simulated measured ToF. What sources could create disagreement in a real experiment?"},
-  {strict:"For localization, use independent paths and quantify coordinate error. A visual intersection alone is not a sufficient conclusion.",
-   interactive:"Why does a second or third path reduce ambiguity? Try moving the flaw and observe the ellipse changes."},
-  {strict:"State your conclusion with evidence: configuration, measured ToF, calculated velocity, error and localization result.",
-   interactive:"Give me your hypothesis first. Then use the recorded values to decide whether the evidence supports it."}
-];
-
-function params(){
-  const n=id=>parseFloat(document.getElementById(id).value);
-  return {
-    L:n('plateL')||500,W:n('plateW')||300,
-    act:{x:n('actX')||80,y:n('actY')||150},
-    sen:{x:n('senX')||420,y:n('senY')||150},
-    s2:{x:300,y:50},s3:{x:300,y:250},
-    def:{x:n('defX')||250,y:n('defY')||150},
-    crackLen:n('crackLength')||25,crackAng:n('crackAngle')||45,
-    type:document.getElementById('damageType').value
-  };
-}
-
-function updateDispersion(){
-  const mat=document.getElementById('matSelect').value;
-  const d=parseFloat(document.getElementById('plateThick').value)||2;
-  const f=parseFloat(document.getElementById('actFreq').value)||150;
-  let cL=6320,cT=3130;
-  if(mat==='steel'){cL=5940;cT=3200}
-  if(mat==='ti'){cL=6070;cT=3125}
-  fdValue=f*d/1000;
-  /* Educational approximation retained for browser responsiveness. */
-  const cpS=cL*(1-.08*Math.min(fdValue,3));
-  const cpA=cT*(.30+.65*(fdValue/(fdValue+.8)));
-  const cgS=cL*(.85-.12*Math.min(fdValue,2.5));
-  const cgA=cT*(.40+.55*(fdValue/(fdValue+.5)));
-  currentCg=cgS;currentCp=cpS;
-  document.getElementById('dispersionOutput').innerHTML=
-    `<b>f·d:</b> ${fdValue.toFixed(3)} MHz·mm &nbsp; | &nbsp;
-     <b>S0:</b> cp=${cpS.toFixed(0)} m/s, cg=${cgS.toFixed(0)} m/s &nbsp; | &nbsp;
-     <b>A0:</b> cp=${cpA.toFixed(0)} m/s, cg=${cgA.toFixed(0)} m/s
-     <br><span style="color:#64748b">Educational approximation; use a validated numerical solver for research-grade dispersion.</span>`;
-  drawDispersion(fdValue,cgS,cgA);
-  redraw();
-}
-function drawDispersion(fd,cgS,cgA){
-  const c=document.getElementById('dispersionCanvas'),x=c.getContext('2d');
-  x.fillStyle='#0f172a';x.fillRect(0,0,c.width,c.height);
-  x.strokeStyle='#1e293b';x.lineWidth=1;
-  for(let i=60;i<c.width-20;i+=80){x.beginPath();x.moveTo(i,18);x.lineTo(i,c.height-38);x.stroke()}
-  for(let j=30;j<c.height-38;j+=35){x.beginPath();x.moveTo(50,j);x.lineTo(c.width-20,j);x.stroke()}
-  x.strokeStyle='#64748b';x.lineWidth=2;x.beginPath();x.moveTo(50,18);x.lineTo(50,c.height-38);x.lineTo(c.width-20,c.height-38);x.stroke();
-  x.font='11px Arial';x.fillStyle='#cbd5e1';x.fillText('Group velocity (m/s)',8,20);x.fillText('f·d (MHz·mm)',c.width/2-35,c.height-10);
-  const plot=(fn,stroke)=>{
-    x.strokeStyle=stroke;x.lineWidth=2.4;x.beginPath();
-    for(let px=0;px<=800;px+=5){let z=px/800*4,v=fn(z),py=c.height-38-(v/7000)*(c.height-58),cx=50+px*.95;if(px===0)x.moveTo(cx,py);else x.lineTo(cx,py)}
-    x.stroke();
-  };
-  plot(z=>6320*(.85-.12*Math.min(z,2.5)),'#38bdf8');
-  plot(z=>3130*(.40+.55*(z/(z+.5))),'#f59e0b');
-  const ox=50+(fd/4)*800*.95,oy=c.height-38-(cgS/7000)*(c.height-58);
-  x.fillStyle='#ef4444';x.beginPath();x.arc(ox,oy,5,0,Math.PI*2);x.fill();
-  x.fillStyle='#fff';x.fillText('Operating point',Math.min(ox+8,c.width-120),Math.max(oy-8,25));
-  x.fillStyle='#38bdf8';x.fillText('S0 cg',c.width-115,30);x.fillStyle='#f59e0b';x.fillText('A0 cg',c.width-115,47);
-}
-
-function toggleDamage(){
-  const healthy=params().type==='No Damage';
-  document.getElementById('damagePos').classList.toggle('disabled',healthy);
-  document.getElementById('damageGeom').classList.toggle('disabled',healthy);
-  document.getElementById('damageRule').textContent=healthy
-    ? 'Locked: severity/geometry is not meaningful for a healthy baseline.'
-    : 'Active: change flaw position, length and orientation.';
-}
-function gaussian(t,c,w){return Math.exp(-Math.pow((t-c)/w,2))}
-function waveform(t){
-  const p=params(),mm=currentCg/1000;
-  const td=Math.hypot(p.sen.x-p.act.x,p.sen.y-p.act.y)/mm;
-  const ed=Math.hypot(p.def.x-p.act.x,p.def.y-p.act.y)+Math.hypot(p.sen.x-p.def.x,p.sen.y-p.def.y);
-  const ts=ed/mm;
-  const rf=Math.sin(2*Math.PI*.15*t);
-  let s=.72*rf*gaussian(t,td,6);
-  if(p.type!=='No Damage') s+=(.20+(p.crackLen/100)*.35)*rf*gaussian(t,ts,6);
-  s+=.16*rf*gaussian(t,10,4);
-  if(dsp.baseline && p.type!=='No Damage') s-=.16*rf*gaussian(t,10,4);
-  if(dsp.envelope){
-    s=.72*gaussian(t,td,6)+(p.type!=='No Damage' ? (.20+(p.crackLen/100)*.35)*gaussian(t,ts,6):0);
-  }
-  if(!dsp.filter) s+=.035*Math.sin(2*Math.PI*2.7*t)+.018*Math.sin(2*Math.PI*4.1*t);
-  return s;
-}
-function drawAscan(){
-  const c=document.getElementById('ascanCanvas'),x=c.getContext('2d'),p=params(),T=160,mm=currentCg/1000;
-  const td=Math.hypot(p.sen.x-p.act.x,p.sen.y-p.act.y)/mm;
-  const ed=Math.hypot(p.def.x-p.act.x,p.def.y-p.act.y)+Math.hypot(p.sen.x-p.def.x,p.sen.y-p.def.y);
-  const ts=ed/mm;
-  x.fillStyle='#0f172a';x.fillRect(0,0,c.width,c.height);
-  x.strokeStyle='#1e293b';x.lineWidth=1;
-  for(let i=50;i<c.width;i+=50){x.beginPath();x.moveTo(i,0);x.lineTo(i,c.height);x.stroke()}
-  x.beginPath();x.moveTo(0,c.height/2);x.lineTo(c.width,c.height/2);x.stroke();
-  x.strokeStyle=dsp.envelope?'#10b981':'#38bdf8';x.lineWidth=1.7;x.beginPath();
-  for(let px=0;px<c.width;px++){const t=px/c.width*T,py=c.height/2-waveform(t)*85;if(px===0)x.moveTo(px,py);else x.lineTo(px,py)}x.stroke();
-  x.strokeStyle='#ef4444';x.setLineDash([5,4]);const cx=td/T*c.width;x.beginPath();x.moveTo(cx,0);x.lineTo(cx,c.height);x.stroke();x.setLineDash([]);
-  x.fillStyle='#fff';x.font='11px Arial';x.fillText(`Direct ToF ${td.toFixed(2)} μs`,Math.min(cx+7,c.width-150),20);
-  const snr=dsp.filter?34.5:28.4;
-  const di=p.type==='No Damage'?0:(.12+(p.crackLen/100)*.45);
-  document.getElementById('valDirect').textContent=td.toFixed(2);
-  document.getElementById('valScatter').textContent=p.type==='No Damage'?'—':ts.toFixed(2)+' μs';
-  document.getElementById('valSNR').textContent=snr.toFixed(1);
-  document.getElementById('valDI').textContent=di.toFixed(3);
-}
-document.getElementById('ascanCanvas').addEventListener('mousemove',e=>{
-  const r=e.currentTarget.getBoundingClientRect(),t=((e.clientX-r.left)/r.width)*160;
-  document.getElementById('curTime').textContent=t.toFixed(2);
-});
-function toggleDSP(k){
-  dsp[k]=!dsp[k];
-  const a=[];if(dsp.filter)a.push('Bandpass 100–200 kHz');if(dsp.envelope)a.push('Envelope');if(dsp.baseline)a.push('Baseline Subtracted');
-  document.getElementById('dspStatus').textContent=a.length?'Active: '+a.join(' + '):'Raw RF Waveform';
-  drawAscan();
-}
-function redraw(){drawAscan()}
-const waveCanvas=document.getElementById('waveCanvas'),wctx=waveCanvas.getContext('2d');let waveR=0;
-function ellipse(f1,f2,total,color){
-  const cx=(f1.x+f2.x)/2,cy=(f1.y+f2.y)/2,c=Math.hypot(f2.x-f1.x,f2.y-f1.y)/2,a=total/2,b=Math.sqrt(Math.max(0,a*a-c*c)),rot=Math.atan2(f2.y-f1.y,f2.x-f1.x);
-  wctx.strokeStyle=color;wctx.lineWidth=1.4;wctx.setLineDash([4,4]);wctx.beginPath();wctx.ellipse(cx,cy,a,b,rot,0,Math.PI*2);wctx.stroke();wctx.setLineDash([]);
-}
-function renderWaves(){
-  const p=params();wctx.fillStyle='#fff';wctx.fillRect(0,0,waveCanvas.width,waveCanvas.height);
-  wctx.strokeStyle='#eef2f7';for(let i=0;i<waveCanvas.width;i+=30){wctx.beginPath();wctx.moveTo(i,0);wctx.lineTo(i,waveCanvas.height);wctx.stroke()}
-  for(let i=0;i<waveCanvas.height;i+=30){wctx.beginPath();wctx.moveTo(0,i);wctx.lineTo(waveCanvas.width,i);wctx.stroke()}
-  wctx.strokeStyle='#cbd5e1';wctx.setLineDash([4,4]);
-  [p.sen,p.s2,p.s3].forEach(s=>{wctx.beginPath();wctx.moveTo(p.act.x,p.act.y);wctx.lineTo(s.x,s.y);wctx.stroke()});wctx.setLineDash([]);
-  waveR=(waveR+1.4)%350;
-  for(let r=waveR;r>0;r-=32){wctx.strokeStyle=`rgba(37,99,235,${Math.max(0,1-r/350)})`;wctx.beginPath();wctx.arc(p.act.x,p.act.y,r,0,Math.PI*2);wctx.stroke()}
-  if(p.type!=='No Damage'){
-    const mm=currentCg/1000;
-    [p.sen,p.s2,p.s3].forEach((s,i)=>{
-      const total=Math.hypot(p.def.x-p.act.x,p.def.y-p.act.y)+Math.hypot(s.x-p.def.x,s.y-p.def.y);
-      ellipse(p.act,s,total,['rgba(239,68,68,.75)','rgba(5,150,105,.75)','rgba(217,119,6,.75)'][i]);
-    });
-    const ang=p.crackAng*Math.PI/180,hl=p.crackLen/2;wctx.strokeStyle='#ef4444';wctx.lineWidth=4;
-    wctx.beginPath();wctx.moveTo(p.def.x-hl*Math.cos(ang),p.def.y-hl*Math.sin(ang));wctx.lineTo(p.def.x+hl*Math.cos(ang),p.def.y+hl*Math.sin(ang));wctx.stroke();
-    wctx.fillStyle='#991b1b';wctx.font='bold 10px Arial';wctx.fillText(`Flaw (${p.def.x},${p.def.y})`,p.def.x-30,p.def.y-10);
-  }
-  wctx.fillStyle='#2563eb';wctx.beginPath();wctx.arc(p.act.x,p.act.y,7,0,Math.PI*2);wctx.fill();wctx.fillStyle='#0f172a';wctx.font='bold 10px Arial';wctx.fillText('A',p.act.x-3,p.act.y-12);
-  wctx.fillStyle='#059669';[p.sen,p.s2,p.s3].forEach((s,i)=>{wctx.beginPath();wctx.arc(s.x,s.y,i?5:7,0,Math.PI*2);wctx.fill();wctx.fillStyle='#0f172a';wctx.fillText('S'+(i+1),s.x+8,s.y+3);wctx.fillStyle='#059669'});
-  requestAnimationFrame(renderWaves);
-}
-renderWaves();
-
-/* 3D qualitative visualization */
-let scene,camera,renderer,controls,planeGeo,phase3=0;
-function init3D(){
-  const el=document.getElementById('threejs-container');
-  if(!window.THREE){el.innerHTML='<div style="color:#fff;padding:20px">3D library unavailable. The 2D visualization remains active.</div>';return}
-  scene=new THREE.Scene();scene.background=new THREE.Color(0x0f172a);
-  camera=new THREE.PerspectiveCamera(45,el.clientWidth/el.clientHeight,.1,1000);camera.position.set(0,-12,10);
-  renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(el.clientWidth,el.clientHeight);el.appendChild(renderer.domElement);
-  controls=new THREE.OrbitControls(camera,renderer.domElement);controls.enableDamping=true;
-  scene.add(new THREE.AmbientLight(0xffffff,.45));const light=new THREE.DirectionalLight(0xffffff,.8);light.position.set(5,10,15);scene.add(light);
-  planeGeo=new THREE.PlaneGeometry(12,8,75,55);
-  const cols=new Float32Array(planeGeo.attributes.position.count*3);planeGeo.setAttribute('color',new THREE.BufferAttribute(cols,3));
-  scene.add(new THREE.Mesh(planeGeo,new THREE.MeshPhongMaterial({side:THREE.DoubleSide,vertexColors:true,shininess:70})));
-  function anim(){
-    requestAnimationFrame(anim);controls.update();phase3+=.08;const pos=planeGeo.attributes.position,cols=planeGeo.attributes.color,p=params();
-    const ax=(p.act.x-250)/40,ay=-(p.act.y-150)/40,dx=(p.def.x-250)/40,dy=-(p.def.y-150)/40,dam=p.type!=='No Damage';
-    for(let i=0;i<pos.count;i++){
-      const xx=pos.getX(i),yy=pos.getY(i),ra=Math.hypot(xx-ax,yy-ay);
-      let z=Math.sin(ra*3.4-phase3)*Math.exp(-ra*.25)*.34;
-      if(dam){const rd=Math.hypot(xx-dx,yy-dy);z+=Math.sin(rd*4-phase3+1.3)*Math.exp(-rd*.5)*.2}
-      pos.setZ(i,z);const co=new THREE.Color();co.setHSL(z>.05?.58:.08,.8,.28+Math.min(.35,Math.abs(z)));cols.setXYZ(i,co.r,co.g,co.b)
+    // REPRODUCIBLE PSEUDO-RANDOM NUMBER GENERATOR (LCG)
+    let randomSeed = 123456789;
+    function seededRandom() {
+        randomSeed = (randomSeed * 1664525 + 1013904223) % 4294967296;
+        return randomSeed / 4294967296;
     }
-    pos.needsUpdate=true;cols.needsUpdate=true;renderer.render(scene,camera)
-  }anim();
-  addEventListener('resize',()=>{if(!renderer)return;camera.aspect=el.clientWidth/el.clientHeight;camera.updateProjectionMatrix();renderer.setSize(el.clientWidth,el.clientHeight)})
-}
-init3D();
 
-/* Five-trial recording */
-function recordTrial(){
-  if(recordedSignals.length>=5){alert('Five-trial protocol is complete. Review the matrix and export your notes if required.');return}
-  const idx=recordedSignals.length,p=params(),healthy=p.type==='No Damage';
-  if(teachingMode==='strict' && idx===0 && !healthy){
-    teacherSay('Trial 1 is reserved for the healthy baseline. In Strict mode I will not allow the protocol to start with damage.');
-    return;
-  }
-  const mm=currentCg/1000,dist=Math.hypot(p.sen.x-p.act.x,p.sen.y-p.act.y),theo=dist/mm;
-  /* Deterministic simulated measurement error: not random and not experimental data. */
-  const signed=[0,0.18,-0.12,0.09,-0.07][idx];
-  const measured=theo+signed;
-  const abs=Math.abs(measured-theo),tofErr=abs/theo*100,expCg=dist/measured*1000,velErr=Math.abs(expCg-currentCg)/currentCg*100;
-  let scatter='—',delta='—',loc='—';
-  if(!healthy){
-    const ed=Math.hypot(p.def.x-p.act.x,p.def.y-p.act.y)+Math.hypot(p.sen.x-p.def.x,p.sen.y-p.def.y);
-    scatter=(ed/mm+[0,.10,-.08,.12,-.05][idx]).toFixed(2);
-    delta=(parseFloat(scatter)-measured).toFixed(2);
-    /* Educational inverse estimate: controlled offset, not a random "measurement". */
-    const offset=[0,3.2,2.4,1.8,1.2][idx];
-    loc=offset.toFixed(2);
-  }
-  recordedSignals.push({trial:idx+1,type:p.type,coords:healthy?'—':`(${p.def.x},${p.def.y})`,
-    theo:theo.toFixed(2),meas:measured.toFixed(2),abs:abs.toFixed(3),tof:tofErr.toFixed(2),
-    cg:expCg.toFixed(0),vel:velErr.toFixed(2),scatter,delta,loc});
-  updateMatrix();
-  const b=document.getElementById('recordBadge');
-  if(recordedSignals.length<5)b.textContent=`TRIAL ${recordedSignals.length+1} / 5`;
-  else{b.textContent='ALL 5 TRIALS LOGGED ✓';document.getElementById('recordBtn').classList.add('complete')}
-  teacherAfterTrial(recordedSignals.at(-1));
-}
-function updateMatrix(){
-  const body=document.getElementById('matrixBody');body.innerHTML='';
-  recordedSignals.forEach(r=>{
-    const tr=document.createElement('tr');
-    [r.trial,r.type,r.coords,r.theo,r.meas,r.abs,r.tof+'%',r.cg,r.vel+'%',r.scatter,r.delta,r.loc].forEach((v,i)=>{
-      const td=document.createElement('td');td.innerHTML=i===0?`<b>${v}</b>`:v;tr.appendChild(td)
-    });body.appendChild(tr)
-  });
-}
+    // MATERIAL DATABASE
+    const materials = {
+        al: { name: "Aluminum 6061-T6", cL: 6320, cT: 3130, rho: 2700 },
+        steel: { name: "Structural Steel", cL: 5940, cT: 3200, rho: 7850 },
+        titanium: { name: "Titanium Ti-6Al-4V", cL: 6070, cT: 3125, rho: 4430 }
+    };
 
-/* Two-way Prof. Manohar */
-function setMode(m){
-  teachingMode=m;
-  document.getElementById('strictBtn').className='mode-btn strict'+(m==='strict'?' active':'');
-  document.getElementById('interactiveBtn').className='mode-btn interactive'+(m==='interactive'?' active':'');
-  const t=teacherSteps[teacherStep][m];
-  teacherSay(t);
-}
-function teacherSay(text){
-  const el=document.getElementById('teacherTranscript');el.innerHTML='<b>Prof. Manohar:</b> '+text;
-  lastSpeech=text;
-  if(callActive && 'speechSynthesis' in window){
-    speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang='en-IN';u.pitch=teachingMode==='strict'?.85:1.02;speechSynthesis.speak(u)
-  }
-}
-function callManoharTeacher(){callActive=true;document.getElementById('callManoharBtn').style.display='none';document.getElementById('teacherBox').style.display='block';teacherSay(teacherSteps[teacherStep][teachingMode])}
-function hangUp(){callActive=false;if('speechSynthesis'in window)speechSynthesis.cancel();document.getElementById('teacherBox').style.display='none';document.getElementById('callManoharBtn').style.display='block'}
-function repeatTeacher(){if(lastSpeech)teacherSay(lastSpeech)}
-function nextTeacher(){teacherStep=(teacherStep+1)%teacherSteps.length;teacherSay(teacherSteps[teacherStep][teachingMode])}
-function resumeTeacher(){repeatTeacher()}
-function muteTeacher(){if('speechSynthesis'in window)speechSynthesis.cancel()}
-function teacherAfterTrial(r){
-  if(teachingMode==='strict') teacherSay(`Trial ${r.trial} logged. I expect you to justify ToF error (${r.tof}%) and velocity error (${r.vel}%). Do not state a conclusion without evidence.`);
-  else teacherSay(`Trial ${r.trial} is recorded. What changed? Look at the ToF, velocity and echo values and explain the physical meaning before moving on.`);
-}
+    let cg_S0 = 5380;
+    let cp_S0 = 5400;
+    let cg_A0 = 3120;
+    let cp_A0 = 2400;
+    let actFreqVal = 150;
+    let plateThickVal = 2.0;
 
-/* Local ARJUN demonstration — replace with a real AI API/Gem integration when deployed. */
-function sendArjun(){
-  const input=document.getElementById('arjunInput'),q=input.value.trim();if(!q)return;
-  const box=document.getElementById('arjunChat');const u=document.createElement('div');u.className='msg you';u.innerHTML='<b>You:</b> '+escapeHTML(q);box.appendChild(u);input.value='';
-  const p=params(),fd=(parseFloat(document.getElementById('plateThick').value)||2)*(parseFloat(document.getElementById('actFreq').value)||150)/1000;
-  let ans;
-  if(/group|velocity|arrival/i.test(q)) ans=`I use group velocity for the approximate arrival of a narrowband wave packet. For the current operating point, the educational S0 group velocity is ${currentCg.toFixed(0)} m/s.`;
-  else if(/f.?d|frequency.?thickness/i.test(q)) ans=`I calculate f·d from ${document.getElementById('actFreq').value} kHz and ${document.getElementById('plateThick').value} mm. The current value is ${fd.toFixed(3)} MHz·mm.`;
-  else if(/baseline/i.test(q)) ans=`I treat the healthy response as the reference signature. Baseline subtraction can suppress the reference component so that damage-related changes are easier to inspect.`;
-  else if(/tof|time of flight/i.test(q)) ans=`I calculate direct ToF from path length divided by the selected group velocity. In this browser lab the displayed value is simulated, not measured by a physical DAQ.`;
-  else if(/error|accuracy/i.test(q)) ans=`I compare simulated measured ToF with theoretical ToF. Velocity error is calculated from the difference between measured group velocity and the selected theoretical value.`;
-  else if(/local|ellipse|triang/i.test(q)) ans=`I use multiple actuator-sensor paths to reduce the ambiguity of a single ellipse. A research implementation should solve the inverse problem numerically and report coordinate residuals.`;
-  else ans=`I can explain the current SHM experiment using the parameters d=${p.W?document.getElementById('plateThick').value:2} mm, f=${document.getElementById('actFreq').value} kHz, f·d=${fd.toFixed(3)} MHz·mm and cg≈${currentCg.toFixed(0)} m/s. Ask me about ToF, dispersion, baseline, envelope, error or localization.`;
-  setTimeout(()=>{const a=document.createElement('div');a.className='msg ai';a.innerHTML='<b>🤖 ARJUN:</b> '+ans;box.appendChild(a);box.scrollTop=box.scrollHeight},220)
-}
-function escapeHTML(s){return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+    // ============================================================
+    // M.E./M.Tech RAYLEIGH–LAMB NUMERICAL DISPERSION ENGINE
+    // Fundamental S0/A0 roots are solved in phase-velocity space.
+    // Units: f in MHz, d in mm, velocities in m/s.
+    // ============================================================
+    function engineeringApproxDispersion(fd, matKey) {
+        const mat = materials[matKey];
+        const cr = mat.cT * (0.87 + 1.12 * (mat.cT / mat.cL)) / (1 + (mat.cT / mat.cL));
+        const cpS = mat.cT * 1.02 + (mat.cL - mat.cT * 1.02) /
+            Math.sqrt(1 + Math.pow(fd / 1.25, 2.2));
+        const cpA = cr + (Math.sqrt(fd) * (mat.cT - cr)) /
+            (Math.sqrt(fd) + 0.65);
+        return {cpS0: cpS, cpA0: cpA};
+    }
 
-/* Draggable teacher */
-(function(){
- const box=document.getElementById('teacherBox'),head=document.getElementById('teacherHead');let drag=false,sx=0,sy=0,ix=0,iy=0;
- head.addEventListener('mousedown',e=>{drag=true;sx=e.clientX;sy=e.clientY;const r=box.getBoundingClientRect();box.style.left=r.left+'px';box.style.top=r.top+'px';box.style.right='auto';box.style.bottom='auto';ix=r.left;iy=r.top;e.preventDefault()});
- document.addEventListener('mousemove',e=>{if(drag){box.style.left=(ix+e.clientX-sx)+'px';box.style.top=(iy+e.clientY-sy)+'px'}});
- document.addEventListener('mouseup',()=>drag=false);
-})();
+    function rlResidual(cp, fHz, dMm, mat, mode) {
+        const h = (dMm / 2) / 1000;
+        const w = 2 * Math.PI * fHz;
+        const k = w / cp;
+        const kL = w / mat.cL;
+        const kT = w / mat.cT;
 
-['plateL','plateW','actX','actY','senX','senY','defX','defY','crackLength','crackAngle'].forEach(id=>document.getElementById(id).addEventListener('input',redraw));
-updateDispersion();toggleDamage();
+        // Fundamental branches:
+        // S0: cT < cp < cL  -> p is imaginary, q is real
+        // A0: 0 < cp < cT   -> p and q are imaginary
+        const eps = 1e-12;
+
+        if (mode === 'S0') {
+            if (cp <= mat.cT * 1.000001 || cp >= mat.cL * 0.999999) return NaN;
+            const alpha = Math.sqrt(Math.max(eps, k*k - kL*kL));
+            const beta  = Math.sqrt(Math.max(eps, kT*kT - k*k));
+            const tb = Math.tan(beta*h);
+            const th = Math.tanh(alpha*h);
+            if (Math.abs(th) < 1e-12) return NaN;
+            const lhs = tb / th;
+            const den = Math.pow(k*k - beta*beta, 2);
+            if (den < 1e-30) return NaN;
+            const rhs = 4*k*k*alpha*beta / den;
+            return lhs - rhs;
+        } else {
+            if (cp <= 80 || cp >= mat.cT * 0.999999) return NaN;
+            const alpha = Math.sqrt(Math.max(eps, k*k - kL*kL));
+            const beta  = Math.sqrt(Math.max(eps, k*k - kT*kT));
+            const ta = Math.tanh(alpha*h);
+            const tb = Math.tanh(beta*h);
+            if (Math.abs(ta) < 1e-12 || Math.abs(beta) < 1e-12) return NaN;
+            const lhs = tb / ta;
+            const den = 4*k*k*alpha*beta;
+            if (den < 1e-30) return NaN;
+            const rhs = Math.pow(k*k + beta*beta, 2) / den;
+            return lhs - rhs;
+        }
+    }
+
+    function numericalRootNear(targetCp, fHz, dMm, mat, mode) {
+        const lo = mode === 'S0' ? mat.cT * 1.0005 : 80;
+        const hi = mode === 'S0' ? mat.cL * 0.9995 : mat.cT * 0.9995;
+        const n = 1600;
+        let best = {cp: targetCp, score: Infinity};
+        let prevCp = lo, prev = rlResidual(prevCp, fHz, dMm, mat, mode);
+
+        for (let i = 1; i <= n; i++) {
+            const cp = lo + (hi - lo) * i / n;
+            const cur = rlResidual(cp, fHz, dMm, mat, mode);
+
+            if (Number.isFinite(cur) && Number.isFinite(prev)) {
+                if (cur === 0 || prev * cur < 0) {
+                    let a = prevCp, b = cp, fa = prev, fb = cur;
+                    for (let j = 0; j < 45; j++) {
+                        const m = 0.5 * (a+b);
+                        const fm = rlResidual(m, fHz, dMm, mat, mode);
+                        if (!Number.isFinite(fm)) { a = m; fa = fm; continue; }
+                        if (fa * fm <= 0) { b = m; fb = fm; }
+                        else { a = m; fa = fm; }
+                    }
+                    const root = 0.5*(a+b);
+                    const score = Math.abs(root - targetCp);
+                    if (score < best.score) best = {cp: root, score};
+                }
+            }
+            prevCp = cp; prev = cur;
+        }
+        return Number.isFinite(best.score) && best.score < (hi-lo)*0.35 ? best.cp : NaN;
+    }
+
+    function calculateDispersionAtFd(fd_val, matKey, thicknessMm) {
+        const mat = materials[matKey];
+        const fd = Math.max(0.005, fd_val);
+        const fHz = fd * 1e6 / thicknessMm;
+        const approx = engineeringApproxDispersion(fd, matKey);
+        const useExact = document.getElementById('solverMode') ?
+            document.getElementById('solverMode').value === 'exact' : true;
+
+        if (!useExact) {
+            const delta = Math.max(0.002, fd*0.01);
+            const a = engineeringApproxDispersion(Math.max(0.005, fd-delta), matKey);
+            const b = engineeringApproxDispersion(fd+delta, matKey);
+            const cgS = (fd*(b.cpS0-a.cpS0)/(2*delta)) /
+                        (1 - fd*(b.cpS0-a.cpS0)/(2*delta*approx.cpS0));
+            const cgA = (fd*(b.cpA0-a.cpA0)/(2*delta)) /
+                        (1 - fd*(b.cpA0-a.cpA0)/(2*delta*approx.cpA0));
+            return {
+                cpS0: approx.cpS0, cpA0: approx.cpA0,
+                cgS0: Math.max(100, Math.min(mat.cL, Math.abs(cgS || approx.cpS0))),
+                cgA0: Math.max(100, Math.min(mat.cT, Math.abs(cgA || approx.cpA0)))
+            };
+        }
+
+        const cpS = numericalRootNear(approx.cpS0, fHz, thicknessMm, mat, 'S0');
+        const cpA = numericalRootNear(approx.cpA0, fHz, thicknessMm, mat, 'A0');
+
+        if (!Number.isFinite(cpS) || !Number.isFinite(cpA)) {
+            const fallback = engineeringApproxDispersion(fd, matKey);
+            return {
+                cpS0: fallback.cpS0, cpA0: fallback.cpA0,
+                cgS0: fallback.cpS0, cgA0: fallback.cpA0,
+                fallback: true
+            };
+        }
+
+        // c_g = dω/dk = c_p^2 / (c_p - f dc_p/df)
+        // Since fd=f*d and d is fixed, f dc_p/df = fd dc_p/d(fd).
+        const delta = Math.max(0.001, Math.min(0.01, fd*0.02));
+        const fdm = Math.max(0.005, fd-delta);
+        const fdp = fd+delta;
+        const am = engineeringApproxDispersion(fdm, matKey);
+        const ap = engineeringApproxDispersion(fdp, matKey);
+
+        const cpSm = numericalRootNear(am.cpS0, (fdm*1e6/thicknessMm), thicknessMm, mat, 'S0');
+        const cpSp = numericalRootNear(ap.cpS0, (fdp*1e6/thicknessMm), thicknessMm, mat, 'S0');
+        const cpAm = numericalRootNear(am.cpA0, (fdm*1e6/thicknessMm), thicknessMm, mat, 'A0');
+        const cpAp = numericalRootNear(ap.cpA0, (fdp*1e6/thicknessMm), thicknessMm, mat, 'A0');
+
+        const dcpS_dfd = (Number.isFinite(cpSp)&&Number.isFinite(cpSm)) ? (cpSp-cpSm)/(2*delta) : 0;
+        const dcpA_dfd = (Number.isFinite(cpAp)&&Number.isFinite(cpAm)) ? (cpAp-cpAm)/(2*delta) : 0;
+
+        let cgS = cpS*cpS / Math.max(50, cpS - fd*dcpS_dfd);
+        let cgA = cpA*cpA / Math.max(50, cpA - fd*dcpA_dfd);
+
+        // Physical bounds and continuity guard for the fundamental branches.
+        cgS = Math.max(100, Math.min(mat.cL, cgS));
+        cgA = Math.max(100, Math.min(mat.cT*1.02, cgA));
+
+        return {cpS0:cpS, cpA0:cpA, cgS0:cgS, cgA0:cgA, fallback:false};
+    }
+
+    function updateDispersionCalc() {
+        const matKey = document.getElementById('matSelect').value;
+        const mat = materials[matKey];
+        plateThickVal = parseFloat(document.getElementById('plateThick').value) || 2.0;
+        actFreqVal = parseFloat(document.getElementById('actFreq').value) || 150;
+
+        const fd = (actFreqVal * plateThickVal) / 1000.0;
+        const results = calculateDispersionAtFd(fd, matKey, plateThickVal);
+
+        cp_S0 = results.cpS0;
+        cg_S0 = results.cgS0;
+        cp_A0 = results.cpA0;
+        cg_A0 = results.cgA0;
+
+        const out = document.getElementById('dispersionOutputBox');
+        out.innerHTML = `
+            <strong>Material:</strong> ${mat.name} ($c_L = ${mat.cL}\\text{ m/s}, c_T = ${mat.cT}\\text{ m/s}$) | 
+            <strong>Plate Half-Thickness ($h$):</strong> ${(plateThickVal / 2.0).toFixed(2)} mm <br>
+            <strong>Frequency-Thickness ($f \\cdot d$):</strong> ${fd.toFixed(3)} $\\text{MHz}\\cdot\\text{mm}$ | 
+            <strong>Mode $S_0$:</strong> $c_p = ${cp_S0.toFixed(0)}\\text{ m/s}, c_g = ${cg_S0.toFixed(0)}\\text{ m/s}$ | 
+            <strong>Mode $A_0$:</strong> $c_p = ${cp_A0.toFixed(0)}\\text{ m/s}, c_g = ${cg_A0.toFixed(0)}\\text{ m/s}$
+        `;
+        if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise();
+
+        drawDispersionPlot(fd, matKey, plateThickVal);
+        drawAscan();
+    }
+
+    function drawDispersionPlot(currFd, matKey, thicknessMm) {
+        const dCanvas = document.getElementById('dispersionCanvas');
+        const dCtx = dCanvas.getContext('2d');
+        const mat = materials[matKey];
+        dCtx.fillStyle = '#0f172a';
+        dCtx.fillRect(0, 0, dCanvas.width, dCanvas.height);
+
+        // Grid
+        dCtx.strokeStyle = '#1e293b';
+        dCtx.lineWidth = 1;
+        for (let x = 60; x < dCanvas.width - 20; x += 60) {
+            dCtx.beginPath(); dCtx.moveTo(x, 20); dCtx.lineTo(x, 220); dCtx.stroke();
+        }
+        for (let y = 20; y <= 220; y += 40) {
+            dCtx.beginPath(); dCtx.moveTo(60, y); dCtx.lineTo(dCanvas.width - 20, y); dCtx.stroke();
+        }
+
+        // Axes
+        dCtx.strokeStyle = '#64748b';
+        dCtx.lineWidth = 2;
+        dCtx.beginPath(); dCtx.moveTo(60, 20); dCtx.lineTo(60, 220); dCtx.lineTo(dCanvas.width - 20, 220); dCtx.stroke();
+
+        // Labels
+        dCtx.fillStyle = '#94a3b8';
+        dCtx.font = '10px sans-serif';
+        dCtx.fillText('0', 45, 225);
+        dCtx.fillText('7000 m/s', 15, 30);
+        dCtx.fillText(`Frequency-Thickness f·d (MHz·mm) — Computed for ${mat.name} (d = ${thicknessMm} mm)`, dCanvas.width / 2 - 160, 245);
+        dCtx.fillText('0', 60, 235);
+        dCtx.fillText('1.0', 220, 235);
+        dCtx.fillText('2.0', 380, 235);
+        dCtx.fillText('3.0', 540, 235);
+        dCtx.fillText('4.0', 700, 235);
+
+        // Dynamic S0 curve
+        dCtx.strokeStyle = '#38bdf8';
+        dCtx.lineWidth = 2.5;
+        dCtx.beginPath();
+        for (let px = 0; px <= 800; px += 10) {
+            let f = (px / 800) * 4.0;
+            let res = calculateDispersionAtFd(Math.max(0.01, f), matKey, thicknessMm);
+            let py = 220 - (res.cgS0 / 7000) * 200;
+            let cx = 60 + px * 0.95;
+            if (px === 0) dCtx.moveTo(cx, py); else dCtx.lineTo(cx, py);
+        }
+        dCtx.stroke();
+
+        // Dynamic A0 curve
+        dCtx.strokeStyle = '#f59e0b';
+        dCtx.beginPath();
+        for (let px = 0; px <= 800; px += 10) {
+            let f = (px / 800) * 4.0;
+            let res = calculateDispersionAtFd(Math.max(0.01, f), matKey, thicknessMm);
+            let py = 220 - (res.cgA0 / 7000) * 200;
+            let cx = 60 + px * 0.95;
+            if (px === 0) dCtx.moveTo(cx, py); else dCtx.lineTo(cx, py);
+        }
+        dCtx.stroke();
+
+        // Operating Points
+        let opX = 60 + (currFd / 4.0) * 800 * 0.95;
+        let opYS0 = 220 - (cg_S0 / 7000) * 200;
+        let opYA0 = 220 - (cg_A0 / 7000) * 200;
+
+        dCtx.fillStyle = '#38bdf8';
+        dCtx.beginPath(); dCtx.arc(opX, opYS0, 5, 0, Math.PI * 2); dCtx.fill();
+        dCtx.fillStyle = '#f59e0b';
+        dCtx.beginPath(); dCtx.arc(opX, opYA0, 5, 0, Math.PI * 2); dCtx.fill();
+
+        // Legend
+        dCtx.fillStyle = '#38bdf8'; dCtx.fillText(`— S0 Group Velocity (cg)`, 640, 40);
+        dCtx.fillStyle = '#f59e0b'; dCtx.fillText(`— A0 Group Velocity (cg)`, 640, 58);
+    }
+
+    // ANIMATED S0 AND A0 DISPLACEMENT SCHEMATICS
+    const s0Canvas = document.getElementById('s0Canvas');
+    const s0Ctx = s0Canvas.getContext('2d');
+    const a0Canvas = document.getElementById('a0Canvas');
+    const a0Ctx = a0Canvas.getContext('2d');
+    let modePhase = 0;
+
+    function drawModeDiagrams() {
+        modePhase += 0.08;
+        s0Ctx.fillStyle = '#0f172a';
+        s0Ctx.fillRect(0, 0, s0Canvas.width, s0Canvas.height);
+        s0Ctx.strokeStyle = '#475569';
+        s0Ctx.setLineDash([4, 4]);
+        s0Ctx.beginPath(); s0Ctx.moveTo(20, 70); s0Ctx.lineTo(380, 70); s0Ctx.stroke();
+        s0Ctx.setLineDash([]);
+        s0Ctx.strokeStyle = '#38bdf8';
+        s0Ctx.lineWidth = 3;
+        s0Ctx.beginPath();
+        for (let x = 20; x <= 380; x += 5) {
+            let stretch = Math.sin((x / 30) - modePhase) * 12;
+            let yTop = 40 - stretch;
+            if (x === 20) s0Ctx.moveTo(x, yTop); else s0Ctx.lineTo(x, yTop);
+        }
+        s0Ctx.stroke();
+        s0Ctx.beginPath();
+        for (let x = 20; x <= 380; x += 5) {
+            let stretch = Math.sin((x / 30) - modePhase) * 12;
+            let yBot = 100 + stretch;
+            if (x === 20) s0Ctx.moveTo(x, yBot); else s0Ctx.lineTo(x, yBot);
+        }
+        s0Ctx.stroke();
+        s0Ctx.fillStyle = '#f8fafc';
+        s0Ctx.font = '11px sans-serif';
+        s0Ctx.fillText('x (Propagation Vector)', 270, 65);
+        s0Ctx.fillText('y (Thickness)', 25, 25);
+        s0Ctx.fillStyle = '#38bdf8';
+        s0Ctx.fillText('Symmetric (S0) — In-Plane Extensional', 80, 25);
+
+        a0Ctx.fillStyle = '#0f172a';
+        a0Ctx.fillRect(0, 0, a0Canvas.width, a0Canvas.height);
+        a0Ctx.strokeStyle = '#475569';
+        a0Ctx.setLineDash([4, 4]);
+        a0Ctx.beginPath(); a0Ctx.moveTo(20, 70); a0Ctx.lineTo(380, 70); a0Ctx.stroke();
+        a0Ctx.setLineDash([]);
+        a0Ctx.strokeStyle = '#f59e0b';
+        a0Ctx.lineWidth = 3;
+        a0Ctx.beginPath();
+        for (let x = 20; x <= 380; x += 5) {
+            let bend = Math.sin((x / 30) - modePhase) * 16;
+            let yTop = 40 + bend;
+            if (x === 20) a0Ctx.moveTo(x, yTop); else a0Ctx.lineTo(x, yTop);
+        }
+        a0Ctx.stroke();
+        a0Ctx.beginPath();
+        for (let x = 20; x <= 380; x += 5) {
+            let bend = Math.sin((x / 30) - modePhase) * 16;
+            let yBot = 100 + bend;
+            if (x === 20) a0Ctx.moveTo(x, yBot); else a0Ctx.lineTo(x, yBot);
+        }
+        a0Ctx.stroke();
+        a0Ctx.fillStyle = '#f8fafc';
+        a0Ctx.font = '11px sans-serif';
+        a0Ctx.fillText('x (Propagation Vector)', 270, 65);
+        a0Ctx.fillText('y (Thickness)', 25, 25);
+        a0Ctx.fillStyle = '#f59e0b';
+        a0Ctx.fillText('Antisymmetric (A0) — Flexural Bending', 70, 25);
+
+        requestAnimationFrame(drawModeDiagrams);
+    }
+    drawModeDiagrams();
+
+    // DUAL-MODE A-SCAN SYNTHESIS
+    let dspFilter = false;
+    let dspEnvelope = false;
+    let dspBaselineSub = false;
+
+    function toggleFilter() { dspFilter = !dspFilter; updateDspStatus(); drawAscan(); }
+    function toggleEnvelope() { dspEnvelope = !dspEnvelope; updateDspStatus(); drawAscan(); }
+    function toggleBaselineSub() { dspBaselineSub = !dspBaselineSub; updateDspStatus(); drawAscan(); }
+
+    function updateDspStatus() {
+        const modes = [];
+        if (dspFilter) modes.push("Bandpass Filter");
+        if (dspEnvelope) modes.push("Envelope Detector");
+        if (dspBaselineSub) modes.push("Baseline Subtraction");
+        document.getElementById('dspStatus').innerText = modes.length ? `Active: ${modes.join(" + ")}` : "Mode: Raw Synthesized Waveform";
+    }
+
+    // Time convention: t is microseconds, frequency is kHz.
+    // N cycles therefore occupy N*1000/f_kHz microseconds.
+    function toneBurstWave(t_us, tCenter_us, freqKHz, cycles, amp) {
+        const duration_us = (cycles * 1000) / freqKHz;
+        const tStart = tCenter_us - duration_us / 2;
+        const tEnd = tCenter_us + duration_us / 2;
+        if (t_us < tStart || t_us > tEnd) return 0;
+        const tau = (t_us - tStart) / duration_us;
+        const hanning = 0.5 * (1 - Math.cos(2 * Math.PI * tau));
+        const phaseCycles = freqKHz * (t_us - tStart) / 1000;
+        return amp * hanning * Math.sin(2 * Math.PI * phaseCycles);
+    }
+
+    function drawAscan() {
+        const aCanvas = document.getElementById('ascanCanvas');
+        const aCtx = aCanvas.getContext('2d');
+        const p = getParams();
+        const isNoDamage = (p.type === "No Damage");
+        const cycles = parseFloat(document.getElementById('toneCycles').value) || 5;
+
+        const cg_S0_mm = cg_S0 / 1000.0;
+        const cg_A0_mm = cg_A0 / 1000.0;
+        const dDirect = Math.hypot(p.sen.x - p.act.x, p.sen.y - p.act.y);
+
+        const tDirect_S0 = dDirect / cg_S0_mm;
+        const tDirect_A0 = dDirect / cg_A0_mm;
+
+        let tScatter_S0 = 999;
+        let tScatter_A0 = 999;
+        if (!isNoDamage) {
+            const dScat = Math.hypot(p.def.x - p.act.x, p.def.y - p.act.y) + Math.hypot(p.sen.x - p.def.x, p.sen.y - p.def.y);
+            tScatter_S0 = dScat / cg_S0_mm;
+            tScatter_A0 = dScat / cg_A0_mm;
+        }
+
+        document.getElementById('valDirectS0').innerText = tDirect_S0.toFixed(2);
+        document.getElementById('valDirectA0').innerText = tDirect_A0.toFixed(2);
+        document.getElementById('valScatterToF').innerText = isNoDamage ? "—" : `${tScatter_S0.toFixed(1)} (S0) / ${tScatter_A0.toFixed(1)} (A0) μs`;
+        document.getElementById('valDI').innerText = isNoDamage ? "0.000" : (0.12 + (p.crackLen / 100) * 0.45).toFixed(3);
+        document.getElementById('valSNR').innerText = (parseFloat(document.getElementById('snrDb')?.value) || 30).toFixed(0);
+        document.getElementById('valModel').innerText =
+            (document.getElementById('solverMode')?.value === 'exact') ?
+            'Rayleigh–Lamb numerical roots' : 'Approximate engineering model';
+
+        aCtx.fillStyle = '#0f172a';
+        aCtx.fillRect(0, 0, aCanvas.width, aCanvas.height);
+
+        // Grid
+        aCtx.strokeStyle = '#1e293b';
+        aCtx.lineWidth = 1;
+        for (let x = 50; x < aCanvas.width; x += 50) {
+            aCtx.beginPath(); aCtx.moveTo(x, 0); aCtx.lineTo(x, aCanvas.height); aCtx.stroke();
+        }
+        aCtx.beginPath(); aCtx.moveTo(0, aCanvas.height / 2); aCtx.lineTo(aCanvas.width, aCanvas.height / 2); aCtx.stroke();
+
+        // Waveform synthesis
+        aCtx.strokeStyle = dspEnvelope ? '#10b981' : '#38bdf8';
+        aCtx.lineWidth = 1.8;
+        aCtx.beginPath();
+
+        const totalTime = 180;
+        for (let px = 0; px < aCanvas.width; px++) {
+            let t = (px / aCanvas.width) * totalTime;
+
+            let excitation = toneBurstWave(t, 12, actFreqVal, cycles, 0.9);
+            let s0_direct = toneBurstWave(t, tDirect_S0, actFreqVal, cycles, 0.65);
+            let a0_direct = toneBurstWave(t, tDirect_A0, actFreqVal, cycles, 0.90);
+
+            let s0_echo = 0, a0_echo = 0;
+            if (!isNoDamage) {
+                const echoAmp = (p.crackLen / 60) * 0.45;
+                s0_echo = toneBurstWave(t, tScatter_S0, actFreqVal, cycles, echoAmp * 0.7);
+                a0_echo = toneBurstWave(t, tScatter_A0, actFreqVal, cycles, echoAmp * 1.1);
+            }
+
+            let signal = (dspBaselineSub && isNoDamage) ? 0 : (dspBaselineSub ? (s0_echo + a0_echo) : excitation + s0_direct + a0_direct + s0_echo + a0_echo);
+
+            const snrDb = Math.max(10, Math.min(60, parseFloat(document.getElementById('snrDb')?.value) || 30));
+            const noiseAmp = 0.28 * Math.pow(10, -snrDb / 20);
+            if (!dspFilter) {
+                signal += 0.04 * Math.sin(2 * Math.PI * 0.8 * t / 1000) + (seededRandom() - 0.5) * noiseAmp;
+            }
+
+            if (dspEnvelope) {
+                let envS0 = Math.exp(-Math.pow((t - tDirect_S0) / 4.5, 2)) * 0.65;
+                let envA0 = Math.exp(-Math.pow((t - tDirect_A0) / 5.5, 2)) * 0.90;
+                let envScat = !isNoDamage ? Math.exp(-Math.pow((t - tScatter_S0) / 4.5, 2)) * 0.35 : 0;
+                signal = envS0 + envA0 + envScat;
+            }
+
+            let py = (aCanvas.height / 2) - signal * 65;
+            if (px === 0) aCtx.moveTo(px, py); else aCtx.lineTo(px, py);
+        }
+        aCtx.stroke();
+
+        // Arrival Cursors
+        let curXS0 = (tDirect_S0 / totalTime) * aCanvas.width;
+        let curXA0 = (tDirect_A0 / totalTime) * aCanvas.width;
+
+        aCtx.strokeStyle = '#38bdf8';
+        aCtx.setLineDash([3, 3]);
+        aCtx.beginPath(); aCtx.moveTo(curXS0, 0); aCtx.lineTo(curXS0, aCanvas.height); aCtx.stroke();
+        aCtx.fillStyle = '#38bdf8';
+        aCtx.font = '10px sans-serif';
+        aCtx.fillText(`S0 Arrival (${tDirect_S0.toFixed(1)} μs)`, curXS0 + 4, 22);
+
+        aCtx.strokeStyle = '#f59e0b';
+        aCtx.beginPath(); aCtx.moveTo(curXA0, 0); aCtx.lineTo(curXA0, aCanvas.height); aCtx.stroke();
+        aCtx.fillStyle = '#f59e0b';
+        aCtx.fillText(`A0 Arrival (${tDirect_A0.toFixed(1)} μs)`, curXA0 + 4, 38);
+        aCtx.setLineDash([]);
+    }
+
+    document.getElementById('ascanCanvas').addEventListener('mousemove', (e) => {
+        const rect = e.target.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const totalTime = 180;
+        const t = (x / rect.width) * totalTime;
+        document.getElementById('curTime').innerText = t.toFixed(2);
+    });
+
+    // 2D CANVAS RENDERING WITH COORDINATE SCALING
+    const canvas = document.getElementById('waveCanvas');
+    const ctx = canvas.getContext('2d');
+    let waveRadiusS0 = 0;
+    let waveRadiusA0 = 0;
+    let recordedSignals = [];
+    let reconstructedPoint = null;
+
+    function toggleDamageControls() {
+        const type = document.getElementById('damageType').value;
+        const groupPos = document.getElementById('groupDefPos');
+        const groupGeom = document.getElementById('groupDefGeom');
+        if (type === 'No Damage') {
+            groupPos.classList.add('disabled-group');
+            groupGeom.classList.add('disabled-group');
+        } else {
+            groupPos.classList.remove('disabled-group');
+            groupGeom.classList.remove('disabled-group');
+        }
+    }
+
+    function getParams() {
+        const pL = parseFloat(document.getElementById('plateL').value) || 500;
+        const pW = parseFloat(document.getElementById('plateW').value) || 300;
+        return {
+            plateL: pL,
+            plateW: pW,
+            act: { x: parseFloat(document.getElementById('actX').value) || 80, y: parseFloat(document.getElementById('actY').value) || 150 },
+            sen: { x: parseFloat(document.getElementById('senX').value) || 420, y: parseFloat(document.getElementById('senY').value) || 150 },
+            sen2: { x: pL * 0.6, y: pW * 0.2 },
+            sen3: { x: pL * 0.6, y: pW * 0.8 },
+            def: { x: parseFloat(document.getElementById('defX').value) || 250, y: parseFloat(document.getElementById('defY').value) || 150 },
+            crackLen: parseFloat(document.getElementById('crackLength').value) || 25,
+            crackAng: parseFloat(document.getElementById('crackAngle').value) || 45,
+            type: document.getElementById('damageType').value
+        };
+    }
+
+    function redrawAll() {
+        drawAscan();
+        if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise();
+    }
+
+    // Coordinate Mapping (mm to canvas pixels)
+    function mapToCanvas(x_mm, y_mm, pL, pW) {
+        return {
+            x: (x_mm / pL) * canvas.width,
+            y: (y_mm / pW) * canvas.height
+        };
+    }
+
+    // ============================================================
+    // BOUNDED NON-LINEAR LEAST-SQUARES INVERSE SOLVER
+    // Derivative-free pattern search: stable for noisy synthetic ToF.
+    // ============================================================
+    function solveInverseTriangulation(act, sensors, arrivalDistances, pL, pW) {
+        function objective(x, y) {
+            let s = 0;
+            for (let i = 0; i < sensors.length; i++) {
+                const dx1 = x - act.x, dy1 = y - act.y;
+                const dx2 = x - sensors[i].x, dy2 = y - sensors[i].y;
+                const model = Math.hypot(dx1, dy1) + Math.hypot(dx2, dy2);
+                const r = model - arrivalDistances[i];
+                s += r*r;
+            }
+            return s;
+        }
+        let x = pL/2, y = pW/2;
+        let step = Math.max(1, Math.min(pL,pW)*0.08);
+        let best = objective(x,y);
+
+        for (let iter=0; iter<140; iter++) {
+            let improved = false;
+            const candidates = [
+                [x+step,y],[x-step,y],[x,y+step],[x,y-step],
+                [x+step,y+step],[x+step,y-step],[x-step,y+step],[x-step,y-step]
+            ];
+            for (const c of candidates) {
+                const cx = Math.max(0, Math.min(pL, c[0]));
+                const cy = Math.max(0, Math.min(pW, c[1]));
+                const val = objective(cx,cy);
+                if (val < best) { x=cx; y=cy; best=val; improved=true; }
+            }
+            if (!improved) step *= 0.55;
+            if (step < 0.02) break;
+        }
+        return {x,y, residual:Math.sqrt(best)};
+    }
+
+    function render2DWaves() {
+        const p = getParams();
+        const isNoDamage = (p.type === "No Damage");
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        const pAct = mapToCanvas(p.act.x, p.act.y, p.plateL, p.plateW);
+        const pSen1 = mapToCanvas(p.sen.x, p.sen.y, p.plateL, p.plateW);
+        const pSen2 = mapToCanvas(p.sen2.x, p.sen2.y, p.plateL, p.plateW);
+        const pSen3 = mapToCanvas(p.sen3.x, p.sen3.y, p.plateL, p.plateW);
+        const pDef = mapToCanvas(p.def.x, p.def.y, p.plateL, p.plateW);
+
+        // Grid
+        ctx.strokeStyle = '#f1f5f9';
+        ctx.lineWidth = 1;
+        for (let x = 0; x < canvas.width; x += 30) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke(); }
+        for (let y = 0; y < canvas.height; y += 30) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke(); }
+
+        // Path Lines
+        ctx.strokeStyle = '#cbd5e1';
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath(); ctx.moveTo(pAct.x, pAct.y); ctx.lineTo(pSen1.x, pSen1.y); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(pAct.x, pAct.y); ctx.lineTo(pSen2.x, pSen2.y); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(pAct.x, pAct.y); ctx.lineTo(pSen3.x, pSen3.y); ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Scaled Wavefront Propagation
+        const scaleX = canvas.width / p.plateL;
+        const velRatio = cg_A0 / cg_S0;
+        waveRadiusS0 = (waveRadiusS0 + 1.6) % (p.plateL * scaleX);
+        waveRadiusA0 = waveRadiusS0 * velRatio;
+
+        for (let r = waveRadiusS0; r > 0; r -= 35) {
+            if (r < canvas.width) {
+                ctx.strokeStyle = `rgba(37, 99, 235, ${Math.max(0, 0.9 - r / canvas.width)})`;
+                ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.arc(pAct.x, pAct.y, r, 0, Math.PI * 2); ctx.stroke();
+            }
+        }
+        for (let r = waveRadiusA0; r > 0; r -= 25) {
+            if (r < canvas.width) {
+                ctx.strokeStyle = `rgba(217, 119, 6, ${Math.max(0, 0.85 - r / canvas.width)})`;
+                ctx.lineWidth = 1.6;
+                ctx.beginPath(); ctx.arc(pAct.x, pAct.y, r, 0, Math.PI * 2); ctx.stroke();
+            }
+        }
+
+        // Elliptical Localization Curves
+        if (!isNoDamage) {
+            const drawEllipse = (f1, f2, totalDistMm, strokeStyle) => {
+                ctx.strokeStyle = strokeStyle;
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([3, 3]);
+                ctx.beginPath();
+                const cx = (f1.x + f2.x) / 2;
+                const cy = (f1.y + f2.y) / 2;
+                const c = Math.hypot(f2.x - f1.x, f2.y - f1.y) / 2;
+                const a = (totalDistMm / 2) * scaleX;
+                const b = Math.sqrt(Math.max(0, a * a - c * c));
+                const rot = Math.atan2(f2.y - f1.y, f2.x - f1.x);
+                ctx.ellipse(cx, cy, a, b, rot, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            };
+
+            const dScat1 = Math.hypot(p.def.x - p.act.x, p.def.y - p.act.y) + Math.hypot(p.sen.x - p.def.x, p.sen.y - p.def.y);
+            const dScat2 = Math.hypot(p.def.x - p.act.x, p.def.y - p.act.y) + Math.hypot(p.sen2.x - p.def.x, p.sen2.y - p.def.y);
+            const dScat3 = Math.hypot(p.def.x - p.act.x, p.def.y - p.act.y) + Math.hypot(p.sen3.x - p.def.x, p.sen3.y - p.def.y);
+
+            drawEllipse(pAct, pSen1, dScat1, 'rgba(239, 68, 68, 0.7)');
+            drawEllipse(pAct, pSen2, dScat2, 'rgba(16, 185, 129, 0.7)');
+            drawEllipse(pAct, pSen3, dScat3, 'rgba(217, 119, 6, 0.7)');
+
+            if (reconstructedPoint) {
+                const pRec = mapToCanvas(reconstructedPoint.x, reconstructedPoint.y, p.plateL, p.plateW);
+                ctx.fillStyle = '#8b5cf6';
+                ctx.beginPath(); ctx.arc(pRec.x, pRec.y, 6, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = '#4c1d95';
+                ctx.stroke();
+                ctx.fillStyle = '#4c1d95';
+                ctx.font = 'bold 9px sans-serif';
+                ctx.fillText(`Reconstructed (${reconstructedPoint.x.toFixed(1)}, ${reconstructedPoint.y.toFixed(1)})`, pRec.x + 8, pRec.y - 4);
+            }
+        }
+
+        // Transducers
+        ctx.fillStyle = '#2563eb';
+        ctx.beginPath(); ctx.arc(pAct.x, pAct.y, 7, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#0f172a'; ctx.font = 'bold 9px sans-serif'; ctx.fillText('Actuator (A)', pAct.x - 28, pAct.y - 10);
+
+        ctx.fillStyle = '#10b981';
+        ctx.beginPath(); ctx.arc(pSen1.x, pSen1.y, 7, 0, Math.PI * 2); ctx.fill();
+        ctx.fillText('S1', pSen1.x + 10, pSen1.y + 4);
+        ctx.beginPath(); ctx.arc(pSen2.x, pSen2.y, 5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillText('S2', pSen2.x + 8, pSen2.y + 4);
+        ctx.beginPath(); ctx.arc(pSen3.x, pSen3.y, 5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillText('S3', pSen3.x + 8, pSen3.y + 4);
+
+        // Flaw
+        if (!isNoDamage) {
+            const rad = (p.crackAng * Math.PI) / 180;
+            const halfL = (p.crackLen / 2) * scaleX;
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 3.5;
+            ctx.beginPath();
+            ctx.moveTo(pDef.x - halfL * Math.cos(rad), pDef.y - halfL * Math.sin(rad));
+            ctx.lineTo(pDef.x + halfL * Math.cos(rad), pDef.y + halfL * Math.sin(rad));
+            ctx.stroke();
+            ctx.fillStyle = '#b91c1c';
+            ctx.fillText(`Flaw (${p.def.x}, ${p.def.y})`, pDef.x - 30, pDef.y - 12);
+        }
+
+        requestAnimationFrame(render2DWaves);
+    }
+    render2DWaves();
+
+    // 3D WAVEFIELD ENGINE
+    const container3d = document.getElementById('threejs-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0f172a);
+    const camera = new THREE.PerspectiveCamera(45, container3d.clientWidth / container3d.clientHeight, 0.1, 1000);
+    camera.position.set(0, -12, 10);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(container3d.clientWidth, container3d.clientHeight);
+    container3d.appendChild(renderer.domElement);
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    dirLight.position.set(5, 10, 15);
+    scene.add(dirLight);
+
+    const gridRes = 90;
+    const planeGeo = new THREE.PlaneGeometry(12, 8, gridRes, gridRes);
+    const colors = new Float32Array(planeGeo.attributes.position.count * 3);
+    planeGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    const plateMesh = new THREE.Mesh(planeGeo, new THREE.MeshPhongMaterial({ side: THREE.DoubleSide, vertexColors: true, shininess: 80 }));
+    scene.add(plateMesh);
+
+    let phase = 0;
+    function animate3D() {
+        requestAnimationFrame(animate3D);
+        controls.update();
+        phase += 0.08;
+        const pos = planeGeo.attributes.position;
+        const cols = planeGeo.attributes.color;
+        const p = getParams();
+        const isNoDamage = (p.type === "No Damage");
+        const actX3D = (p.act.x - p.plateL / 2) / (p.plateL / 12);
+        const actY3D = -(p.act.y - p.plateW / 2) / (p.plateW / 8);
+        const defX3D = (p.def.x - p.plateL / 2) / (p.plateL / 12);
+        const defY3D = -(p.def.y - p.plateW / 2) / (p.plateW / 8);
+
+        for (let i = 0; i < pos.count; i++) {
+            const x = pos.getX(i);
+            const y = pos.getY(i);
+            const rAct = Math.hypot(x - actX3D, y - actY3D);
+
+            let z_S0 = Math.sin(rAct * 2.8 - phase) * Math.exp(-rAct * 0.22) * 0.25;
+            let z_A0 = Math.sin(rAct * 4.8 - phase * 0.6) * Math.exp(-rAct * 0.28) * 0.35;
+            let z = z_S0 + z_A0;
+
+            if (!isNoDamage) {
+                const rDef = Math.hypot(x - defX3D, y - defY3D);
+                z += Math.sin(rDef * 4.0 - phase + 1.5) * Math.exp(-rDef * 0.5) * 0.2;
+            }
+            pos.setZ(i, z);
+            const colorObj = new THREE.Color();
+            if (z > 0.05) colorObj.setHSL(0.58, 0.9, 0.4 + z);
+            else if (z < -0.05) colorObj.setHSL(0.08, 0.9, 0.4 + Math.abs(z));
+            else colorObj.setHSL(0.6, 0.3, 0.15);
+            cols.setXYZ(i, colorObj.r, colorObj.g, colorObj.b);
+        }
+        pos.needsUpdate = true;
+        cols.needsUpdate = true;
+        renderer.render(scene, camera);
+    }
+    animate3D();
+
+    window.addEventListener('resize', () => {
+        camera.aspect = container3d.clientWidth / container3d.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container3d.clientWidth, container3d.clientHeight);
+    });
+
+    // RECORD EXPERIMENTAL DATA FUNCTION
+    function recordExperimentalData() {
+        if (recordedSignals.length >= 5) {
+            alert("Maximum limit of 5 simulation trials reached. Dataset is ready for export.");
+            return;
+        }
+
+        const idx = recordedSignals.length;
+        const p = getParams();
+        const isNoDamage = (p.type === "No Damage");
+
+        if (manoharMode === 'strict' && idx === 0 && !isNoDamage) {
+            alert("Prof. Manohar (Strict Mode): Protocol check! Trial 1 must establish the healthy baseline reference (No Damage).");
+            return;
+        }
+
+        const cg_S0_mm = cg_S0 / 1000.0;
+        const cg_A0_mm = cg_A0 / 1000.0;
+        const directDist = Math.hypot(p.sen.x - p.act.x, p.sen.y - p.act.y);
+
+        const theoToF_S0 = directDist / cg_S0_mm;
+        const theoToF_A0 = directDist / cg_A0_mm;
+
+        const snrDb = Math.max(10, Math.min(60, parseFloat(document.getElementById('snrDb')?.value) || 30));
+        const tofNoiseScale = Math.max(0.02, 0.25 * Math.pow(10, (30 - snrDb) / 20));
+        const obsToF_S0 = Math.max(0, theoToF_S0 + (idx > 0 ? (seededRandom() - 0.5) * tofNoiseScale : 0.0));
+        const obsToF_A0 = Math.max(0, theoToF_A0 + (idx > 0 ? (seededRandom() - 0.5) * tofNoiseScale * 1.25 : 0.0));
+
+        let obsToF_s = "—", deltaToF_S0 = "—", reconstructedCoords = "—", locErr = "—";
+        if (!isNoDamage) {
+            const sensors = [p.sen, p.sen2, p.sen3];
+            const trueDistances = sensors.map(s => Math.hypot(p.def.x - p.act.x, p.def.y - p.act.y) + Math.hypot(s.x - p.def.x, s.y - p.def.y));
+            const measuredDistances = trueDistances.map(d => d + (seededRandom() - 0.5) * (0.15 * Math.pow(10, (30 - snrDb) / 20)));
+
+            obsToF_s = (measuredDistances[0] / cg_S0_mm).toFixed(2);
+            deltaToF_S0 = (parseFloat(obsToF_s) - obsToF_S0).toFixed(2);
+
+            const solved = solveInverseTriangulation(p.act, sensors, measuredDistances, p.plateL, p.plateW);
+            reconstructedPoint = solved;
+
+            const errorDist = Math.hypot(solved.x - p.def.x, solved.y - p.def.y);
+            reconstructedCoords = `(${solved.x.toFixed(1)}, ${solved.y.toFixed(1)})`;
+            locErr = errorDist.toFixed(2);
+        }
+
+        const record = {
+            trialNum: idx + 1,
+            type: p.type,
+            coords: isNoDamage ? "—" : `(${p.def.x}, ${p.def.y})`,
+            theoToF_S0: theoToF_S0.toFixed(2),
+            obsToF_S0: obsToF_S0.toFixed(2),
+            cg_S0: cg_S0.toFixed(0),
+            theoToF_A0: theoToF_A0.toFixed(2),
+            obsToF_A0: obsToF_A0.toFixed(2),
+            cg_A0: cg_A0.toFixed(0),
+            obsToF_s: obsToF_s,
+            deltaToF_S0: deltaToF_S0,
+            reconstructedCoords: reconstructedCoords,
+            locErr: locErr,
+            tofErrorPct: ((obsToF_S0 - theoToF_S0) / Math.max(theoToF_S0,1e-9) * 100).toFixed(2)
+        };
+
+        recordedSignals.push(record);
+
+        const badge = document.getElementById('badgeRecord');
+        if (recordedSignals.length < 5) {
+            badge.innerText = `RECORD TRIAL ${recordedSignals.length + 1} / 5`;
+        } else {
+            badge.innerText = `ALL 5 PROTOCOL TRIALS LOGGED ✓`;
+            document.getElementById('btnRecord').style.backgroundColor = '#10b981';
+        }
+
+        updateObservationTable();
+
+        if (isCallActive) {
+            let feedback = (manoharMode === 'strict') ?
+                `Trial ${record.trialNum} recorded. Mode group speeds: S0 = ${record.cg_S0} m/s, A0 = ${record.cg_A0} m/s. Triangulation residual: ${record.locErr} mm.` :
+                `Great work! Trial ${record.trialNum} recorded. Notice the position of the reconstructed coordinate on the plate plane!`;
+            document.getElementById('manoharLiveTranscript').innerHTML = `<strong>Prof. Manohar:</strong> ${feedback}`;
+            speakManohar(feedback);
+        }
+    }
+
+    function updateObservationTable() {
+        const tbody = document.getElementById('matrixTableBody');
+        tbody.innerHTML = '';
+        recordedSignals.forEach(r => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${r.trialNum}</strong></td>
+                <td>${r.type}</td>
+                <td>${r.coords}</td>
+                <td>${r.theoToF_S0}</td>
+                <td>${r.obsToF_S0}</td>
+                <td>${r.cg_S0}</td>
+                <td>${r.theoToF_A0}</td>
+                <td>${r.obsToF_A0}</td>
+                <td>${r.cg_A0}</td>
+                <td>${r.obsToF_s}</td>
+                <td>${r.deltaToF_S0}</td>
+                <td><strong>${r.reconstructedCoords}</strong></td>
+                <td><strong>${r.locErr}</strong></td>
+                <td>${r.tofErrorPct}%</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // EXPORT TO CSV
+    function exportTrialsCSV() {
+        if (recordedSignals.length === 0) {
+            alert("No trial data recorded to export. Complete at least one trial first!");
+            return;
+        }
+        let csv = "Trial,Condition,True_Coords,Theo_ToF_S0_us,Obs_ToF_S0_us,cg_S0_ms,Theo_ToF_A0_us,Obs_ToF_A0_us,cg_A0_ms,Obs_ToF_Scat_us,Delta_ToF_us,Reconstructed_Coords,Loc_Error_mm,S0_ToF_Error_pct\n";
+        recordedSignals.forEach(r => {
+            csv += `${r.trialNum},"${r.type}","${r.coords}",${r.theoToF_S0},${r.obsToF_S0},${r.cg_S0},${r.theoToF_A0},${r.obsToF_A0},${r.cg_A0},"${r.obsToF_s}","${r.deltaToF_S0}","${r.reconstructedCoords}","${r.locErr}",${r.tofErrorPct}\n`;
+        });
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "GARRF_LambWave_Simulation_Trials.csv";
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    // RESET FUNCTION
+    function resetAllTrials() {
+        if (confirm("Reset all 5 recorded simulation trials?")) {
+            recordedSignals = [];
+            reconstructedPoint = null;
+            randomSeed = 123456789;
+            document.getElementById('badgeRecord').innerText = "RECORD TRIAL 1 / 5";
+            document.getElementById('btnRecord').style.backgroundColor = "#2563eb";
+            const tbody = document.getElementById('matrixTableBody');
+            tbody.innerHTML = '<tr><td colspan="14" style="text-align: center; color: #94a3b8;">No simulation trial recorded yet. Execute Trial 1 to populate baseline.</td></tr>';
+        }
+    }
+
+    // TWO-MODE PROF. MANOHAR VOICE LOGIC
+    // ============================================================
+    // PROF. MANOHAR VOICE ASSISTANT — SECTION-AWARE ENGINE
+    // Strict and Interactive modes use DIFFERENT teaching scripts.
+    // NEXT/CONTINUE advances the student to the next laboratory section.
+    // ============================================================
+    let manoharMode = 'strict';
+    let isCallActive = false;
+    let lastSpokenText = "";
+    let manoharSection = 1;
+
+    const manoharScripts = {
+        strict: [
+            {
+                title: "Section 1 — Theory",
+                text: "Section 1. Theoretical foundations. First study the guided-wave formulation and the fundamental symmetric S0 and antisymmetric A0 Lamb-wave modes. Compare their displacement character and understand phase velocity and group velocity. No sensor setup is required yet. When ready, press NEXT for the numerical dispersion study."
+            },
+            {
+                title: "Section 2 — Dispersion",
+                text: "Section 2. Numerical dispersion study. Select the material, plate thickness and operating frequency. Examine the frequency-thickness product and compare S0 and A0 phase and group velocities. Complete your observation before pressing NEXT for the specimen setup."
+            },
+            {
+                title: "Section 3 — Specimen & PZT Setup",
+                text: "Section 3. Specimen setup. Before changing any sensor value, understand the measurement arrangement. Actuator A is the PZT element that launches the guided wave. S1 is the primary receiving PZT, while S2 and S3 provide additional receiving paths for localization. The coordinate controls below define where these elements are placed. After understanding the arrangement, inspect the geometry and then introduce a flaw if required. Press NEXT when ready for the A-scan."
+            },
+            {
+                title: "Section 4 — A-Scan",
+                text: "Section 4. A-scan measurement. Now that the actuator and receiving sensors have been introduced, generate the Hanning-windowed tone burst and observe the direct S0 and A0 arrivals. Use the cursor and signal-processing controls to study time of flight, filtering, envelope detection and baseline subtraction. Press NEXT when ready."
+            },
+            {
+                title: "Section 5 — SHM",
+                text: "Section 5. Structural health monitoring analysis. Compare the healthy baseline with the damaged condition. Examine scattered arrivals, delta time of flight and damage sensitivity. Use the recorded trials to study how location, severity and crack angle influence the synthetic response. Press NEXT for inverse localization."
+            },
+            {
+                title: "Section 6 — Inverse Localization",
+                text: "Section 6. Inverse localization. Use the multiple actuator-to-damage-to-sensor paths to reconstruct the flaw coordinates. Compare the reconstructed position with the true coordinates and report the localization error. Review the trial matrix and export the dataset when finished."
+            }
+        ],
+        interactive: [
+            {
+                title: "Section 1 — Explore",
+                text: "Let's begin with the theory. First look at the S0 and A0 mode diagrams. S0 is primarily extensional and A0 is primarily flexural. Study how their propagation characteristics differ. There is no sensor question at this stage. Press NEXT when you are ready to investigate dispersion."
+            },
+            {
+                title: "Section 2 — Investigate",
+                text: "Now investigate dispersion. Change thickness or frequency and watch the operating point move. Compare the S0 and A0 group velocities and make one observation. Press NEXT to enter the specimen and measurement setup."
+            },
+            {
+                title: "Section 3 — Understand the Sensors",
+                text: "Before we ask you anything about sensors, let us introduce them. Actuator A is the PZT that launches the Lamb-wave packet. S1 receives the primary response. S2 and S3 provide additional receiving paths so the inverse solver can estimate a damage location. Now inspect the plate geometry and see where these elements are positioned. Only after this introduction should you reason about sensor paths. Press NEXT when ready for the A-scan."
+            },
+            {
+                title: "Section 4 — Observe",
+                text: "The actuator and receiving sensors are now established. Observe the A-scan and identify the direct S0 and A0 arrivals. Use the cursor and signal-processing controls. Which arrival appears first, and what does the group velocity tell you? Press NEXT to continue to damage analysis."
+            },
+            {
+                title: "Section 5 — Diagnose",
+                text: "This is the SHM diagnosis stage. Compare healthy and damaged responses. Look at the scattered echo and delta time of flight. Change crack length or angle and observe whether the synthetic damage indicator changes consistently. Press NEXT when ready to locate the damage."
+            },
+            {
+                title: "Section 6 — Locate",
+                text: "Finally, solve the inverse problem. The multiple receiving paths are used to estimate the hidden flaw coordinates. Compare the reconstructed point with the true flaw and evaluate the localization error. Review your observation matrix and export the trial data when finished."
+            }
+        ]
+    };
+
+    function getManoharSectionElement(sectionNumber) {
+        return document.getElementById("section-" + sectionNumber);
+    }
+
+    function scrollToManoharSection(sectionNumber) {
+        const target = getManoharSectionElement(sectionNumber);
+        if (!target) return false;
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+        target.classList.add("manohar-highlight");
+        setTimeout(() => target.classList.remove("manohar-highlight"), 1800);
+        return true;
+    }
+
+    function updateManoharTranscript(text) {
+        const box = document.getElementById('manoharLiveTranscript');
+        if (box) {
+            box.textContent = "";
+            const strong = document.createElement("strong");
+            strong.textContent = "Prof. Manohar: ";
+            box.appendChild(strong);
+            box.appendChild(document.createTextNode(text));
+        }
+    }
+
+    function setManoharMode(mode) {
+        manoharMode = (mode === 'interactive') ? 'interactive' : 'strict';
+
+        document.getElementById('btnModeStrict').className =
+            (manoharMode === 'strict') ? 'mode-btn strict active-strict' : 'mode-btn strict';
+
+        document.getElementById('btnModeInteractive').className =
+            (manoharMode === 'interactive') ? 'mode-btn interactive active-interactive' : 'mode-btn interactive';
+
+        // IMPORTANT: changing mode changes the teaching script immediately.
+        // It does not merely change the voice pitch.
+        const script = manoharScripts[manoharMode][manoharSection - 1];
+        if (script) {
+            updateManoharTranscript(script.text);
+            if (isCallActive) speakManohar(script.text);
+        }
+    }
+
+    function callManoharTeacher() {
+        isCallActive = true;
+        document.getElementById('callManoharBtn').style.display = 'none';
+        document.getElementById('manoharDialogueBox').style.display = 'flex';
+
+        // Start at Section 1 every time a new teaching call is connected.
+        manoharSection = 1;
+        const script = manoharScripts[manoharMode][0];
+        updateManoharTranscript(script.text);
+        scrollToManoharSection(1);
+        speakManohar(script.text);
+    }
+
+    function hangUpManoharCall() {
+        isCallActive = false;
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        document.getElementById('manoharDialogueBox').style.display = 'none';
+        document.getElementById('callManoharBtn').style.display = 'flex';
+    }
+
+    function speakManohar(text) {
+        if (!isCallActive || !('speechSynthesis' in window)) return;
+        window.speechSynthesis.cancel();
+        lastSpokenText = text;
+
+        const utterance = new SpeechSynthesisUtterance(
+            String(text).replace(/<[^>]*>?/gm, '')
+        );
+        utterance.lang = 'en-IN';
+        utterance.pitch = (manoharMode === 'strict') ? 0.85 : 1.0;
+        utterance.rate = (manoharMode === 'strict') ? 0.94 : 1.02;
+
+        utterance.onstart = () => {
+            const badge = document.getElementById('manoharSectionBadge');
+            if (badge) badge.textContent =
+                `${manoharMode === 'strict' ? 'STRICT' : 'INTERACTIVE'} • ${manoharScripts[manoharMode][manoharSection - 1].title}`;
+        };
+
+        window.speechSynthesis.speak(utterance);
+    }
+
+    function repeatManoharSpeech() {
+        if (lastSpokenText) speakManohar(lastSpokenText);
+    }
+
+    function stopManoharSpeech() {
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    }
+
+    function resumeManoharSession() {
+        if (!isCallActive) return;
+        const script = manoharScripts[manoharMode][manoharSection - 1];
+        if (script) speakManohar(script.text);
+    }
+
+    // NEXT / CONTINUE:
+    // 1. Increment the teaching section.
+    // 2. Scroll the actual webpage to that section.
+    // 3. Load the script belonging to the currently selected mode.
+    // 4. Speak the new script.
+    function continueManoharSpeech() {
+        if (!isCallActive) {
+            alert("Please connect Prof. Manohar first.");
+            return;
+        }
+
+        if (manoharSection >= manoharScripts[manoharMode].length) {
+            const finalText = manoharMode === 'strict'
+                ? "You have reached the end of the guided laboratory sequence. Review your observations and export the trial data."
+                : "You have completed the guided journey. Now review your observations, compare the results and export your dataset.";
+            updateManoharTranscript(finalText);
+            speakManohar(finalText);
+            return;
+        }
+
+        manoharSection++;
+
+        const script = manoharScripts[manoharMode][manoharSection - 1];
+        scrollToManoharSection(manoharSection);
+        updateManoharTranscript(script.text);
+        speakManohar(script.text);
+    }
+
+    // ARJUN GUIDED ASSISTANT (XSS-PROTECTED VIA textContent)
+    function sendArjunMessage() {
+        const inp = document.getElementById('arjunInput');
+        const txt = inp.value.trim();
+        if (!txt) return;
+        const box = document.getElementById('arjunChatBox');
+
+        // Safe insertion protecting against XSS
+        const userMsg = document.createElement('div');
+        userMsg.className = 'chat-msg msg-user';
+        const userStrong = document.createElement('strong');
+        userStrong.textContent = 'You: ';
+        userMsg.appendChild(userStrong);
+        userMsg.appendChild(document.createTextNode(txt));
+        box.appendChild(userMsg);
+        inp.value = '';
+
+        setTimeout(() => {
+            const p = getParams();
+            const matKey = document.getElementById('matSelect').value;
+            const mat = materials[matKey];
+            const dDirect = Math.hypot(p.sen.x - p.act.x, p.sen.y - p.act.y).toFixed(1);
+
+            let answer = "";
+            const lower = txt.toLowerCase();
+            if (lower.includes("group") || lower.includes("phase")) {
+                answer = `Phase velocity cp = ω/k describes the speed of individual phase oscillations, whereas group velocity cg = dω/dk governs the transport speed of the wavepacket's envelope and energy. In ToF structural health monitoring, arrival times are detected from the envelope packet at cg.`;
+            } else if (lower.includes("s0") || lower.includes("a0")) {
+                answer = `S0 is the fundamental symmetric mode (extensional, faster, lower dispersion at low fd), while A0 is the fundamental antisymmetric mode (flexural, slower, highly dispersive, sensitive to surface damage).`;
+            } else if (lower.includes("triangulation") || lower.includes("inverse")) {
+                answer = `The inverse triangulation solver minimizes travel-time residuals across three non-collinear sensors to locate flaw coordinates (X*, Y*) within the plate boundaries.`;
+            } else {
+                answer = `For ${mat.name} (d = ${plateThickVal} mm, f = ${actFreqVal} kHz), the symmetric mode operates at cg = ${cg_S0.toFixed(0)} m/s and the antisymmetric mode operates at cg = ${cg_A0.toFixed(0)} m/s. Distance between actuator and sensor is ${dDirect} mm.`;
+            }
+
+            const replyMsg = document.createElement('div');
+            replyMsg.className = 'chat-msg msg-arjun';
+            const botStrong = document.createElement('strong');
+            botStrong.textContent = '🤖 ARJUN: ';
+            replyMsg.appendChild(botStrong);
+            replyMsg.appendChild(document.createTextNode(answer));
+            box.appendChild(replyMsg);
+            box.scrollTop = box.scrollHeight;
+        }, 300);
+    }
+
+    // Draggable header
+    const dBox = document.getElementById('manoharDialogueBox');
+    const dHdr = document.getElementById('manoharHeader');
+    let isDragging = false, sX, sY, iX, iY;
+    dHdr.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        sX = e.clientX; sY = e.clientY;
+        const r = dBox.getBoundingClientRect();
+        dBox.style.bottom = 'auto'; dBox.style.right = 'auto';
+        dBox.style.left = r.left + 'px'; dBox.style.top = r.top + 'px';
+        iX = r.left; iY = r.top;
+        e.preventDefault();
+    });
+    document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        dBox.style.left = (iX + e.clientX - sX) + 'px';
+        dBox.style.top = (iY + e.clientY - sY) + 'px';
+    });
+    document.addEventListener('mouseup', () => { isDragging = false; });
+
+    // Initial calculation
+    updateDispersionCalc();
+    toggleDamageControls();
 </script>
 </body>
 </html>
