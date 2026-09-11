@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Multi-Structural EMI Lab - GARRF.IN</title>
+    <!-- Three.js & OrbitControls for Zoomable 3D Structural Visualization -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg-dark: #0f172a;
+            --card-bg: #1e293b;
+            --border: #334155;
+            --text-light: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #38bdf8;
+            --healthy-color: #16a34a;
+            --damaged-color: #dc2626;
+            --compensated-color: #9333ea;
+            --gold: #f59e0b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+        body { background-color: var(--bg-dark); color: var(--text-light); display: flex; flex-direction: column; min-height: 100vh; overflow-x: hidden; }
+
+        header { background-color: var(--card-bg); border-bottom: 1px solid var(--border); padding: 0.75rem 1.5rem; display: flex; justify-content: space-between; align-items: center; }
+        .header-brand { display: flex; align-items: center; gap: 0.85rem; }
+        .brand-logo { width: 42px; height: 42px; border-radius: 6px; object-fit: cover; border: 1px solid var(--accent); background-color: #ffffff; }
+        .brand-titles h1 { font-size: 1.15rem; color: var(--accent); }
+        .brand-titles h2 { font-size: 0.78rem; color: var(--text-muted); }
+
+        .container { display: grid; grid-template-columns: 360px 1fr; gap: 1.25rem; padding: 1.25rem; flex: 1; }
+        @media (max-width: 1100px) { .container { grid-template-columns: 1fr; } }
+
+        .panel { background-color: var(--card-bg); border-radius: 0.5rem; border: 1px solid var(--border); padding: 1.25rem; display: flex; flex-direction: column; gap: 0.85rem; max-height: calc(100vh - 120px); overflow-y: auto; }
+        .panel-title { font-size: 0.85rem; font-weight: 600; border-bottom: 1px solid var(--border); padding-bottom: 0.3rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; }
+
+        .control-group { display: flex; flex-direction: column; gap: 0.25rem; }
+        label { font-size: 0.8rem; color: var(--text-muted); }
+        input[type="number"], select { width: 100%; padding: 0.45rem; background-color: var(--bg-dark); border: 1px solid var(--border); border-radius: 0.375rem; color: var(--text-light); font-size: 0.825rem; }
+        input[type="range"] { width: 100%; accent-color: var(--primary); }
+        input:disabled, select:disabled, button:disabled { opacity: 0.4; cursor: not-allowed !important; }
+        .range-val { font-size: 0.75rem; color: var(--text-muted); text-align: right; }
+
+        .btn-wrapper { width: 100%; position: relative; }
+        .highlight-step { border: 2px solid var(--gold) !important; box-shadow: 0 0 10px rgba(245, 158, 11, 0.6); }
+
+        button { width: 100%; padding: 0.60rem 0.85rem; border-radius: 0.375rem; border: none; font-weight: 600; font-size: 0.825rem; cursor: pointer; transition: all 0.2s; }
+        .btn-healthy { background-color: #22c55e; color: #052e16; }
+        .btn-healthy:hover:not(:disabled) { background-color: #16a34a; }
+        .btn-damage { background-color: var(--gold); color: #451a03; }
+        .btn-damage:hover:not(:disabled) { background-color: #d97706; }
+        .btn-reset { background-color: #ef4444; color: #ffffff; font-weight: 700; margin-top: 0.4rem; }
+        .btn-reset:hover { background-color: #dc2626; }
+        .btn-secondary { background-color: transparent; border: 1px solid var(--border); color: var(--text-light); }
+        .btn-secondary:hover:not(:disabled) { background-color: var(--border); }
+
+        .display-area { display: flex; flex-direction: column; gap: 1rem; }
+        
+        .section-3d { background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0.75rem; height: 260px; display: flex; flex-direction: column; position: relative; }
+        #canvas3D { width: 100%; height: 100%; border-radius: 0.375rem; background-color: #ffffff; display: block; cursor: grab; }
+        #canvas3D:active { cursor: grabbing; }
+        .overlay-tag { position: absolute; top: 15px; left: 15px; background: rgba(255, 255, 255, 0.9); border: 1px solid #cbd5e1; padding: 0.25rem 0.6rem; border-radius: 4px; font-size: 0.75rem; color: #0369a1; font-weight: 600; pointer-events: none; }
+        .zoom-hint { position: absolute; bottom: 15px; right: 15px; background: rgba(255, 255, 255, 0.9); border: 1px solid #cbd5e1; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.7rem; color: #b45309; font-weight: 600; pointer-events: none; }
+
+        .visualizer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        @media (max-width: 900px) { .visualizer-grid { grid-template-columns: 1fr; } }
+
+        .canvas-container { background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0.75rem; display: flex; flex-direction: column; height: 250px; }
+        .canvas-header { font-size: 0.8rem; font-weight: 600; color: #0f172a; margin-bottom: 0.4rem; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
+        canvas { width: 100%; height: 100%; display: block; flex: 1; }
+
+        .theory-box { background-color: var(--bg-dark); border: 1px solid var(--border); border-radius: 0.375rem; padding: 0.65rem 0.85rem; font-size: 0.78rem; color: #cbd5e1; line-height: 1.45; }
+        .theory-box strong { color: var(--accent); }
+
+        .status-footer-box { background-color: var(--card-bg); border: 2px solid var(--accent); border-radius: 0.5rem; padding: 0.85rem 1.1rem; margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.35rem; }
+        .status-footer-title { font-size: 0.82rem; font-weight: 700; color: var(--accent); text-transform: uppercase; display: flex; align-items: center; gap: 0.4rem; }
+        .status-footer-desc { font-size: 0.78rem; color: #cbd5e1; line-height: 1.4; }
+
+        .metrics-screen { background-color: var(--card-bg); border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.85rem; }
+        .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.65rem; margin-top: 0.4rem; }
+        @media (max-width: 768px) { .metrics-grid { grid-template-columns: repeat(2, 1fr); } }
+
+        .metric-card { background-color: var(--bg-dark); border: 1px solid var(--border); border-radius: 0.375rem; padding: 0.6rem; text-align: center; }
+        .metric-card .title { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; }
+        .metric-card .value { font-size: 1.05rem; font-weight: 700; color: var(--gold); margin: 0.2rem 0; }
+        .metric-card .sub { font-size: 0.62rem; color: var(--text-muted); }
+
+        .phone-fab { position: fixed; bottom: 24px; right: 24px; background: linear-gradient(135deg, #2563eb, #38bdf8); border: 2px solid #ffffff; border-radius: 35px; box-shadow: 0 4px 20px rgba(56, 189, 248, 0.5); display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.1rem; color: #ffffff; font-weight: 700; font-size: 0.85rem; cursor: pointer; z-index: 99; transition: transform 0.2s; }
+        .phone-fab:hover { transform: scale(1.05); }
+
+        .ai-modal { 
+            position: fixed; 
+            bottom: 95px; 
+            right: 24px; 
+            width: 420px; 
+            background-color: var(--card-bg); 
+            border: 2px solid var(--accent); 
+            border-radius: 0.75rem; 
+            padding: 1.25rem; 
+            box-shadow: 0 12px 35px rgba(0,0,0,0.7); 
+            display: flex; 
+            flex-direction: column; 
+            gap: 0.75rem; 
+            z-index: 1000; 
+            user-select: none;
+        }
+        .ai-modal.hidden { display: none !important; }
+        
+        .modal-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border-bottom: 1px solid var(--border); 
+            padding-bottom: 0.5rem; 
+            cursor: move; 
+            background: rgba(255,255,255,0.03);
+            margin: -1.25rem -1.25rem 0.5rem -1.25rem;
+            padding: 0.85rem 1.25rem;
+            border-top-left-radius: 0.75rem;
+            border-top-right-radius: 0.75rem;
+        }
+        .modal-header h3 { font-size: 0.95rem; color: var(--accent); display: flex; align-items: center; gap: 0.5rem; }
+        .modal-close { background: none; border: none; color: var(--text-muted); font-size: 1.3rem; cursor: pointer; width: auto; padding: 0; }
+        .modal-body { font-size: 0.84rem; color: #cbd5e1; line-height: 1.48; max-height: 280px; overflow-y: auto; user-select: text; }
+
+        .legend { display: flex; gap: 0.6rem; font-size: 0.68rem; color: #475569; }
+        .legend-item { display: flex; align-items: center; gap: 0.25rem; }
+        .legend-color { width: 9px; height: 9px; border-radius: 2px; }
+
+        footer { border-top: 1px solid var(--border); padding: 0.8rem; text-align: center; background-color: var(--card-bg); font-size: 0.78rem; color: var(--text-muted); line-height: 1.4; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-brand">
+            <img src="logo.jpeg" alt="GARRF Logo" class="brand-logo" onerror="this.style.display='none'">
+            <div class="brand-titles">
+                <h1>Gopalkrishna Advanced Rural Research Foundation (GARRF.IN)</h1>
+                <h2>Kalam Research ZERO FUNDING Lab Initiative | 3D Structural EMI Simulator</h2>
+            </div>
+        </div>
+        <div>🇮🇳 <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">India</span></div>
+    </header>
+
+    <div class="container">
+        <!-- Controls Panel -->
+        <div class="panel">
+            <h2 class="panel-title">1. Structural & Sensor Setup</h2>
+
+            <div class="control-group">
+                <label for="stateType">Target Mounting Structure (3 Experiment Types)</label>
+                <select id="stateType" class="highlight-step">
+                    <option value="" disabled selected>-- Choose Experiment Type --</option>
+                    <option value="free">1. Free Unbonded PZT Patch (Air Baseline)</option>
+                    <option value="beam">2. PZT Bonded on Steel Beam Structure</option>
+                    <option value="plate">3. PZT Bonded on Aluminum Plate Structure</option>
+                </select>
+            </div>
+
+            <div class="control-group" id="locGroup">
+                <label for="pztLoc">PZT Sensor Location</label>
+                <select id="pztLoc">
+                    <option value="root">Near Support / Root (High Strain Zone)</option>
+                    <option value="mid">Mid-Span (Bending Zone)</option>
+                    <option value="tip">Free Tip (Low Strain Zone)</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="freqSweep">Frequency Sweep Range</label>
+                <select id="freqSweep" disabled>
+                    <option value="" disabled selected>-- Choose Frequency Range --</option>
+                    <option value="5khz-15khz">5 kHz to 15 kHz (Low-Freq Macro-Dynamic & Impulse Band)</option>
+                    <option value="15khz-50khz">15 kHz to 50 kHz (Low-Medium Transition Band)</option>
+                    <option value="50khz-150khz">50 kHz to 150 kHz (Standard EMI Structural Band)</option>
+                    <option value="150khz-300khz">150 kHz to 300 kHz (High Sensitivity Band)</option>
+                    <option value="300khz-500khz">300 kHz to 500 kHz (Ultra-High Frequency Band)</option>
+                </select>
+            </div>
+
+            <div class="btn-wrapper" id="baselineWrapper">
+                <button class="btn-healthy" id="btnRecordBaseline" disabled>1. Record Baseline Signature (@ 25°C)</button>
+            </div>
+
+            <h2 class="panel-title" style="margin-top: 0.3rem;">2. Real-World Environmental & Defect Controls</h2>
+
+            <div id="envControls" style="display: flex; flex-direction: column; gap: 0.65rem;">
+                <div class="control-group">
+                    <label for="tempSlider">Real-Life Ambient Temperature (°C)</label>
+                    <input type="range" id="tempSlider" min="10" max="65" value="25" step="1" disabled>
+                    <span class="range-val" id="tempVal">25°C (Nominal Lab Baseline)</span>
+                </div>
+
+                <div class="control-group" id="damageGroup">
+                    <label for="damageSlider" id="damageLabel">Defect / Damage Severity (%)</label>
+                    <input type="range" id="damageSlider" min="0" max="80" value="0" step="5" disabled>
+                    <span class="range-val" id="damageVal">0% (Intact / Healthy Structure)</span>
+                </div>
+
+                <button class="btn-damage" id="btnApplyShift" disabled>2. Measure EMI & Filter Thermal Shift</button>
+            </div>
+
+            <button class="btn-reset" id="btnReset">🔄 RESET Lab Session (Start New Trial)</button>
+        </div>
+
+        <!-- Display Area -->
+        <div class="display-area">
+            <!-- Metrics Screen / Top CSV Export -->
+            <div class="metrics-screen">
+                <div class="canvas-header" style="color: var(--gold); margin-bottom: 0.5rem;">
+                    <span>EMI Health Metrics & CSV Storage (Completed Trials: <span id="trialCountBadge">0</span>)</span>
+                    <button id="btnCSVExport" class="highlight-step" style="width: auto; padding: 0.35rem 0.8rem; font-size: 0.78rem; background: var(--primary); color: #fff;">⬇ Download Experiment CSV Report</button>
+                </div>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="title">Mounting Setup</div>
+                        <div class="value" id="valState" style="font-size: 0.85rem; color: var(--accent);">--</div>
+                        <div class="sub" id="subState">Location: --</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="title">Raw Apparent RMSD</div>
+                        <div class="value" id="valRawRMSD">0.00 %</div>
+                        <div class="sub">Thermal Drift + Damage</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="title">True Structural RMSD</div>
+                        <div class="value" id="valTrueRMSD" style="color: #a855f7;">0.00 %</div>
+                        <div class="sub">Post Temperature Filtering</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="title">Thermal Frequency Shift</div>
+                        <div class="value" id="valFreqShift" style="color: var(--accent);">0.00 kHz</div>
+                        <div class="sub">Baseline Frequency Drift</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3D Visualizer -->
+            <div class="section-3d" id="sec3D">
+                <div class="overlay-tag" id="3dTag">3D View: Select Experiment Type</div>
+                <div class="zoom-hint">🔍 Interactive 3D Setup View</div>
+                <div id="canvas3D"></div>
+            </div>
+
+            <div class="theory-box">
+                <strong>Physics Dimensions & Theory:</strong> Electrical Admittance $Y(\omega) = G(\omega) + j B(\omega)$.<br>
+                Free PZT resonator exhibits a single clean resonance peak in air, whereas bonded structures exhibit multi-modal structural peaks.
+            </div>
+
+            <div class="visualizer-grid">
+                <!-- Conductance Canvas 1 -->
+                <div class="canvas-container" id="secRaw">
+                    <div class="canvas-header">
+                        <span>Raw Measured Conductance $G(\omega)$</span>
+                        <div class="legend">
+                            <div class="legend-item"><div class="legend-color" style="background:#16a34a;"></div>Base (25°C)</div>
+                            <div class="legend-item"><div class="legend-color" style="background:#dc2626;"></div>Raw Current</div>
+                        </div>
+                    </div>
+                    <canvas id="rawCanvas"></canvas>
+                </div>
+
+                <!-- Conductance Canvas 2 -->
+                <div class="canvas-container" id="secComp">
+                    <div class="canvas-header">
+                        <span>Compensated Signature (True Condition)</span>
+                        <div class="legend">
+                            <div class="legend-item"><div class="legend-color" style="background:#16a34a;"></div>Base (25°C)</div>
+                            <div class="legend-item"><div class="legend-color" style="background:#9333ea;"></div>Cleaned</div>
+                        </div>
+                    </div>
+                    <canvas id="compCanvas"></canvas>
+                </div>
+            </div>
+
+            <!-- SEPARATE DYNAMIC STATUS BOX -->
+            <div class="status-footer-box" id="dynamicStatusBox">
+                <div class="status-footer-title">
+                    <span>💡</span> Dynamic Frequency Selection Status & Research Note
+                </div>
+                <div class="status-footer-desc" id="statusBoxText">
+                    <strong>Why Lower Frequencies? (5 kHz - 15 kHz):</strong> Currently awaiting your frequency selection. Lower frequency bands are fully enabled for macro-dynamic behavior, global boundary condition changes, and impulse studies as demonstrated by <strong>Dr. Annamdas and Prof. Soh of NTU Singapore</strong>. Select the 5-15 kHz band above to inspect macro-dynamic responses.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Call Button -->
+    <div class="phone-fab" id="btnPhone" title="Call AI Assistant">📞 CALL LAB ASSISTANT</div>
+
+    <!-- Persistent AI Assistant Modal -->
+    <div class="ai-modal" id="aiModal">
+        <div class="modal-header" id="modalHeader">
+            <h3><span>✋</span> Prof. Manohar and AI Assistant Team</h3>
+            <button class="modal-close" id="btnCloseModal">&times;</button>
+        </div>
+        <div class="modal-body" id="modalText">
+            This is Professor Manohar and Team. Welcome to the EMI Lab Assistant. Please select your experiment mounting structure and frequency band from the control panel to begin your EMI testing.
+        </div>
+    </div>
+
+    <footer>
+        <p><strong>Gopalkrishna Advanced Rural Research Foundation (GARRF.IN)</strong> | Kalam Research ZERO FUNDING Lab Initiative</p>
+        <p>Developed by <strong>Dr. Annamdas Venu Gopal Madhav</strong> & <strong>Annamdas Shantanu Vasudev Krishna</strong> 🇮🇳</p>
+    </footer>
+
+    <script>
+        const rawCanvas = document.getElementById('rawCanvas');
+        const rawCtx = rawCanvas.getContext('2d');
+        const compCanvas = document.getElementById('compCanvas');
+        const compCtx = compCanvas.getContext('2d');
+
+        const stateType = document.getElementById('stateType');
+        const pztLoc = document.getElementById('pztLoc');
+        const locGroup = document.getElementById('locGroup');
+        const freqSweep = document.getElementById('freqSweep');
+        const btnRecordBaseline = document.getElementById('btnRecordBaseline');
+        const baselineWrapper = document.getElementById('baselineWrapper');
+        const tempSlider = document.getElementById('tempSlider');
+        const damageSlider = document.getElementById('damageSlider');
+        const damageGroup = document.getElementById('damageGroup');
+        const tempVal = document.getElementById('tempVal');
+        const damageVal = document.getElementById('damageVal');
+        const btnApplyShift = document.getElementById('btnApplyShift');
+        const btnReset = document.getElementById('btnReset');
+        const btnCSVExport = document.getElementById('btnCSVExport');
+
+        const valState = document.getElementById('valState');
+        const subState = document.getElementById('subState');
+        const valRawRMSD = document.getElementById('valRawRMSD');
+        const valTrueRMSD = document.getElementById('valTrueRMSD');
+        const valFreqShift = document.getElementById('valFreqShift');
+        const overlay3DTag = document.getElementById('3dTag');
+        const trialCountBadge = document.getElementById('trialCountBadge');
+        
+        const statusBoxText = document.getElementById('statusBoxText');
+
+        const btnPhone = document.getElementById('btnPhone');
+        const aiModal = document.getElementById('aiModal');
+        const modalHeader = document.getElementById('modalHeader');
+        const btnCloseModal = document.getElementById('btnCloseModal');
+        const modalText = document.getElementById('modalText');
+
+        let baselineData = null;
+        let experimentHistory = [];
+
+        // Experiment records are stored locally in this browser only.
+        // They are NOT uploaded to or stored in any cloud service.
+        const LOCAL_RECORDS_KEY = 'garrfEMILabExperimentHistory';
+
+        try {
+            const savedRecords = localStorage.getItem(LOCAL_RECORDS_KEY);
+            if (savedRecords) {
+                experimentHistory = JSON.parse(savedRecords);
+                if (!Array.isArray(experimentHistory)) experimentHistory = [];
+                trialCountBadge.textContent = experimentHistory.length;
+            }
+        } catch (e) {
+            experimentHistory = [];
+        }
+
+        function saveExperimentRecordsLocally() {
+            try {
+                localStorage.setItem(LOCAL_RECORDS_KEY, JSON.stringify(experimentHistory));
+                trialCountBadge.textContent = experimentHistory.length;
+            } catch (e) {
+                console.warn('Local experiment storage unavailable.', e);
+            }
+        }
+
+        let isDragging = false;
+        let startX, startY, initialLeft, initialTop;
+
+        modalHeader.addEventListener('mousedown', (e) => {
+            if (e.target.id === 'btnCloseModal') return;
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            
+            const rect = aiModal.getBoundingClientRect();
+            initialLeft = rect.left;
+            initialTop = rect.top;
+
+            aiModal.style.bottom = 'auto';
+            aiModal.style.right = 'auto';
+            aiModal.style.left = `${initialLeft}px`;
+            aiModal.style.top = `${initialTop}px`;
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            aiModal.style.left = `${initialLeft + dx}px`;
+            aiModal.style.top = `${initialTop + dy}px`;
+        });
+
+        document.addEventListener('mouseup', () => { isDragging = false; });
+
+        function speakAIAssistant(text) {
+            if (!('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+
+            const cleanText = text.replace(/<[^>]*>?/gm, '');
+            const utterance = new SpeechSynthesisUtterance(cleanText);
+
+            const voices = window.speechSynthesis.getVoices();
+            const maleIndianVoice =
+                voices.find(v => /en-IN/i.test(v.lang) && /(male|man|ravi|rishi|hemant|google.*india)/i.test(v.name)) ||
+                voices.find(v => /en-IN/i.test(v.lang) && !/(female|woman|siri|heera)/i.test(v.name)) ||
+                voices.find(v => /en-IN/i.test(v.lang)) ||
+                voices.find(v => /en-GB|en-US/i.test(v.lang));
+
+            if (maleIndianVoice) {
+                utterance.voice = maleIndianVoice;
+                utterance.lang = maleIndianVoice.lang || 'en-IN';
+            } else {
+                utterance.lang = 'en-IN';
+            }
+
+            utterance.rate = 0.92;
+            utterance.pitch = 0.85;
+            utterance.volume = 1;
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
+        }
+
+        btnPhone.addEventListener('click', () => {
+            aiModal.classList.remove('hidden');
+            speakAIAssistant(modalText.innerText);
+        });
+
+        btnCloseModal.addEventListener('click', () => {
+            aiModal.classList.add('hidden');
+            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        });
+
+        window.addEventListener('load', () => {
+            init3D();
+            setTimeout(() => {
+                speakAIAssistant(modalText.innerText);
+            }, 300);
+        });
+
+        document.body.addEventListener('click', function unlockAudio() {
+            if ('speechSynthesis' in window && window.speechSynthesis.paused) {
+                window.speechSynthesis.resume();
+            }
+        }, { once: true });
+
+        stateType.addEventListener('change', () => {
+            update3DModel();
+            freqSweep.disabled = false;
+            freqSweep.classList.add('highlight-step');
+            stateType.classList.remove('highlight-step');
+
+            const selectedText = stateType.options[stateType.selectedIndex].text;
+            const msg = `Selected option: ${selectedText}. Now please select your frequency band.`;
+            modalText.innerHTML = msg;
+            speakAIAssistant(msg);
+        });
+
+        pztLoc.addEventListener('change', () => {
+            update3DModel();
+            const locText = pztLoc.options[pztLoc.selectedIndex].text;
+            const msg = `PZT location updated to ${locText}.`;
+            modalText.innerHTML = msg;
+            speakAIAssistant(msg);
+        });
+
+        freqSweep.addEventListener('change', () => {
+            freqSweep.classList.remove('highlight-step');
+            btnRecordBaseline.disabled = false;
+            baselineWrapper.classList.add('highlight-step');
+
+            const selectedFreq = freqSweep.value;
+            const selectedFreqText = freqSweep.options[freqSweep.selectedIndex].text;
+
+            if (selectedFreq === '5khz-15khz') {
+                statusBoxText.innerHTML = `<strong>Active Band: 5 kHz - 15 kHz (Lower Frequencies Selected):</strong> You have selected the lower frequency band. As demonstrated by <strong>Dr. Annamdas and Prof. Soh of NTU Singapore</strong>, these lower frequencies capture macro-dynamic structural responses, overall boundary condition shifts, and impulse studies rather than localized microscopic defects.`;
+            } else {
+                statusBoxText.innerHTML = `<strong>Active Band: ${selectedFreqText}:</strong> Higher structural EMI bands selected. While lower frequencies (5-15 kHz) are used for macro-dynamic and impulse studies (as pioneered by <strong>Dr. Annamdas & Prof. Soh, NTU Singapore</strong>), these higher bands are optimized for localized damage and structural crack sensitivity.`;
+            }
+
+            const standardMsg = `Frequency range locked to ${selectedFreqText}. Click 'Record Baseline Signature' to capture the healthy baseline at 25°C.`;
+            modalText.innerHTML = standardMsg;
+            aiModal.classList.remove('hidden');
+            speakAIAssistant(standardMsg);
+        });
+
+        btnRecordBaseline.addEventListener('click', () => {
+            baselineData = { temperature: 25, freqBand: freqSweep.value, structure: stateType.value };
+            btnRecordBaseline.disabled = true;
+            baselineWrapper.classList.remove('highlight-step');
+            
+            tempSlider.disabled = false;
+            
+            if (stateType.value !== 'free') {
+                damageSlider.disabled = false;
+                damageGroup.style.opacity = '1';
+            } else {
+                damageSlider.disabled = true;
+                damageGroup.style.opacity = '0.4';
+            }
+
+            btnApplyShift.disabled = false;
+            btnApplyShift.classList.add('highlight-step');
+
+            valState.textContent = stateType.options[stateType.selectedIndex].text.split('(')[0];
+            subState.textContent = `Location: ${stateType.value === 'free' ? 'AIR' : pztLoc.value.toUpperCase()}`;
+
+            drawBaselineCurve();
+
+            const msg = "Baseline recorded successfully and plotted. Adjust temperature or damage parameters and click 'Measure EMI & Filter Thermal Shift'.";
+            modalText.innerHTML = msg;
+            aiModal.classList.remove('hidden');
+            speakAIAssistant(msg);
+        });
+
+        tempSlider.addEventListener('input', () => { tempVal.textContent = tempSlider.value + '°C'; });
+        damageSlider.addEventListener('input', () => { damageVal.textContent = damageSlider.value + '% Damage'; });
+
+        btnApplyShift.addEventListener('click', () => {
+            btnApplyShift.classList.remove('highlight-step');
+            
+            const isFree = stateType.value === 'free';
+            const currentDamage = isFree ? 0 : parseFloat(damageSlider.value);
+
+            valRawRMSD.textContent = (Math.abs(tempSlider.value - 25) * 0.08 + (isFree ? 0 : currentDamage * 0.05)).toFixed(2) + ' %';
+            valTrueRMSD.textContent = (isFree ? 0.00 : (currentDamage * 0.05)).toFixed(2) + ' %';
+            valFreqShift.textContent = ((tempSlider.value - 25) * 0.15).toFixed(2) + ' kHz';
+
+            drawMeasurementCurves(isFree, currentDamage);
+
+            experimentHistory.push({
+                trial: experimentHistory.length + 1,
+                structure: stateType.value,
+                location: stateType.value === 'free' ? 'N/A' : pztLoc.value,
+                frequencyBand: freqSweep.value,
+                temperature: tempSlider.value,
+                damageSeverity: currentDamage,
+                rawRMSD: valRawRMSD.textContent,
+                trueRMSD: valTrueRMSD.textContent,
+                freqShift: valFreqShift.textContent
+            });
+
+            saveExperimentRecordsLocally();
+
+            const firstExpMsg = `Experiment completed and record ${experimentHistory.length} has been stored locally on this device. You may RESET the lab session to redo the next experiment. You can continue with another experiment, and each completed experiment will be stored locally. IMPORTANT: Download your Experiment CSV Report before closing this page. Records are not stored in the cloud.`;
+            modalText.innerHTML = firstExpMsg;
+            aiModal.classList.remove('hidden');
+            speakAIAssistant(firstExpMsg);
+        });
+
+        btnReset.addEventListener('click', () => {
+            stateType.value = "";
+            pztLoc.value = "root";
+            freqSweep.value = "";
+            freqSweep.disabled = true;
+            btnRecordBaseline.disabled = true;
+            baselineWrapper.classList.remove('highlight-step');
+            tempSlider.value = 25;
+            tempSlider.disabled = true;
+            tempVal.textContent = "25°C (Nominal Lab Baseline)";
+            damageSlider.value = 0;
+            damageSlider.disabled = true;
+            damageGroup.style.opacity = '1';
+            damageVal.textContent = "0% (Intact / Healthy Structure)";
+            btnApplyShift.disabled = true;
+
+            baselineData = null;
+
+            valState.textContent = "--";
+            subState.textContent = "Location: --";
+            valRawRMSD.textContent = "0.00 %";
+            valTrueRMSD.textContent = "0.00 %";
+            valFreqShift.textContent = "0.00 kHz";
+
+            rawCtx.clearRect(0, 0, rawCanvas.width, rawCanvas.height);
+            compCtx.clearRect(0, 0, compCanvas.width, compCanvas.height);
+            update3DModel();
+
+            statusBoxText.innerHTML = `<strong>Why Lower Frequencies? (5 kHz - 15 kHz):</strong> Currently awaiting your frequency selection. Lower frequency bands are fully enabled for macro-dynamic behavior, global boundary condition changes, and impulse studies as demonstrated by <strong>Dr. Annamdas and Prof. Soh of NTU Singapore</strong>. Select the 5-15 kHz band above to inspect macro-dynamic responses.`;
+
+            const resetMsg = "Lab session reset. Please select your experiment mounting structure and frequency band to start a new trial.";
+            modalText.innerHTML = resetMsg;
+            aiModal.classList.remove('hidden');
+            speakAIAssistant(resetMsg);
+        });
+
+        btnCSVExport.addEventListener('click', () => {
+            if (experimentHistory.length === 0) {
+                alert("No completed experimental data to export yet!");
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,Trial,Structure,Location,FreqBand,Temperature(C),Damage(%),RawRMSD,TrueRMSD,FreqShift\n";
+            experimentHistory.forEach(row => {
+                csvContent += `${row.trial},${row.structure},${row.location},${row.frequencyBand},${row.temperature},${row.damageSeverity},${row.rawRMSD},${row.trueRMSD},${row.freqShift}\n`;
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "GARRF_EMI_Lab_Report.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            const exportMsg = "Experiment CSV report successfully downloaded. Keep this file safely before closing the page. Your records are stored locally on this device only and are not stored in the cloud.";
+            modalText.innerHTML = exportMsg;
+            aiModal.classList.remove('hidden');
+            speakAIAssistant(exportMsg);
+        });
+
+        // Compute Conductance G(x) depending on whether it's Free PZT or Bonded Structure
+        function getConductanceY(x, isFree, temp, damage, isShifted) {
+            let shift = isShifted ? (temp - 25) * 0.3 : 0;
+            let effectiveX = x + shift;
+
+            if (isFree) {
+                // Free PZT in Air: Single clean resonance peak (Gaussian-like bell curve)
+                let peakCenter = 150; // Center of the canvas
+                let width = 25;
+                let baseConductance = 20;
+                let peakHeight = 110;
+                let val = baseConductance + peakHeight * Math.exp(-Math.pow(effectiveX - peakCenter, 2) / (2 * Math.pow(width, 2)));
+                return val;
+            } else {
+                // Bonded Structures (Beam/Plate): Multi-modal complex structural peaks
+                let base = 50 - Math.sin(effectiveX * 0.05) * 25 - Math.cos(effectiveX * 0.02) * 15;
+                let damageEffect = isShifted ? damage * 0.4 : 0;
+                let multiPeak = Math.sin(effectiveX * 0.12 + damageEffect * 0.05) * 22 + Math.cos(effectiveX * 0.06) * 18;
+                return base + multiPeak;
+            }
+        }
+
+        function drawBaselineCurve() {
+            rawCanvas.width = rawCanvas.parentElement.clientWidth - 20;
+            rawCanvas.height = 180;
+            rawCtx.clearRect(0, 0, rawCanvas.width, rawCanvas.height);
+            
+            const isFree = stateType.value === 'free';
+
+            // Draw Baseline (Green)
+            rawCtx.strokeStyle = '#16a34a'; rawCtx.lineWidth = 2;
+            rawCtx.beginPath();
+            for (let x = 0; x < rawCanvas.width; x++) {
+                let y = rawCanvas.height - getConductanceY(x, isFree, 25, 0, false);
+                x === 0 ? rawCtx.moveTo(x, y) : rawCtx.lineTo(x, y);
+            }
+            rawCtx.stroke();
+
+            compCanvas.width = compCanvas.parentElement.clientWidth - 20;
+            compCanvas.height = 180;
+            compCtx.clearRect(0, 0, compCanvas.width, compCanvas.height);
+
+            compCtx.strokeStyle = '#16a34a'; compCtx.lineWidth = 2;
+            compCtx.beginPath();
+            for (let x = 0; x < compCanvas.width; x++) {
+                let y = compCanvas.height - getConductanceY(x, isFree, 25, 0, false);
+                x === 0 ? compCtx.moveTo(x, y) : compCtx.lineTo(x, y);
+            }
+            compCtx.stroke();
+        }
+
+        function drawMeasurementCurves(isFree, damage) {
+            let currentTemp = parseFloat(tempSlider.value);
+
+            // Raw Conductance Canvas
+            rawCanvas.width = rawCanvas.parentElement.clientWidth - 20;
+            rawCanvas.height = 180;
+            rawCtx.clearRect(0, 0, rawCanvas.width, rawCanvas.height);
+            
+            // Baseline Green Curve
+            rawCtx.strokeStyle = '#16a34a'; rawCtx.lineWidth = 2;
+            rawCtx.beginPath();
+            for (let x = 0; x < rawCanvas.width; x++) {
+                let y = rawCanvas.height - getConductanceY(x, isFree, 25, 0, false);
+                x === 0 ? rawCtx.moveTo(x, y) : rawCtx.lineTo(x, y);
+            }
+            rawCtx.stroke();
+
+            // Raw Measured Red Curve (Affected by Temp Shift & Damage)
+            rawCtx.strokeStyle = '#dc2626';
+            rawCtx.beginPath();
+            for (let x = 0; x < rawCanvas.width; x++) {
+                let y = rawCanvas.height - getConductanceY(x, isFree, currentTemp, damage, true);
+                x === 0 ? rawCtx.moveTo(x, y) : rawCtx.lineTo(x, y);
+            }
+            rawCtx.stroke();
+
+            // Compensated Conductance Canvas
+            compCanvas.width = compCanvas.parentElement.clientWidth - 20;
+            compCanvas.height = 180;
+            compCtx.clearRect(0, 0, compCanvas.width, compCanvas.height);
+
+            // Baseline Green Curve
+            compCtx.strokeStyle = '#16a34a'; compCtx.lineWidth = 2;
+            compCtx.beginPath();
+            for (let x = 0; x < compCanvas.width; x++) {
+                let y = compCanvas.height - getConductanceY(x, isFree, 25, 0, false);
+                x === 0 ? compCtx.moveTo(x, y) : compCtx.lineTo(x, y);
+            }
+            compCtx.stroke();
+
+            // Compensated Purple Curve (Thermal Shift Filtered Out)
+            compCtx.strokeStyle = '#9333ea';
+            compCtx.beginPath();
+            for (let x = 0; x < compCanvas.width; x++) {
+                // For Free PZT, thermal shift is fully compensated (matches baseline); for damaged structures, damage remains visible
+                let effectiveDamage = isFree ? 0 : damage;
+                let y = compCanvas.height - getConductanceY(x, isFree, 25, effectiveDamage, true);
+                x === 0 ? compCtx.moveTo(x, y) : compCtx.lineTo(x, y);
+            }
+            compCtx.stroke();
+        }
+
+        let scene, camera, renderer, controls, pztGroup, structGroup, defectMesh;
+
+        function init3D() {
+            const container = document.getElementById('canvas3D');
+            const w = container.clientWidth;
+            const h = container.clientHeight;
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xffffff);
+
+            camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 1000);
+            camera.position.set(0, 7, 16);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(w, h);
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+
+            scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+            dirLight.position.set(10, 20, 10);
+            scene.add(dirLight);
+
+            update3DModel();
+            animate3D();
+        }
+
+        function update3DModel() {
+            if (!scene) return;
+            if (pztGroup) scene.remove(pztGroup);
+            if (structGroup) scene.remove(structGroup);
+            if (defectMesh) scene.remove(defectMesh);
+
+            const state = stateType.value;
+            const loc = pztLoc.value;
+
+            pztGroup = new THREE.Group();
+            const pztMesh = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.15, 0.8), new THREE.MeshStandardMaterial({ color: 0xdc2626 }));
+            pztGroup.add(pztMesh);
+
+            if (!state) {
+                overlay3DTag.textContent = '3D View: Select Experiment Type';
+                return;
+            }
+
+            if (state === 'free') {
+                locGroup.style.display = 'none';
+                damageGroup.style.opacity = '0.4';
+                damageSlider.disabled = true;
+                overlay3DTag.textContent = '3D View: Free Unbonded PZT Patch';
+                scene.add(pztGroup);
+            } else if (state === 'beam') {
+                locGroup.style.display = 'flex';
+                damageGroup.style.opacity = '1';
+                if(baselineData) damageSlider.disabled = false;
+                structGroup = new THREE.Group();
+                structGroup.add(new THREE.Mesh(new THREE.BoxGeometry(12, 0.4, 1.2), new THREE.MeshStandardMaterial({ color: 0x1e3a8a })));
+                scene.add(structGroup);
+                pztGroup.position.set(loc === 'root' ? -5.0 : loc === 'mid' ? 0.0 : 5.0, 0.275, 0);
+                scene.add(pztGroup);
+                overlay3DTag.textContent = `3D View: Steel Beam (${loc.toUpperCase()})`;
+            } else if (state === 'plate') {
+                locGroup.style.display = 'flex';
+                damageGroup.style.opacity = '1';
+                if(baselineData) damageSlider.disabled = false;
+                structGroup = new THREE.Group();
+                structGroup.add(new THREE.Mesh(new THREE.BoxGeometry(8, 0.3, 8), new THREE.MeshStandardMaterial({ color: 0x1d4ed8 })));
+                scene.add(structGroup);
+                pztGroup.position.set(loc === 'root' ? -3.0 : loc === 'mid' ? 0.0 : 3.0, 0.225, loc === 'root' ? -3.0 : loc === 'mid' ? 0.0 : 3.0);
+                scene.add(pztGroup);
+                overlay3DTag.textContent = `3D View: Aluminum Plate (${loc.toUpperCase()})`;
+            }
+        }
+
+        function animate3D() {
+            requestAnimationFrame(animate3D);
+            if (controls) controls.update();
+            if (renderer && scene && camera) renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>
