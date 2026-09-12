@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CHITTI 3D - Automated Collaborative Reading & Lab Suite</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #0b0f19; color: #f8fafc; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+    
+    /* Top Header Branding & Toolbar */
+    #top-branding { background: #1f2937; border-bottom: 1px solid #374151; padding: 10px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+    .brand-left { display: flex; align-items: center; gap: 12px; }
+    .brand-logo { width: 45px; height: 45px; border-radius: 6px; object-fit: cover; border: 1px solid #38bdf8; }
+    .brand-title h1 { font-size: 1.1rem; color: #38bdf8; font-weight: bold; }
+    .brand-title p { font-size: 0.8rem; color: #10b981; font-weight: 600; }
+    .suite-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+    
+    .tab-btn { background: #374151; color: #9ca3af; border: none; padding: 6px 10px; border-radius: 6px; cursor: not-allowed; font-size: 0.78rem; font-weight: 600; transition: all 0.2s; opacity: 0.6; }
+    .tab-btn.unlocked { background: #374151; color: #f3f4f6; cursor: pointer; opacity: 1; }
+    .tab-btn.unlocked.active, .tab-btn.unlocked:hover { background: #0284c7; color: white; }
+    .tab-btn.highlighted { background: #f59e0b !important; color: #000 !important; cursor: pointer; opacity: 1; transform: scale(1.06); box-shadow: 0 0 14px #f59e0b; }
+    .btn-zip { background: #374151 !important; color: #9ca3af !important; cursor: not-allowed !important; opacity: 0.6; border: 1px solid #4b5563; }
+    .btn-zip.unlocked { background: #10b981 !important; color: white !important; font-weight: bold; border: 1px solid #34d399; cursor: pointer !important; opacity: 1; }
+
+    #app-container { display: flex; flex: 1; overflow: hidden; }
+    #sidebar { width: 380px; background: #111827; border-right: 1px solid #1f2937; display: flex; flex-direction: column; height: 100%; flex-shrink: 0; }
+    #main-content { flex: 1; display: flex; flex-direction: column; height: 100%; padding: 15px; gap: 15px; position: relative; min-width: 0; }
+    
+    .header { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background: #1f2937; border-bottom: 1px solid #374151; }
+    .header h2 { font-size: 1rem; color: #38bdf8; }
+    .btn-voice { background: #0284c7; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: bold; }
+    .btn-voice.muted { background: #ef4444; }
+    
+    #stack-status { background: #1f2937; padding: 8px 10px; border-radius: 8px; border: 1px solid #374151; font-size: 0.78rem; max-height: 120px; overflow-y: auto; }
+    #stack-status h3 { color: #f59e0b; margin-bottom: 2px; font-size: 0.8rem; }
+    .stack-step { margin-bottom: 2px; color: #9ca3af; }
+    .stack-step strong { color: #e5e7eb; }
+
+    #chat-history { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+    .msg-chitti { background: #1e293b; padding: 12px; border-radius: 8px; border-left: 4px solid #38bdf8; font-size: 0.84rem; line-height: 1.5; }
+    .msg-student { background: #0369a1; padding: 8px 12px; border-radius: 8px; align-self: flex-end; max-width: 80%; font-size: 0.84rem; }
+    
+    .option-grid { display: grid; grid-template-columns: 1fr; gap: 5px; margin-top: 8px; max-height: 220px; overflow-y: auto; padding-right: 4px; }
+    .option-chip { background: #374151; color: #f3f4f6; border: 1px solid #4b5563; padding: 7px 10px; border-radius: 6px; cursor: pointer; text-align: left; font-size: 0.79rem; transition: all 0.2s; display: flex; justify-content: space-between; align-items: center; }
+    .option-chip:hover { background: #0284c7; border-color: #38bdf8; }
+    .option-chip span.built-tag { color: #34d399; font-size: 0.75rem; }
+
+    .input-bar { padding: 12px; background: #1f2937; display: flex; gap: 8px; border-top: 1px solid #374151; align-items: center; }
+    .input-bar select { flex: 1; background: #111827; border: 1px solid #4b5563; color: white; padding: 8px 10px; border-radius: 6px; outline: none; font-size: 0.82rem; cursor: pointer; display: none; }
+    .input-bar select.visible-dropdown { display: block; }
+    
+    .btn-action { background: #10b981; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 0.82rem; font-weight: bold; }
+    .btn-reset { background: #ef4444; }
+
+    /* Viewport & Engineering Suite Panels */
+    .view-panel { display: none; flex: 1; background: #090d16; border: 1px solid #1f2937; border-radius: 8px; flex-direction: column; overflow: hidden; position: relative; width: 100%; }
+    .view-panel.active-panel { display: flex; }
+    
+    #visual-viewport { display: flex; height: 100%; width: 100%; flex-direction: column; position: relative; }
+    #canvas-container { width: 100%; flex: 1; min-height: 350px; background: #000; cursor: grab; }
+    #canvas-container:active { cursor: grabbing; }
+    
+    #diag-panel { height: 75px; background: #111827; border-top: 1px solid #1f2937; padding: 8px 15px; display: flex; justify-content: space-between; align-items: center; }
+    #diag-info h4 { color: #38bdf8; font-size: 0.9rem; margin-bottom: 2px; }
+    #diag-info p { color: #9ca3af; font-size: 0.75rem; }
+    .btn-confirm { background: #10b981; color: white; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.8rem; box-shadow: 0 0 10px #10b981; }
+    .btn-confirm:hover { background: #059669; }
+
+    .suite-content { padding: 25px; overflow-y: auto; height: 100%; background: #0b0f19; font-size: 0.9rem; line-height: 1.6; color: #cbd5e1; width: 100%; }
+    .suite-content h2 { color: #38bdf8; margin-bottom: 12px; font-size: 1.3rem; border-bottom: 1px solid #1f2937; padding-bottom: 8px; }
+    .suite-content h3 { color: #f59e0b; margin: 18px 0 8px 0; font-size: 1.05rem; }
+    .suite-content p { margin-bottom: 10px; }
+    .development-notice { background: #1e1b4b; border: 1px solid #4338ca; padding: 12px 15px; border-radius: 8px; margin-bottom: 15px; color: #818cf8; font-size: 0.88rem; }
+    pre { background: #111827; border: 1px solid #374151; padding: 12px; border-radius: 6px; overflow-x: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.82rem; color: #38bdf8; margin: 10px 0; }
+    .component-card { background: #161e2e; border: 1px solid #374151; border-radius: 8px; padding: 15px; margin-bottom: 12px; }
+    .component-card h4 { color: #38bdf8; margin-bottom: 6px; }
+
+    .sensor-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-top: 15px; }
+    .sensor-card { background: #161e2e; border: 1px solid #374151; border-radius: 8px; padding: 12px; }
+    .sensor-card h5 { color: #38bdf8; font-size: 0.9rem; margin-bottom: 4px; }
+    .sensor-card p { font-size: 0.8rem; color: #9ca3af; margin-bottom: 4px; }
+
+    #footer-branding { background: #0f172a; border-top: 1px solid #1f2937; text-align: center; padding: 8px; font-size: 0.78rem; color: #9ca3af; }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header Branding & Toolbar -->
+  <div id="top-branding">
+    <div class="brand-left">
+      <img src="logo.jpeg" alt="Logo" class="brand-logo" onerror="this.style.display='none'">
+      <div class="brand-title">
+        <h1>CHITTI 3D - Automated Collaborative Reading & Lab Suite</h1>
+        <p>Gopalkrishna Advanced Rural Research Foundation | Kalam Research Lab</p>
+      </div>
+    </div>
+    <div class="suite-tabs">
+      <button class="tab-btn" id="tab-btn-3d" onclick="switchTab('3d', event)">🤖 3D Visualizer</button>
+      <button class="tab-btn" id="tab-btn-components" onclick="switchTab('components', event)">🔍 Component Study</button>
+      <button class="tab-btn" id="tab-btn-sensors" onclick="switchTab('sensors', event)">📡 25+ Sensors Suite</button>
+      <button class="tab-btn" id="tab-btn-theory" onclick="switchTab('theory', event)">📚 Theory</button>
+      <button class="tab-btn" id="tab-btn-calcs" onclick="switchTab('calcs', event)">📐 Calculations</button>
+      <button class="tab-btn" id="tab-btn-bom" onclick="switchTab('bom', event)">📋 BOM & Hardware</button>
+      <button class="tab-btn" id="tab-btn-circuit" onclick="switchTab('circuit', event)">⚡ Pro Circuit Design</button>
+      <button class="tab-btn" id="tab-btn-code" onclick="switchTab('code', event)">💻 Software Code</button>
+      <button class="tab-btn" id="tab-btn-links" onclick="switchTab('links', event)">🔗 Resources</button>
+      <button class="tab-btn btn-zip" id="tab-btn-zip" onclick="downloadProjectZip()">📦 Download ZIP</button>
+    </div>
+  </div>
+
+  <div id="app-container">
+    <div id="sidebar">
+      <div class="header">
+        <h2>🤖 Chitti AI Mentor</h2>
+        <button class="btn-voice" id="btn-toggle-voice" onclick="toggleVoice()">🔊 Voice: ON</button>
+      </div>
+
+      <div style="padding: 8px 10px;">
+        <div id="stack-status">
+          <h3>Collaborative Reading Tour</h3>
+          <div class="stack-step" id="spec-robot"><strong>Robot:</strong> Automated Reading in Progress</div>
+          <div class="stack-step" id="spec-payload"><strong>Payload:</strong> Pending Selection</div>
+          <div class="stack-step" id="spec-board"><strong>Microcontroller:</strong> Pending Selection</div>
+          <div class="stack-step" id="spec-power"><strong>Mentor Status:</strong> Reading Aloud Together</div>
+        </div>
+      </div>
+
+      <div id="chat-history"></div>
+
+      <!-- Control Bar -->
+      <div class="input-bar">
+        <select id="component-dropdown">
+          <option>--- Automated Chitti Reading Tour Active ---</option>
+        </select>
+        <button class="btn-action" id="btn-submit" disabled>Listening to Chitti...</button>
+        <button class="btn-action btn-reset" onclick="resetSession()">Reset Lab</button>
+      </div>
+    </div>
+
+    <div id="main-content">
+      <!-- Panel 1: 3D Visualizer -->
+      <div id="panel-3d" class="view-panel active-panel">
+        <div id="visual-viewport">
+          <div id="canvas-container"></div>
+          <div id="diag-panel">
+            <div id="diag-info">
+              <h4 id="diag-name">Automated Reading Tour in Progress</h4>
+              <p id="diag-desc">Chitti is reading all tabs aloud and switching views automatically. Please listen and follow along!</p>
+            </div>
+            <button class="btn-confirm" id="btn-confirm-selection">LISTENING TO CHITTI'S READING...</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel 2: Component Study -->
+      <div id="panel-components" class="view-panel">
+        <div class="suite-content">
+          <h2>🔍 Component Study Hub</h2>
+          <div class="development-notice">ℹ️ Note: Toolbar items are incomplete here (for example circuit design, software BOM are not complete). They will be completed once the project is finished, and you can download the package anytime.</div>
+          <p>Let's study what physical components look like and how they function together in our lab:</p>
+          
+          <div class="component-card">
+            <h4>1. Microcontroller Boards (Arduino Uno, Mega, Nano, ESP32)</h4>
+            <p><strong>Appearance:</strong> Compact printed circuit boards with microchips, digital/analog pins, and USB ports.</p>
+            <p><strong>Function:</strong> Acts as the programmable intelligence and brain of your robot.</p>
+          </div>
+
+          <div class="component-card">
+            <h4>2. L298N Dual H-Bridge Motor Driver</h4>
+            <p><strong>Appearance:</strong> Red/blue board with a large aluminum heatsink and screw terminal blocks.</p>
+            <p><strong>Function:</strong> Regulates high current and voltage from the battery to drive DC motors forward and backward.</p>
+          </div>
+
+          <div class="component-card">
+            <h4>3. 12V Geared DC Center-Shaft Motor</h4>
+            <p><strong>Appearance:</strong> Metal cylindrical motor attached to a metal gearbox with an offset shaft.</p>
+            <p><strong>Function:</strong> Converts electrical energy into mechanical torque for wheel rotation.</p>
+          </div>
+
+          <div class="component-card">
+            <h4>4. 11.1V 3S LiPo Battery Pack</h4>
+            <p><strong>Appearance:</strong> Wrapped black block with heavy silicone discharge wires and XT60 connector.</p>
+            <p><strong>Function:</strong> Provides stable high-discharge current to power motors and electronics.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel 3: 25+ Sensors Suite -->
+      <div id="panel-sensors" class="view-panel">
+        <div class="suite-content">
+          <h2>📡 25+ Sensors Suite & Integration Hub</h2>
+          <div class="development-notice">ℹ️ Note: Toolbar items are incomplete here (for example circuit design, software BOM are not complete). They will be completed once the project is finished, and you can download the package anytime.</div>
+          <p>Comprehensive sensor database for robotics, automation, and structural health monitoring (SHM):</p>
+          <div class="sensor-grid">
+            <div class="sensor-card"><h5>1. PZT Piezoelectric Transducer</h5><p><strong>Type:</strong> SHM / Vibration</p><p><strong>Use:</strong> Active Lamb wave generation & damage detection.</p></div>
+            <div class="sensor-card"><h5>2. MPU6050 6-DoF IMU</h5><p><strong>Type:</strong> Gyroscope & Accelerometer</p><p><strong>Use:</strong> Robot orientation, tilt, and balance.</p></div>
+            <div class="sensor-card"><h5>3. HC-SR04 Ultrasonic Sensor</h5><p><strong>Type:</strong> Distance / Ranging</p><p><strong>Use:</strong> Obstacle avoidance and collision check.</p></div>
+            <div class="sensor-card"><h5>4. VL53L0X Time-of-Flight</h5><p><strong>Type:</strong> Laser Distance</p><p><strong>Use:</strong> Precision millimeter distance ranging.</p></div>
+            <div class="sensor-card"><h5>5. DHT22 Temperature & Humidity</h5><p><strong>Type:</strong> Environmental</p><p><strong>Use:</strong> Ambient climate monitoring.</p></div>
+            <div class="sensor-card"><h5>6. MQ-2 Gas & Smoke Detector</h5><p><strong>Type:</strong> Hazardous Gas</p><p><strong>Use:</strong> Fire and flammable gas leakage detection.</p></div>
+            <div class="sensor-card"><h5>7. TCS3200 Color Sensor</h5><p><strong>Type:</strong> Optical / Color</p><p><strong>Use:</strong> Object sorting and line tracking.</p></div>
+            <div class="sensor-card"><h5>8. BMP280 Barometric Pressure</h5><p><strong>Type:</strong> Pressure & Altitude</p><p><strong>Use:</strong> Altitude tracking and weather station.</p></div>
+            <div class="sensor-card"><h5>9. IR Proximity Sensor (TCRT5000)</h5><p><strong>Type:</strong> Infrared Reflection</p><p><strong>Use:</strong> Line following and edge detection.</p></div>
+            <div class="sensor-card"><h5>10. Load Cell (HX711 Amplifier)</h5><p><strong>Type:</strong> Weight / Force</p><p><strong>Use:</strong> Payload weighing and structural stress testing.</p></div>
+            <div class="sensor-card"><h5>11. Flame Sensor (IR Receiver)</h5><p><strong>Type:</strong> Optical Fire Detection</p><p><strong>Use:</strong> Firefighting robot navigation.</p></div>
+            <div class="sensor-card"><h5>12. Hall Effect Sensor (3144)</h5><p><strong>Type:</strong> Magnetic Field</p><p><strong>Use:</strong> Wheel encoder RPM and speed measurement.</p></div>
+            <div class="sensor-card"><h5>13. Soil Moisture Sensor</h5><p><strong>Type:</strong> Capacitive / Resistive</p><p><strong>Use:</strong> Agricultural robotics and irrigation.</p></div>
+            <div class="sensor-card"><h5>14. ACS712 Current Sensor</h5><p><strong>Type:</strong> Electrical Power</p><p><strong>Use:</strong> Motor stall and battery current monitoring.</p></div>
+            <div class="sensor-card"><h5>15. LDR Photoresistor</h5><p><strong>Type:</strong> Light Intensity</p><p><strong>Use:</strong> Solar tracking and ambient light sensing.</p></div>
+            <div class="sensor-card"><h5>16. Rain Drop Sensor</h5><p><strong>Type:</strong> Moisture / Precipitation</p><p><strong>Use:</strong> Weather station automation.</p></div>
+            <div class="sensor-card"><h5>17. Pulse Rate Sensor (Heartbeat)</h5><p><strong>Type:</strong> Biomedical</p><p><strong>Use:</strong> Companion robot health monitoring.</p></div>
+            <div class="sensor-card"><h5>18. PIR Motion Sensor (HC-SR501)</h5><p><strong>Type:</strong> Passive Infrared</p><p><strong>Use:</strong> Intruder detection and security bots.</p></div>
+            <div class="sensor-card"><h5>19. Force Sensing Resistor (FSR402)</h5><p><strong>Type:</strong> Tactile Touch Pressure</p><p><strong>Use:</strong> Gripper touch feedback.</p></div>
+            <div class="sensor-card"><h5>20. RFID Reader (RC522)</h5><p><strong>Type:</strong> Radio Frequency ID</p><p><strong>Use:</strong> Automated station docking and ID badges.</p></div>
+            <div class="sensor-card"><h5>21. Real-Time Clock (DS3231)</h5><p><strong>Type:</strong> Timekeeping</p><p><strong>Use:</strong> Timestamping telemetry data logs.</p></div>
+            <div class="sensor-card"><h5>22. Tilt Switch / Mercury Ball</h5><p><strong>Type:</strong> Inclinometer</p><p><strong>Use:</strong> Robot rollover and tip-over detection.</p></div>
+            <div class="sensor-card"><h5>23. Sound Microphone (KY-037)</h5><p><strong>Type:</strong> Acoustic / Audio</p><p><strong>Use:</strong> Clap-activated robots and noise monitoring.</p></div>
+            <div class="sensor-card"><h5>24. Water Level Sensor</h5><p><strong>Type:</strong> Fluid Depth</p><p><strong>Use:</strong> Flood monitoring and liquid tanks.</p></div>
+            <div class="sensor-card"><h5>25. MQ-135 Air Quality Sensor</h5><p><strong>Type:</strong> Gas / Pollution</p><p><strong>Use:</strong> Environmental pollution monitoring.</p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel 4: Theory -->
+      <div id="panel-theory" class="view-panel">
+        <div class="suite-content" id="content-theory">
+          <h2>📚 Academic Theory Workspace</h2>
+          <div class="development-notice">ℹ️ Note: Toolbar items are incomplete here (for example circuit design, software BOM are not complete). They will be completed once the project is finished, and you can download the package anytime.</div>
+          <p>Payload-carrying mobile robots require robust static and dynamic load balancing. The structural chassis must withstand bending moments induced by center-of-gravity shifts while transporting cargo across uneven surfaces.</p>
+        </div>
+      </div>
+
+      <!-- Panel 5: Calculations -->
+      <div id="panel-calcs" class="view-panel">
+        <div class="suite-content" id="content-calcs">
+          <h2>📐 Mathematical Modeling & Kinematics</h2>
+          <div class="development-notice">ℹ️ Note: Toolbar items are incomplete here (for example circuit design, software BOM are not complete). They will be completed once the project is finished, and you can download the package anytime.</div>
+          <pre>Gravitational Acceleration (g) : 9.81 m/s²\nRolling Friction Coefficient (μ) : 0.05\nRequired Torque (τ) = (Mass * g * Radius * μ) / N_motors</pre>
+        </div>
+      </div>
+
+      <!-- Panel 6: BOM -->
+      <div id="panel-bom" class="view-panel">
+        <div class="suite-content" id="content-bom">
+          <h2>📋 Bill of Materials & Hardware</h2>
+          <div class="development-notice">ℹ️ Note: Toolbar items are incomplete here (for example circuit design, software BOM are not complete). They will be completed once the project is finished, and you can download the package anytime.</div>
+          <ul id="dynamic-bom-list">
+            <li><strong>Microcontroller:</strong> Selected Microcontroller Board</li>
+            <li><strong>Actuators:</strong> 4x 12V Geared DC Motors</li>
+            <li><strong>Power Source:</strong> 11.1V 3S LiPo Battery Pack</li>
+            <li><strong>Motor Driver:</strong> L298N Dual H-Bridge</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Panel 7: Professional Circuit Design -->
+      <div id="panel-circuit" class="view-panel">
+        <div class="suite-content" id="content-circuit">
+          <h2>⚡ Professional Circuit Design & Wiring Schematic</h2>
+          <div class="development-notice">ℹ️ Note: Toolbar items are incomplete here (for example circuit design, software BOM are not complete). They will be completed once the project is finished, and you can download the package anytime.</div>
+          <pre id="circuit-schematic-pre">
++-----------------------------------------------------------------+
+|                  PROFESSIONAL WIRING BLUEPRINT                  |
++-----------------------------------------------------------------+
+| Please complete your robot, payload, and board selection first! |
++-----------------------------------------------------------------+
+          </pre>
+        </div>
+      </div>
+
+      <!-- Panel 8: Software Code -->
+      <div id="panel-code" class="view-panel">
+        <div class="suite-content" id="content-code">
+          <h2 id="software-code-title">💻 Software Code Editor</h2>
+          <div class="development-notice">ℹ️ Note: Toolbar items are incomplete here (for example circuit design, software BOM are not complete). They will be completed once the project is finished, and you can download the package anytime.</div>
+          <pre id="code-editor-pre">/* 
+  Gopalkrishna Advanced Rural Research Foundation 
+  Professional Robot Controller Firmware 
+*/
+void setup() {
+  Serial.begin(9600);
+}
+void loop() {
+}          </pre>
+        </div>
+      </div>
+
+      <!-- Panel 9: Resources -->
+      <div id="panel-links" class="view-panel">
+        <div class="suite-content" id="content-links">
+          <h2>🔗 Resources & Research Repositories</h2>
+          <div class="development-notice">ℹ️ Note: Toolbar items are incomplete here (for example circuit design, software BOM are not complete). They will be completed once the project is finished, and you can download the package anytime.</div>
+          <p><a href="https://store.arduino.cc" target="_blank" style="color:#38bdf8;">Arduino Official Documentation ↗</a></p>
+          <p><a href="https://www.ieee.org" target="_blank" style="color:#38bdf8;">IEEE Robotics & Automation Society ↗</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="footer-branding">
+    Developed by Dr. Annamdas Venu Gopal Madhav Annamdas & Annamdas Shantanu Vasudev Krishna
+  </div>
+
+  <script>
+    let voiceEnabled = true;
+    function toggleVoice() {
+      voiceEnabled = !voiceEnabled;
+      const btn = document.getElementById('btn-toggle-voice');
+      btn.innerText = voiceEnabled ? "🔊 Voice: ON" : "🔇 Voice: MUTED";
+      btn.classList.toggle('muted', !voiceEnabled);
+      if (!voiceEnabled && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      } else if (voiceEnabled) {
+        speak("Voice enabled. Continuing Chitti's reading tour.");
+      }
+    }
+
+    function speak(text, callback) {
+      if (!voiceEnabled || !('speechSynthesis' in window)) {
+        if (callback) callback();
+        return;
+      }
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 0.95;
+      utterance.onend = function() {
+        if (callback) callback();
+      };
+      window.speechSynthesis.speak(utterance);
+    }
+
+    const readingQueue = [
+      { tabKey: '3d', tabId: 'tab-btn-3d', text: "Namaskaram Student, I am Chitti AI teacher for Gopalkrishna Advanced Rural Research Foundation. Let us read together. First, looking at Tab 1, 3D Visualizer. This is our interactive simulation sandbox where robot models render in real time." },
+      { tabKey: 'components', tabId: 'tab-btn-components', text: "Next, Tab 2: Component Study. Here we inspect physical hardware modules like microcontrollers, motor drivers, and LiPo batteries." },
+      { tabKey: 'sensors', tabId: 'tab-btn-sensors', text: "Now Tab 3: 25+ Sensors Suite. This explores our massive library of industrial and SHM sensors." },
+      { tabKey: 'theory', tabId: 'tab-btn-theory', text: "Moving to Tab 4: Academic Theory. This covers structural mechanics, load balancing, and stability criteria." },
+      { tabKey: 'calcs', tabId: 'tab-btn-calcs', text: "Now Tab 5: Calculations. This houses our mathematical modeling engine for torque and friction equations." },
+      { tabKey: 'bom', tabId: 'tab-btn-bom', text: "Next is Tab 6: BOM and Hardware. This is our complete shopping and assembly list." },
+      { tabKey: 'circuit', tabId: 'tab-btn-circuit', text: "Then Tab 7: Pro Circuit Design. This provides our precise pin-to-pin wiring schematic between the microcontroller and motor driver." },
+      { tabKey: 'code', tabId: 'tab-btn-code', text: "Tab 8: Software Code. This is our software editor compiling ready-to-flash firmware for your selected board." },
+      { tabKey: 'links', tabId: 'tab-btn-links', text: "Finally, Tab 9: Resources. This compiles official documentation and research references. Reading complete. Press GREEN button in the bottom to move to next step." }
+    ];
+
+    let currentQueueIndex = 0;
+    let readingFinished = false;
+
+    function runReadingQueue() {
+      if (!voiceEnabled || !('speechSynthesis' in window)) {
+        finishReadingTour();
+        return;
+      }
+      if (currentQueueIndex >= readingQueue.length) {
+        finishReadingTour();
+        return;
+      }
+
+      const item = readingQueue[currentQueueIndex];
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('highlighted'));
+      const btnElem = document.getElementById(item.tabId);
+      if (btnElem) {
+        btnElem.classList.add('highlighted');
+        switchTab(item.tabKey, true);
+      }
+
+      speak(item.text, function() {
+        if (btnElem) btnElem.classList.remove('highlighted');
+        currentQueueIndex++;
+        if (currentQueueIndex < readingQueue.length) {
+          setTimeout(runReadingQueue, 400);
+        } else {
+          finishReadingTour();
+        }
+      });
+    }
+
+    function finishReadingTour() {
+      readingFinished = true;
+      
+      // Unlock all toolbar tabs and download button
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.add('unlocked');
+      });
+
+      document.getElementById('btn-submit').removeAttribute('disabled');
+      
+      switchTab('3d', true);
+      document.getElementById('diag-name').innerText = "Automated Reading Tour Complete!";
+      document.getElementById('diag-desc').innerHTML = "All items in the toolbar are completed once the project is completed, and you can download the package anytime. Press GREEN button in the bottom to move to next step!";
+      document.getElementById('btn-confirm-selection').innerText = "PROCEED TO ROBOT SELECTION ➔";
+
+      const completionMsg = `🎉 **Chitti AI Teacher:** Reading complete! **Press GREEN button in the bottom to move to next step.** Toolbar items are completed once the project is completed, and you can download the package anytime.`;
+      chatHistory.innerHTML += `<div class="msg-chitti"><span>${completionMsg}</span></div>`;
+      chatHistory.scrollTop = chatHistory.scrollHeight;
+      
+      btnSubmit.innerText = "Proceed to Robot Selection";
+    }
+
+    function switchTab(tabId, forceOpen = false) {
+      if (!readingFinished && !forceOpen) return;
+
+      document.querySelectorAll('.suite-tabs .tab-btn').forEach(btn => {
+        if (!btn.classList.contains('highlighted')) btn.classList.remove('active');
+      });
+
+      document.querySelectorAll('.view-panel').forEach(panel => panel.classList.remove('active-panel'));
+      
+      const targetMap = {
+        '3d': 'panel-3d', 'components': 'panel-components', 'sensors': 'panel-sensors', 'theory': 'panel-theory', 
+        'calcs': 'panel-calcs', 'bom': 'panel-bom', 'circuit': 'panel-circuit', 
+        'code': 'panel-code', 'links': 'panel-links'
+      };
+      if (targetMap[tabId]) {
+        document.getElementById(targetMap[tabId]).classList.add('active-panel');
+        const activeBtn = document.getElementById('tab-btn-' + tabId);
+        if (activeBtn) activeBtn.classList.add('active');
+      }
+      setTimeout(onWindowResize, 50);
+    }
+
+    const componentDropdown = document.getElementById('component-dropdown');
+    const chatHistory = document.getElementById('chat-history');
+    const btnConfirmSelection = document.getElementById('btn-confirm-selection');
+    const btnSubmit = document.getElementById('btn-submit');
+
+    let workflowStage = 0; 
+    let selectedRobot = '';
+    let selectedPayload = '';
+    let selectedBoard = '';
+    const inspectedRobots = new Set();
+    let scene, camera, renderer, controls, robotGroup;
+
+    const robotInfoMap = {
+      "1. Humanoid Payload Robot": { use: "Bipedal factory assistance, companion robotics, and human-workspace interaction.", desc: "Simulates bipedal balancing and upper-body lifting mechanics." },
+      "2. Robot Dog (Quadruped Carrier)": { use: "Rough terrain search and rescue, remote military reconnaissance, and stair climbing.", desc: "Four-legged walker with articulated joints, head unit, and sensor snout built for unstructured environments." },
+      "3. 4WD Heavy-Duty Cargo Rover": { use: "Industrial floor logistics, warehouse material transport, and agricultural monitoring.", desc: "Four-wheel drive platform ideal for heavy payloads." },
+      "4. AGV Flatbed Transport Platform": { use: "Automated factory floor pallet moving and assembly line material supply.", desc: "Low-profile automated guided vehicle." },
+      "5. Robot Arm (Payload Gripper)": { use: "Precision sorting, automated pick-and-place assembly, and laboratory sample handling.", desc: "Multi-axis robotic arm with interconnected joints and gripping fingers." },
+      "6. Mecanum Omni-Directional Cart": { use: "Tight corridor navigation, omnidirectional maneuvering in smart warehouses.", desc: "Uses mecanum rollers to move sideways and rotate 360° instantly." },
+      "7. Tracked Tank Heavy Transporter": { use: "Muddy, rocky, sandy, or extreme outdoor rural terrain hauling.", desc: "Continuous tread tracks designed for extreme traction." },
+      "8. Automated Guided Forklift": { use: "High-bay warehouse pallet stacking and heavy vertical material lifting.", desc: "Features vertical lifting mast and front forks." },
+      "9. Dual-Arm Material Handling Robot": { use: "Complex dual-part manufacturing assembly and heavy part manipulation.", desc: "Equipped with two independent robotic arms." },
+      "10. Custom Modular Payload Robot": { use: "Universal research platform for engineering colleges and rapid prototype testing.", desc: "Configurable base frame with modular expansion mounting plates." }
+    };
+
+    const robotTypes = Object.keys(robotInfoMap);
+    const payloadOptions = [
+      "Light Cargo (1 kg - 2 kg) [Compact Size]",
+      "Medium Payload (2 kg - 5 kg) [Standard Size]",
+      "Heavy Industrial Payload (5 kg - 10 kg) [Large Size]",
+      "Maximum Capacity (10 kg+ Heavy Transport) [Industrial Size]"
+    ];
+
+    const microcontrollerOptions = [
+      "Arduino Uno (ATmega328P - 6 PWM, 14 Digital Pins)",
+      "Arduino Mega 2560 (ATmega2560 - 15 PWM, 54 Digital Pins)",
+      "Arduino Nano (Compact ATmega328P Breadboard-Friendly)",
+      "ESP32 Wi-Fi & Bluetooth Microcontroller (3.3V Logic, Dual Core)",
+      "Raspberry Pi Pico (RP2040 Dual-Core ARM Cortex-M0+)"
+    ];
+
+    function initLab() {
+      initThreeJS();
+      workflowStage = 0;
+      currentQueueIndex = 0;
+      readingFinished = false;
+      inspectedRobots.clear();
+
+      componentDropdown.classList.remove('visible-dropdown');
+      btnSubmit.setAttribute('disabled', 'true');
+
+      const welcomeText = `Namaskaram Student, I am Chitti AI teacher for Gopalkrishna Advanced Rural Research Foundation.<br><br>
+      Note: Toolbar items are incomplete here (for example circuit design, software BOM are not complete). They will be completed once the project is finished, and you can download the package anytime.<br><br>
+      We are now beginning our **Automated Reading Tour**. I will read through each tab aloud and switch the screen automatically while you follow along!`;
+
+      chatHistory.innerHTML = `<div class="msg-chitti"><span>${welcomeText}</span></div>`;
+      chatHistory.scrollTop = chatHistory.scrollHeight;
+      setTimeout(runReadingQueue, 1200);
+    }
+
+    function initThreeJS() {
+      const container = document.getElementById('canvas-container');
+      if (renderer) return; 
+
+      const width = container.clientWidth || 800;
+      const height = container.clientHeight || 350;
+
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x090d16);
+
+      camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+      camera.position.set(0, 4, 10);
+
+      try {
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(width, height);
+        container.appendChild(renderer.domElement);
+
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.target.set(0, 0, 0);
+        controls.update();
+      } catch(e) { return; }
+
+      scene.add(new THREE.AmbientLight(0xffffff, 0.9));
+      const dirLight = new THREE.DirectionalLight(0x38bdf8, 1.5);
+      dirLight.position.set(15, 25, 20);
+      scene.add(dirLight);
+
+      const floor = new THREE.Mesh(new THREE.BoxGeometry(12, 0.2, 10), new THREE.MeshStandardMaterial({ color: 0x1e293b }));
+      floor.position.y = -1.1;
+      scene.add(floor);
+
+      robotGroup = new THREE.Group();
+      scene.add(robotGroup);
+      renderDemoBox();
+
+      function animate() {
+        requestAnimationFrame(animate);
+        if (controls) controls.update();
+        renderer.render(scene, camera);
+      }
+      animate();
+    }
+
+    function onWindowResize() {
+      if (!renderer || !camera) return;
+      const container = document.getElementById('canvas-container');
+      const width = container.clientWidth || 800;
+      const height = container.clientHeight || 350;
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      renderer.setSize(width, height);
+    }
+    window.addEventListener('resize', onWindowResize);
+
+    function renderDemoBox() {
+      while(robotGroup.children.length > 0) { robotGroup.remove(robotGroup.children[0]); }
+      const demoBox = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.8, 1.5), new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.4 }));
+      demoBox.position.y = -1.0 + 0.4;
+      robotGroup.add(demoBox);
+    }
+
+    function handleActionClick() {
+      if (!readingFinished) return;
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('highlighted'));
+
+      if (workflowStage === 0) {
+        workflowStage = 1;
+        switchTab('3d', true);
+        document.getElementById('spec-robot').innerHTML = `<strong>Robot:</strong> Selecting Architecture`;
+        
+        componentDropdown.classList.remove('visible-dropdown');
+        componentDropdown.innerHTML = '';
+        robotTypes.forEach(r => {
+          const opt = document.createElement('option');
+          opt.value = r; opt.textContent = r;
+          componentDropdown.appendChild(opt);
+        });
+
+        let robotListHtml = `<div class="option-grid">`;
+        robotTypes.forEach(r => {
+          robotListHtml += `<button class="option-chip" onclick="previewRobot('${r.replace(/'/g, "\\'")}')">${r} <span class="built-tag">Inspect ➔</span></button>`;
+        });
+        robotListHtml += `</div>`;
+
+        const introText = `🤖 **Chitti AI Teacher:** Reading tour complete! We have **10 different robot architectures** available. Please choose an option below or make your YES / NO selection:`;
+        chatHistory.innerHTML += `<div class="msg-student"><span>Let's examine the 10 robots.</span></div>`;
+        chatHistory.innerHTML += `<div class="msg-chitti"><span>${introText}</span>${robotListHtml}</div>`;
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+        btnSubmit.innerText = "Inspect Selected Robot";
+        btnConfirmSelection.innerText = "INSPECT SELECTED ROBOT ➔";
+        speak("Please choose a robot architecture or make your choice.");
+
+      } else if (workflowStage === 1) {
+        previewRobot(componentDropdown.value);
+      } else if (workflowStage === 2) {
+        confirmOrExploreRobot(componentDropdown.value, 'proceed');
+      } else if (workflowStage === 3) {
+        selectPayload(componentDropdown.value);
+      } else if (workflowStage === 4) {
+        selectBoard(componentDropdown.value);
+      }
+    }
+
+    window.previewRobot = function(robotName) {
+      if (workflowStage === 0) workflowStage = 1;
+      selectedRobot = robotName;
+      componentDropdown.value = robotName;
+      document.getElementById('spec-robot').innerHTML = `<strong>Robot:</strong> ${selectedRobot}`;
+      document.getElementById('diag-name').innerText = selectedRobot;
+      
+      const info = robotInfoMap[robotName] || { use: "General payload transport.", desc: "Standard rover." };
+      document.getElementById('diag-desc').innerHTML = `<strong>Real-Life Use:</strong> ${info.use}`;
+      
+      renderRobotModel(robotName);
+      chatHistory.innerHTML += `<div class="msg-student"><span>Inspecting: ${selectedRobot}</span></div>`;
+
+      workflowStage = 2;
+
+      if (inspectedRobots.has(robotName)) {
+        const repeatText = `🤖 **Chitti AI Teacher:** You selected this robot choice again. Do you want to choose this? Please click **YES** or **NO** below:`;
+        let repeatChips = `<div class="option-grid">
+          <button class="option-chip" onclick="handleYesNoChoice('${robotName.replace(/'/g, "\\'")}', 'YES')">✅ YES ➔</button>
+          <button class="option-chip" onclick="handleYesNoChoice('${robotName.replace(/'/g, "\\'")}', 'NO')">❌ NO ➔</button>
+        </div>`;
+        chatHistory.innerHTML += `<div class="msg-chitti"><span>${repeatText}</span>${repeatChips}</div>`;
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+        speak(`You selected this robot choice again. Do you want to choose this? Yes or No.`);
+        return;
+      }
+
+      inspectedRobots.add(robotName);
+
+      const reconfirmText = `🤖 **Chitti AI Teacher:** You selected **${selectedRobot}**.<br>
+      - **Real-Life Use:** ${info.use}<br>
+      - **Description:** ${info.desc}<br><br>
+      Do you want to proceed with this robot? Please click **YES** or **NO** below:`;
+
+      let actionChips = `<div class="option-grid">
+        <button class="option-chip" onclick="handleYesNoChoice('${robotName.replace(/'/g, "\\'")}', 'YES')">✅ YES (Confirm This Robot) ➔</button>
+        <button class="option-chip" onclick="handleYesNoChoice('${robotName.replace(/'/g, "\\'")}', 'NO')">❌ NO (Explore Other Robots) ➔</button>
+      </div>`;
+
+      chatHistory.innerHTML += `<div class="msg-chitti"><span>${reconfirmText}</span>${actionChips}</div>`;
+      chatHistory.scrollTop = chatHistory.scrollHeight;
+      btnSubmit.innerText = "Confirm Choice";
+      btnConfirmSelection.innerText = "CONFIRM CHOICE ➔";
+      speak(`You selected ${robotName}. Please press YES or NO.`);
+    };
+
+    window.handleYesNoChoice = function(robotName, choice) {
+      if (choice === 'YES') {
+        componentDropdown.classList.add('visible-dropdown');
+        confirmOrExploreRobot(robotName, 'proceed');
+      } else {
+        componentDropdown.classList.remove('visible-dropdown');
+        renderDemoBox();
+        document.getElementById('diag-name').innerText = "Select Architecture";
+        document.getElementById('diag-desc').innerHTML = "Please choose from the robot list in the chat to inspect another architecture.";
+        confirmOrExploreRobot(robotName, 'explore');
+      }
+    };
+
+    window.confirmOrExploreRobot = function(robotName, choice) {
+      if (choice === 'explore') {
+        workflowStage = 1;
+        componentDropdown.classList.remove('visible-dropdown');
+        const exploreAgainText = `🤖 **Chitti AI Teacher:** No problem! The 3D viewport has been cleared. Please choose another robot from the list below to inspect easily:`;
+        
+        let robotListHtml = `<div class="option-grid">`;
+        robotTypes.forEach(r => {
+          robotListHtml += `<button class="option-chip" onclick="previewRobot('${r.replace(/'/g, "\\'")}')">${r} <span class="built-tag">Inspect ➔</span></button>`;
+        });
+        robotListHtml += `</div>`;
+
+        chatHistory.innerHTML += `<div class="msg-student"><span>Let me explore other robots.</span></div>`;
+        chatHistory.innerHTML += `<div class="msg-chitti"><span>${exploreAgainText}</span>${robotListHtml}</div>`;
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+        speak("Please explore other robots from the list.");
+        return;
+      }
+
+      selectedRobot = robotName;
+      document.getElementById('spec-robot').innerHTML = `<strong>Robot:</strong> ${selectedRobot}`;
+      chatHistory.innerHTML += `<div class="msg-student"><span>Confirmed Robot: ${selectedRobot}. Let's proceed!</span></div>`;
+
+      workflowStage = 3;
+      componentDropdown.classList.add('visible-dropdown');
+      componentDropdown.innerHTML = '';
+      payloadOptions.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p; opt.textContent = p;
+        componentDropdown.appendChild(opt);
+      });
+
+      let pChips = `<div class="option-grid">`;
+      payloadOptions.forEach(p => {
+        pChips += `<button class="option-chip" onclick="selectPayload('${p.replace(/'/g, "\\'")}')">${p} <span class="built-tag">Select ➔</span></button>`;
+      });
+      pChips += `</div>`;
+
+      const promptPayload = `🤖 **Chitti AI Teacher:** Robot confirmed: **${selectedRobot}**. Now Step 2: **Please select your payload weight capacity** using the dropdown or options below:`;
+      chatHistory.innerHTML += `<div class="msg-chitti"><span>${promptPayload}</span>${pChips}</div>`;
+      chatHistory.scrollTop = chatHistory.scrollHeight;
+      btnSubmit.innerText = "Confirm Payload";
+      btnConfirmSelection.innerText = "CONFIRM PAYLOAD CAPACITY ➔";
+      speak("Robot confirmed. Now please select your payload capacity.");
+    };
+
+    window.selectPayload = function(payloadVal) {
+      selectedPayload = payloadVal;
+      componentDropdown.value = payloadVal;
+      document.getElementById('spec-payload').innerHTML = `<strong>Payload:</strong> ${selectedPayload}`;
+      chatHistory.innerHTML += `<div class="msg-student"><span>Selected Payload: ${selectedPayload}</span></div>`;
+
+      workflowStage = 4;
+      componentDropdown.classList.add('visible-dropdown');
+      componentDropdown.innerHTML = '';
+      microcontrollerOptions.forEach(b => {
+        const opt = document.createElement('option');
+        opt.value = b; opt.textContent = b;
+        componentDropdown.appendChild(opt);
+      });
+
+      let bChips = `<div class="option-grid">`;
+      microcontrollerOptions.forEach(b => {
+        bChips += `<button class="option-chip" onclick="selectBoard('${b.replace(/'/g, "\\'")}')">${b} <span class="built-tag">Select Board ➔</span></button>`;
+      });
+      bChips += `</div>`;
+
+      const promptBoard = `🤖 **Chitti AI Teacher:** Now Step 3: **Please select your microcontroller board**:`;
+      chatHistory.innerHTML += `<div class="msg-chitti"><span>${promptBoard}</span>${bChips}</div>`;
+      chatHistory.scrollTop = chatHistory.scrollHeight;
+      btnSubmit.innerText = "Confirm Microcontroller Board";
+      btnConfirmSelection.innerText = "CONFIRM MICROCONTROLLER BOARD ➔";
+      speak("Now please pick your microcontroller board.");
+    };
+
+    window.selectBoard = function(boardVal) {
+      selectedBoard = boardVal;
+      componentDropdown.value = boardVal;
+      document.getElementById('spec-board').innerHTML = `<strong>Microcontroller:</strong> ${selectedBoard.split(' ')[0]} ${selectedBoard.split(' ')[1]}`;
+      chatHistory.innerHTML += `<div class="msg-student"><span>Selected Board: ${selectedBoard}</span></div>`;
+
+      workflowStage = 5;
+      componentDropdown.classList.remove('visible-dropdown');
+      document.getElementById('spec-power').innerHTML = `<strong>Electronics:</strong> Configured Successfully`;
+      
+      let pinEna = 9, pinIn1 = 4, pinIn2 = 5;
+      let logicNote = "Standard 5V Logic TTL.";
+      
+      if(selectedBoard.includes("ESP32")) {
+        pinEna = 23; pinIn1 = 21; pinIn2 = 22;
+        logicNote = "⚠️ ESP32 operates on 3.3V logic level outputs.";
+      }
+
+      document.getElementById('dynamic-bom-list').innerHTML = `
+        <li><strong>Microcontroller:</strong> ${selectedBoard}</li>
+        <li><strong>Actuators:</strong> 4x 12V Geared DC Motors</li>
+        <li><strong>Power Source:</strong> 11.1V 3S LiPo Battery Pack</li>
+        <li><strong>Motor Driver:</strong> L298N Dual H-Bridge</li>
+      `;
+
+      document.getElementById('circuit-schematic-pre').innerText = `
++-----------------------------------------------------------------+
+|          WIRING BLUEPRINT FOR: ${selectedBoard.substring(0,35)} 
++-----------------------------------------------------------------+
+| LOGIC NOTE: ${logicNote}
+|                                                                 |
+| 1. POWER CONNECTIONS:                                           |
+|    - 11.1V LiPo (+) ----> L298N 12V Terminal                      |
+|    - 11.1V LiPo (-) ----> L298N GND & ${selectedBoard.split(' ')[0]} GND (Common)|
+|                                                                 |
+| 2. CONTROL SIGNAL CONNECTIONS (PWM & DIRECTION):                |
+|    - ${selectedBoard.split(' ')[0]} Pin ${pinEna} (PWM)    ----> L298N ENA (Speed Control)    |
+|    - ${selectedBoard.split(' ')[0]} Pin ${pinIn1} (Digital)--> L298N IN1 (Direction A)    |
+|    - ${selectedBoard.split(' ')[0]} Pin ${pinIn2} (Digital)--> L298N IN2 (Direction B)    |
++-----------------------------------------------------------------+`;
+
+      let codeSnippet = `/* 
+  Gopalkrishna Advanced Rural Research Foundation 
+  Professional Robot Controller Firmware optimized for ${selectedBoard} 
+*/
+#define ENA ${pinEna}
+#define IN1 ${pinIn1}
+#define IN2 ${pinIn2}
+
+void setup() {
+  pinMode(ENA, OUTPUT);
+  pinMode(IN1, OUTPUT);
+  pinMode(IN2, OUTPUT);
+  Serial.begin(9600);
+}
+
+void loop() {
+  digitalWrite(IN1, HIGH);
+  digitalWrite(IN2, LOW);
+  analogWrite(ENA, 200);
+  delay(5000);
+}
+`;
+
+      document.getElementById('code-editor-pre').innerText = codeSnippet;
+
+      // Automatically download the finished project package as requested
+      downloadProjectZip(true);
+
+      const completionText = `🎉 **Chitti AI Teacher:** Complete lab stack compiled successfully!<br>
+      - **Robot Architecture:** ${selectedRobot}<br>
+      - **Payload Capacity:** ${selectedPayload}<br>
+      - **Microcontroller Board:** ${selectedBoard}<br><br>
+      Download the finished project. It is downloaded if possible.`;
+
+      chatHistory.innerHTML += `<div class="msg-chitti"><span>${completionText}</span></div>`;
+      chatHistory.scrollTop = chatHistory.scrollHeight;
+      speak("Full lab stack compiled successfully!  finished project downloaded.");
+
+      btnSubmit.style.display = 'none';
+      btnConfirmSelection.style.display = 'none';
+    };
+
+    window.downloadProjectZip = function(isAutomatic = false) {
+      if (!readingFinished && !isAutomatic) return;
+      if (typeof JSZip === 'undefined') {
+        if (!isAutomatic) alert("JSZip library is loading. Please try again in a moment.");
+        return;
+      }
+      const zip = new JSZip();
+      
+      zip.file("CHITTI_3D_Lab_Suite.html", document.documentElement.outerHTML);
+      
+      const codeText = document.getElementById('code-editor-pre').innerText;
+      zip.file("firmware/RobotController.ino", codeText);
+
+      const schematicText = document.getElementById('circuit-schematic-pre').innerText;
+      zip.file("documentation/Wiring_Blueprint.txt", schematicText);
+
+      zip.generateAsync({ type: "blob" }).then(function(content) {
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(content);
+        link.download = "CHITTI_3D_Robotics_Lab_Package.zip";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        speak(" finished project downloaded");
+      });
+    };
+
+    function renderRobotModel(robotName) {
+      if (!robotGroup) return;
+      while(robotGroup.children.length > 0) { robotGroup.remove(robotGroup.children[0]); }
+
+      const bodyMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.5 });
+      const accentMat = new THREE.MeshStandardMaterial({ color: 0x10b981, roughness: 0.3 });
+      const darkMat = new THREE.MeshStandardMaterial({ color: 0x1f2937 });
+      const sub = new THREE.Group();
+
+      if (robotName.includes('Humanoid')) {
+        const legH = 0.9;
+        [-0.25, 0.25].forEach(x => {
+          const leg = new THREE.Mesh(new THREE.BoxGeometry(0.25, legH, 0.25), darkMat);
+          leg.position.set(x, -1.0 + legH/2, 0); sub.add(leg);
+        });
+        const torso = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.0, 0.4), bodyMat);
+        torso.position.y = -1.0 + legH + 0.5; sub.add(torso);
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 32, 32), accentMat);
+        head.position.y = -1.0 + legH + 1.0 + 0.3; sub.add(head);
+        [-0.55, 0.55].forEach(x => {
+          const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.8), bodyMat);
+          arm.position.set(x, -1.0 + legH + 0.5, 0); sub.add(arm);
+        });
+      } else if (robotName.includes('Robot Dog')) {
+        const legH = 0.7;
+        [-0.5, 0.5].forEach(x => {
+          [-0.35, 0.35].forEach(z => {
+            const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.06, legH), darkMat);
+            leg.position.set(x, -1.0 + legH/2, z); sub.add(leg);
+          });
+        });
+        const trunk = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.45, 0.7), bodyMat);
+        trunk.position.y = -1.0 + legH + 0.225; sub.add(trunk);
+        const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.3), darkMat);
+        neck.rotation.z = Math.PI / 4; neck.position.set(0.7, -1.0 + legH + 0.45 + 0.15, 0); sub.add(neck);
+        const head = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.3, 0.35), accentMat);
+        head.position.set(0.9, -1.0 + legH + 0.45 + 0.3, 0); sub.add(head);
+        const snout = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.15, 0.2), darkMat);
+        snout.position.set(1.15, -1.0 + legH + 0.45 + 0.25, 0); sub.add(snout);
+      } else if (robotName.includes('4WD Heavy-Duty Cargo Rover')) {
+        const wheelR = 0.3;
+        [-1.0, 1.0].forEach(x => {
+          [-0.7, 0.7].forEach(z => {
+            const wheel = new THREE.Mesh(new THREE.CylinderGeometry(wheelR, wheelR, 0.18, 32), darkMat);
+            wheel.rotation.z = Math.PI / 2; wheel.position.set(x, -1.0 + wheelR, z);
+            sub.add(wheel);
+          });
+        });
+        const chassis = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.4, 1.2), bodyMat);
+        chassis.position.y = -1.0 + wheelR * 2 + 0.2; sub.add(chassis);
+        const bed = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.3, 1.0), accentMat);
+        bed.position.y = -1.0 + wheelR * 2 + 0.4 + 0.15; sub.add(bed);
+      } else if (robotName.includes('AGV Flatbed')) {
+        const casterR = 0.15;
+        [-0.8, 0.8].forEach(x => {
+          [-0.7, 0.7].forEach(z => {
+            const caster = new THREE.Mesh(new THREE.SphereGeometry(casterR, 16, 16), darkMat);
+            caster.position.set(x, -1.0 + casterR, z); sub.add(caster);
+          });
+        });
+        const flatbed = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.25, 1.4), bodyMat);
+        flatbed.position.y = -1.0 + casterR * 2 + 0.125; sub.add(flatbed);
+        const beacon = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.2), accentMat);
+        beacon.position.set(0.8, -1.0 + casterR * 2 + 0.25 + 0.1, 0); sub.add(beacon);
+      } else if (robotName.includes('Robot Arm')) {
+        const baseH = 0.3;
+        const base = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.8, baseH, 32), darkMat);
+        base.position.y = -1.0 + baseH / 2; sub.add(base);
+
+        const shoulderJoint = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.3, 32), accentMat);
+        shoulderJoint.position.y = -1.0 + baseH + 0.15; sub.add(shoulderJoint);
+
+        const lowerArm = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.9, 0.25), bodyMat);
+        lowerArm.position.set(0, -1.0 + baseH + 0.3 + 0.45, 0); sub.add(lowerArm);
+
+        const elbow = new THREE.Mesh(new THREE.SphereGeometry(0.18, 16, 16), accentMat);
+        elbow.position.set(0, -1.0 + baseH + 0.3 + 0.9, 0); sub.add(elbow);
+
+        const upperArm = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.8, 0.2), bodyMat);
+        upperArm.rotation.z = Math.PI / 6;
+        upperArm.position.set(0.3, -1.0 + baseH + 0.3 + 1.25, 0); sub.add(upperArm);
+
+        const wrist = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.2), darkMat);
+        wrist.position.set(0.6, -1.0 + baseH + 0.3 + 1.55, 0); sub.add(wrist);
+
+        [-0.08, 0.08].forEach(zOff => {
+          const finger = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.25, 0.06), accentMat);
+          finger.position.set(0.7, -1.0 + baseH + 0.3 + 1.7, zOff); sub.add(finger);
+        });
+      } else if (robotName.includes('Mecanum')) {
+        const wheelR = 0.28;
+        [-0.9, 0.9].forEach(x => {
+          [-0.65, 0.65].forEach(z => {
+            const mWheel = new THREE.Mesh(new THREE.CylinderGeometry(wheelR, wheelR, 0.2, 16), accentMat);
+            mWheel.rotation.z = Math.PI / 2; mWheel.position.set(x, -1.0 + wheelR, z);
+            sub.add(mWheel);
+          });
+        });
+        const chassis = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.4, 1.1), bodyMat);
+        chassis.position.y = -1.0 + wheelR * 2 + 0.2; sub.add(chassis);
+      } else if (robotName.includes('Tracked Tank')) {
+        const trackH = 0.3;
+        [-0.7, 0.7].forEach(z => {
+          const track = new THREE.Mesh(new THREE.BoxGeometry(1.9, trackH, 0.35), darkMat);
+          track.position.set(0, -1.0 + trackH / 2, z); sub.add(track);
+        });
+        const chassis = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.5, 1.2), bodyMat);
+        chassis.position.y = -1.0 + trackH + 0.25; sub.add(chassis);
+        const turret = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.4, 0.3), accentMat);
+        turret.position.y = -1.0 + trackH + 0.5 + 0.15; sub.add(turret);
+      } else if (robotName.includes('Forklift')) {
+        const bodyH = 0.7;
+        const body = new THREE.Mesh(new THREE.BoxGeometry(1.4, bodyH, 1.0), bodyMat);
+        body.position.set(-0.2, -1.0 + bodyH / 2, 0); sub.add(body);
+        const mast = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1.4, 0.8), darkMat);
+        mast.position.set(0.6, -1.0 + 0.7, 0); sub.add(mast);
+        const forks = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.1, 0.6), accentMat);
+        forks.position.set(0.9, -1.0 + 0.1, 0); sub.add(forks);
+      } else if (robotName.includes('Dual-Arm')) {
+        const chassisH = 0.5;
+        const chassis = new THREE.Mesh(new THREE.BoxGeometry(1.6, chassisH, 1.2), bodyMat);
+        chassis.position.y = -1.0 + chassisH / 2; sub.add(chassis);
+        [-0.5, 0.5].forEach(z => {
+          const arm = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1.0, 0.2), accentMat);
+          arm.position.set(0, -1.0 + chassisH + 0.5, z); sub.add(arm);
+        });
+      } else {
+        const pillarH = 0.8;
+        [-0.7, 0.7].forEach(x => {
+          [-0.5, 0.5].forEach(z => {
+            const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, pillarH), accentMat);
+            pillar.position.set(x, -1.0 + pillarH / 2, z); sub.add(pillar);
+          });
+        });
+        const chassis = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.35, 1.1), bodyMat);
+        chassis.position.y = -1.0 + pillarH / 2; sub.add(chassis);
+        const topPlate = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.1, 1.0), bodyMat);
+        topPlate.position.y = -1.0 + pillarH + 0.05; sub.add(topPlate);
+      }
+      robotGroup.add(sub);
+    }
+
+    btnConfirmSelection.addEventListener('click', handleActionClick);
+    btnSubmit.addEventListener('click', handleActionClick);
+
+    function resetSession() {
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      workflowStage = 0;
+      currentQueueIndex = 0;
+      readingFinished = false;
+      selectedRobot = '';
+      selectedPayload = '';
+      selectedBoard = '';
+      inspectedRobots.clear();
+      
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.remove('unlocked', 'active');
+      });
+      document.getElementById('tab-btn-zip').classList.remove('unlocked');
+      document.getElementById('component-dropdown').classList.remove('visible-dropdown');
+
+      btnSubmit.style.display = 'block';
+      btnConfirmSelection.style.display = 'block';
+      btnSubmit.innerText = "Listening to Chitti...";
+      btnConfirmSelection.innerText = "LISTENING TO CHITTI'S READING...";
+      chatHistory.innerHTML = '';
+      document.getElementById('spec-robot').innerHTML = `<strong>Robot:</strong> Automated Reading in Progress`;
+      document.getElementById('spec-payload').innerHTML = `<strong>Payload:</strong> Pending Selection`;
+      document.getElementById('spec-board').innerHTML = `<strong>Microcontroller:</strong> Pending Selection`;
+      document.getElementById('spec-power').innerHTML = `<strong>Mentor Status:</strong> Reading Aloud Together`;
+      renderDemoBox();
+      switchTab('3d', true);
+      initLab();
+    }
+
+    initLab();
+  </script>
+</body>
+</html>
