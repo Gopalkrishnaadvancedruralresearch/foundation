@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Garrf.in - Civil Undergraduate Suite 1: Master Laboratory (Secured)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        :root {
+            --primary: #1b4d3e;
+            --secondary: #2e8b57;
+            --accent: #d4af37;
+            --bg-light: #f4f7f6;
+            --text-dark: #333333;
+            --card-bg: #ffffff;
+            --danger: #c0392b;
+            --warning: #d35400;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        
+        /* File-level Password Authentication Gate Overlay */
+        #authOverlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(13, 17, 23, 0.95);
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .auth-card {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 420px;
+            width: 90%;
+            border-top: 6px solid var(--accent);
+        }
+        .auth-card h2 { margin-top: 0; color: var(--primary); font-size: 1.5rem; }
+        .auth-card p { font-size: 0.9rem; color: #555; margin-bottom: 20px; }
+        .auth-card input { width: 100%; padding: 12px; font-size: 1.1rem; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; text-align: center; margin-bottom: 15px; letter-spacing: 2px; }
+        .auth-card button { width: 100%; background-color: var(--primary); color: white; border: none; padding: 12px; font-size: 1rem; border-radius: 5px; font-weight: bold; cursor: pointer; }
+        .auth-card button:hover { background-color: var(--secondary); }
+        .auth-error { color: var(--danger); font-size: 0.85rem; margin-top: 10px; display: none; font-weight: 600; }
+
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 20px 30px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        header h1 { margin: 0; font-size: 1.8rem; }
+        header p { margin: 5px 0 0 0; font-size: 0.95rem; color: var(--accent); font-weight: 500; }
+        .container { max-width: 1200px; margin: 30px auto; padding: 0 20px; flex: 1; width: 100%; box-sizing: border-box; }
+        
+        .control-panel {
+            background: var(--card-bg); padding: 20px; border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 25px;
+            display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; justify-content: space-between;
+        }
+        .control-group { display: flex; flex-direction: column; flex: 1; min-width: 240px; }
+        label { font-weight: 600; margin-bottom: 8px; font-size: 0.9rem; color: var(--primary); }
+        select, input, button { padding: 10px 15px; border-radius: 5px; border: 1px solid #ccc; font-size: 1rem; outline: none; }
+        select, input { background-color: white; }
+        select:disabled { background-color: #e9ecef; color: #6c757d; cursor: not-allowed; border-color: #ced4da; }
+        
+        .btn-ai {
+            background-color: var(--accent); color: #fff; border: none; font-weight: bold; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 8px; height: 44px; padding: 0 20px; border-radius: 5px;
+        }
+        .btn-ai:hover { background-color: #b3922f; }
+        
+        .lab-card { background: var(--card-bg); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); padding: 30px; }
+        .lab-title { color: var(--primary); border-bottom: 2px solid var(--accent); padding-bottom: 10px; margin-top: 0; font-size: 1.4rem; }
+        .badge { background: #eef5f2; color: var(--secondary); padding: 4px 10px; border-radius: 4px; font-size: 0.80rem; font-weight: bold; display: inline-block; margin-bottom: 15px; }
+        
+        .theory-box {
+            background: #e8f4f0; border-left: 4px solid var(--secondary); padding: 15px;
+            margin-bottom: 15px; border-radius: 0 6px 6px 0; font-size: 0.9rem; line-height: 1.5; color: #1b4d3e;
+        }
+        
+        .board-description-card {
+            background: #fdfdfd; border: 1px solid #cce3dc; border-left: 5px solid var(--primary);
+            padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 0.9rem; display: none;
+        }
+        .board-description-card h4 { margin: 0 0 8px 0; color: var(--primary); font-size: 1.05rem; }
+        .board-description-card p { margin: 0 0 10px 0; color: #444; }
+        .pinout-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.82rem; font-family: monospace; }
+        .pinout-table th, .pinout-table td { border: 1px solid #d1ded9; padding: 6px 10px; text-align: left; }
+        .pinout-table th { background-color: #e8f4f0; color: var(--primary); }
+
+        .pin-budget-meter {
+            background: #f8f9fa; border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px 15px; margin-bottom: 20px;
+            display: flex; align-items: center; justify-content: space-between; font-size: 0.9rem;
+        }
+        .pin-budget-bar-container { flex: 1; margin: 0 20px; background: #e2e8f0; height: 12px; border-radius: 6px; overflow: hidden; }
+        .pin-budget-bar-fill { height: 100%; background: var(--secondary); width: 0%; transition: width 0.3s ease, background-color 0.3s ease; }
+
+        .builder-controls { background: #fff; border: 1px dashed var(--secondary); padding: 15px; border-radius: 6px; margin-top: 15px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .btn-build { background-color: var(--secondary); color: white; border: none; padding: 10px 18px; border-radius: 5px; cursor: pointer; font-weight: 600; }
+        .btn-build:hover { background-color: var(--primary); }
+        .btn-reset { background-color: #d9534f; color: white; border: none; padding: 10px 18px; border-radius: 5px; cursor: pointer; font-weight: 600; }
+        .btn-run-ai { background-color: #1b4d3e; color: white; border: none; padding: 12px 18px; border-radius: 5px; cursor: pointer; font-weight: 600; margin-top: 10px; width: 100%; }
+        .btn-run-ai:hover { background-color: var(--secondary); }
+        
+        footer { background-color: #222; color: #aaa; text-align: center; padding: 20px; font-size: 0.85rem; margin-top: auto; }
+        footer span { color: var(--accent); }
+        
+        .locked-section {
+            opacity: 0.25; pointer-events: none; filter: blur(3px); transition: all 0.5s ease;
+            background: #f9f9f9; padding: 20px; border-radius: 6px; border: 1px dashed #ccc; margin-top: 20px;
+        }
+        .unlocked-section {
+            opacity: 1; pointer-events: auto; filter: none; transition: all 0.5s ease;
+            background: #fff; padding: 20px; border-radius: 6px; border: 1px solid var(--secondary); margin-top: 20px;
+        }
+        .success-banner {
+            background: #d4edda; color: #155724; padding: 15px; border-radius: 6px;
+            border: 1px solid #c3e6cb; margin-top: 15px; font-weight: 600; display: none; text-align: center;
+        }
+        .viewport-3d {
+            width: 100%; height: 420px; background: #0d1117; border-radius: 6px;
+            margin-top: 15px; position: relative; overflow: hidden; border: 1px solid #333;
+        }
+        .viewport-label {
+            position: absolute; bottom: 10px; left: 15px; color: #8b949e;
+            font-family: monospace; font-size: 0.75rem; background: rgba(0,0,0,0.6); padding: 4px 8px; border-radius: 4px;
+        }
+        .console-output {
+            background: #111; color: #00ff66; font-family: monospace; padding: 15px;
+            border-radius: 5px; margin-top: 15px; font-size: 0.88rem; max-height: 280px; overflow-y: auto; line-height: 1.5;
+        }
+        .schematic-box {
+            background: #1e1e1e; color: #a9b7c6; font-family: monospace; padding: 15px;
+            border-radius: 6px; margin-top: 15px; font-size: 0.85rem; overflow-x: auto; white-space: pre;
+            border: 1px solid #444;
+        }
+        .code-snippet {
+            background: #1e1e1e; color: #9cdcfe; font-family: monospace; padding: 15px;
+            border-radius: 6px; font-size: 0.82rem; overflow-x: auto; white-space: pre; margin-top: 15px; border: 1px solid #444;
+        }
+
+        .godavari-box {
+            background: linear-gradient(135deg, #1b4d3e, #2e8b57);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            border-left: 6px solid var(--accent);
+        }
+        .godavari-info h4 { margin: 0 0 5px 0; color: var(--accent); font-size: 1.1rem; }
+        .godavari-info p { margin: 0; font-size: 0.9rem; opacity: 0.95; }
+
+        .component-list-container {
+            background: #fdfdfd; border: 1px solid #d1ded9; border-radius: 6px; padding: 15px; margin-top: 15px;
+        }
+        .component-item-row {
+            display: flex; justify-content: space-between; align-items: center; padding: 8px 12px;
+            border-bottom: 1px solid #eee; font-size: 0.9rem;
+        }
+        .component-item-row:last-child { border-bottom: none; }
+        .btn-remove { background-color: var(--danger); color: white; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
+        .btn-remove:hover { background-color: #962d22; }
+
+        .trial-comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        @media(max-width: 768px) {
+            .trial-comparison-grid { grid-template-columns: 1fr; }
+        }
+        .trial-box {
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            padding: 15px;
+            border-radius: 6px;
+        }
+        .trial-box h4 { margin-top: 0; color: var(--primary); }
+    </style>
+</head>
+<body>
+
+    <!-- FILE-LEVEL PASSWORD AUTHENTICATION GATE MODAL -->
+    <div id="authOverlay">
+        <div class="auth-card">
+            <h2>GARRF Virtual AISIA Suite</h2>
+            <p>Enter the master file password to unlock and load the Microcontroller Master Laboratory:</p>
+            <input type="password" id="suitePasswordInput" placeholder="Enter Password" onkeypress="handlePasswordKey(event)" autofocus>
+            <button onclick="verifySuitePassword()">Unlock Laboratory</button>
+            <div id="authErrorMsg" class="auth-error">Incorrect password. Access denied.</div>
+        </div>
+    </div>
+
+    <header>
+        <h1>Gopalkrishna Advanced Rural Research Foundation (GARRF)</h1>
+        <p>Virtual AISIA R&amp;D Platform | Robot Master Godavari Edition</p>
+    </header>
+
+    <div class="container">
+        
+        <!-- Godavari AI Teacher Status Box -->
+        <div class="godavari-box">
+            <div class="godavari-info">
+                <h4>🤖 Robot Master Godavari AI Teacher</h4>
+                <p id="godavariStatusText">Add as many components as your board allows! But remember: Press Finish after you add all, or else you cannot go forward—locked tight!</p>
+            </div>
+            <button class="btn-ai" onclick="startLabSession()">🎙️ Listen to Godavari</button>
+        </div>
+
+        <!-- Master Control Panel -->
+        <div class="control-panel">
+            <div class="control-group">
+                <label for="boardSelect">1. Select Microcontroller Board:</label>
+                <select id="boardSelect" onchange="onBoardSelected()">
+                    <option value="">-- Choose Board --</option>
+                    <option value="uno">Arduino Uno / Uno R3</option>
+                    <option value="nano">Arduino Nano (Compact)</option>
+                    <option value="mega">Arduino Mega 2560 (Large Scale)</option>
+                    <option value="esp32">ESP32 NodeMCU (WiFi / Camera)</option>
+                    <option value="r4">Arduino Uno R4 Minima (Modern 32-bit)</option>
+                </select>
+            </div>
+            <div class="control-group" id="boardActionGroup" style="display:none; justify-content: flex-end;">
+                <label>&nbsp;</label>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-build" onclick="confirmBoardSelection()" style="background-color: var(--primary);">✅ Confirm Board</button>
+                    <button class="btn-reset" onclick="changeBoardSelection()" style="background-color: #c0392b;">🔄 Change Board</button>
+                </div>
+            </div>
+            <div class="control-group">
+                <label for="categorySelect">2. Component Type:</label>
+                <select id="categorySelect" onchange="filterComponentsByCategory()">
+                    <option value="">-- Choose Category --</option>
+                    <option value="sensors">Sensors (Structural & Environmental)</option>
+                    <option value="actuators">Actuators, Motors & Power</option>
+                    <option value="displays">Displays & HMI</option>
+                    <option value="wireless">Wireless, Camera & Vision</option>
+                    <option value="advanced">Advanced Modules & Logging</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label for="componentDropdown">3. Select Specific Component:</label>
+                <select id="componentDropdown" onchange="onComponentDropdownSelected()">
+                    <option value="">-- Choose Component --</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="lab-card">
+            <span class="badge">Robot Master 3D Prototyping Suite | Breadboard Component Assembly</span>
+            <h2 class="lab-title" id="labTitleText">Custom Prototyping Bench: Breadboard &amp; Circuit Workbench</h2>
+            <div class="theory-box" id="stepInstructionBox">
+                <strong>Robot Master Godavari:</strong> "Add as many components as your board allows! But press Finish after you add all—else you cannot go forward, it stays locked!"
+            </div>
+
+            <!-- Detailed Selected Board & Pinout Description Card -->
+            <div id="boardDescriptionCard" class="board-description-card">
+                <h4 id="boardDescTitle">Selected Board Overview &amp; Pin Capacities</h4>
+                <p id="boardDescText">Select a microcontroller board above to view architecture details, available pins, and bus limits.</p>
+                <div id="boardPinoutTableContainer"></div>
+            </div>
+
+            <!-- Real-time Pin Budget Meter -->
+            <div id="pinBudgetMeterContainer" class="pin-budget-meter" style="display:none;">
+                <span id="pinBudgetText"><strong>Pin Budget:</strong> 0 / 20 Pins Used</span>
+                <div class="pin-budget-bar-container">
+                    <div id="pinBudgetBarFill" class="pin-budget-bar-fill"></div>
+                </div>
+                <span id="busBudgetText" style="font-family: monospace; font-size: 0.85rem; color: #475569;">I2C/SPI/PWM: OK</span>
+            </div>
+
+            <h4>Added Components in Current Prototyping Setup</h4>
+            <div class="component-list-container" id="addedComponentsContainer">
+                <div style="color: #777; font-style: italic; text-align: center; padding: 10px;">No components added yet. Use the control panel above to add modules.</div>
+            </div>
+
+            <div class="builder-controls" style="margin-top: 20px;">
+                <button class="btn-build" onclick="addSelectedComponentToWorkbench()">➕ Add Component to Workbench</button>
+                <button class="btn-build" onclick="finalizeSetupAndGenerate()" style="background-color: var(--accent); color: #333;">🔒 Finalize Setup &amp; Lock Circuit</button>
+                <button class="btn-reset" onclick="resetBuild()">🔄 Reset All</button>
+                <span id="stepStatus" style="font-weight:600; color: var(--primary);">Add components, then click Finalize Setup to unlock workflow.</span>
+            </div>
+
+            <!-- 3D Realistic Viewport -->
+            <div class="viewport-3d" id="viewport1"><div class="viewport-label" id="label1">3D Bench Stage: 0 Components Active on Breadboard</div></div>
+
+            <div class="success-banner" id="successBanner">
+                🎉 Setup finalized and locked! Personnel Intelligence has validated your pin budget and placed all component models onto the breadboard with C++ library firmware.
+            </div>
+
+            <!-- UNLOCKED ONLY AFTER SETUP FINISHED -->
+            <div id="hardwareWorkflowSection" class="locked-section">
+                <h3 style="color:var(--primary); margin-top:0;">🛡️ Robot Master Bus Routing &amp; Library Installation Instructions</h3>
+                <div class="schematic-box" id="pinSchematicBox">--- STANDBY MODE ---
+Finalize your setup to generate intelligent pin mapping and library installation guides.</div>
+
+                <h3 style="color:var(--primary); margin-top:25px;">Generated C++ Firmware (Real Physical Units &amp; Library Parsing)</h3>
+                <div class="code-snippet" id="generatedCodeSnippet">// Firmware will appear here once finalized</div>
+
+                <h3 style="color:var(--primary); margin-top:25px;">🔬 Multi-Trial Physical Experiment &amp; Comparative Analysis</h3>
+                <p style="font-size:0.9rem; color:#555;">Run your physical experiment across multiple conditions (e.g., Trial 1 at ambient room temperature, Trial 2 after applying warmth or disturbance). Enter your actual physical engineering values below to let Godavari AI compare them!</p>
+                
+                <div class="trial-comparison-grid">
+                    <div class="trial-box">
+                        <h4>Trial 1 (Baseline Reading)</h4>
+                        <div id="trial1InputsContainer"></div>
+                    </div>
+                    <div class="trial-box">
+                        <h4>Trial 2 (Perturbed / Test Reading)</h4>
+                        <div id="trial2InputsContainer"></div>
+                    </div>
+                </div>
+
+                <button class="btn-run-ai" onclick="runComparativeEvaluation()">🚀 Run Godavari AI Comparative Analysis &amp; Commentary</button>
+                
+                <h4 style="color:var(--primary); margin-top:20px;">AI Comparative Commentary &amp; Diagnostic Logs</h4>
+                <div class="console-output" id="aiConsole">[Godavari AI Teacher Console Ready]: Awaiting multi-trial student telemetry...</div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        Developed by Dr. Annamdas Venu Gopal Madhav &amp; Annamdas Shantanu Vasudev Krishna | Copyright ©️ <strong>Garrf.in</strong>
+    </footer>
+
+    <script>
+        // Password Verification Logic
+        function verifySuitePassword() {
+            const inputVal = document.getElementById('suitePasswordInput').value.trim();
+            const errorMsg = document.getElementById('authErrorMsg');
+            
+            if (inputVal === "IISCNTU") {
+                document.getElementById('authOverlay').style.display = 'none';
+                init3DBuilder();
+            } else {
+                errorMsg.style.display = 'block';
+                document.getElementById('suitePasswordInput').value = '';
+                document.getElementById('suitePasswordInput').focus();
+            }
+        }
+
+        function handlePasswordKey(e) {
+            if (e.key === 'Enter') {
+                verifySuitePassword();
+            }
+        }
+
+        const masterComponents = [
+            { id: "c1", name: "Piezoelectric Vibration Sensor (PZT)", cat: "sensors", type: "analog", defaultPin: "Analog A0", resistorRec: "1MΩ pull-down resistor", capacitorRec: "100nF decoupling capacitor", pinsNeeded: 2, modelType: "sensor_pzt", unit: "Voltage (V)", libName: "Standard Analog Read" },
+            { id: "c2", name: "KY-037 Sound / Acoustic Sensor", cat: "sensors", type: "mixed", defaultPin: "Digital Pin 7 (D7)", resistorRec: "10kΩ trim pot", capacitorRec: "100nF capacitor", pinsNeeded: 3, modelType: "sensor_mic", unit: "Digital State", libName: "Standard Digital Read" },
+            { id: "c3", name: "DHT11 Temp & Humidity Sensor", cat: "sensors", type: "digital", defaultPin: "Digital Pin 2 (D2)", resistorRec: "4.7kΩ pull-up resistor", capacitorRec: "100nF capacitor", pinsNeeded: 3, modelType: "sensor_dht", unit: "°C & %", libName: "DHT sensor library (Adafruit)" },
+            { id: "c4", name: "DHT22 Precision Temp/Humidity", cat: "sensors", type: "digital", defaultPin: "Digital Pin 2 (D2)", resistorRec: "4.7kΩ pull-up resistor", capacitorRec: "100nF capacitor", pinsNeeded: 3, modelType: "sensor_dht", unit: "°C & %", libName: "DHT sensor library (Adafruit)" },
+            { id: "c5", name: "DS18B20 Waterproof Temp Sensor", cat: "sensors", type: "digital", defaultPin: "Digital Pin 4 (D4)", resistorRec: "4.7kΩ pull-up resistor", capacitorRec: "100nF capacitor", pinsNeeded: 3, modelType: "sensor_probe", unit: "°C", libName: "OneWire & DallasTemperature" },
+            { id: "c6", name: "ADXL345 3-Axis Accelerometer", cat: "sensors", type: "i2c", defaultPin: "I2C Bus (SDA/SCL)", resistorRec: "Built-in pull-ups", capacitorRec: "0.1µF capacitor", pinsNeeded: 4, modelType: "sensor_module", unit: "g (Acceleration)", libName: "Adafruit ADXL345 library" },
+            { id: "c7", name: "MPU6050 6-Axis Accel & Gyro", cat: "sensors", type: "i2c", defaultPin: "I2C Bus (SDA/SCL)", resistorRec: "4.7kΩ pull-ups", capacitorRec: "0.1µF capacitor", pinsNeeded: 4, modelType: "sensor_module", unit: "m/s² & °/s", libName: "Adafruit MPU6050 library" },
+            { id: "c8", name: "HC-SR04 Ultrasonic Distance Sensor", cat: "sensors", type: "digital", defaultPin: "Trig: D9, Echo: D8", resistorRec: "1kΩ/2kΩ divider", capacitorRec: "100nF capacitor", pinsNeeded: 4, modelType: "sensor_ultrasonic", unit: "cm", libName: "NewPing library" },
+            { id: "c9", name: "Force Sensing Resistor (FSR 402)", cat: "sensors", type: "analog", defaultPin: "Analog A2", resistorRec: "10kΩ pull-down resistor", capacitorRec: "100nF capacitor", pinsNeeded: 2, modelType: "sensor_fsr", unit: "Newtons (Force)", libName: "Standard analogRead()" },
+            { id: "c10", name: "Load Cell (5kg) + HX711 ADC", cat: "sensors", type: "digital", defaultPin: "DT: D3, SCK: D2", resistorRec: "None (HX711 onboard)", capacitorRec: "100nF capacitor", pinsNeeded: 4, modelType: "sensor_module", unit: "Grams / kg", libName: "HX711 library (Bogde)" },
+
+            { id: "c11", name: "SG90 Micro Servo Motor (180°)", cat: "actuators", type: "pwm", defaultPin: "PWM Pin ~D9", resistorRec: "220Ω resistor on PWM", capacitorRec: "470µF electrolytic capacitor", pinsNeeded: 3, modelType: "actuator_servo", unit: "Degrees (0-180°)", libName: "Servo library" },
+            { id: "c12", name: "MG996R High-Torque Metal Servo", cat: "actuators", type: "pwm", defaultPin: "PWM Pin ~D10", resistorRec: "220Ω resistor on signal", capacitorRec: "1000µF electrolytic capacitor", pinsNeeded: 3, modelType: "actuator_servo", unit: "Degrees (0-180°)", libName: "Servo library" },
+            { id: "c13", name: "L298N Dual H-Bridge Motor Driver", cat: "actuators", type: "mixed", defaultPin: "IN1: D4, IN2: D5", resistorRec: "None (integrated)", capacitorRec: "100µF capacitor", pinsNeeded: 6, modelType: "actuator_driver", unit: "Speed & Direction", libName: "Standard Digital/PWM" },
+            { id: "c14", name: "5V 1-Channel Relay Module", cat: "actuators", type: "digital", defaultPin: "Digital Pin 12", resistorRec: "Optocoupler onboard", capacitorRec: "100nF capacitor", pinsNeeded: 3, modelType: "actuator_relay", unit: "State (HIGH/LOW)", libName: "Standard digitalWrite()" },
+            { id: "c15", name: "Piezo Buzzer / Active Buzzer", cat: "actuators", type: "digital", defaultPin: "Digital Pin 8", resistorRec: "100Ω resistor", capacitorRec: "None", pinsNeeded: 2, modelType: "actuator_buzzer", unit: "Frequency (Hz)", libName: "tone() function" },
+
+            { id: "c16", name: "1602 LCD Display + I2C", cat: "displays", type: "i2c", defaultPin: "I2C Bus (SDA/SCL)", resistorRec: "Built-in backpack pull-ups", capacitorRec: "100nF capacitor", pinsNeeded: 4, modelType: "display_lcd1602", unit: "Characters", libName: "LiquidCrystal_I2C" },
+            { id: "c17", name: "2004 20x4 Large Character LCD", cat: "displays", type: "i2c", defaultPin: "I2C Bus (SDA/SCL)", resistorRec: "Built-in backpack pull-ups", capacitorRec: "100nF capacitor", pinsNeeded: 4, modelType: "display_lcd2004", unit: "Characters", libName: "LiquidCrystal_I2C" },
+            { id: "c18", name: "0.96-inch OLED (SSD1306)", cat: "displays", type: "i2c", defaultPin: "I2C Bus (SDA/SCL)", resistorRec: "None", capacitorRec: "1µF ceramic capacitor", pinsNeeded: 4, modelType: "display_oled096", unit: "Pixels", libName: "Adafruit_SSD1306 & GFX" },
+            { id: "c19", name: "WS2812B Addressable RGB Strip", cat: "displays", type: "pwm", defaultPin: "PWM Pin ~D6", resistorRec: "330Ω resistor on data line", capacitorRec: "1000µF electrolytic capacitor", pinsNeeded: 3, modelType: "display_rgb", unit: "RGB Colors", libName: "FastLED or Adafruit_NeoPixel" },
+
+            { id: "c20", name: "HC-05 Bluetooth Serial Module", cat: "wireless", type: "serial", defaultPin: "SoftwareSerial TX/RX", resistorRec: "1kΩ/2kΩ voltage divider", capacitorRec: "10µF tantalum capacitor", pinsNeeded: 4, modelType: "wireless_bt", unit: "Bytes / String", libName: "SoftwareSerial" },
+            { id: "c21", name: "ESP32-CAM AI Vision Module", cat: "wireless", type: "camera", defaultPin: "Dedicated Camera Bus", resistorRec: "10kΩ pull-up on GPIO 0", capacitorRec: "47µF electrolytic capacitor", pinsNeeded: 12, modelType: "wireless_cam", unit: "JPEG Stream", libName: "esp32-camera" },
+
+            { id: "c22", name: "SPI MicroSD Card Logging Module", cat: "advanced", type: "spi", defaultPin: "SPI Bus (CS, MOSI, MISO, SCK)", resistorRec: "Level shifter", capacitorRec: "10µF electrolytic capacitor", pinsNeeded: 6, modelType: "advanced_sd", unit: "File Bytes", libName: "SD library (Built-in)" }
+        ];
+
+        const boardSpecifications = {
+            uno: {
+                title: "Arduino Uno / Uno R3 (ATmega328P)",
+                description: "Operating voltage: 5V | Clock: 16MHz. Pin Ceiling: 14 Digital I/O (6 PWM) & 6 Analog Inputs (Total 20 available pins).",
+                maxPins: 20,
+                pins: [
+                    { pin: "D0 - D1", type: "Digital / Serial", desc: "RX/TX UART Serial communication lines" },
+                    { pin: "D2 - D13", type: "Digital I/O (PWM on ~3,5,6,9,10,11)", desc: "General digital input/output or pulse-width modulation" },
+                    { pin: "A0 - A5", type: "Analog Input", desc: "10-bit analog-to-digital converters (0-5V reference)" },
+                    { pin: "5V / 3.3V / GND", type: "Power Rail", desc: "Onboard regulated power supply pins" }
+                ]
+            },
+            nano: {
+                title: "Arduino Nano (ATmega328P Compact)",
+                description: "Operating voltage: 5V | Clock: 16MHz. Pin Ceiling: 14 Digital I/O and 8 Analog Inputs (Total 22 available pins).",
+                maxPins: 22,
+                pins: [
+                    { pin: "D0 - D13", type: "Digital I/O & PWM", desc: "Standard digital channels with hardware PWM support" },
+                    { pin: "A0 - A7", type: "Analog Input", desc: "Extended analog input channels (A6, A7 available)" },
+                    { pin: "VIN / 5V / 3.3V / GND", type: "Power Rail", desc: "Input voltage and regulated power outputs" }
+                ]
+            },
+            mega: {
+                title: "Arduino Mega 2560 (ATmega2560)",
+                description: "Operating voltage: 5V | Clock: 16MHz. Pin Ceiling: 54 Digital I/O (15 PWM) & 16 Analog Inputs (Total 70 available pins).",
+                maxPins: 70,
+                pins: [
+                    { pin: "D0 - D53", type: "Digital I/O (PWM on 2-13, 44-46)", desc: "High-density digital control lines for complex setups" },
+                    { pin: "A0 - A15", type: "Analog Input", desc: "16 dedicated high-precision analog channels" },
+                    { pin: "TX0-3 / RX0-3", type: "Hardware Serial", desc: "Quad independent hardware UART serial buses" }
+                ]
+            },
+            esp32: {
+                title: "ESP32 NodeMCU (Tensilica Dual-Core 32-bit 240MHz)",
+                description: "Operating voltage: 3.3V | Wi-Fi / Bluetooth. Pin Ceiling: 34 Configurable Digital / Analog GPIO pins (Total 34 available pins).",
+                maxPins: 34,
+                pins: [
+                    { pin: "GPIO 0 - 39", type: "Digital / Analog / Touch", desc: "Configurable multi-function pins (Note: 3.3V max logic!)" },
+                    { pin: "VP / VN (GPIO 36, 39)", type: "ADC Input", desc: "High-impedance analog sensor input channels" },
+                    { pin: "SDA (GPIO 21) / SCL (GPIO 22)", type: "I2C Bus", desc: "Dedicated hardware I2C communication lines" }
+                ]
+            },
+            r4: {
+                title: "Arduino Uno R4 Minima (Renesas RA4M1 32-bit)",
+                description: "Operating voltage: 5V | 32-bit Arm Cortex-M4. Pin Ceiling: 14 Digital I/O (6 PWM) & 6 Analog Inputs (Total 20 available pins).",
+                maxPins: 20,
+                pins: [
+                    { pin: "D0 - D13", type: "Digital I/O & PWM", desc: "Standard header footprint with 32-bit processing speed" },
+                    { pin: "A0 - A5", type: "Analog Input / DAC", desc: "14-bit ADC resolution and true analog DAC output" },
+                    { pin: "SDA / SCL", type: "Dedicated I2C", desc: "Hardware I2C interface pins" }
+                ]
+            }
+        };
+
+        let activeScene, activeCamera, activeRenderer, animationFrameId;
+        let assemblyGroup, boardMeshGroup, breadboardMeshGroup;
+        let selectedBoardKey = "";
+        let selectedBoardName = "";
+        let selectedBoardMaxPins = 20;
+        let isBoardConfirmed = false;
+        let userChosenComponents = [];
+
+        const boardConfigs = {
+            uno: { name: "Arduino Uno / Uno R3", pcbColor: 0x006666, w: 2.7, h: 0.12, l: 4.5, maxPins: 20 },
+            nano: { name: "Arduino Nano (Compact)", pcbColor: 0x005555, w: 1.2, h: 0.08, l: 2.6, maxPins: 22 },
+            mega: { name: "Arduino Mega 2560 (Large Scale)", pcbColor: 0x004444, w: 3.6, h: 0.15, l: 7.2, maxPins: 70 },
+            esp32: { name: "ESP32 NodeMCU (WiFi / Camera)", pcbColor: 0x1e1e1e, w: 2.2, h: 0.1, l: 4.2, maxPins: 34 },
+            r4: { name: "Arduino Uno R4 Minima (Modern)", pcbColor: 0x003344, w: 2.7, h: 0.12, l: 4.5, maxPins: 20 }
+        };
+
+        function populateComponentDropdown(filterCat = '') {
+            const dropdown = document.getElementById('componentDropdown');
+            dropdown.innerHTML = '<option value="">-- Choose Component --</option>';
+            if (!filterCat) return;
+            
+            masterComponents.forEach(comp => {
+                if (filterCat === 'all' || comp.cat === filterCat) {
+                    const opt = document.createElement('option');
+                    opt.value = comp.id;
+                    opt.textContent = `${comp.name} [Pins Required: ${comp.pinsNeeded}]`;
+                    dropdown.appendChild(opt);
+                }
+            });
+        }
+
+        function filterComponentsByCategory() {
+            const cat = document.getElementById('categorySelect').value;
+            populateComponentDropdown(cat);
+            if (cat) {
+                speakGodavari(`Filtered by ${cat}. Select your component.`);
+            }
+        }
+
+        function speakGodavari(text, callback) {
+            document.getElementById('godavariStatusText').innerText = text;
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 1.0; utterance.pitch = 1.05;
+                const voices = window.speechSynthesis.getVoices();
+                const indianVoice = voices.find(v => v.lang === 'en-IN' || v.name.includes('India') || v.name.includes('Female'));
+                if (indianVoice) utterance.voice = indianVoice;
+                if (callback) utterance.onend = callback;
+                window.speechSynthesis.speak(utterance);
+            } else if (callback) {
+                callback();
+            }
+        }
+
+        function startLabSession() {
+            const msg = "Robot Master Godavari AI active. Add as many components as your board allows! But remember: Press Finish after you add all, or else you cannot go forward—locked tight!";
+            document.getElementById('stepInstructionBox').innerHTML = `<strong>Robot Master Godavari:</strong> ${msg}`;
+            speakGodavari(msg);
+        }
+
+        function onBoardSelected() {
+            const boardKey = document.getElementById('boardSelect').value;
+            const descCard = document.getElementById('boardDescriptionCard');
+            
+            if (!boardKey) {
+                document.getElementById('boardActionGroup').style.display = 'none';
+                descCard.style.display = 'none';
+                document.getElementById('pinBudgetMeterContainer').style.display = 'none';
+                return;
+            }
+            
+            selectedBoardKey = boardKey;
+            const cfg = boardConfigs[boardKey];
+            selectedBoardName = cfg.name;
+            selectedBoardMaxPins = cfg.maxPins;
+            updateRealisticBoardMesh(boardKey);
+            document.getElementById('boardActionGroup').style.display = 'flex';
+
+            const spec = boardSpecifications[boardKey];
+            document.getElementById('boardDescTitle').innerText = spec.title;
+            document.getElementById('boardDescText').innerText = spec.description;
+
+            let tableHtml = `<table class="pinout-table">
+                <thead><tr><th>Pin Group / Range</th><th>Bus Type</th><th>Description & Specifications</th></tr></thead>
+                <tbody>`;
+            spec.pins.forEach(p => {
+                tableHtml += `<tr><td><strong>${p.pin}</strong></td><td>${p.type}</td><td>${p.desc}</td></tr>`;
+            });
+            tableHtml += `</tbody></table>`;
+            document.getElementById('boardPinoutTableContainer').innerHTML = tableHtml;
+            descCard.style.display = 'block';
+            document.getElementById('pinBudgetMeterContainer').style.display = 'flex';
+            updatePinBudgetDisplay();
+            
+            let msg = `Selected ${selectedBoardName} with a strict limit of ${selectedBoardMaxPins} pins. Click Confirm Board.`;
+            speakGodavari(msg);
+        }
+
+        function confirmBoardSelection() {
+            isBoardConfirmed = true;
+            document.getElementById('boardSelect').disabled = true;
+            document.getElementById('boardActionGroup').style.display = 'none';
+            speakGodavari(`Board ${selectedBoardName} locked. Pin ceiling is ${selectedBoardMaxPins} pins. Now add as many components as your board allows, and remember to press Finish when done!`);
+        }
+
+        function changeBoardSelection() {
+            isBoardConfirmed = false;
+            document.getElementById('boardSelect').disabled = false;
+            document.getElementById('boardSelect').value = "";
+            document.getElementById('boardActionGroup').style.display = 'none';
+            document.getElementById('boardDescriptionCard').style.display = 'none';
+            document.getElementById('pinBudgetMeterContainer').style.display = 'none';
+            if (boardMeshGroup) boardMeshGroup.children.forEach(c => boardMeshGroup.remove(c));
+            if (breadboardMeshGroup) breadboardMeshGroup.children.forEach(c => breadboardMeshGroup.remove(c));
+            selectedBoardKey = "";
+            selectedBoardName = "";
+            selectedBoardMaxPins = 20;
+            speakGodavari("Board selection reset.");
+        }
+
+        function onComponentDropdownSelected() {
+            const compId = document.getElementById('componentDropdown').value;
+            if (!compId) return;
+            const comp = masterComponents.find(c => c.id === compId);
+            if (comp) {
+                speakGodavari(`Component selected: ${comp.name}. Requires library: ${comp.libName}. Click Add Component.`);
+            }
+        }
+
+        function getTotalPinsUsed() {
+            return userChosenComponents.reduce((sum, c) => sum + c.pinsNeeded, 0);
+        }
+
+        function updatePinBudgetDisplay() {
+            const used = getTotalPinsUsed();
+            const max = selectedBoardMaxPins;
+            const pct = Math.min(100, Math.round((used / max) * 100));
+            
+            document.getElementById('pinBudgetText').innerHTML = `<strong>Pin Budget:</strong> ${used} / ${max} Pins Used`;
+            const fill = document.getElementById('pinBudgetBarFill');
+            fill.style.width = pct + '%';
+            
+            if (used > max) {
+                fill.style.backgroundColor = 'var(--danger)';
+                document.getElementById('busBudgetText').innerHTML = `<span style="color:var(--danger); font-weight:bold;">⚠️ PIN CEILING EXCEEDED!</span>`;
+            } else if (pct > 80) {
+                fill.style.backgroundColor = 'var(--warning)';
+                document.getElementById('busBudgetText').innerHTML = `<span style="color:var(--warning); font-weight:bold;">⚠️ Approaching Pin Limit</span>`;
+            } else {
+                fill.style.backgroundColor = 'var(--secondary)';
+                document.getElementById('busBudgetText').innerHTML = `Pin Capacity: Safe`;
+            }
+        }
+
+        function addSelectedComponentToWorkbench() {
+            if (!isBoardConfirmed) {
+                alert("Please select and confirm your microcontroller board first.");
+                return;
+            }
+            const compId = document.getElementById('componentDropdown').value;
+            if (!compId) {
+                alert("Please select a component from the dropdown.");
+                return;
+            }
+            const comp = masterComponents.find(c => c.id === compId);
+            if (!comp) return;
+
+            if (userChosenComponents.some(c => c.id === comp.id)) {
+                alert("This component is already added to your setup.");
+                return;
+            }
+
+            const currentUsed = getTotalPinsUsed();
+            if (currentUsed + comp.pinsNeeded > selectedBoardMaxPins) {
+                alert(`⚠️ Pin Ceiling Exceeded! Adding "${comp.name}" requires ${comp.pinsNeeded} pins, but your ${selectedBoardName} only has ${selectedBoardMaxPins - currentUsed} pins remaining.`);
+                speakGodavari(`Cannot add ${comp.name}. Pin ceiling exceeded for ${selectedBoardName}.`);
+                return;
+            }
+
+            userChosenComponents.push(comp);
+            renderAddedComponentsList();
+            updatePinBudgetDisplay();
+            rebuild3DSceneWithUserComponents();
+
+            let promptMsg = `Added ${comp.name}. Add more components as your board allows, or click Finalize Setup & Lock Circuit when finished!`;
+            speakGodavari(promptMsg);
+            document.getElementById('stepInstructionBox').innerHTML = `<strong>Robot Master Godavari:</strong> Added <em>${comp.name}</em>! Add as many components as your board allows. When done, you MUST click <strong>Finalize Setup & Lock Circuit</strong> to proceed!`;
+        }
+
+        function removeComponent(compId) {
+            userChosenComponents = userChosenComponents.filter(c => c.id !== compId);
+            renderAddedComponentsList();
+            updatePinBudgetDisplay();
+            rebuild3DSceneWithUserComponents();
+            speakGodavari("Component removed. Pin budget updated.");
+        }
+
+        function renderAddedComponentsList() {
+            const container = document.getElementById('addedComponentsContainer');
+            if (userChosenComponents.length === 0) {
+                container.innerHTML = '<div style="color: #777; font-style: italic; text-align: center; padding: 10px;">No components added yet. Use the control panel above to add modules.</div>';
+                return;
+            }
+
+            let html = '';
+            userChosenComponents.forEach((comp, idx) => {
+                html += `<div class="component-item-row">
+                    <div><strong>[${idx + 1}] ${comp.name}</strong> <span style="color: var(--secondary); font-size:0.8rem; margin-left:10px;">(Pins: ${comp.pinsNeeded} | Unit: ${comp.unit})</span><br><small style="color:#555;">📚 Library: ${comp.libName} | 🛡️ Protection: ${comp.resistorRec}</small></div>
+                    <button class="btn-remove" onclick="removeComponent('${comp.id}')">Remove</button>
+                </div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function updateRealisticBoardMesh(boardKey) {
+            if (!boardMeshGroup || !breadboardMeshGroup) return;
+            boardMeshGroup.children.forEach(c => boardMeshGroup.remove(c));
+            breadboardMeshGroup.children.forEach(c => breadboardMeshGroup.remove(c));
+            
+            const cfg = boardConfigs[boardKey];
+            const pcbMat = new THREE.MeshStandardMaterial({ color: cfg.pcbColor, roughness: 0.25, metalness: 0.1 });
+            const pcb = new THREE.Mesh(new THREE.BoxGeometry(cfg.w, cfg.h, cfg.l), pcbMat);
+            pcb.position.set(-3.2, -0.70, 0);
+            boardMeshGroup.add(pcb);
+
+            const pinHeaderMat = new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.8 });
+            const leftHeader = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.08, cfg.l * 0.9), pinHeaderMat);
+            leftHeader.position.set(-3.2 - cfg.w/2 + 0.1, -0.63, 0);
+            boardMeshGroup.add(leftHeader);
+
+            const rightHeader = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.08, cfg.l * 0.9), pinHeaderMat);
+            rightHeader.position.set(-3.2 + cfg.w/2 - 0.1, -0.63, 0);
+            boardMeshGroup.add(rightHeader);
+
+            const icMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.4 });
+            const mainIC = new THREE.Mesh(new THREE.BoxGeometry(cfg.w * 0.4, 0.04, cfg.l * 0.35), icMat);
+            mainIC.position.set(-3.2, -0.63, 0);
+            boardMeshGroup.add(mainIC);
+
+            // Breadboard Base placed right next to the microcontroller board
+            const bbMat = new THREE.MeshStandardMaterial({ color: 0xfafafa, roughness: 0.4 });
+            const breadboard = new THREE.Mesh(new THREE.BoxGeometry(3.8, 0.1, 5.5), bbMat);
+            breadboard.position.set(1.2, -0.73, 0);
+            breadboardMeshGroup.add(breadboard);
+
+            // Breadboard power rails (red/blue stripes)
+            const redRailMat = new THREE.MeshBasicMaterial({ color: 0xcc2222 });
+            const blueRailMat = new THREE.MeshBasicMaterial({ color: 0x2222cc });
+            const rail1 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.01, 5.2), redRailMat);
+            rail1.position.set(-0.6, -0.67, 0);
+            breadboardMeshGroup.add(rail1);
+            const rail2 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.01, 5.2), blueRailMat);
+            rail2.position.set(-0.4, -0.67, 0);
+            breadboardMeshGroup.add(rail2);
+        }
+
+        function init3DBuilder() {
+            const container = document.getElementById('viewport1');
+            if (!container) return;
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0d1117);
+            activeScene = scene;
+
+            const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+            camera.position.set(0, 8, 14);
+            camera.lookAt(0, -0.5, 0);
+            activeCamera = camera;
+
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(width, height);
+            container.appendChild(renderer.domElement);
+            activeRenderer = renderer;
+
+            scene.add(new THREE.AmbientLight(0xffffff, 0.9));
+            const dl = new THREE.DirectionalLight(0xffffff, 1.0);
+            dl.position.set(5, 12, 8);
+            scene.add(dl);
+
+            assemblyGroup = new THREE.Group();
+            scene.add(assemblyGroup);
+
+            boardMeshGroup = new THREE.Group();
+            assemblyGroup.add(boardMeshGroup);
+
+            breadboardMeshGroup = new THREE.Group();
+            assemblyGroup.add(breadboardMeshGroup);
+
+            function animate() {
+                animationFrameId = requestAnimationFrame(animate);
+                scene.rotation.y += 0.0012;
+                renderer.render(scene, camera);
+            }
+            animate();
+        }
+
+        function createDetailed3DModelComponent(modelType) {
+            const group = new THREE.Group();
+
+            if (modelType.includes('display_lcd1602') || modelType.includes('display_lcd2004')) {
+                const pcb = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.05, 0.9), new THREE.MeshStandardMaterial({ color: 0x0f5132, roughness: 0.3 }));
+                group.add(pcb);
+                const screen = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.08, 0.5), new THREE.MeshStandardMaterial({ color: modelType.includes('1602') ? 0x004080 : 0x113355, emissive: 0x002244, roughness: 0.2 }));
+                screen.position.set(0, 0.05, -0.1);
+                group.add(screen);
+                const chip = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.03, 0.3), new THREE.MeshStandardMaterial({ color: 0x111111 }));
+                chip.position.set(0, 0.04, 0.25);
+                group.add(chip);
+            } else if (modelType.includes('display_oled')) {
+                const pcb = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.05, 0.9), new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.3 }));
+                group.add(pcb);
+                const oledScreen = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.07, 0.6), new THREE.MeshStandardMaterial({ color: 0x050505, emissive: 0x00aaff, roughness: 0.1 }));
+                oledScreen.position.set(0, 0.05, 0);
+                group.add(oledScreen);
+            } else if (modelType.includes('actuator_servo')) {
+                const caseBody = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 0.9), new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.5 }));
+                caseBody.position.set(0, 0.3, 0);
+                group.add(caseBody);
+                const topCap = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.15, 0.4), new THREE.MeshStandardMaterial({ color: 0x0044cc }));
+                topCap.position.set(0, 0.65, -0.25);
+                group.add(topCap);
+                const horn = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.05, 16), new THREE.MeshStandardMaterial({ color: 0xdddddd }));
+                horn.position.set(0, 0.75, -0.25);
+                group.add(horn);
+            } else if (modelType.includes('sensor_dht')) {
+                const dhtBody = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.7, 0.3), new THREE.MeshStandardMaterial({ color: 0x0066cc, roughness: 0.4 }));
+                dhtBody.position.set(0, 0.35, 0);
+                group.add(dhtBody);
+                for(let i=0; i<3; i++) {
+                    const pin = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.3), new THREE.MeshStandardMaterial({ color: 0xccaa00, metalness: 0.9 }));
+                    pin.position.set(-0.15 + i*0.15, -0.15, 0);
+                    group.add(pin);
+                }
+            } else if (modelType.includes('sensor_ultrasonic')) {
+                const pcb = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.5, 0.1), new THREE.MeshStandardMaterial({ color: 0x0044bb }));
+                group.add(pcb);
+                const trans1 = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.4, 16), new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.8 }));
+                trans1.rotation.x = Math.PI / 2;
+                trans1.position.set(-0.35, 0, 0.1);
+                group.add(trans1);
+                const trans2 = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.4, 16), new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.8 }));
+                trans2.rotation.x = Math.PI / 2;
+                trans2.position.set(0.35, 0, 0.1);
+                group.add(trans2);
+            } else {
+                const box = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.15, 0.7), new THREE.MeshStandardMaterial({ color: 0x2e8b57, roughness: 0.3 }));
+                box.position.set(0, 0.08, 0);
+                group.add(box);
+                const centerChip = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.05, 0.3), new THREE.MeshStandardMaterial({ color: 0x111111 }));
+                centerChip.position.set(0, 0.18, 0);
+                group.add(centerChip);
+            }
+
+            return group;
+        }
+
+        function rebuild3DSceneWithUserComponents() {
+            while (assemblyGroup.children.length > 2) {
+                assemblyGroup.remove(assemblyGroup.children[2]);
+            }
+
+            userChosenComponents.forEach((comp, idx) => {
+                let xPos = 0.4 + ((idx) % 2) * 1.1;
+                let zPos = -1.5 + (Math.floor((idx) / 2) * 1.1);
+
+                const comp3dModel = createDetailed3DModelComponent(comp.modelType);
+                comp3dModel.position.set(xPos, -0.64, zPos);
+                assemblyGroup.add(comp3dModel);
+
+                const wireColors = [0xef4444, 0x3b82f6, 0x10b981, 0xf59e0b, 0x8b5cf6, 0xec4899];
+                const wireColor = wireColors[idx % wireColors.length];
+                const materialLine = new THREE.LineBasicMaterial({ color: wireColor, linewidth: 2 });
+                
+                const points = [
+                    new THREE.Vector3(xPos, -0.60, zPos),
+                    new THREE.Vector3(xPos - 0.5, -0.50, zPos * 0.5),
+                    new THREE.Vector3(-3.2, -0.62, 0)
+                ];
+                assemblyGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), materialLine));
+            });
+
+            document.getElementById('label1').innerText = `3D Breadboard Stage: ${userChosenComponents.length} Components Placed (${getTotalPinsUsed()} Pins Used)`;
+        }
+
+        function finalizeSetupAndGenerate() {
+            if (userChosenComponents.length === 0) {
+                alert("Please add at least one component to your breadboard before finalizing.");
+                return;
+            }
+
+            const schematicBox = document.getElementById('pinSchematicBox');
+            const codeSnippet = document.getElementById('generatedCodeSnippet');
+
+            let schematicText = `--- ROBOT MASTER GODAVARI AI - BREADBOARD WIRING & LIBRARY GUIDE (${selectedBoardName}) ---\n`;
+            schematicText += `Total Pins Consumed: ${getTotalPinsUsed()} / ${selectedBoardMaxPins}\n\n`;
+            userChosenComponents.forEach((comp, idx) => {
+                schematicText += `[${idx + 1}] ${comp.name}\n`;
+                schematicText += `    ├── Breadboard Slot  : Column ${idx + 1} Connected\n`;
+                schematicText += `    ├── Required Library : ${comp.libName}\n`;
+                schematicText += `    ├── Pin Allocation   : ${comp.defaultPin} (${comp.pinsNeeded} pins)\n`;
+                schematicText += `    └── Protection       : ${comp.resistorRec}\n\n`;
+            });
+            schematicBox.innerText = schematicText;
+
+            let setupCode = `// ==========================================================
+// ROBOT MASTER GODAVARI AI - MASTER FIRMWARE
+// TARGET BOARD: ${selectedBoardName}
+// ==========================================================\n`;
+            userChosenComponents.forEach((c) => {
+                setupCode += `#include <${c.libName.split(' ')[0]}.h>\n`;
+            });
+            setupCode += `\nvoid setup() {\n  Serial.begin(115200);\n  Serial.println("Godavari AI Breadboard Lab Initialized.");\n}\n\nvoid loop() {\n  // Read live sensor engineering units and print to Serial Monitor\n  delay(2000);\n}`;
+
+            codeSnippet.innerText = setupCode;
+            document.getElementById('successBanner').style.display = 'block';
+
+            const sec = document.getElementById('hardwareWorkflowSection');
+            sec.classList.remove('locked-section');
+            sec.classList.add('unlocked-section');
+
+            let t1Html = '';
+            let t2Html = '';
+            userChosenComponents.forEach((comp, idx) => {
+                t1Html += `<div style="margin-bottom: 10px;">
+                    <label>${idx + 1}. ${comp.name} (${comp.unit}):</label>
+                    <input type="number" id="trial1_${idx}" step="0.01" value="25.00" style="width: 100%; box-sizing: border-box; margin-top: 5px;">
+                </div>`;
+                t2Html += `<div style="margin-bottom: 10px;">
+                    <label>${idx + 1}. ${comp.name} (${comp.unit}):</label>
+                    <input type="number" id="trial2_${idx}" step="0.01" value="28.50" style="width: 100%; box-sizing: border-box; margin-top: 5px;">
+                </div>`;
+            });
+            document.getElementById('trial1InputsContainer').innerHTML = t1Html;
+            document.getElementById('trial2InputsContainer').innerHTML = t2Html;
+
+            speakGodavari("Setup finalized and breadboard circuit successfully locked! You can now review your breadboard wiring instructions, upload your code, and enter your Trial 1 and Trial 2 physical sensor readings.");
+        }
+
+        function runComparativeEvaluation() {
+            const consoleDiv = document.getElementById('aiConsole');
+            consoleDiv.innerHTML = `[Robot Master Godavari AI]: Analyzing Trial 1 vs. Trial 2 comparative telemetry across ${userChosenComponents.length} breadboard components...<br>`;
+
+            setTimeout(() => {
+                let commentary = "";
+                userChosenComponents.forEach((comp, idx) => {
+                    let v1 = parseFloat(document.getElementById(`trial1_${idx}`).value) || 0;
+                    let v2 = parseFloat(document.getElementById(`trial2_${idx}`).value) || 0;
+                    let diff = v2 - v1;
+                    let pctChange = v1 !== 0 ? ((diff / v1) * 100).toFixed(1) : 0;
+
+                    commentary += `📌 Component [${idx + 1}] ${comp.name}:\n`;
+                    commentary += `   - Trial 1 (Baseline) : ${v1} ${comp.unit}\n`;
+                    commentary += `   - Trial 2 (Perturbed): ${v2} ${comp.unit}\n`;
+                    commentary += `   - Delta / Change     : ${diff > 0 ? '+' : ''}${diff.toFixed(2)} (${pctChange}%)\n`;
+                    
+                    if (Math.abs(pctChange) > 5) {
+                        commentary += `   - 💡 Godavari AI Commentary: Significant physical variance detected! Your breadboard sensor circuit responded robustly.\n\n`;
+                    } else {
+                        commentary += `   - 💡 Godavari AI Commentary: Readings remain stable between trials.\n\n`;
+                    }
+                });
+
+                consoleDiv.innerHTML = `<span style="color:#00ff66; font-weight:bold;">[AI COMPARATIVE ANALYSIS & COMMENTARY REPORT]:</span><br><pre style="color:#fff; font-family:monospace; margin:5px 0; white-space: pre-wrap;">${commentary}</pre><span style="color:#55ff55;">Well done, student! Excellent experimental execution. Breadboard circuit remains locked securely.</span>`;
+                speakGodavari("Comparative analysis completed successfully. Excellent work!");
+            }, 900);
+        }
+
+        function resetBuild() {
+            userChosenComponents = [];
+            renderAddedComponentsList();
+            if (assemblyGroup) {
+                while (assemblyGroup.children.length > 2) {
+                    assemblyGroup.remove(assemblyGroup.children[2]);
+                }
+            }
+            document.getElementById('successBanner').style.display = 'none';
+            const sec = document.getElementById('hardwareWorkflowSection');
+            sec.classList.remove('unlocked-section');
+            sec.classList.add('locked-section');
+            document.getElementById('aiConsole').innerHTML = "[Godavari AI Teacher Console Ready]...";
+            changeBoardSelection();
+            speakGodavari("Workbench reset completely. Circuit unlocked.");
+        }
+    </script>
+</body>
+</html>
