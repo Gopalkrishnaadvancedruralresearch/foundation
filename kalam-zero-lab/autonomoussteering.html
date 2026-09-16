@@ -76,6 +76,29 @@
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
         }
 
+        /* Lab Modules Selector Cards */
+        .experiment-card {
+            background: #1e293b;
+            color: white;
+            border: 1px solid #334155;
+            padding: 1rem 1.25rem;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 0.75rem;
+            transition: all 0.2s;
+        }
+        .experiment-card:hover {
+            border-color: #38bdf8;
+            transform: translateX(4px);
+        }
+        .experiment-card.active {
+            border: 2px solid #38bdf8;
+            background: #0f172a;
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
+        }
+        .experiment-title { font-weight: bold; color: #38bdf8; font-size: 1rem; margin-bottom: 0.2rem; }
+        .experiment-desc { font-size: 0.85rem; color: #94a3b8; margin: 0; }
+
         /* Help, Theory & Quiz Sections */
         .help-section h3, .theory-section h3, .quiz-section h3 { margin-top: 0; color: var(--primary); }
         .help-section ol, .theory-section ul { padding-left: 1.2rem; }
@@ -301,59 +324,57 @@
             <h3 style="margin-top: 0; color: var(--primary);">🎓 Select Chitti's Teaching Mode</h3>
             <p style="margin-bottom: 0.75rem; font-size: 0.95rem;">Choose your preferred learning style:</p>
             <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                <button style="background: #059669; color:white; border:none; padding:0.6rem 1rem; border-radius:6px; font-weight:600; cursor:pointer;" onclick="setTeachingMode('ruled')" id="btnRuled">📌 Rule-Based Teaching (For Weak / Beginner Students)</button>
+                <button style="background: #059669; color:white; border:none; padding:0.6rem 1rem; border-radius:6px; font-weight:600; cursor:pointer;" onclick="setTeachingMode('ruled')" id="btnRuled">📌 Rule-Based Teaching (For Beginners)</button>
                 <button style="background: #475569; color:white; border:none; padding:0.6rem 1rem; border-radius:6px; font-weight:600; cursor:pointer;" onclick="setTeachingMode('interactive')" id="btnInteractive">⚡ Interactive Teaching (For Advanced Students)</button>
             </div>
         </div>
 
-        <!-- 2. STUDENT HELP GUIDE -->
-        <div class="card help-section">
-            <h3>📖 Student HELP Guide & Step-by-Step Instructions</h3>
-            <p><strong>How to operate the experiment:</strong></p>
-            <ol>
-                <li>Keep Chitti open at the bottom right to listen to verbal step-by-step guidance.</li>
-                <li>Scroll down to the <strong>Control Panel</strong> on the left side of the workbench.</li>
-                <li>Adjust the <strong>Vehicle Velocity ($v$)</strong> and <strong>Lookahead Distance ($L_d$)</strong> sliders to test different driving conditions.</li>
-                <li>Click the blue <strong>Pause / Resume</strong> button to start the simulation, and <strong>Reset Vehicle Pose</strong> to start over.</li>
-                <li>Scroll to the very bottom to test your knowledge with the assessment quiz!</li>
-            </ol>
+        <!-- 2. LAB MODULES & 3 EXPERIMENTS SELECTION -->
+        <div class="card">
+            <h3 style="margin-top: 0; color: var(--primary);">🧪 Lab Modules & Experiments</h3>
+            <p style="font-size: 0.95rem; margin-bottom: 1.25rem; color: #64748b;">Select a geometric trajectory tracking controller to load dynamic vehicle telemetry and steering responses into the virtual workbench:</p>
+            
+            <div class="experiment-card active" id="exp1Btn" onclick="selectExperiment(1)">
+                <div class="experiment-title">Experiment 1: Pure Pursuit Steering Control</div>
+                <div class="experiment-desc">Geometry-based target lookahead distance ($L_d$) tracking along curved trajectories.</div>
+            </div>
+
+            <div class="experiment-card" id="exp2Btn" onclick="selectExperiment(2)">
+                <div class="experiment-title">Experiment 2: Stanley Controller Error Minimization</div>
+                <div class="experiment-desc">Front-axle heading angle ($\theta_e$) and cross-track error ($e_{fa}$) feedback loop.</div>
+            </div>
+
+            <div class="experiment-card" id="exp3Btn" onclick="selectExperiment(3)">
+                <div class="experiment-title">Experiment 3: High-Speed Slalom Stability Test</div>
+                <div class="experiment-desc">Transient vehicle dynamic response under aggressive lateral curvature tracking.</div>
+            </div>
         </div>
 
-        <!-- 3. ENGINEERING THEORY -->
-        <div class="card theory-section">
-            <h3>📚 What Exactly Do Students Learn Here? (Engineering Theory)</h3>
-            <p>This experiment introduces core principles of autonomous vehicle control:</p>
-            <ul>
-                <li><strong>Kinematic Bicycle Model:</strong> Simplifying complex multi-wheel vehicle steering physics into front-wheel steering and rear-wheel axis geometry.</li>
-                <li><strong>Lookahead Distance ($L_d$):</strong> The predictive distance ahead on the path used to calculate heading errors and smooth out steering actuation.</li>
-                <li><strong>Error Minimization:</strong> Real-time correction of cross-track deviations to prevent vehicle drift off the reference trajectory.</li>
-            </ul>
-        </div>
-
-        <!-- 4. INTERACTIVE SIMULATION WORKBENCH -->
+        <!-- 3. INTERACTIVE SIMULATION WORKBENCH -->
         <div class="card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 2px solid var(--bg-light); padding-bottom: 0.75rem;">
-                <strong style="font-size: 1.1rem; color: var(--primary);">Autonomous Vehicle Interactive Workbench</strong>
-                <span id="statusBadge" style="color: #16a34a; font-weight: 600;">● Ready</span>
+                <strong id="workbenchHeaderTitle" style="font-size: 1.1rem; color: var(--primary);">Interactive Workbench — Experiment 1: Pure Pursuit Steering Control</strong>
+                <span id="statusBadge" style="color: #16a34a; font-weight: 600;">● Kinematic Model Active</span>
             </div>
 
             <div class="workbench-grid">
                 <!-- Control Panel (Left Sidebar) -->
                 <div class="control-panel-box">
                     <div class="control-group">
-                        <label>Control Algorithm</label>
-                        <select id="controllerSelect" onchange="switchController()">
+                        <label>Active Control Algorithm</label>
+                        <select id="controllerSelect" onchange="switchControllerFromDropdown()">
                             <option value="purePursuit">Pure Pursuit Controller</option>
                             <option value="stanley">Stanley Error Controller</option>
+                            <option value="slalom">High-Speed Slalom Controller</option>
                         </select>
                     </div>
 
                     <div class="control-group">
                         <label>Vehicle Velocity ($v$): <span id="velVal" class="control-value">2.0 m/s</span></label>
-                        <input type="range" id="velSlider" min="1.0" max="6.0" step="0.5" value="2.0" oninput="updateVelocity()">
+                        <input type="range" id="velSlider" min="1.0" max="8.0" step="0.5" value="2.0" oninput="updateVelocity()">
                     </div>
 
-                    <div class="control-group">
+                    <div class="control-group" id="lookaheadGroup">
                         <label>Lookahead Distance ($L_d$): <span id="ldVal" class="control-value">60 m</span></label>
                         <input type="range" id="ldSlider" min="30" max="120" step="5" value="60" oninput="updateLookahead()">
                     </div>
@@ -386,16 +407,28 @@
             </div>
         </div>
 
+        <!-- 4. STUDENT HELP GUIDE -->
+        <div class="card help-section">
+            <h3>📖 Student HELP Guide & Step-by-Step Instructions</h3>
+            <p><strong>How to operate the experiment:</strong></p>
+            <ol>
+                <li>Keep Chitti open at the bottom right to listen to verbal step-by-step guidance.</li>
+                <li>Choose between Experiment 1, 2, or 3 from the Lab Modules panel above.</li>
+                <li>Adjust the <strong>Vehicle Velocity ($v$)</strong> and <strong>Lookahead Distance ($L_d$)</strong> sliders on the left.</li>
+                <li>Click the blue <strong>Pause / Resume</strong> button to test the tracking performance.</li>
+            </ol>
+        </div>
+
         <!-- 5. ASSESSMENT QUIZ -->
         <div class="card quiz-section">
             <h3>🧠 Knowledge Check: Test What You Learned!</h3>
             <p>Answer the question below to verify your understanding:</p>
             <div class="quiz-box">
-                <p><strong>Question:</strong> What happens when you increase the Lookahead Distance ($L_d$) slider?</p>
+                <p><strong>Question:</strong> What is the main objective of Experiment 2 (Stanley Controller)?</p>
                 <div class="quiz-options">
-                    <button onclick="checkAnswer(false)">A) The vehicle drives backward along the path</button>
-                    <button onclick="checkAnswer(true)">B) The vehicle looks further ahead on the path, resulting in smoother but wider cornering</button>
-                    <button onclick="checkAnswer(false)">C) The vehicle increases its fuel tank capacity</button>
+                    <button onclick="checkAnswer(false)">A) To test maximum audio volume in the vehicle</button>
+                    <button onclick="checkAnswer(true)">B) To minimize front-axle cross-track error ($e_{fa}$) and heading angle error simultaneously</button>
+                    <button onclick="checkAnswer(false)">C) To reverse the vehicle backward along a straight line</button>
                 </div>
                 <p id="quizFeedback" style="font-weight: bold; margin-top: 1rem;"></p>
             </div>
@@ -417,7 +450,7 @@
             </div>
         </div>
         <div class="dialog-body" id="chittiScriptBox">
-            Welcome my dear student! Scroll down to the left control panel to adjust your velocity and lookahead sliders, then click the blue 'Pause / Resume' button to start the simulation!
+            Welcome my dear student! Select one of the three experiments above, then click Pause / Resume to observe vehicle trajectory tracking!
         </div>
         <div class="dialog-footer">
             <span id="chittiModeLabel" style="font-size: 0.75rem; color: #059669; font-weight: bold;">Mode: Rule-Based (Slow & Clear)</span>
@@ -436,7 +469,7 @@
         const ctx = canvas.getContext('2d');
 
         let isRunning = false;
-        let activeController = 'purePursuit';
+        let activeExperiment = 1;
         let teachingMode = 'ruled';
         let isMuted = false;
 
@@ -451,6 +484,43 @@
             error: 0
         };
 
+        // Select Experiment 1, 2, or 3
+        function selectExperiment(expNum) {
+            activeExperiment = expNum;
+            
+            // Update UI active card styling
+            document.getElementById('exp1Btn').classList.remove('active');
+            document.getElementById('exp2Btn').classList.remove('active');
+            document.getElementById('exp3Btn').classList.remove('active');
+            document.getElementById(`exp3Btn` - (3 - expNum)) // safe selector fallback
+            document.getElementById('exp' + expNum + 'Btn').classList.add('active');
+
+            const dropdown = document.getElementById('controllerSelect');
+            const titleElem = document.getElementById('workbenchHeaderTitle');
+
+            if (expNum === 1) {
+                dropdown.value = 'purePursuit';
+                titleElem.innerText = 'Interactive Workbench — Experiment 1: Pure Pursuit Steering Control';
+                updateChittiScript("Experiment 1 selected: Pure Pursuit Control. Adjust your lookahead distance and observe geometric trajectory tracking.");
+            } else if (expNum === 2) {
+                dropdown.value = 'stanley';
+                titleElem.innerText = 'Interactive Workbench — Experiment 2: Stanley Controller Error Minimization';
+                updateChittiScript("Experiment 2 selected: Stanley Error Minimization. This focuses on front-axle heading angle and cross-track error feedback.");
+            } else if (expNum === 3) {
+                dropdown.value = 'slalom';
+                titleElem.innerText = 'Interactive Workbench — Experiment 3: High-Speed Slalom Stability Test';
+                updateChittiScript("Experiment 3 selected: High-Speed Slalom Stability Test. Test transient vehicle dynamic response under aggressive lateral curvature.");
+            }
+            resetSimulation();
+        }
+
+        function switchControllerFromDropdown() {
+            const dropdownVal = document.getElementById('controllerSelect').value;
+            if (dropdownVal === 'purePursuit') selectExperiment(1);
+            else if (dropdownVal === 'stanley') selectExperiment(2);
+            else if (dropdownVal === 'slalom') selectExperiment(3);
+        }
+
         // Teaching Mode Switcher
         function setTeachingMode(mode) {
             teachingMode = mode;
@@ -462,12 +532,12 @@
                 ruledBtn.style.background = '#059669';
                 interactiveBtn.style.background = '#475569';
                 modeLabel.innerText = 'Mode: Rule-Based (Slow & Clear)';
-                updateChittiScript("Switched to Rule-Based mode. Scroll down to the control panel on the left, adjust your sliders, and click 'Pause / Resume' to start!");
+                updateChittiScript("Switched to Rule-Based mode. Select your experiment and click Pause / Resume to start!");
             } else {
                 interactiveBtn.style.background = '#2563eb';
                 ruledBtn.style.background = '#475569';
                 modeLabel.innerText = 'Mode: Interactive Analysis';
-                updateChittiScript("Switched to Interactive mode. Tune your velocity and lookahead distance parameters to analyze gain responses in real time.");
+                updateChittiScript("Switched to Interactive mode. Tune velocity and lookahead parameters to analyze transient responses in real time.");
             }
         }
 
@@ -475,7 +545,7 @@
             car.v = parseFloat(document.getElementById('velSlider').value);
             document.getElementById('velVal').innerText = car.v.toFixed(1) + ' m/s';
             if (teachingMode === 'ruled') {
-                updateChittiScript(`Velocity updated to ${car.v} meters per second. Notice how fast the car moves along the track!`);
+                updateChittiScript(`Velocity updated to ${car.v} meters per second.`);
             }
         }
 
@@ -483,7 +553,7 @@
             car.lookahead = parseInt(document.getElementById('ldSlider').value);
             document.getElementById('ldVal').innerText = car.lookahead + ' m';
             if (teachingMode === 'ruled') {
-                updateChittiScript(`Lookahead distance set to ${car.lookahead} meters. The target point is now further ahead on the path.`);
+                updateChittiScript(`Lookahead distance set to ${car.lookahead} meters.`);
             }
         }
 
@@ -567,36 +637,32 @@
             const feedback = document.getElementById('quizFeedback');
             if (isCorrect) {
                 feedback.style.color = '#16a34a';
-                feedback.innerText = "🎉 Correct! A larger lookahead distance smooths out trajectory tracking.";
-                updateChittiScript("Brilliant job! You answered correctly and grasped the core lookahead concept.");
+                feedback.innerText = "🎉 Correct! Stanley controller explicitly minimizes front-axle cross-track and heading errors.";
+                updateChittiScript("Brilliant job! You correctly identified the Stanley controller error minimization objective.");
             } else {
                 feedback.style.color = '#ea580c';
-                feedback.innerText = "❌ Incorrect. Try adjusting the Lookahead slider in the control panel and observe how the orange target point moves!";
-                updateChittiScript("Not quite right. Try experimenting with the lookahead distance slider above and try again!");
+                feedback.innerText = "❌ Incorrect. Review Experiment 2 details and try again!";
+                updateChittiScript("Not quite right. Try experimenting with Experiment 2 telemetry parameters!");
             }
         }
 
         // Simulation Control Logic
         function getReferencePath(x) {
-            let y = 170 + 65 * Math.sin(x * 0.012);
-            let slope = 65 * 0.012 * Math.cos(x * 0.012);
+            let freq = (activeExperiment === 3) ? 0.022 : 0.012;
+            let amp = (activeExperiment === 3) ? 80 : 65;
+            let y = 170 + amp * Math.sin(x * freq);
+            let slope = amp * freq * Math.cos(x * freq);
             return { y: y, slope: slope };
-        }
-
-        function switchController() {
-            activeController = document.getElementById('controllerSelect').value;
-            let name = activeController === 'purePursuit' ? 'Pure Pursuit Controller' : 'Stanley Error Controller';
-            updateChittiScript(`Controller switched to ${name}. Click Pause / Resume to observe its steering behavior.`);
         }
 
         function toggleSimulation() {
             isRunning = !isRunning;
             document.getElementById('statusBadge').innerText = isRunning ? '● Active' : '❚❚ Paused';
             if (isRunning) {
-                updateChittiScript("Simulation running! Watch the red vehicle track the blue path using your selected velocity and lookahead parameters.");
+                updateChittiScript(`Experiment ${activeExperiment} simulation running! Observe vehicle tracking behavior.`);
                 requestAnimationFrame(stepSimulation);
             } else {
-                updateChittiScript("Simulation paused. You can change velocity or lookahead sliders anytime.");
+                updateChittiScript("Simulation paused.");
             }
         }
 
@@ -605,7 +671,7 @@
             car = { x: 60, y: 170, v: parseFloat(document.getElementById('velSlider').value), lookahead: parseInt(document.getElementById('ldSlider').value), yaw: 0, L: 36, delta: 0, error: 0 };
             document.getElementById('statusBadge').innerText = '● Ready';
             drawScene();
-            updateChittiScript("Vehicle pose reset to starting position. Click Pause / Resume whenever you are ready.");
+            updateChittiScript(`Experiment ${activeExperiment} reset to starting position.`);
         }
 
         function stepSimulation() {
@@ -617,21 +683,28 @@
             let ref = getReferencePath(car.x);
             car.error = car.y - ref.y;
 
-            if (activeController === 'purePursuit') {
+            if (activeExperiment === 1) {
                 let targetX = car.x + car.lookahead;
                 let refLookahead = getReferencePath(targetX);
                 let targetAngle = Math.atan2((refLookahead.y - car.y), car.lookahead);
                 let alpha = targetAngle - car.yaw;
                 car.delta = Math.atan2(2 * car.L * Math.sin(alpha), car.lookahead) * (180 / Math.PI);
-            } else {
+            } else if (activeExperiment === 2) {
                 let pathHeading = Math.atan(ref.slope);
                 let headingError = pathHeading - car.yaw;
-                let k = 0.4;
+                let k = 0.5;
                 let crossTrackSteering = Math.atan2(-k * car.error, car.v);
                 car.delta = (headingError + crossTrackSteering) * (180 / Math.PI);
+            } else {
+                // Experiment 3: High-Speed Slalom aggressive tracking
+                let pathHeading = Math.atan(ref.slope);
+                let headingError = pathHeading - car.yaw;
+                let k = 0.8;
+                let crossTrackSteering = Math.atan2(-k * car.error, Math.max(1.0, car.v * 0.8));
+                car.delta = (headingError * 1.3 + crossTrackSteering) * (180 / Math.PI);
             }
 
-            car.delta = Math.max(-35, Math.min(35, car.delta));
+            car.delta = Math.max(-38, Math.min(38, car.delta));
             car.yaw += (car.v / car.L) * Math.tan(car.delta * Math.PI / 180) * 0.35;
 
             if (car.x > canvas.width - 60) {
@@ -659,7 +732,7 @@
 
             // Reference Path
             ctx.beginPath();
-            ctx.strokeStyle = '#38bdf8';
+            ctx.strokeStyle = (activeExperiment === 3) ? '#f43f5e' : '#38bdf8';
             ctx.lineWidth = 4;
             for (let px = 0; px <= canvas.width; px += 2) {
                 let py = getReferencePath(px).y;
@@ -668,34 +741,33 @@
             }
             ctx.stroke();
 
-            // Target Lookahead Point on Path
+            // Target Lookahead Point on Path (Experiment 1)
             let targetX = car.x + car.lookahead;
             let targetY = getReferencePath(targetX).y;
 
-            // Dotted Connecting Vector Line
-            ctx.save();
-            ctx.beginPath();
-            ctx.strokeStyle = '#f59e0b';
-            ctx.lineWidth = 2;
-            ctx.setLineDash([4, 4]);
-            ctx.moveTo(car.x, car.y);
-            ctx.lineTo(targetX, targetY);
-            ctx.stroke();
-            ctx.restore();
+            if (activeExperiment === 1) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.strokeStyle = '#f59e0b';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([4, 4]);
+                ctx.moveTo(car.x, car.y);
+                ctx.lineTo(targetX, targetY);
+                ctx.stroke();
+                ctx.restore();
 
-            // Target Marker
-            ctx.beginPath();
-            ctx.arc(targetX, targetY, 7, 0, 2 * Math.PI);
-            ctx.fillStyle = '#f59e0b';
-            ctx.shadowColor = '#f59e0b';
-            ctx.shadowBlur = 12;
-            ctx.fill();
-            ctx.shadowBlur = 0;
+                ctx.beginPath();
+                ctx.arc(targetX, targetY, 7, 0, 2 * Math.PI);
+                ctx.fillStyle = '#f59e0b';
+                ctx.shadowColor = '#f59e0b';
+                ctx.shadowBlur = 12;
+                ctx.fill();
+                ctx.shadowBlur = 0;
 
-            // Target Label
-            ctx.fillStyle = '#f59e0b';
-            ctx.font = '11px sans-serif';
-            ctx.fillText("Lookahead Point", targetX - 50, targetY - 12);
+                ctx.fillStyle = '#f59e0b';
+                ctx.font = '11px sans-serif';
+                ctx.fillText("Lookahead Point", targetX - 50, targetY - 12);
+            }
 
             // Draw Vehicle Chassis
             ctx.save();
@@ -703,8 +775,8 @@
             ctx.rotate(car.yaw);
 
             let bodyGrad = ctx.createLinearGradient(-22, -11, 22, 11);
-            bodyGrad.addColorStop(0, '#dc2626');
-            bodyGrad.addColorStop(1, '#991b1b');
+            bodyGrad.addColorStop(0, activeExperiment === 3 ? '#e11d48' : '#dc2626');
+            bodyGrad.addColorStop(1, activeExperiment === 3 ? '#881337' : '#991b1b');
             ctx.fillStyle = bodyGrad;
             ctx.roundRect(-22, -11, 44, 22, 5);
             ctx.fill();
@@ -741,9 +813,9 @@
             ctx.restore();
 
             // Vehicle Label
-            ctx.fillStyle = '#ef4444';
+            ctx.fillStyle = activeExperiment === 3 ? '#f43f5e' : '#ef4444';
             ctx.font = 'bold 11px sans-serif';
-            ctx.fillText("Autonomous Robot", car.x - 55, car.y - 20);
+            ctx.fillText(activeExperiment === 3 ? "Slalom Test Vehicle" : "Autonomous Robot", car.x - 55, car.y - 20);
 
             // Update Telemetry UI
             document.getElementById('valSteering').innerText = car.delta.toFixed(1) + '°';
