@@ -221,7 +221,11 @@
       display: block;
       width: 100%;
       height: 320px;
-      cursor: crosshair;
+      cursor: grab;
+    }
+
+    canvas:active {
+      cursor: grabbing;
     }
 
     .probe-info {
@@ -333,7 +337,7 @@
 </head>
 <body>
 
-  <!-- App Header -->
+  <!-- Top Header -->
   <header class="app-header">
     <div class="header-left">
       <img src="logo.jpeg" alt="GARRF Logo" class="logo-img" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'52\' height=\'52\' viewBox=\'0 0 100 100\'><rect width=\'100\' height=\'100\' fill=\'%232563eb\' rx=\'10\'/><text x=\'50%\' y=\'58%\' fill=\'white\' font-size=\'26\' font-weight=\'bold\' text-anchor=\'middle\'>GARRF</text></svg>'">
@@ -353,7 +357,7 @@
     </div>
   </header>
 
-  <!-- Student Learning Workflow Guidance Banner -->
+  <!-- Student Learning Sequence Instruction Banner -->
   <div class="instruction-banner">
     <span class="banner-icon">📌</span>
     <div>
@@ -362,8 +366,8 @@
       <strong>Step 1:</strong> Select your target Unit System in <mark>Section 1</mark>. 
       <strong>Step 2:</strong> Set beam geometry and material properties in <mark>Section 2</mark>. 
       <strong>Step 3:</strong> Click <mark>Start Experiment</mark> in <mark>Section 4</mark> to initialize the test session. 
-      <strong>Step 4:</strong> Click anywhere on the deflected bar in <mark>Section 3</mark> to inspect localized deflection readings. 
-      <strong>Step 5:</strong> Click <mark>Record Trial</mark> to add readings to your Observation Table. Re-adjust parameters for multiple trials, click <mark>Finish Experiment</mark>, and download your complete Lab CSV Report!
+      <strong>Step 4:</strong> Click or drag the 🟢 <strong>Green Ball</strong> on the deflected beam in <mark>Section 3</mark> to inspect localized deflection readings at any point along the span. 
+      <strong>Step 5:</strong> Click <mark>Record Trial</mark> to add readings to your Observation Table. Re-adjust parameters for multiple trials, click <mark>Finish Experiment</mark>, and download your complete Lab CSV Report (or click <mark>Reset</mark> to start fresh).
     </div>
   </div>
 
@@ -486,8 +490,8 @@
         <div class="canvas-container">
           <canvas id="beamCanvas"></canvas>
           <div class="probe-info">
-            <span id="probeText">📍 Probe Location: Click on the deflected bar above to measure local deflection.</span>
-            <span id="maxDeflectionText" style="color: var(--danger-color);">w_max: --</span>
+            <span id="probeText">🟢 Probe Location: Drag or click the Green Ball on the deflected bar.</span>
+            <span id="maxDeflectionText" style="color: var(--danger-color);">w_max: -- @ x = --</span>
           </div>
         </div>
       </div>
@@ -504,6 +508,7 @@
         <div class="controls-row">
           <button id="btnStart" class="btn btn-primary" onclick="startExperiment()">▶ Start Experiment</button>
           <button id="btnRecord" class="btn btn-success" onclick="recordTrial()" disabled>➕ Record Trial</button>
+          <button id="btnReset" class="btn btn-outline" onclick="resetExperiment()">🔄 Reset</button>
           <button id="btnFinish" class="btn btn-warning" onclick="finishExperiment()" disabled>🏁 Finish Experiment</button>
           <button id="btnDownload" class="btn btn-outline" onclick="downloadCSV()" disabled>📥 Download CSV Report</button>
         </div>
@@ -521,7 +526,6 @@
                 <th>Load (P @ a)</th>
                 <th>Probe Pos (x)</th>
                 <th>Probe Deflection w(x)</th>
-                <th>Max Deflection w_max</th>
               </tr>
             </thead>
             <tbody id="obsTableBody">
@@ -540,9 +544,9 @@
     Copyright @garrf.in | Gopalkrishna Advanced Rural Research Foundation. All Rights Reserved.
   </footer>
 
-  <!-- Logic & Physics Script -->
+  <!-- Script Logic -->
   <script>
-    // Unit System Configs
+    // Unit System Definitions
     const UNIT_SYSTEMS = {
       SI: {
         name: "SI System",
@@ -581,6 +585,7 @@
     let trialCounter = 0;
     let observationData = [];
     let probedRatio = 0.5; // Default probed at mid-span
+    let isDraggingBall = false;
     let canvas, ctx;
 
     window.onload = function() {
@@ -589,14 +594,22 @@
       resizeCanvas();
       window.addEventListener("resize", resizeCanvas);
 
-      canvas.addEventListener("click", handleCanvasClick);
+      // Mouse & Touch Dragging Listeners for Green Ball
+      canvas.addEventListener("mousedown", handlePointerStart);
+      canvas.addEventListener("mousemove", handlePointerMove);
+      window.addEventListener("mouseup", handlePointerEnd);
+
+      canvas.addEventListener("touchstart", handlePointerStart, { passive: false });
+      canvas.addEventListener("touchmove", handlePointerMove, { passive: false });
+      window.addEventListener("touchend", handlePointerEnd);
+
       onUnitSystemChange();
     };
 
     function resizeCanvas() {
       const container = canvas.parentElement;
       canvas.width = container.clientWidth;
-      canvas.height = container.clientHeight - 35; // Reserve for bottom bar
+      canvas.height = container.clientHeight - 35;
       updateCalculations();
     }
 
@@ -604,7 +617,7 @@
       currentSys = document.getElementById("unitSystemSelect").value;
       const sys = UNIT_SYSTEMS[currentSys];
 
-      // Update Label Texts
+      // Update Label Units
       document.querySelectorAll(".unit-L").forEach(e => e.innerText = sys.unitL);
       document.querySelectorAll(".unit-b").forEach(e => e.innerText = sys.unitb);
       document.querySelectorAll(".unit-h").forEach(e => e.innerText = sys.unith);
@@ -612,14 +625,14 @@
       document.querySelectorAll(".unit-P").forEach(e => e.innerText = sys.unitP);
       document.querySelectorAll(".unit-a").forEach(e => e.innerText = sys.unita);
 
-      // Update Slider Ranges & Default Values
+      // Update Slider Props
       setSliderProps("paramL", sys.rangeL);
       setSliderProps("paramb", sys.rangeb);
       setSliderProps("paramh", sys.rangeh);
       setSliderProps("paramE", sys.rangeE);
       setSliderProps("paramP", sys.rangeP);
 
-      // Reset 'a' based on 'L'
+      // Reset load position bounds
       const valL = parseFloat(document.getElementById("paramL").value);
       const paramA = document.getElementById("parama");
       paramA.max = (valL * 0.95).toFixed(2);
@@ -654,7 +667,7 @@
       document.getElementById("valP").innerText = inpP;
       document.getElementById("vala").innerText = inpa.toFixed(2);
 
-      // Convert to Base SI Units (m, N, Pa)
+      // Convert inputs to Base SI Units
       const L = inpL * sys.factorL;
       const b = inpb * sys.factorb;
       const h = inph * sys.factorh;
@@ -662,7 +675,6 @@
       const P = inpP * sys.factorP;
       const a = inpa * sys.factorL;
 
-      // Adjust 'a' slider bounds dynamically
       const paramA = document.getElementById("parama");
       paramA.max = (inpL * 0.95).toFixed(2);
       if (parseFloat(paramA.value) > parseFloat(paramA.max)) {
@@ -672,7 +684,7 @@
       return { boundary, L, b, h, E, P, a, inpL, inpb, inph, inpE, inpP, inpa, sys };
     }
 
-    // Mathematical Calculation Engines for Beam Deflection w(x) in Base SI (meters)
+    // Mathematical Calculation Engines for Beam Deflection
     function calcDeflection(x, p) {
       const { boundary, L, b, h, E, P, a } = p;
       const I = (b * Math.pow(h, 3)) / 12.0;
@@ -700,34 +712,39 @@
           w = (P * Math.pow(a, 2) * Math.pow(x_rev, 2) * (3 * b_load * L - 3 * b_load * x_rev - a * x_rev)) / (6 * E * I * Math.pow(L, 3));
         }
       }
-      return w; // in meters
+      return w; // meters
     }
 
     function updateCalculations() {
       const p = getInputsSI();
       
-      // Calculate Maximum Deflection by Sampling
+      // Calculate Maximum Deflection and Location x_max
       let maxW_SI = 0;
-      const samples = 200;
+      let maxX_SI = 0;
+      const samples = 300;
       for (let i = 0; i <= samples; i++) {
         const x_sample = (i / samples) * p.L;
         const w = calcDeflection(x_sample, p);
-        if (w > maxW_SI) maxW_SI = w;
+        if (w > maxW_SI) {
+          maxW_SI = w;
+          maxX_SI = x_sample;
+        }
       }
 
-      // Convert Deflections back to current System units
+      // Convert values to selected system units
       const maxW_Display = maxW_SI * p.sys.factorW;
+      const maxX_Display = (maxX_SI / p.L) * p.inpL;
       
       const probedX_SI = probedRatio * p.L;
       const probedW_SI = calcDeflection(probedX_SI, p);
       const probedW_Display = probedW_SI * p.sys.factorW;
       const probedX_Display = probedRatio * p.inpL;
 
-      // Update Probe & Info Display
-      document.getElementById("maxDeflectionText").innerText = `w_max: ${maxW_Display.toFixed(4)} ${p.sys.unitW}`;
-      document.getElementById("probeText").innerText = `📍 Probe at x = ${probedX_Display.toFixed(2)} ${p.sys.unitL} | Deflection w(x) = ${probedW_Display.toFixed(4)} ${p.sys.unitW}`;
+      // Update HUD Displays
+      document.getElementById("maxDeflectionText").innerText = `w_max: ${maxW_Display.toFixed(4)} ${p.sys.unitW} @ x = ${maxX_Display.toFixed(2)} ${p.sys.unitL}`;
+      document.getElementById("probeText").innerText = `🟢 Probe at x = ${probedX_Display.toFixed(2)} ${p.sys.unitL} | Deflection w(x) = ${probedW_Display.toFixed(4)} ${p.sys.unitW}`;
 
-      // Draw Visualization Canvas
+      // Redraw Canvas
       drawCanvas(p, maxW_SI, probedRatio, probedW_SI);
     }
 
@@ -748,7 +765,7 @@
       ctx.fillStyle = "#94a3b8";
 
       if (p.boundary === "simply") {
-        // Pin left
+        // Left Pin
         ctx.beginPath();
         ctx.moveTo(startX, baselineY);
         ctx.lineTo(startX - 12, baselineY + 20);
@@ -756,23 +773,23 @@
         ctx.closePath();
         ctx.fill(); ctx.stroke();
 
-        // Roller right
+        // Right Roller
         ctx.beginPath();
         ctx.arc(endX, baselineY + 10, 10, 0, Math.PI * 2);
         ctx.fill(); ctx.stroke();
       } else if (p.boundary === "cantilever") {
-        // Fixed wall left
+        // Fixed Wall Left
         ctx.fillStyle = "#64748b";
         ctx.fillRect(startX - 15, baselineY - 40, 15, 80);
         ctx.beginPath(); ctx.moveTo(startX, baselineY - 40); ctx.lineTo(startX, baselineY + 40); ctx.stroke();
       } else if (p.boundary === "fixed") {
-        // Fixed walls left & right
+        // Fixed Walls Left & Right
         ctx.fillStyle = "#64748b";
         ctx.fillRect(startX - 15, baselineY - 40, 15, 80);
         ctx.fillRect(endX, baselineY - 40, 15, 80);
       }
 
-      // Draw Undeformed Reference Beam
+      // Draw Undeformed Reference Line
       ctx.strokeStyle = "#cbd5e1";
       ctx.setLineDash([5, 5]);
       ctx.beginPath();
@@ -781,7 +798,7 @@
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // Scaling factor for deflection visual curve
+      // Scaling factor for visual curve
       const maxAllowedPixels = 80;
       const scaleY = maxW_SI > 0 ? Math.min(maxAllowedPixels / maxW_SI, 1e6) : 0;
 
@@ -790,7 +807,7 @@
       ctx.lineWidth = 4;
       ctx.beginPath();
 
-      const numPoints = 100;
+      const numPoints = 120;
       for (let i = 0; i <= numPoints; i++) {
         const ratio = i / numPoints;
         const x_si = ratio * p.L;
@@ -827,20 +844,27 @@
       ctx.font = "bold 12px sans-serif";
       ctx.fillText(`P = ${p.inpP} ${p.sys.unitP}`, loadPx - 25, loadPy - 50);
 
-      // Draw Interactive Probe Callout Point
+      // Draw Draggable Green Ball Indicator
       const probePx = startX + probedRatio * beamWidthPx;
       const probePy = baselineY + probedW_SI * scaleY;
 
-      ctx.strokeStyle = "#059669";
-      ctx.fillStyle = "#10b981";
-      ctx.lineWidth = 2;
+      // Outer glow ring
+      ctx.fillStyle = "rgba(16, 185, 129, 0.25)";
       ctx.beginPath();
-      ctx.arc(probePx, probePy, 7, 0, Math.PI * 2);
+      ctx.arc(probePx, probePy, 14, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Green Ball
+      ctx.strokeStyle = "#047857";
+      ctx.fillStyle = "#10b981";
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(probePx, probePy, 8, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
 
-      // Vertical marker line
-      ctx.strokeStyle = "rgba(5, 150, 105, 0.4)";
+      // Vertical guide line
+      ctx.strokeStyle = "rgba(5, 150, 105, 0.5)";
       ctx.setLineDash([3, 3]);
       ctx.beginPath();
       ctx.moveTo(probePx, baselineY);
@@ -849,23 +873,42 @@
       ctx.setLineDash([]);
     }
 
-    // Handle User Click on Deflected Beam
-    function handleCanvasClick(e) {
+    // Pointer Event Handlers for Dragging Green Ball
+    function getCanvasX(e) {
       const rect = canvas.getBoundingClientRect();
-      const clickX = e.clientX - rect.left;
-      
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      return clientX - rect.left;
+    }
+
+    function updateProbeFromX(clickX) {
       const marginX = 60;
       const startX = marginX;
       const endX = canvas.width - marginX;
       const beamWidthPx = endX - startX;
 
-      if (clickX >= startX && clickX <= endX) {
-        probedRatio = (clickX - startX) / beamWidthPx;
-        updateCalculations();
+      let ratio = (clickX - startX) / beamWidthPx;
+      ratio = Math.max(0, Math.min(1, ratio));
+      probedRatio = ratio;
+      updateCalculations();
+    }
+
+    function handlePointerStart(e) {
+      isDraggingBall = true;
+      updateProbeFromX(getCanvasX(e));
+    }
+
+    function handlePointerMove(e) {
+      if (isDraggingBall) {
+        if (e.preventDefault) e.preventDefault();
+        updateProbeFromX(getCanvasX(e));
       }
     }
 
-    // Workflow State Controls
+    function handlePointerEnd() {
+      isDraggingBall = false;
+    }
+
+    // Workflow Actions
     function startExperiment() {
       isExperimentStarted = true;
       isExperimentFinished = false;
@@ -885,12 +928,6 @@
 
       trialCounter++;
       const p = getInputsSI();
-      
-      let maxW_SI = 0;
-      for (let i = 0; i <= 200; i++) {
-        const w = calcDeflection((i / 200) * p.L, p);
-        if (w > maxW_SI) maxW_SI = w;
-      }
 
       const probedX_SI = probedRatio * p.L;
       const probedW_SI = calcDeflection(probedX_SI, p);
@@ -904,8 +941,7 @@
         E: `${p.inpE} ${p.sys.unitE}`,
         load: `${p.inpP} ${p.sys.unitP} @ ${p.inpa} ${p.sys.unita}`,
         probePos: `${(probedRatio * p.inpL).toFixed(2)} ${p.sys.unitL}`,
-        probeW: `${(probedW_SI * p.sys.factorW).toFixed(4)} ${p.sys.unitW}`,
-        maxW: `${(maxW_SI * p.sys.factorW).toFixed(4)} ${p.sys.unitW}`
+        probeW: `${(probedW_SI * p.sys.factorW).toFixed(4)} ${p.sys.unitW}`
       };
 
       observationData.push(trialRecord);
@@ -926,10 +962,27 @@
         <td>${data.load}</td>
         <td>${data.probePos}</td>
         <td style="color:var(--accent-color); font-weight:bold;">${data.probeW}</td>
-        <td style="color:var(--danger-color); font-weight:bold;">${data.maxW}</td>
       `;
 
       tbody.appendChild(tr);
+    }
+
+    function resetExperiment() {
+      isExperimentStarted = false;
+      isExperimentFinished = false;
+      trialCounter = 0;
+      observationData = [];
+
+      document.getElementById("obsTableBody").innerHTML = "";
+
+      document.getElementById("btnStart").disabled = false;
+      document.getElementById("btnRecord").disabled = true;
+      document.getElementById("btnFinish").disabled = true;
+      document.getElementById("btnDownload").disabled = true;
+
+      const status = document.getElementById("statusIndicator");
+      status.innerText = "Status: Ready";
+      status.className = "status-badge status-ready";
     }
 
     function finishExperiment() {
@@ -948,20 +1001,21 @@
     function downloadCSV() {
       if (observationData.length === 0) return;
 
-      let csvContent = "data:text/csv;charset=utf-8,";
-      csvContent += "Trial #,Unit System,Boundary Condition,Beam Length,Cross Section (b x h),Elastic Modulus E,Load P,Probe Position x,Probe Deflection w(x),Max Deflection w_max\n";
+      let csvString = "Trial #,Unit System,Boundary Condition,Beam Length,Cross Section (b x h),Elastic Modulus E,Load P,Probe Position x,Probe Deflection w(x)\n";
 
       observationData.forEach(r => {
-        csvContent += `"${r.trial}","${r.system}","${r.boundary}","${r.L}","${r.section}","${r.E}","${r.load}","${r.probePos}","${r.probeW}","${r.maxW}"\n`;
+        csvString += `"${r.trial}","${r.system}","${r.boundary}","${r.L}","${r.section}","${r.E}","${r.load}","${r.probePos}","${r.probeW}"\n`;
       });
 
-      const encodedUri = encodeURI(csvContent);
+      const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      link.setAttribute("download", `GARRF_Beam_Experiment_Report.csv`);
+      link.setAttribute("href", url);
+      link.setAttribute("download", "GARRF_Beam_Experiment_Report.csv");
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     }
   </script>
 </body>
