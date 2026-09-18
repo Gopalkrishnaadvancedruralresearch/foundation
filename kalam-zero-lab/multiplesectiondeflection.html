@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GARRF Virtual Lab - Varying Section Beam Analysis (Simply Supported & Cantilever)</title>
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --secondary: #2563eb;
+            --accent: #f59e0b;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        header {
+            text-align: center;
+            background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+        header h1 {
+            margin: 0 0 5px 0;
+            font-size: 1.8rem;
+        }
+        header p {
+            margin: 0;
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            border-top: 4px solid var(--secondary);
+            transition: all 0.3s ease;
+        }
+        .step-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--primary);
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: center;
+        }
+        @media(max-width: 768px) {
+            .grid-2 { grid-template-columns: 1fr; }
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            font-weight: 500;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+        select, input {
+            width: 100%;
+            padding: 9px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 0.95rem;
+        }
+        button {
+            background-color: var(--secondary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background-color: var(--primary);
+        }
+        button:disabled {
+            background-color: #94a3b8;
+            cursor: not-allowed;
+        }
+        canvas {
+            width: 100%;
+            height: 200px;
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+        }
+        #analysisCanvas {
+            height: 380px;
+            background: #ffffff;
+            cursor: crosshair;
+        }
+        .status-badge {
+            font-size: 0.85rem;
+            padding: 4px 10px;
+            border-radius: 20px;
+            background: #e2e8f0;
+            color: #475569;
+        }
+        .status-badge.locked {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .results-box {
+            background: #eff6ff;
+            border-left: 4px solid var(--secondary);
+            padding: 15px;
+            border-radius: 0 8px 8px 0;
+            margin-top: 15px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            border: 1px solid #cbd5e1;
+            padding: 8px 12px;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        th {
+            background-color: #f1f5f9;
+            color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Gopalkrishna Advanced Rural Research Foundation (GARRF)</h1>
+        <p>Virtual Engineering Laboratory — Beam Analysis with Varying Sections (Simply Supported & Cantilever)</p>
+    </header>
+
+    <!-- SECTION PREP -->
+    <div class="card" id="prepCard">
+        <div class="step-title">
+            <span>Section Prep: Choose Beam & Support Configuration</span>
+            <span id="prepStatus" class="status-badge">Pending Selection</span>
+        </div>
+        <div class="grid-2">
+            <div>
+                <p>Configure your beam support type and number of distinct cross-section segments:</p>
+                <div class="form-group">
+                    <label for="supportTypeSelect">Support Configuration:</label>
+                    <select id="supportTypeSelect" onchange="drawPrepPreview()">
+                        <option value="simply_supported" selected>Simply Supported (Pin - Roller)</option>
+                        <option value="cantilever">Cantilever (Fixed - Free)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="numSectionsSelect">Number of Sections:</label>
+                    <select id="numSectionsSelect" onchange="drawPrepPreview()">
+                        <option value="2">2 Sections</option>
+                        <option value="3" selected>3 Sections</option>
+                    </select>
+                </div>
+                <button id="lockPrepBtn" onclick="lockSectionPrep()">Lock Selection & Proceed</button>
+            </div>
+            <div>
+                <label>Beam Geometry Preview:</label>
+                <canvas id="prepCanvas" width="500" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 1: UNITS -->
+    <div class="card" id="section1Card" style="opacity: 0.4; pointer-events: none;">
+        <div class="step-title">
+            <span>Section 1: Selection of Units</span>
+            <span id="sec1Status" class="status-badge">Locked</span>
+        </div>
+        <div class="grid">
+            <div class="form-group">
+                <label for="unitSystem">System of Units:</label>
+                <select id="unitSystem">
+                    <option value="SI">SI Standard (Length: meters [m], Force: kilonewtons [kN], Modulus: gigapascals [GPa])</option>
+                    <option value="MM">Millimeter System (Length: millimeters [mm], Force: Newtons [N], Modulus: megapascals [MPa])</option>
+                </select>
+            </div>
+        </div>
+        <button onclick="proceedToSection2()">Confirm Units & Proceed</button>
+    </div>
+
+    <!-- SECTION 2: SPANS, PROPERTIES & LOADS -->
+    <div class="card" id="section2Card" style="opacity: 0.4; pointer-events: none;">
+        <div class="step-title">
+            <span>Section 2: Span Choices, Property Choices & Loading Setup</span>
+            <span id="sec2Status" class="status-badge">Locked</span>
+        </div>
+        
+        <h4>1. Material Selection & Elastic Properties</h4>
+        <div class="grid">
+            <div class="form-group">
+                <label for="materialPreset">Select Engineering Material:</label>
+                <select id="materialPreset" onchange="applyMaterialPreset()">
+                    <option value="steel">Structural Steel (E = 200 GPa)</option>
+                    <option value="aluminum">Aluminum Alloy (E = 70 GPa)</option>
+                    <option value="rcc" selected>Reinforced Cement Concrete - RCC (E = 25 GPa)</option>
+                    <option value="concrete">Plain Concrete (E = 20 GPa)</option>
+                    <option value="wood">Timber / Wood (E = 11 GPa)</option>
+                    <option value="custom">Custom Material...</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label id="labelE" for="materialE">Modulus of Elasticity (E):</label>
+                <input type="number" id="materialE" value="25" step="1">
+            </div>
+            <div class="form-group">
+                <label id="labelI0" for="baseI0">Base Moment of Inertia ($I_0$):</label>
+                <input type="number" id="baseI0" value="0.05" step="0.01">
+            </div>
+        </div>
+
+        <h4 style="margin-top:15px;">2. Section Spans & Inertia Multipliers</h4>
+        <div id="spansPropsContainer" class="grid"></div>
+        
+        <h4 style="margin-top:15px;">3. Applied Point Loads Configuration & Locations</h4>
+        <div class="form-group" style="max-width: 350px;">
+            <label for="loadCountSelect">Number of Point Loads:</label>
+            <select id="loadCountSelect" onchange="updateLoadInputs()">
+                <option value="1" selected>Single Point Load</option>
+                <option value="2">2 Point Loads</option>
+                <option value="3">3 Point Loads</option>
+            </select>
+        </div>
+        <div id="loadsContainer" class="grid"></div>
+
+        <button style="margin-top: 15px;" onclick="runAnalysis()">Run Structural Analysis</button>
+    </div>
+
+    <!-- SECTION 3: ANALYSIS & DEFLECTION CANVAS -->
+    <div class="card" id="section3Card" style="opacity: 0.4; pointer-events: none;">
+        <div class="step-title">
+            <span>Section 3: Beam Baseline & Deflection Profile</span>
+            <span id="sec3Status" class="status-badge">Locked</span>
+        </div>
+        <p><em>Move your mouse across the canvas to inspect precise beam deflection and slope values along the neutral reference baseline.</em></p>
+        <canvas id="analysisCanvas" width="1100" height="380"></canvas>
+        
+        <div class="results-box">
+            <h3>Analysis Summary</h3>
+            <p id="resSlopeA"><strong>Slope at Support A (&theta;<sub>A</sub>):</strong> --</p>
+            <p id="resMaxDeflection"><strong>Maximum Deflection (&delta;<sub>max</sub>):</strong> --</p>
+            <p id="resLocMaxDeflection"><strong>Location of Maximum Deflection (x):</strong> --</p>
+            <p id="resInspector"><strong>Cursor Inspector:</strong> Hover over the canvas above.</p>
+        </div>
+        <button style="margin-top: 15px;" onclick="proceedToSection4()">Proceed to Data Recording (Section 4)</button>
+    </div>
+
+    <!-- SECTION 4: DATA RECORDING & FINISH -->
+    <div class="card" id="section4Card" style="opacity: 0.4; pointer-events: none;">
+        <div class="step-title">
+            <span>Section 4: Observation Recording & Experiment Completion</span>
+            <span id="sec4Status" class="status-badge">Locked</span>
+        </div>
+        <p>Record inspected readings into your laboratory observation table below:</p>
+        <button onclick="recordCurrentReading()">Record Current Cursor Point</button>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Trial / Point</th>
+                    <th id="thPos">Position x (m)</th>
+                    <th id="thDefl">Deflection (&delta; in mm)</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="obsTableBody">
+                <tr><td colspan="4" style="color: #64748b;">No readings recorded yet. Use the button above while inspecting Section 3.</td></tr>
+            </tbody>
+        </table>
+
+        <div style="margin-top: 20px; display: flex; gap: 10px;">
+            <button style="background-color: #10b981;" onclick="finishExperiment()">Finish Experiment & Export Report</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+let state = {
+    supportType: 'simply_supported', // 'simply_supported' or 'cantilever'
+    numSections: 3,
+    sections: [
+        { length: 10, iFactor: 1 },
+        { length: 20, iFactor: 2 },
+        { length: 10, iFactor: 1 }
+    ],
+    loads: [
+        { magnitude: 50, position: 20 }
+    ],
+    E: 25,
+    unitSystem: 'SI',
+    I0: 0.05
+};
+
+window.onload = function() {
+    drawPrepPreview();
+};
+
+function drawPrepPreview() {
+    let supportType = document.getElementById('supportTypeSelect').value;
+    let n = parseInt(document.getElementById('numSectionsSelect').value);
+    let canvas = document.getElementById('prepCanvas');
+    let ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    let startX = 60;
+    let endX = canvas.width - 60;
+    let totalW = endX - startX;
+    let baseY = 95;
+
+    ctx.strokeStyle = '#94a3b8';
+    ctx.setLineDash([2, 2]);
+    ctx.beginPath();
+    ctx.moveTo(startX - 20, baseY);
+    ctx.lineTo(endX + 20, baseY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    let dummySections = n === 2 ? [ {l:15, i:1}, {l:15, i:2} ] : [ {l:10, i:1}, {l:20, i:2}, {l:10, i:1} ];
+    let curX = startX;
+
+    dummySections.forEach((sec, idx) => {
+        let secW = (sec.l / 40) * totalW;
+        let h = 28 / Math.sqrt(sec.i);
+
+        ctx.fillStyle = idx % 2 === 0 ? '#93c5fd' : '#3b82f6';
+        ctx.fillRect(curX, baseY - h/2, secW, h);
+        ctx.strokeStyle = '#1e3a8a';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(curX, baseY - h/2, secW, h);
+
+        ctx.fillStyle = '#1e293b';
+        ctx.font = 'bold 11px Segoe UI';
+        ctx.fillText(`Sec ${idx+1} (${sec.i === 1 ? 'I' : sec.i+'I'})`, curX + secW/2 - 25, baseY - h/2 - 8);
+
+        curX += secW;
+    });
+
+    if(supportType === 'simply_supported') {
+        drawPinSupport(startX, baseY + 14, 'Support A (Pin)');
+        drawRollerSupport(curX, baseY + 14, 'Support B (Roller)');
+    } else {
+        drawFixedSupport(startX, baseY, 'Fixed Support A');
+    }
+}
+
+function drawPinSupport(x, y, label) {
+    let ctx = document.getElementById('prepCanvas').getContext('2d');
+    ctx.fillStyle = '#475569';
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - 7, y + 12);
+    ctx.lineTo(x + 7, y + 12);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = '#1e293b';
+    ctx.font = 'bold 10px Segoe UI';
+    ctx.fillText(label, x - 35, y + 26);
+}
+
+function drawRollerSupport(x, y, label) {
+    let ctx = document.getElementById('prepCanvas').getContext('2d');
+    ctx.fillStyle = '#475569';
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - 7, y + 12);
+    ctx.lineTo(x + 7, y + 12);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = '#1e293b';
+    ctx.font = 'bold 10px Segoe UI';
+    ctx.fillText(label, x - 35, y + 26);
+}
+
+function drawFixedSupport(x, y, label) {
+    let ctx = document.getElementById('prepCanvas').getContext('2d');
+    ctx.fillStyle = '#475569';
+    ctx.fillRect(x - 8, y - 22, 8, 44);
+    
+    // Hatch lines
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 1;
+    for(let h=-18; h<=18; h+=6) {
+        ctx.beginPath();
+        ctx.moveTo(x - 8, y + h);
+        ctx.lineTo(x - 15, y + h + 6);
+        ctx.stroke();
+    }
+
+    ctx.fillStyle = '#1e293b';
+    ctx.font = 'bold 10px Segoe UI';
+    ctx.fillText(label, x - 25, y + 34);
+}
+
+function lockSectionPrep() {
+    state.supportType = document.getElementById('supportTypeSelect').value;
+    state.numSections = parseInt(document.getElementById('numSectionsSelect').value);
+    
+    if(state.numSections === 2) {
+        state.sections = [{ length: 15, iFactor: 1 }, { length: 15, iFactor: 2 }];
+        state.loads = [ { magnitude: 50, position: 15 } ];
+    } else {
+        state.sections = [{ length: 10, iFactor: 1 }, { length: 20, iFactor: 2 }, { length: 10, iFactor: 1 }];
+        state.loads = [ { magnitude: 50, position: 20 } ];
+    }
+
+    document.getElementById('supportTypeSelect').disabled = true;
+    document.getElementById('numSectionsSelect').disabled = true;
+    document.getElementById('lockPrepBtn').disabled = true;
+    
+    let supportLabel = state.supportType === 'simply_supported' ? 'Simply Supported' : 'Cantilever';
+    document.getElementById('prepStatus').innerText = `Locked (${supportLabel}, ${state.numSections} Sec)`;
+    document.getElementById('prepStatus').className = 'status-badge locked';
+
+    let s1 = document.getElementById('section1Card');
+    s1.style.opacity = '1';
+    s1.style.pointerEvents = 'auto';
+    window.scrollTo({ top: s1.offsetTop, behavior: 'smooth' });
+}
+
+function proceedToSection2() {
+    state.unitSystem = document.getElementById('unitSystem').value;
+    document.getElementById('sec1Status').innerText = 'Confirmed (' + state.unitSystem + ')';
+    document.getElementById('sec1Status').className = 'status-badge locked';
+
+    if(state.unitSystem === 'MM') {
+        document.getElementById('labelE').innerText = 'Modulus of Elasticity (E in MPa):';
+        document.getElementById('materialE').value = '25000';
+        document.getElementById('labelI0').innerText = 'Base Moment of Inertia (I₀ in mm⁴):';
+        document.getElementById('baseI0').value = '50000000';
+        state.sections.forEach(s => { s.length *= 1000; });
+        state.loads.forEach(l => {
+            l.position *= 1000;
+            l.magnitude *= 1000;
+        });
+    } else {
+        document.getElementById('labelE').innerText = 'Modulus of Elasticity (E in GPa):';
+        document.getElementById('materialE').value = '25';
+        document.getElementById('labelI0').innerText = 'Base Moment of Inertia (I₀ in m⁴):';
+        document.getElementById('baseI0').value = '0.05';
+    }
+
+    buildSection2Inputs();
+
+    let s2 = document.getElementById('section2Card');
+    s2.style.opacity = '1';
+    s2.style.pointerEvents = 'auto';
+    window.scrollTo({ top: s2.offsetTop, behavior: 'smooth' });
+}
+
+function applyMaterialPreset() {
+    let preset = document.getElementById('materialPreset').value;
+    let isMM = state.unitSystem === 'MM';
+    let eInput = document.getElementById('materialE');
+    let i0Input = document.getElementById('baseI0');
+
+    if(preset === 'steel') {
+        eInput.value = isMM ? 200000 : 200;
+        i0Input.value = isMM ? 80000000 : 0.08;
+    } else if(preset === 'aluminum') {
+        eInput.value = isMM ? 70000 : 70;
+        i0Input.value = isMM ? 60000000 : 0.06;
+    } else if(preset === 'rcc') {
+        eInput.value = isMM ? 25000 : 25;
+        i0Input.value = isMM ? 50000000 : 0.05;
+    } else if(preset === 'concrete') {
+        eInput.value = isMM ? 20000 : 20;
+        i0Input.value = isMM ? 50000000 : 0.05;
+    } else if(preset === 'wood') {
+        eInput.value = isMM ? 11000 : 11;
+        i0Input.value = isMM ? 100000000 : 0.1;
+    }
+}
+
+function buildSection2Inputs() {
+    let container = document.getElementById('spansPropsContainer');
+    container.innerHTML = '';
+    let lenUnit = state.unitSystem === 'SI' ? 'm' : 'mm';
+    for(let i=0; i<state.numSections; i++) {
+        let div = document.createElement('div');
+        div.className = 'form-group';
+        div.innerHTML = `
+            <label>Section ${i+1} Length (L<sub>${i+1}</sub> in ${lenUnit}):</label>
+            <input type="number" id="len_${i}" value="${state.sections[i].length}" step="1">
+            <label style="margin-top:6px;">Section ${i+1} Inertia Factor (I ratio):</label>
+            <input type="number" id="ifactor_${i}" value="${state.sections[i].iFactor}" step="0.5">
+        `;
+        container.appendChild(div);
+    }
+    updateLoadInputs();
+}
+
+function updateLoadInputs() {
+    let count = parseInt(document.getElementById('loadCountSelect').value);
+    let container = document.getElementById('loadsContainer');
+    container.innerHTML = '';
+    let forceUnit = state.unitSystem === 'SI' ? 'kN' : 'N';
+    let lenUnit = state.unitSystem === 'SI' ? 'm' : 'mm';
+
+    while(state.loads.length < count) {
+        let defaultPos = state.unitSystem === 'SI' ? (10 * (state.loads.length + 1)) : (10000 * (state.loads.length + 1));
+        state.loads.push({ magnitude: 30 * (state.loads.length + 1), position: defaultPos });
+    }
+
+    for(let i=0; i<count; i++) {
+        let div = document.createElement('div');
+        div.className = 'form-group';
+        div.innerHTML = `
+            <label>Load ${i+1} Magnitude P<sub>${i+1}</sub> (${forceUnit}):</label>
+            <input type="number" id="load_mag_${i}" value="${state.loads[i].magnitude}" step="5">
+            <label style="margin-top:6px;">Load ${i+1} Location x<sub>${i+1}</sub> (${lenUnit} from Support A):</label>
+            <input type="number" id="load_pos_${i}" value="${state.loads[i].position}" step="1">
+        `;
+        container.appendChild(div);
+    }
+}
+
+let deflectionProfile = [];
+let totalLength = 0;
+let lastInspectedPoint = { x: 0, y: 0 };
+
+function runAnalysis() {
+    let rawE = parseFloat(document.getElementById('materialE').value);
+    state.E = state.unitSystem === 'SI' ? rawE * 1e9 : rawE * 1e6;
+    state.I0 = parseFloat(document.getElementById('baseI0').value);
+
+    totalLength = 0;
+    for(let i=0; i<state.numSections; i++) {
+        state.sections[i].length = parseFloat(document.getElementById(`len_${i}`).value);
+        state.sections[i].iFactor = parseFloat(document.getElementById(`ifactor_${i}`).value);
+        totalLength += state.sections[i].length;
+    }
+
+    let loadCount = parseInt(document.getElementById('loadCountSelect').value);
+    state.loads = [];
+    let loadFactor = state.unitSystem === 'SI' ? 1000 : 1;
+
+    for(let i=0; i<loadCount; i++) {
+        let mag = parseFloat(document.getElementById(`load_mag_${i}`).value) * loadFactor;
+        let pos = parseFloat(document.getElementById(`load_pos_${i}`).value);
+        state.loads.push({ magnitude: mag, position: pos });
+    }
+
+    document.getElementById('sec2Status').innerText = 'Completed & Locked';
+    document.getElementById('sec2Status').className = 'status-badge locked';
+
+    let s3 = document.getElementById('section3Card');
+    s3.style.opacity = '1';
+    s3.style.pointerEvents = 'auto';
+    document.getElementById('sec3Status').innerText = 'Active - Inspection Ready';
+
+    computeDeflectionsNumerical();
+    drawAnalysisScene();
+
+    let canvas = document.getElementById('analysisCanvas');
+    canvas.onmousemove = function(evt) {
+        let rect = canvas.getBoundingClientRect();
+        let mouseX = evt.clientX - rect.left;
+        let scaleX = canvas.width / rect.width;
+        let canvasX = mouseX * scaleX;
+        
+        let startX = 80;
+        let endX = canvas.width - 80;
+        let beamPxW = endX - startX;
+
+        if(canvasX >= startX && canvasX <= endX) {
+            let frac = (canvasX - startX) / beamPxW;
+            let currentX = frac * totalLength;
+            let closest = deflectionProfile.reduce((prev, curr) => 
+                Math.abs(curr.x - currentX) < Math.abs(prev.x - currentX) ? curr : prev
+            );
+            
+            lastInspectedPoint = { x: currentX, y: closest.y };
+            let lenUnit = state.unitSystem === 'SI' ? 'm' : 'mm';
+
+            document.getElementById('resInspector').innerHTML = 
+                `<strong>Cursor Inspection:</strong> Position x = ${currentX.toFixed(2)} ${lenUnit} | Deflection (&delta;) = ${lastInspectedPoint.y.toFixed(3)} mm`;
+            
+            drawAnalysisScene(currentX);
+        }
+    };
+
+    window.scrollTo({ top: s3.offsetTop, behavior: 'smooth' });
+}
+
+function computeDeflectionsNumerical() {
+    deflectionProfile = [];
+    let steps = 400;
+    let dx = totalLength / steps;
+    let E = state.E;
+    let I0 = state.I0;
+    let L = totalLength;
+
+    let xArr = [];
+    let phiArr = [];
+
+    let Ra = 0, Rb = 0, Ma = 0;
+
+    if(state.supportType === 'simply_supported') {
+        let sumMomentsB = 0;
+        let totalLoadSum = 0;
+        state.loads.forEach(load => {
+            sumMomentsB += load.magnitude * (L - load.position);
+            totalLoadSum += load.magnitude;
+        });
+        Ra = sumMomentsB / L;
+    } else {
+        // Cantilever reactions at fixed support A
+        state.loads.forEach(load => {
+            Ra += load.magnitude;
+            Ma += load.magnitude * load.position;
+        });
+    }
+
+    for(let i = 0; i <= steps; i++) {
+        let x = i * dx;
+        xArr.push(x);
+
+        let M = 0;
+        if(state.supportType === 'simply_supported') {
+            M = Ra * x;
+            state.loads.forEach(load => {
+                if(x > load.position) {
+                    M -= load.magnitude * (x - load.position);
+                }
+            });
+        } else {
+            // Cantilever internal bending moment convention (tension on top -> negative moment)
+            M = -Ma + Ra * x;
+            state.loads.forEach(load => {
+                if(x > load.position) {
+                    M += load.magnitude * (x - load.position);
+                }
+            });
+        }
+
+        let iFactor = state.sections[0].iFactor;
+        if(state.numSections === 2) {
+            if(x >= state.sections[0].length) iFactor = state.sections[1].iFactor;
+        } else {
+            if(x >= state.sections[0].length && x < state.sections[0].length + state.sections[1].length) {
+                iFactor = state.sections[1].iFactor;
+            } else if(x >= state.sections[0].length + state.sections[1].length) {
+                iFactor = state.sections[2].iFactor;
+            }
+        }
+        let Ix = I0 * iFactor;
+
+        phiArr.push(M / (E * Ix));
+    }
+
+    let intPhi = new Array(steps + 1).fill(0);
+    for(let i = 1; i <= steps; i++) {
+        intPhi[i] = intPhi[i - 1] + 0.5 * (phiArr[i - 1] + phiArr[i]) * dx;
+    }
+
+    let doubleIntPhi = new Array(steps + 1).fill(0);
+    for(let i = 1; i <= steps; i++) {
+        doubleIntPhi[i] = doubleIntPhi[i - 1] + 0.5 * (intPhi[i - 1] + intPhi[i]) * dx;
+    }
+
+    let thetaA = 0;
+    if(state.supportType === 'simply_supported') {
+        thetaA = doubleIntPhi[steps] / L;
+    } else {
+        // Cantilever fixed support has zero slope and zero deflection at A
+        thetaA = 0;
+    }
+
+    let maxDefl = 0;
+    let maxLoc = 0;
+
+    for(let i = 0; i <= steps; i++) {
+        let x = xArr[i];
+        let v_meters = 0;
+        if(state.supportType === 'simply_supported') {
+            v_meters = thetaA * x - doubleIntPhi[i];
+        } else {
+            v_meters = -doubleIntPhi[i]; // Since thetaA = 0 and v(0) = 0
+        }
+
+        let deflMm = Math.abs(v_meters) * (state.unitSystem === 'SI' ? 1000 : 1);
+
+        if(deflMm > maxDefl) {
+            maxDefl = deflMm;
+            maxLoc = x;
+        }
+        deflectionProfile.push({ x: x, y: deflMm });
+    }
+
+    let slopeA_mrad = Math.abs(thetaA) * 1000;
+    document.getElementById('resSlopeA').innerHTML = `<strong>Slope at Support A (&theta;<sub>A</sub>):</strong> ${slopeA_mrad.toFixed(3)} mrad`;
+    document.getElementById('resMaxDeflection').innerHTML = `<strong>Maximum Deflection (&delta;<sub>max</sub>):</strong> ${maxDefl.toFixed(2)} mm`;
+    let lenUnit = state.unitSystem === 'SI' ? 'm' : 'mm';
+    document.getElementById('resLocMaxDeflection').innerHTML = `<strong>Location of Maximum Deflection (x):</strong> ${maxLoc.toFixed(2)} ${lenUnit} from Support A`;
+}
+
+function drawAnalysisScene(highlightX = -1) {
+    let canvas = document.getElementById('analysisCanvas');
+    let ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    let startX = 80;
+    let endX = canvas.width - 80;
+    let beamPxW = endX - startX;
+    let baseY = 170;
+
+    ctx.strokeStyle = '#64748b';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(startX - 30, baseY);
+    ctx.lineTo(endX + 30, baseY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    let curX = startX;
+    let lenUnit = state.unitSystem === 'SI' ? 'm' : 'mm';
+    state.sections.forEach((sec, idx) => {
+        let secW = (sec.length / totalLength) * beamPxW;
+        let h = 28 / Math.sqrt(sec.iFactor);
+
+        ctx.fillStyle = idx % 2 === 0 ? '#93c5fd' : '#3b82f6';
+        ctx.fillRect(curX, baseY - h/2, secW, h);
+        ctx.strokeStyle = '#1e3a8a';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(curX, baseY - h/2, secW, h);
+
+        ctx.fillStyle = '#1e293b';
+        ctx.font = 'bold 11px Segoe UI';
+        ctx.fillText(`Sec ${idx+1} (I=${sec.iFactor}I)`, curX + secW/2 - 38, baseY - h/2 - 8);
+        ctx.fillText(`${sec.length}${lenUnit}`, curX + secW/2 - 15, baseY + h/2 + 18);
+
+        curX += secW;
+    });
+
+    if(state.supportType === 'simply_supported') {
+        drawAnalysisPinSupport(startX, baseY + 15, 'Support A (Pin)');
+        drawAnalysisRollerSupport(endX, baseY + 15, 'Support B (Roller)');
+    } else {
+        drawAnalysisFixedSupport(startX, baseY, 'Fixed Support A');
+    }
+
+    state.loads.forEach(load => {
+        let loadPx = startX + (load.position / totalLength) * beamPxW;
+        let loadValDisp = state.unitSystem === 'SI' ? (load.magnitude/1000) + ' kN' : load.magnitude + ' N';
+        drawLoadArrow(loadPx, baseY - 65, loadPx, baseY - 15, '#ef4444', loadValDisp);
+    });
+
+    ctx.beginPath();
+    ctx.strokeStyle = '#10b981';
+    ctx.lineWidth = 3;
+    deflectionProfile.forEach((pt, idx) => {
+        let px = startX + (pt.x / totalLength) * beamPxW;
+        let py = baseY + pt.y * 1.5;
+        if(idx === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+    });
+    ctx.stroke();
+
+    if(highlightX >= 0) {
+        let hPx = startX + (highlightX / totalLength) * beamPxW;
+        ctx.beginPath();
+        ctx.strokeStyle = '#f59e0b';
+        ctx.setLineDash([3, 3]);
+        ctx.moveTo(hPx, 30);
+        ctx.lineTo(hPx, 350);
+        ctx.stroke();
+        ctx.setLineDash([]);
+    }
+}
+
+function drawAnalysisPinSupport(x, y, label) {
+    let ctx = document.getElementById('analysisCanvas').getContext('2d');
+    ctx.fillStyle = '#475569';
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - 10, y + 16);
+    ctx.lineTo(x + 10, y + 16);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = '#1e3a8a';
+    ctx.font = 'bold 11px Segoe UI';
+    ctx.fillText(label, x - 40, y + 30);
+}
+
+function drawAnalysisRollerSupport(x, y, label) {
+    let ctx = document.getElementById('analysisCanvas').getContext('2d');
+    ctx.fillStyle = '#475569';
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - 10, y + 16);
+    ctx.lineTo(x + 10, y + 16);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = '#1e3a8a';
+    ctx.font = 'bold 11px Segoe UI';
+    ctx.fillText(label, x - 40, y + 30);
+}
+
+function drawAnalysisFixedSupport(x, y, label) {
+    let ctx = document.getElementById('analysisCanvas').getContext('2d');
+    ctx.fillStyle = '#475569';
+    ctx.fillRect(x - 10, y - 30, 10, 60);
+
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 1;
+    for(let h=-25; h<=25; h+=8) {
+        ctx.beginPath();
+        ctx.moveTo(x - 10, y + h);
+        ctx.lineTo(x - 20, y + h + 8);
+        ctx.stroke();
+    }
+
+    ctx.fillStyle = '#1e3a8a';
+    ctx.font = 'bold 11px Segoe UI';
+    ctx.fillText(label, x - 35, y + 44);
+}
+
+function drawLoadArrow(fromX, fromY, toX, toY, color, label) {
+    let ctx = document.getElementById('analysisCanvas').getContext('2d');
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(fromX, fromY);
+    ctx.lineTo(toX, toY);
+    ctx.stroke();
+
+    let angle = Math.atan2(toY - fromY, toX - fromX);
+    ctx.beginPath();
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(toX - 7 * Math.cos(angle - Math.PI / 6), toY - 7 * Math.sin(angle - Math.PI / 6));
+    ctx.lineTo(toX - 7 * Math.cos(angle + Math.PI / 6), toY - 7 * Math.sin(angle + Math.PI / 6));
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.font = 'bold 11px Segoe UI';
+    ctx.fillText(label, fromX - 18, fromY - 6);
+}
+
+function proceedToSection4() {
+    document.getElementById('sec3Status').innerText = 'Completed';
+    document.getElementById('sec3Status').className = 'status-badge locked';
+
+    let lenUnit = state.unitSystem === 'SI' ? 'm' : 'mm';
+    document.getElementById('thPos').innerText = `Position x (${lenUnit})`;
+
+    let s4 = document.getElementById('section4Card');
+    s4.style.opacity = '1';
+    s4.style.pointerEvents = 'auto';
+    window.scrollTo({ top: s4.offsetTop, behavior: 'smooth' });
+}
+
+let trialCount = 0;
+function recordCurrentReading() {
+    let tbody = document.getElementById('obsTableBody');
+    if(trialCount === 0) tbody.innerHTML = '';
+
+    trialCount++;
+    let lenUnit = state.unitSystem === 'SI' ? 'm' : 'mm';
+    let row = document.createElement('tr');
+    row.innerHTML = `
+        <td>Trial ${trialCount}</td>
+        <td>${lastInspectedPoint.x.toFixed(2)} ${lenUnit}</td>
+        <td>${lastInspectedPoint.y.toFixed(3)} mm</td>
+        <td><button style="padding: 2px 8px; background: #ef4444;" onclick="this.parentElement.parentElement.remove()">Delete</button></td>
+    `;
+    tbody.appendChild(row);
+}
+
+function finishExperiment() {
+    alert('Experiment successfully completed and logged under Gopalkrishna Advanced Rural Research Foundation (GARRF) guidelines!');
+}
+</script>
+
+</body>
+</html>
