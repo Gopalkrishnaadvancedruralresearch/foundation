@@ -270,12 +270,13 @@
             <div class="control-group">
                 <label for="boundaryType">Boundary Condition:</label>
                 <select id="boundaryType" onchange="updateSimulation()">
-                    <option value="simply_supported">Simply Supported Ends</option>
-                    <option value="fixed">Fixed-Fixed Ends</option>
+                    <option value="simply_supported">Simply Supported Ends (Center Load)</option>
+                    <option value="fixed">Fixed-Fixed Ends (Center Load)</option>
+                    <option value="cantilever">Cantilever Beam (Free-End Load)</option>
                 </select>
             </div>
             <div class="control-group">
-                <label>Center Load: <span id="loadVal" class="value-display">2.0 kg</span></label>
+                <label><span id="loadLabelText">Point Load</span>: <span id="loadVal" class="value-display">2.0 kg</span></label>
                 <input type="range" id="loadRange" min="1.0" max="10.0" step="0.1" value="2.0" oninput="updateSimulation()">
             </div>
         </div>
@@ -344,14 +345,19 @@
     // Core physics calculation function
     function calculateDeflection(x, L, P, E_cm, I, boundary) {
         let w = 0; // cm
-        if (boundary === 'simply_supported') {
+        if (boundary === 'cantilever') {
+            // Cantilever with point load at free end x = L: w(x) = [P * x^2 / (6 * E * I)] * (3L - x)
+            w = (P * Math.pow(x, 2) / (6 * E_cm * I)) * (3 * L - x);
+        } else if (boundary === 'simply_supported') {
+            // Simply supported with center load at L/2
             if (x <= L / 2) {
                 w = (P * x / (48 * E_cm * I)) * (3 * Math.pow(L, 2) - 4 * Math.pow(x, 2));
             } else {
                 let x_rev = L - x;
                 w = (P * x_rev / (48 * E_cm * I)) * (3 * Math.pow(L, 2) - 4 * Math.pow(x_rev, 2));
             }
-        } else {
+        } else if (boundary === 'fixed') {
+            // Fixed-Fixed with center load at L/2
             if (x <= L / 2) {
                 w = (P * Math.pow(x, 2) / (48 * E_cm * I)) * (3 * L - 4 * x);
             } else {
@@ -413,6 +419,14 @@
 
         // Fetch Boundary Condition
         const boundary = document.getElementById('boundaryType').value;
+
+        // Update load label dynamically
+        const loadLabelText = document.getElementById('loadLabelText');
+        if (boundary === 'cantilever') {
+            loadLabelText.innerText = "Free-End Load";
+        } else {
+            loadLabelText.innerText = "Center Load";
+        }
 
         // Ensure probe remains on the beam if beam shrinks
         if (selectedProbeX !== null && selectedProbeX > currentL) {
@@ -498,9 +512,21 @@
             };
             drawTriangle(padding, baseY);
             drawTriangle(padding + drawWidth, baseY);
-        } else {
+        } else if (boundary === 'fixed') {
             ctx.fillRect(padding - 20, baseY - 30, 20, 60);
             ctx.fillRect(padding + drawWidth, baseY - 30, 20, 60);
+        } else if (boundary === 'cantilever') {
+            // Fixed support at left end x=0 only
+            ctx.fillRect(padding - 20, baseY - 40, 20, 80);
+            // Draw wall hatch lines
+            ctx.strokeStyle = '#7f8c8d';
+            ctx.lineWidth = 2;
+            for(let yOffset = -35; yOffset < 35; yOffset += 10) {
+                ctx.beginPath();
+                ctx.moveTo(padding - 20, baseY + yOffset);
+                ctx.lineTo(padding - 28, baseY + yOffset + 8);
+                ctx.stroke();
+            }
         }
 
         // Calculate visual scale (magnification factor for drawing)
@@ -523,26 +549,26 @@
         });
         ctx.stroke();
 
-        // 5. Draw Center Load Arrow
-        let midPx = padding + (drawWidth / 2);
+        // 5. Draw Load Arrow (Free end for Cantilever, Center for others)
+        let loadPx = (boundary === 'cantilever') ? (padding + drawWidth) : (padding + (drawWidth / 2));
         
         ctx.fillStyle = '#34495e';
         ctx.beginPath();
-        ctx.moveTo(midPx, baseY - 40);
-        ctx.lineTo(midPx, baseY - 10);
+        ctx.moveTo(loadPx, baseY - 40);
+        ctx.lineTo(loadPx, baseY - 10);
         ctx.lineWidth = 4;
         ctx.strokeStyle = '#34495e';
         ctx.stroke();
         
         ctx.beginPath();
-        ctx.moveTo(midPx - 8, baseY - 15);
-        ctx.lineTo(midPx + 8, baseY - 15);
-        ctx.lineTo(midPx, baseY - 2);
+        ctx.moveTo(loadPx - 8, baseY - 15);
+        ctx.lineTo(loadPx + 8, baseY - 15);
+        ctx.lineTo(loadPx, baseY - 2);
         ctx.fill();
         
         ctx.font = 'bold 14px Segoe UI';
         ctx.textAlign = 'center';
-        ctx.fillText(loadKg.toFixed(1) + " kg", midPx, baseY - 50);
+        ctx.fillText(loadKg.toFixed(1) + " kg", loadPx, baseY - 50);
 
         // 6. Draw HUD (Heads-Up Display) for Parameters and Formulas
         
@@ -566,9 +592,18 @@
         ctx.fillText(`Moment of Inertia (I) = ${I.toExponential(4)} cm⁴`, 25, 115);
 
         // HUD Right: Formula
-        let formulaStr = boundary === 'simply_supported' 
-            ? "Max Defl. = (P × L³) / (48 × E × I)" 
-            : "Max Defl. = (P × L³) / (192 × E × I)";
+        let formulaStr = "";
+        let formulaTitle = "";
+        if (boundary === 'cantilever') {
+            formulaTitle = "Verification Formula (End Load):";
+            formulaStr = "Max Defl. = (P × L³) / (3 × E × I)";
+        } else if (boundary === 'simply_supported') {
+            formulaTitle = "Verification Formula (Center):";
+            formulaStr = "Max Defl. = (P × L³) / (48 × E × I)";
+        } else {
+            formulaTitle = "Verification Formula (Center):";
+            formulaStr = "Max Defl. = (P × L³) / (192 × E × I)";
+        }
 
         ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
         drawRoundRect(ctx, width - 265, 15, 250, 60, 8);
@@ -577,7 +612,7 @@
 
         ctx.fillStyle = '#2c3e50';
         ctx.font = 'bold 13px Segoe UI';
-        ctx.fillText("Verification Formula (Center):", width - 255, 35);
+        ctx.fillText(formulaTitle, width - 255, 35);
         ctx.font = '13px Consolas, monospace';
         ctx.fillStyle = '#e74c3c';
         ctx.fillText(formulaStr, width - 255, 60);
