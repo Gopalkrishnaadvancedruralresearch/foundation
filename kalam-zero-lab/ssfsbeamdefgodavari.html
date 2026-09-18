@@ -1,0 +1,1377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Beam Bending Virtual Laboratory | GARRF</title>
+  <style>
+    :root {
+      --primary-color: #0f172a;
+      --accent-color: #2563eb;
+      --accent-hover: #1d4ed8;
+      --success-color: #059669;
+      --warning-color: #d97706;
+      --danger-color: #dc2626;
+      --bg-color: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+      --highlight-border: #f59e0b;
+      --highlight-bg: rgba(245, 158, 11, 0.08);
+      --disabled-bg: #f1f5f9;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    /* Top Navigation Header */
+    .app-header {
+      background-color: var(--primary-color);
+      color: #ffffff;
+      padding: 0.8rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .logo-img {
+      height: 52px;
+      width: 52px;
+      object-fit: contain;
+      background-color: #ffffff;
+      border-radius: 8px;
+      padding: 3px;
+    }
+
+    .header-title h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+    }
+
+    .header-title p {
+      font-size: 0.8rem;
+      color: #94a3b8;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .flag-icon {
+      border-radius: 3px;
+      box-shadow: 0 0 4px rgba(0,0,0,0.3);
+    }
+
+    /* Student Guidance Banner */
+    .instruction-banner {
+      background: linear-gradient(90deg, #eff6ff 0%, #dbeafe 100%);
+      border-left: 5px solid var(--accent-color);
+      padding: 1rem 1.5rem;
+      margin: 1rem 1.5rem 0 1.5rem;
+      border-radius: 6px;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.8rem;
+      font-size: 0.9rem;
+      line-height: 1.45;
+      color: #1e3a8a;
+    }
+
+    .banner-icon {
+      font-size: 1.4rem;
+      line-height: 1;
+    }
+
+    /* Main Grid Layout */
+    .main-container {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 1.25rem;
+      padding: 1.25rem 1.5rem;
+      flex: 1;
+    }
+
+    @media (max-width: 1024px) {
+      .main-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .sidebar, .workspace {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* Cards & Section Badges */
+    .card {
+      background: var(--card-bg);
+      border: 2px solid var(--border-color);
+      border-radius: 8px;
+      padding: 1.25rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      transition: all 0.3s ease;
+      position: relative;
+      opacity: 0.85;
+    }
+
+    .card.highlighted-section {
+      border-color: var(--highlight-border) !important;
+      background-color: var(--highlight-bg) !important;
+      box-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
+      opacity: 1;
+    }
+
+    .section-badge {
+      display: inline-flex;
+      align-items: center;
+      background-color: var(--primary-color);
+      color: #ffffff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-right: 0.5rem;
+    }
+
+    .section-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--primary-color);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+    }
+
+    /* Form Inputs */
+    .form-group {
+      margin-bottom: 0.9rem;
+    }
+
+    .form-group label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 0.35rem;
+      color: var(--text-main);
+    }
+
+    select, input[type="number"], input[type="text"] {
+      padding: 0.45rem 0.6rem;
+      border: 1px solid var(--border-color);
+      border-radius: 5px;
+      font-size: 0.85rem;
+      background-color: #fff;
+      width: 100%;
+    }
+
+    select:disabled, input:disabled {
+      background-color: var(--disabled-bg);
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    .range-container {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .range-container input[type="range"] {
+      width: 100%;
+    }
+
+    .val-display {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--accent-color);
+      min-width: 70px;
+      text-align: right;
+    }
+
+    .custom-unit-box {
+      background: #f8fafc;
+      border: 1px dashed var(--border-color);
+      padding: 0.5rem;
+      border-radius: 5px;
+      margin-top: 0.5rem;
+      display: none;
+    }
+
+    /* Canvas Area */
+    .canvas-container {
+      position: relative;
+      width: 100%;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 320px;
+      cursor: crosshair;
+      touch-action: none;
+    }
+
+    .probe-info {
+      background-color: #f1f5f9;
+      border-top: 1px solid var(--border-color);
+      padding: 0.6rem 1rem;
+      font-size: 0.85rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 600;
+    }
+
+    /* Buttons & Controls */
+    .controls-row {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+
+    .btn {
+      padding: 0.55rem 1rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.2s ease;
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .btn-primary { background-color: var(--accent-color); color: white; }
+    .btn-primary:hover:not(:disabled) { background-color: var(--accent-hover); }
+
+    .btn-success { background-color: var(--success-color); color: white; }
+    .btn-success:hover:not(:disabled) { background-color: #047857; }
+
+    .btn-warning { background-color: var(--warning-color); color: white; }
+    .btn-warning:hover:not(:disabled) { background-color: #b45309; }
+
+    .btn-outline { background-color: transparent; border: 1px solid var(--border-color); color: var(--text-main); }
+    .btn-outline:hover:not(:disabled) { background-color: #f1f5f9; }
+
+    /* Observation Table */
+    .table-wrapper {
+      overflow-x: auto;
+      max-height: 280px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f1f5f9;
+      color: var(--text-main);
+      padding: 0.6rem 0.75rem;
+      font-weight: 700;
+      position: sticky;
+      top: 0;
+      border-bottom: 2px solid var(--border-color);
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid var(--border-color);
+      white-space: nowrap;
+    }
+
+    tr:nth-child(even) { background-color: #f8fafc; }
+    tr:hover { background-color: #f1f5f9; }
+
+    .status-badge {
+      font-size: 0.75rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 12px;
+      font-weight: 600;
+    }
+    .status-ready { background-color: #fef3c7; color: #92400e; }
+    .status-active { background-color: #d1fae5; color: #065f46; }
+    .status-finished { background-color: #e0e7ff; color: #3730a3; }
+
+    /* MOVABLE AI TEACHER DIALOG BOX */
+    .ai-teacher-box {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 420px;
+      background: #ffffff;
+      border: 2px solid var(--accent-color);
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      z-index: 9999;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .ai-header {
+      background: var(--primary-color);
+      color: white;
+      padding: 0.6rem 1rem;
+      cursor: move;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: bold;
+      font-size: 0.9rem;
+      user-select: none;
+    }
+
+    .ai-body {
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .ai-controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+      font-size: 0.75rem;
+    }
+
+    .fallback-note {
+      font-size: 0.70rem;
+      color: var(--text-muted);
+      line-height: 1.3;
+      background: #f1f5f9;
+      padding: 0.35rem 0.5rem;
+      border-radius: 4px;
+      border-left: 3px solid var(--warning-color);
+    }
+
+    .ai-dialogue-text {
+      background: #f8fafc;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 0.75rem;
+      font-size: 0.85rem;
+      color: #0f172a;
+      line-height: 1.45;
+      min-height: 75px;
+      max-height: 140px;
+      overflow-y: auto;
+    }
+
+    .ai-footer-btn {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* QUIZ EVALUATION MODAL */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.6);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+    }
+
+    .modal-card {
+      background: white;
+      width: 90%;
+      max-width: 650px;
+      max-height: 85vh;
+      border-radius: 12px;
+      padding: 1.5rem;
+      overflow-y: auto;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+
+    .quiz-q {
+      margin-bottom: 1.25rem;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0.75rem;
+    }
+
+    .quiz-q p {
+      font-weight: 700;
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .quiz-opt {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      font-size: 0.85rem;
+    }
+
+    /* Footer */
+    .app-footer {
+      background-color: var(--primary-color);
+      color: #94a3b8;
+      text-align: center;
+      padding: 1rem;
+      font-size: 0.85rem;
+      margin-top: auto;
+      border-top: 1px solid #1e293b;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header -->
+  <header class="app-header">
+    <div class="header-left">
+      <img src="logo.jpeg" alt="GARRF Logo" class="logo-img" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'52\' height=\'52\' viewBox=\'0 0 100 100\'><rect width=\'100\' height=\'100\' fill=\'%232563eb\' rx=\'10\'/><text x=\'50%\' y=\'58%\' fill=\'white\' font-size=\'26\' font-weight=\'bold\' text-anchor=\'middle\'>GARRF</text></svg>'">
+      <div class="header-title">
+        <h1>Gopalkrishna Advanced Rural Research Foundation</h1>
+        <p>Virtual AISIA Laboratory Platform | Mechanics of Deformable Structures</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <svg class="flag-icon" viewBox="0 0 900 600" width="45" height="30">
+        <rect width="900" height="200" fill="#FF9933"/>
+        <rect y="200" width="900" height="200" fill="#FFFFFF"/>
+        <rect y="400" width="900" height="200" fill="#128807"/>
+        <circle cx="450" cy="300" r="80" fill="none" stroke="#000080" stroke-width="10"/>
+      </svg>
+    </div>
+  </header>
+
+  <!-- Student Learning Sequence Instruction Banner -->
+  <div class="instruction-banner">
+    <span class="banner-icon">📌</span>
+    <div>
+      <strong>Strict Guided Sequence Flow:</strong>
+      Select your mode of learning and language from above, then click <strong>Continue ➔</strong>!
+    </div>
+  </div>
+
+  <!-- Main Grid Layout -->
+  <main class="main-container">
+
+    <!-- LEFT SIDEBAR: Sections 1 & 2 -->
+    <aside class="sidebar">
+
+      <!-- SECTION 1 -->
+      <div class="card" id="sec1">
+        <div class="section-title">
+          <span class="section-badge">Section 1</span> Unit System Selection
+        </div>
+        <div class="form-group">
+          <label for="unitSystemSelect">Select Curriculum Standard System:</label>
+          <select id="unitSystemSelect" onchange="onUnitSystemChange()" disabled>
+            <option value="SI">SI System (N, mm, MPa, GPa)</option>
+            <option value="MKS">MKS System (kgf, cm, kgf/cm²)</option>
+            <option value="CGS">CGS System (dyn, cm, dyn/cm²)</option>
+            <option value="FPS">FPS System (lbf, in, ksi)</option>
+            <option value="CUSTOM_SI">Custom SI Unit System</option>
+            <option value="CUSTOM_IMP">Custom Imperial / US System</option>
+          </select>
+        </div>
+
+        <div id="customUnitBox" class="custom-unit-box">
+          <div style="font-size:0.75rem; font-weight:bold; margin-bottom:0.3rem; color:var(--primary-color);">Custom Units Configuration:</div>
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.4rem; font-size:0.75rem;">
+            <div>
+              <label>Length Unit:</label>
+              <input type="text" id="customUnitL" value="m" oninput="updateCalculations()" disabled>
+            </div>
+            <div>
+              <label>Force Unit:</label>
+              <input type="text" id="customUnitP" value="N" oninput="updateCalculations()" disabled>
+            </div>
+            <div>
+              <label>Modulus Unit:</label>
+              <input type="text" id="customUnitE" value="GPa" oninput="updateCalculations()" disabled>
+            </div>
+            <div>
+              <label>Deflection Unit:</label>
+              <input type="text" id="customUnitW" value="mm" oninput="updateCalculations()" disabled>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION 2 -->
+      <div class="card" id="sec2">
+        <div class="section-title">
+          <span class="section-badge">Section 2</span> Beam & Load Parameters
+        </div>
+
+        <div class="form-group">
+          <label for="boundarySelect">Boundary Condition:</label>
+          <select id="boundarySelect" onchange="updateCalculations()" disabled>
+            <option value="simply">Simply Supported Beam</option>
+            <option value="cantilever">Cantilever Beam (Fixed Left)</option>
+            <option value="fixed">Fixed-Fixed Beam</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="paramL">
+            <span>Beam Length (<span class="unit-L">m</span>):</span>
+            <span id="valL" class="val-display">2.00</span>
+          </label>
+          <div class="range-container">
+            <input type="range" id="paramL" min="0.5" max="5.0" step="0.1" value="2.0" oninput="updateCalculations()" disabled>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="paramb">
+            <span>Section Width b (<span class="unit-b">mm</span>):</span>
+            <span id="valb" class="val-display">50.0</span>
+          </label>
+          <div class="range-container">
+            <input type="range" id="paramb" min="10" max="200" step="1" value="50" oninput="updateCalculations()" disabled>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="paramh">
+            <span>Section Height h (<span class="unit-h">mm</span>):</span>
+            <span id="valh" class="val-display">100.0</span>
+          </label>
+          <div class="range-container">
+            <input type="range" id="paramh" min="10" max="300" step="1" value="100" oninput="updateCalculations()" disabled>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="paramE">
+            <span>Elastic Modulus E (<span class="unit-E">GPa</span>):</span>
+            <span id="valE" class="val-display">200</span>
+          </label>
+          <div class="range-container">
+            <input type="range" id="paramE" min="10" max="400" step="5" value="200" oninput="updateCalculations()" disabled>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="paramP">
+            <span>Applied Point Load P (<span class="unit-P">N</span>):</span>
+            <span id="valP" class="val-display">5000</span>
+          </label>
+          <div class="range-container">
+            <input type="range" id="paramP" min="100" max="50000" step="100" value="5000" oninput="updateCalculations()" disabled>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="parama">
+            <span>Load Position a (<span class="unit-a">m</span> from left):</span>
+            <span id="vala" class="val-display">1.00</span>
+          </label>
+          <div class="range-container">
+            <input type="range" id="parama" min="0.1" max="1.9" step="0.05" value="1.0" oninput="updateCalculations()" disabled>
+          </div>
+        </div>
+
+      </div>
+
+    </aside>
+
+    <!-- RIGHT WORKSPACE: Sections 3 & 4 -->
+    <section class="workspace">
+
+      <!-- SECTION 3 -->
+      <div class="card" id="sec3">
+        <div class="section-title">
+          <span class="section-badge">Section 3</span> Beam Deflection Visualization (Play with Green Ball)
+        </div>
+
+        <div class="canvas-container">
+          <canvas id="beamCanvas"></canvas>
+          <div class="probe-info">
+            <span id="probeText">🟢 Probe Location: Locked until Section 3.</span>
+            <span id="maxDeflectionText" style="color: var(--danger-color);">w_max: -- @ x = --</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION 4 -->
+      <div class="card" id="sec4">
+        <div class="section-title" style="justify-content: space-between;">
+          <div>
+            <span class="section-badge">Section 4</span> Observation Table & Logging
+          </div>
+          <span id="statusIndicator" class="status-badge status-ready">Status: Locked</span>
+        </div>
+
+        <div class="controls-row">
+          <button id="btnRecord" class="btn btn-success" onclick="recordTrial()" disabled>➕ Record Trial</button>
+          <button id="btnReset" class="btn btn-outline" onclick="resetExperiment()" disabled>🔄 Reset Experiment</button>
+          <button id="btnFinish" class="btn btn-warning" onclick="finishExperiment()" disabled>🏁 Finish Experiment</button>
+          <button id="btnDownload" class="btn btn-outline" onclick="downloadCSV()" disabled>📥 Download CSV Report</button>
+        </div>
+
+        <div class="table-wrapper">
+          <table id="obsTable">
+            <thead>
+              <tr>
+                <th>Trial #</th>
+                <th>System</th>
+                <th>Boundary</th>
+                <th>Length (L)</th>
+                <th>Section (b×h)</th>
+                <th>Modulus (E)</th>
+                <th>Load (P @ a)</th>
+                <th>Probe Pos (x)</th>
+                <th>Probe Deflection w(x)</th>
+              </tr>
+            </thead>
+            <tbody id="obsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- MOVABLE AI TEACHER DIALOG BOX -->
+  <div class="ai-teacher-box" id="aiTeacherBox">
+    <div class="ai-header" id="aiTeacherHeader">
+      <span>👩‍🏫 AI Teacher Godavari</span>
+      <span style="font-size:0.75rem; opacity:0.8;">:: Drag to Move</span>
+    </div>
+    <div class="ai-body">
+      <div class="ai-controls">
+        <div>
+          <label><strong>Teaching Mode:</strong></label>
+          <select id="teacherMode" onchange="onPreferencesPicked()">
+            <option value="" disabled selected>-- Select Mode --</option>
+            <option value="strict">Rule Based (Strict)</option>
+            <option value="interactive">Interactive (Theory)</option>
+          </select>
+        </div>
+        <div>
+          <label><strong>Teacher Language:</strong></label>
+          <select id="voiceLang" onchange="onPreferencesPicked()">
+            <option value="" disabled selected>-- Select Language --</option>
+            <option value="en-IN">English (Indian)</option>
+            <option value="hi-IN">Hindi (हिंदी)</option>
+            <option value="te-IN">Telugu (తెలుగు)</option>
+            <option value="ta-IN">Tamil (தமிழ்)</option>
+            <option value="kn-IN">Kannada (ಕನ್ನಡ)</option>
+            <option value="mr-IN">Marathi (मराठी)</option>
+            <option value="bn-IN">Bengali (বাংলা)</option>
+            <option value="gu-IN">Gujarati (ગુજરાતી)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Language Fallback Note -->
+      <div class="fallback-note">
+        <strong>Note:</strong> Select your mode of learning and language above, then click <strong>Continue ➔</strong>.
+      </div>
+
+      <div class="ai-dialogue-text" id="aiDialogue">
+        Namaste! Please select your mode of learning and language from above, then click Continue.
+      </div>
+
+      <div class="ai-footer-btn">
+        <button id="btnMute" class="btn btn-outline" style="padding:0.3rem 0.6rem; font-size:0.75rem;" onclick="toggleMute()">🔊 Mute</button>
+        <button id="btnNextSec" class="btn btn-primary" style="padding:0.3rem 0.6rem; font-size:0.75rem;" onclick="nextSectionGuided()">Continue ➔</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUIZ EVALUATION MODAL -->
+  <div class="modal-overlay" id="quizModal">
+    <div class="modal-card">
+      <h2 style="color: var(--primary-color); margin-bottom: 0.5rem;">🎓 Post-Lab Knowledge Evaluation</h2>
+      <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;">Answer these 5 multiple-choice questions to complete your learning module.</p>
+      
+      <div id="quizContainer"></div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem;">
+        <button class="btn btn-success" onclick="submitQuiz()">Submit Answers</button>
+        <button class="btn btn-outline" onclick="closeQuiz()">Skip Quiz</button>
+      </div>
+      <div id="quizResults" style="margin-top:1rem; font-weight:bold; font-size:0.9rem;"></div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    Copyright @garrf.in | Gopalkrishna Advanced Rural Research Foundation. All Rights Reserved.<br>
+    <strong>GARRF is the first in India to introduce a 2 Mode AI Teacher (Rule-Based Strict & Interactive Theoretical Modes) for Engineering Education.</strong>
+  </footer>
+
+  <!-- Script Logic -->
+  <script>
+    const UNIT_SYSTEMS = {
+      SI: {
+        unitL: "m", unitb: "mm", unith: "mm", unitE: "GPa", unitP: "N", unita: "m", unitW: "mm",
+        factorL: 1.0, factorb: 1e-3, factorh: 1e-3, factorE: 1e9, factorP: 1.0, factorW: 1e3,
+        rangeL: [0.5, 5.0, 0.1, 2.0], rangeb: [10, 200, 1, 50], rangeh: [10, 300, 1, 100],
+        rangeE: [10, 400, 5, 200], rangeP: [100, 50000, 100, 5000]
+      },
+      MKS: {
+        unitL: "m", unitb: "cm", unith: "cm", unitE: "kgf/cm²", unitP: "kgf", unita: "m", unitW: "cm",
+        factorL: 1.0, factorb: 1e-2, factorh: 1e-2, factorE: 98066.5, factorP: 9.80665, factorW: 1e2,
+        rangeL: [0.5, 5.0, 0.1, 2.0], rangeb: [1, 20, 0.1, 5.0], rangeh: [1, 30, 0.1, 10.0],
+        rangeE: [1e5, 4e6, 50000, 2e6], rangeP: [10, 5000, 10, 500]
+      },
+      CGS: {
+        unitL: "cm", unitb: "cm", unith: "cm", unitE: "dyn/cm²", unitP: "dyn", unita: "cm", unitW: "cm",
+        factorL: 1e-2, factorb: 1e-2, factorh: 1e-2, factorE: 0.1, factorP: 1e-5, factorW: 1e2,
+        rangeL: [50, 500, 10, 200], rangeb: [1, 20, 0.1, 5.0], rangeh: [1, 30, 0.1, 10.0],
+        rangeE: [1e11, 4e12, 1e11, 2e12], rangeP: [1e5, 5e7, 1e5, 5e6]
+      },
+      FPS: {
+        unitL: "ft", unitb: "in", unith: "in", unitE: "ksi", unitP: "lbf", unita: "ft", unitW: "in",
+        factorL: 0.3048, factorb: 0.0254, factorh: 0.0254, factorE: 6.89476e6, factorP: 4.44822, factorW: 39.3701,
+        rangeL: [2, 15, 0.5, 6.0], rangeb: [0.5, 8, 0.1, 2.0], rangeh: [0.5, 12, 0.1, 4.0],
+        rangeE: [1000, 50000, 1000, 29000], rangeP: [50, 10000, 50, 1000]
+      },
+      CUSTOM_SI: {
+        unitL: "m", unitb: "mm", unith: "mm", unitE: "GPa", unitP: "N", unita: "m", unitW: "mm",
+        factorL: 1.0, factorb: 1e-3, factorh: 1e-3, factorE: 1e9, factorP: 1.0, factorW: 1e3,
+        rangeL: [0.1, 20.0, 0.1, 2.0], rangeb: [1, 1000, 1, 50], rangeh: [1, 1000, 1, 100],
+        rangeE: [1, 1000, 1, 200], rangeP: [1, 1000000, 10, 5000]
+      },
+      CUSTOM_IMP: {
+        unitL: "ft", unitb: "in", unith: "in", unitE: "psi", unitP: "lbf", unita: "ft", unitW: "in",
+        factorL: 0.3048, factorb: 0.0254, factorh: 0.0254, factorE: 6894.76, factorP: 4.44822, factorW: 39.3701,
+        rangeL: [0.5, 50, 0.5, 5.0], rangeb: [0.1, 36, 0.1, 2.0], rangeh: [0.1, 36, 0.1, 4.0],
+        rangeE: [100, 100000, 100, 30000], rangeP: [1, 50000, 10, 1000]
+      }
+    };
+
+    const SCRIPTS_STRICT = {
+      1: "Section 1 Unlocked: Select your standard or custom unit system here, then click Continue.",
+      2: "Section 2 Unlocked: Section 1 is now locked. Adjust your beam boundary conditions, dimensions, and loads here, then click Continue.",
+      3: "Section 3 Unlocked: Section 2 is now locked. Drag the green ball along the beam to inspect local deflections, then click Continue.",
+      4: "Sections 3 & 4 Active: Student, please press 'Record Trial' to record deflection information at the green ball position. After recording as many as you want, press 'Finish Experiment', then download your report, and finally press 'Reset Experiment' to restart or finish to end!"
+    };
+
+    const SCRIPTS_INTERACTIVE = {
+      1: "Section 1 Theory: Choosing a unit system ensures dimensional homogeneity in structural equations. Select your system and click Continue.",
+      2: "Section 2 Theory: Notice how beam length (L), cross-sectional height (h) which cubes the moment of inertia I = bh³/12, and elastic modulus E dictate rigidity. Adjust parameters and click Continue.",
+      3: "Section 3 Theory: Observe the elastic curve and bending slope. Drag the green ball to see how deflection w(x) varies continuously across the span under point loads.",
+      4: "Sections 3 & 4 Theory: Log your trials! Analyze how experimental deflections match elastic curve equations. Student, please press 'Record Trial' to record deflection information at the green ball position. After recording as many as you want, press 'Finish Experiment', then download your report, and finally press 'Reset Experiment' to restart or finish to end!"
+    };
+
+    const QUIZ_QUESTIONS = [
+      {
+        q: "1. What is the Area Moment of Inertia (I) for a rectangular cross-section of width 'b' and height 'h'?",
+        opts: ["(b * h^2) / 6", "(b * h^3) / 12", "(b^3 * h) / 12", "(b * h) / 2"],
+        ans: 1
+      },
+      {
+        q: "2. How does doubling the beam height 'h' affect its moment of inertia and bending stiffness?",
+        opts: ["Increases by 2 times", "Increases by 4 times", "Increases by 8 times", "Decreases by half"],
+        ans: 2
+      },
+      {
+        q: "3. For a simply supported beam with a central point load, where does maximum deflection occur?",
+        opts: ["At the left support", "At the right support", "At mid-span (x = L/2)", "At x = L/4"],
+        ans: 2
+      },
+      {
+        q: "4. What boundary condition prevents both deflection and rotation at the support?",
+        opts: ["Roller Support", "Pin Support", "Fixed Support", "Free End"],
+        ans: 2
+      },
+      {
+        q: "5. In elastic beam theory, what physical property is represented by 'E'?",
+        opts: ["Shear Modulus", "Young's Elastic Modulus", "Poisson's Ratio", "Density"],
+        ans: 1
+      }
+    ];
+
+    let currentSys = "SI";
+    let activeStep = 0; 
+    let isMuted = false;
+    let trialCounter = 0;
+    let observationData = [];
+    let probedRatio = 0.5;
+    let isDraggingBall = false;
+    let canvas, ctx;
+
+    window.onload = function() {
+      canvas = document.getElementById("beamCanvas");
+      ctx = canvas.getContext("2d");
+      resizeCanvas();
+      window.addEventListener("resize", resizeCanvas);
+
+      canvas.addEventListener("mousedown", handlePointerStart);
+      canvas.addEventListener("mousemove", handlePointerMove);
+      window.addEventListener("mouseup", handlePointerEnd);
+
+      canvas.addEventListener("touchstart", handlePointerStart, { passive: false });
+      canvas.addEventListener("touchmove", handlePointerMove, { passive: false });
+      window.addEventListener("touchend", handlePointerEnd);
+
+      makeElementDraggable(document.getElementById("aiTeacherBox"), document.getElementById("aiTeacherHeader"));
+
+      onUnitSystemChange();
+      applyStepState();
+
+      // Speak initial prompt on load
+      setTimeout(() => { speakCurrentText(); }, 500);
+    };
+
+    function resizeCanvas() {
+      const container = canvas.parentElement;
+      canvas.width = container.clientWidth;
+      canvas.height = container.clientHeight - 35;
+      updateCalculations();
+    }
+
+    function onPreferencesPicked() {
+      const mode = document.getElementById("teacherMode").value;
+      const lang = document.getElementById("voiceLang").value;
+      if (mode && lang && activeStep === 0) {
+        document.getElementById("aiDialogue").innerText = "Preferences selected! Click 'Continue ➔' to unlock Section 1.";
+        speakCurrentText();
+      }
+    }
+
+    function nextSectionGuided() {
+      const mode = document.getElementById("teacherMode").value;
+      const lang = document.getElementById("voiceLang").value;
+      if (!mode || !lang) {
+        alert("Please select both Teaching Mode and Teacher Language first!");
+        return;
+      }
+
+      // Freeze selection permanently once Continue is pressed from step 0
+      if (activeStep === 0) {
+        document.getElementById("teacherMode").disabled = true;
+        document.getElementById("voiceLang").disabled = true;
+      }
+
+      activeStep++;
+      if (activeStep > 4) activeStep = 1;
+      applyStepState();
+    }
+
+    function applyStepState() {
+      for (let i = 1; i <= 4; i++) {
+        const card = document.getElementById(`sec${i}`);
+        card.classList.remove("highlighted-section");
+      }
+
+      const mode = document.getElementById("teacherMode").value || "strict";
+      const scripts = (mode === "interactive") ? SCRIPTS_INTERACTIVE : SCRIPTS_STRICT;
+
+      if (activeStep > 0) {
+        document.getElementById("aiDialogue").innerText = scripts[activeStep];
+        speakCurrentText();
+      }
+
+      const isSec1Active = (activeStep === 1);
+      const isSec2Active = (activeStep === 2);
+      const isSec3Active = (activeStep >= 3);
+      const isSec4Active = (activeStep >= 4);
+
+      // Section 1
+      document.getElementById("sec1").classList.toggle("highlighted-section", isSec1Active);
+      document.getElementById("unitSystemSelect").disabled = !isSec1Active;
+      document.getElementById("customUnitL").disabled = !isSec1Active;
+      document.getElementById("customUnitP").disabled = !isSec1Active;
+      document.getElementById("customUnitE").disabled = !isSec1Active;
+      document.getElementById("customUnitW").disabled = !isSec1Active;
+
+      // Section 2
+      document.getElementById("sec2").classList.toggle("highlighted-section", isSec2Active);
+      document.getElementById("boundarySelect").disabled = !isSec2Active;
+      document.getElementById("paramL").disabled = !isSec2Active;
+      document.getElementById("paramb").disabled = !isSec2Active;
+      document.getElementById("paramh").disabled = !isSec2Active;
+      document.getElementById("paramE").disabled = !isSec2Active;
+      document.getElementById("paramP").disabled = !isSec2Active;
+      document.getElementById("parama").disabled = !isSec2Active;
+
+      // Section 3
+      document.getElementById("sec3").classList.toggle("highlighted-section", activeStep === 3);
+
+      // Section 4
+      document.getElementById("sec4").classList.toggle("highlighted-section", isSec4Active);
+      document.getElementById("btnRecord").disabled = !isSec4Active;
+      document.getElementById("btnReset").disabled = !isSec4Active;
+      document.getElementById("btnFinish").disabled = !isSec4Active;
+
+      const status = document.getElementById("statusIndicator");
+      if (isSec4Active) {
+        status.innerText = "Status: Active";
+        status.className = "status-badge status-active";
+      } else {
+        status.innerText = activeStep === 0 ? "Status: Locked" : "Status: Waiting for Step";
+        status.className = "status-badge status-ready";
+      }
+
+      updateCalculations();
+    }
+
+    function toggleMute() {
+      isMuted = !isMuted;
+      const btn = document.getElementById("btnMute");
+      if (isMuted) {
+        btn.innerText = "🔇 Unmute";
+        window.speechSynthesis.cancel();
+      } else {
+        btn.innerText = "🔊 Mute";
+        speakCurrentText();
+      }
+    }
+
+    function speakCurrentText() {
+      if (isMuted) return;
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const text = document.getElementById("aiDialogue").innerText;
+        const utter = new SpeechSynthesisUtterance(text);
+        const langCode = document.getElementById("voiceLang").value; 
+        if (langCode) utter.lang = langCode;
+
+        const voices = window.speechSynthesis.getVoices();
+        let selectedVoice = voices.find(v => v.lang === langCode);
+        if (!selectedVoice && langCode) {
+          selectedVoice = voices.find(v => v.lang.startsWith(langCode.split('-')[0]));
+        }
+        if (selectedVoice) utter.voice = selectedVoice;
+        utter.rate = 0.92;
+        window.speechSynthesis.speak(utter);
+      }
+    }
+
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
+    }
+
+    function makeElementDraggable(elm, handle) {
+      let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+      handle.onmousedown = dragMouseDown;
+
+      function dragMouseDown(e) {
+        e.preventDefault();
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        document.onmouseup = closeDragElement;
+        document.onmousemove = elementDrag;
+      }
+
+      function elementDrag(e) {
+        e.preventDefault();
+        pos1 = pos3 - e.clientX;
+        pos2 = pos4 - e.clientY;
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        elm.style.top = (elm.offsetTop - pos2) + "px";
+        elm.style.left = (elm.offsetLeft - pos1) + "px";
+        elm.style.bottom = "auto";
+        elm.style.right = "auto";
+      }
+
+      function closeDragElement() {
+        document.onmouseup = null;
+        document.onmousemove = null;
+      }
+    }
+
+    function onUnitSystemChange() {
+      currentSys = document.getElementById("unitSystemSelect").value;
+      const customBox = document.getElementById("customUnitBox");
+
+      if (currentSys.startsWith("CUSTOM")) {
+        customBox.style.display = "block";
+      } else {
+        customBox.style.display = "none";
+      }
+
+      const sys = UNIT_SYSTEMS[currentSys];
+      let uL = sys.unitL, uP = sys.unitP, uE = sys.unitE, uW = sys.unitW;
+
+      if (currentSys === "CUSTOM_SI" || currentSys === "CUSTOM_IMP") {
+        uL = document.getElementById("customUnitL").value;
+        uP = document.getElementById("customUnitP").value;
+        uE = document.getElementById("customUnitE").value;
+        uW = document.getElementById("customUnitW").value;
+      }
+
+      document.querySelectorAll(".unit-L").forEach(e => e.innerText = uL);
+      document.querySelectorAll(".unit-b").forEach(e => e.innerText = uW);
+      document.querySelectorAll(".unit-h").forEach(e => e.innerText = uW);
+      document.querySelectorAll(".unit-E").forEach(e => e.innerText = uE);
+      document.querySelectorAll(".unit-P").forEach(e => e.innerText = uP);
+      document.querySelectorAll(".unit-a").forEach(e => e.innerText = uL);
+
+      setSliderProps("paramL", sys.rangeL);
+      setSliderProps("paramb", sys.rangeb);
+      setSliderProps("paramh", sys.rangeh);
+      setSliderProps("paramE", sys.rangeE);
+      setSliderProps("paramP", sys.rangeP);
+
+      const valL = parseFloat(document.getElementById("paramL").value);
+      const paramA = document.getElementById("parama");
+      paramA.max = (valL * 0.95).toFixed(2);
+      paramA.value = (valL * 0.5).toFixed(2);
+
+      updateCalculations();
+    }
+
+    function setSliderProps(id, props) {
+      const elem = document.getElementById(id);
+      elem.min = props[0]; elem.max = props[1]; elem.step = props[2]; elem.value = props[3];
+    }
+
+    function getInputsSI() {
+      const sys = UNIT_SYSTEMS[currentSys];
+      let uL = sys.unitL, uW = sys.unitW;
+      if (currentSys.startsWith("CUSTOM")) {
+        uL = document.getElementById("customUnitL").value;
+        uW = document.getElementById("customUnitW").value;
+      }
+
+      const boundary = document.getElementById("boundarySelect").value;
+      const inpL = parseFloat(document.getElementById("paramL").value);
+      const inpb = parseFloat(document.getElementById("paramb").value);
+      const inph = parseFloat(document.getElementById("paramh").value);
+      const inpE = parseFloat(document.getElementById("paramE").value);
+      const inpP = parseFloat(document.getElementById("paramP").value);
+      const inpa = parseFloat(document.getElementById("parama").value);
+
+      document.getElementById("valL").innerText = inpL.toFixed(2);
+      document.getElementById("valb").innerText = inpb.toFixed(1);
+      document.getElementById("valh").innerText = inph.toFixed(1);
+      document.getElementById("valE").innerText = inpE;
+      document.getElementById("valP").innerText = inpP;
+      document.getElementById("vala").innerText = inpa.toFixed(2);
+
+      const L = inpL * sys.factorL;
+      const b = inpb * (uW === 'mm' ? 1e-3 : (uW === 'cm' ? 1e-2 : 0.0254));
+      const h = inph * (uW === 'mm' ? 1e-3 : (uW === 'cm' ? 1e-2 : 0.0254));
+      const E = inpE * sys.factorE;
+      const P = inpP * sys.factorP;
+      const a = inpa * sys.factorL;
+
+      return { boundary, L, b, h, E, P, a, inpL, inpb, inph, inpE, inpP, inpa, sys, uL, uW };
+    }
+
+    function calcDeflection(x, p) {
+      const { boundary, L, b, h, E, P, a } = p;
+      const I = (b * Math.pow(h, 3)) / 12.0;
+      let w = 0;
+
+      if (boundary === "simply") {
+        const b_load = L - a;
+        if (x <= a) w = (P * b_load * x * (L * L - b_load * b_load - x * x)) / (6 * E * I * L);
+        else w = (P * a * (L - x) * (2 * L * x - x * x - a * a)) / (6 * E * I * L);
+      } else if (boundary === "cantilever") {
+        if (x <= a) w = (P * x * x * (3 * a - x)) / (6 * E * I);
+        else w = (P * a * a * (3 * x - a)) / (6 * E * I);
+      } else if (boundary === "fixed") {
+        const b_load = L - a;
+        if (x <= a) w = (P * Math.pow(b_load, 2) * Math.pow(x, 2) * (3 * a * L - 3 * a * x - b_load * x)) / (6 * E * I * Math.pow(L, 3));
+        else {
+          const x_rev = L - x;
+          w = (P * Math.pow(a, 2) * Math.pow(x_rev, 2) * (3 * b_load * L - 3 * b_load * x_rev - a * x_rev)) / (6 * E * I * Math.pow(L, 3));
+        }
+      }
+      return w;
+    }
+
+    function updateCalculations() {
+      const p = getInputsSI();
+      let maxW_SI = 0, maxX_SI = 0;
+      const samples = 300;
+      for (let i = 0; i <= samples; i++) {
+        const x_sample = (i / samples) * p.L;
+        const w = calcDeflection(x_sample, p);
+        if (w > maxW_SI) {
+          maxW_SI = w;
+          maxX_SI = x_sample;
+        }
+      }
+
+      let activeUnitW = p.uW;
+      let factorW = p.sys.factorW;
+      if (currentSys.startsWith("CUSTOM")) {
+        factorW = (activeUnitW === 'mm' ? 1e3 : (activeUnitW === 'cm' ? 100 : (activeUnitW === 'in' ? 39.3701 : 1.0)));
+      }
+
+      const maxW_Display = maxW_SI * factorW;
+      const maxX_Display = (maxX_SI / p.L) * p.inpL;
+      const probedX_SI = probedRatio * p.L;
+      const probedW_SI = calcDeflection(probedX_SI, p);
+      const probedW_Display = probedW_SI * factorW;
+      const probedX_Display = probedRatio * p.inpL;
+
+      if (activeStep >= 3) {
+        document.getElementById("maxDeflectionText").innerText = `w_max: ${maxW_Display.toFixed(4)} ${activeUnitW} @ x = ${maxX_Display.toFixed(2)} ${p.uL}`;
+        document.getElementById("probeText").innerText = `🟢 Probe at x = ${probedX_Display.toFixed(2)} ${p.uL} | Deflection w(x) = ${probedW_Display.toFixed(4)} ${activeUnitW}`;
+      } else {
+        document.getElementById("maxDeflectionText").innerText = `w_max: -- @ x = --`;
+        document.getElementById("probeText").innerText = `🟢 Green Ball Probe unlocks in Section 3.`;
+      }
+
+      drawCanvas(p, maxW_SI, probedRatio, probedW_SI, factorW, activeUnitW);
+    }
+
+    function drawCanvas(p, maxW_SI, probedRatio, probedW_SI, factorW, unitW) {
+      if (!ctx) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const marginX = 60;
+      const startX = marginX;
+      const endX = canvas.width - marginX;
+      const beamWidthPx = endX - startX;
+      const baselineY = canvas.height / 2 - 20;
+
+      ctx.lineWidth = 2; ctx.strokeStyle = "#334155"; ctx.fillStyle = "#94a3b8";
+
+      if (p.boundary === "simply") {
+        ctx.beginPath(); ctx.moveTo(startX, baselineY); ctx.lineTo(startX - 12, baselineY + 20); ctx.lineTo(startX + 12, baselineY + 20); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.arc(endX, baselineY + 10, 10, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      } else if (p.boundary === "cantilever") {
+        ctx.fillStyle = "#64748b"; ctx.fillRect(startX - 15, baselineY - 40, 15, 80);
+      } else if (p.boundary === "fixed") {
+        ctx.fillStyle = "#64748b"; ctx.fillRect(startX - 15, baselineY - 40, 15, 80); ctx.fillRect(endX, baselineY - 40, 15, 80);
+      }
+
+      ctx.strokeStyle = "#cbd5e1"; ctx.setLineDash([5, 5]);
+      ctx.beginPath(); ctx.moveTo(startX, baselineY); ctx.lineTo(endX, baselineY); ctx.stroke(); ctx.setLineDash([]);
+
+      const maxAllowedPixels = 80;
+      const scaleY = maxW_SI > 0 ? Math.min(maxAllowedPixels / maxW_SI, 1e6) : 0;
+
+      ctx.strokeStyle = "#2563eb"; ctx.lineWidth = 4; ctx.beginPath();
+      const numPoints = 120;
+      for (let i = 0; i <= numPoints; i++) {
+        const ratio = i / numPoints;
+        const x_si = ratio * p.L;
+        const px = startX + ratio * beamWidthPx;
+        const w_si = calcDeflection(x_si, p);
+        const py = baselineY + w_si * scaleY;
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+
+      const loadPx = startX + (p.a / p.L) * beamWidthPx;
+      const loadPy = baselineY + calcDeflection(p.a, p) * scaleY;
+      ctx.strokeStyle = "#dc2626"; ctx.fillStyle = "#dc2626"; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(loadPx, loadPy - 45); ctx.lineTo(loadPx, loadPy - 5); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(loadPx - 6, loadPy - 12); ctx.lineTo(loadPx + 6, loadPy - 12); ctx.lineTo(loadPx, loadPy); ctx.closePath(); ctx.fill();
+      ctx.font = "bold 12px sans-serif"; ctx.fillText(`P = ${p.inpP} ${document.querySelector('.unit-P').innerText}`, loadPx - 25, loadPy - 50);
+
+      // Draw Green Ball if Section 3 is reached
+      if (activeStep >= 3) {
+        const probePx = startX + probedRatio * beamWidthPx;
+        const probePy = baselineY + probedW_SI * scaleY;
+        ctx.fillStyle = "rgba(16, 185, 129, 0.25)";
+        ctx.beginPath(); ctx.arc(probePx, probePy, 14, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = "#047857"; ctx.fillStyle = "#10b981"; ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.arc(probePx, probePy, 8, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      }
+    }
+
+    function getCanvasX(e) {
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      return clientX - rect.left;
+    }
+
+    function updateProbeFromX(clickX) {
+      if (activeStep < 3) return; 
+      const marginX = 60;
+      const startX = marginX;
+      const endX = canvas.width - marginX;
+      let ratio = (clickX - startX) / (endX - startX);
+      probedRatio = Math.max(0, Math.min(1, ratio));
+      updateCalculations();
+    }
+
+    function handlePointerStart(e) { 
+      if (activeStep >= 3) {
+        isDraggingBall = true; 
+        updateProbeFromX(getCanvasX(e)); 
+      }
+    }
+    function handlePointerMove(e) { 
+      if (isDraggingBall && activeStep >= 3) { 
+        if (e.preventDefault) e.preventDefault(); 
+        updateProbeFromX(getCanvasX(e)); 
+      } 
+    }
+    function handlePointerEnd() { isDraggingBall = false; }
+
+    function recordTrial() {
+      if (activeStep < 4) return;
+      trialCounter++;
+      const p = getInputsSI();
+      const probedX_SI = probedRatio * p.L;
+      const probedW_SI = calcDeflection(probedX_SI, p);
+      let factorW = p.sys.factorW;
+      if (currentSys.startsWith("CUSTOM")) {
+        factorW = (p.uW === 'mm' ? 1e3 : (p.uW === 'cm' ? 100 : (p.uW === 'in' ? 39.3701 : 1.0)));
+      }
+
+      const trialRecord = {
+        trial: trialCounter, system: currentSys, boundary: p.boundary,
+        L: `${p.inpL} ${p.uL}`, section: `${p.inpb}×${p.inph} ${p.uW}`,
+        E: `${p.inpE} ${document.querySelector('.unit-E').innerText}`, load: `${p.inpP} ${document.querySelector('.unit-P').innerText} @ ${p.inpa} ${p.uL}`,
+        probePos: `${(probedRatio * p.inpL).toFixed(2)} ${p.uL}`,
+        probeW: `${(probedW_SI * factorW).toFixed(4)} ${p.uW}`
+      };
+
+      observationData.push(trialRecord);
+      const tbody = document.getElementById("obsTableBody");
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><strong>#${trialRecord.trial}</strong></td>
+        <td>${trialRecord.system}</td>
+        <td>${trialRecord.boundary}</td>
+        <td>${trialRecord.L}</td>
+        <td>${trialRecord.section}</td>
+        <td>${trialRecord.E}</td>
+        <td>${trialRecord.load}</td>
+        <td>${trialRecord.probePos}</td>
+        <td style="color:var(--accent-color); font-weight:bold;">${trialRecord.probeW}</td>
+      `;
+      tbody.appendChild(tr);
+      document.getElementById("btnDownload").disabled = false;
+    }
+
+    function resetExperiment() {
+      trialCounter = 0;
+      observationData = [];
+      document.getElementById("obsTableBody").innerHTML = "";
+      document.getElementById("btnDownload").disabled = true;
+      
+      // Unfreeze mode and language selectors for new experiment
+      document.getElementById("teacherMode").disabled = false;
+      document.getElementById("voiceLang").disabled = false;
+      document.getElementById("teacherMode").value = "";
+      document.getElementById("voiceLang").value = "";
+
+      activeStep = 0;
+      document.getElementById("aiDialogue").innerText = "Namaste! Please select your mode of learning and language from above, then click Continue.";
+      applyStepState();
+      speakCurrentText();
+    }
+
+    function finishExperiment() {
+      document.getElementById("btnDownload").disabled = observationData.length === 0;
+      const status = document.getElementById("statusIndicator");
+      status.innerText = "Status: Experiment Completed";
+      status.className = "status-badge status-finished";
+    }
+
+    function downloadCSV() {
+      if (observationData.length === 0) return;
+
+      let csvString = "Trial #,Unit System,Boundary Condition,Beam Length,Cross Section (b x h),Elastic Modulus E,Load P,Probe Position x,Probe Deflection w(x)\n";
+      observationData.forEach(r => {
+        csvString += `"${r.trial}","${r.system}","${r.boundary}","${r.L}","${r.section}","${r.E}","${r.load}","${r.probePos}","${r.probeW}"\n`;
+      });
+
+      const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", "GARRF_Beam_Experiment_Report.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      setTimeout(() => {
+        const answer = confirm("Report downloaded successfully! Would you like to take a quick 5-question evaluation quiz to complete your learning module?");
+        if (answer) openQuiz();
+      }, 500);
+    }
+
+    function openQuiz() {
+      const container = document.getElementById("quizContainer");
+      container.innerHTML = "";
+
+      QUIZ_QUESTIONS.forEach((qObj, index) => {
+        const qDiv = document.createElement("div");
+        qDiv.className = "quiz-q";
+        let optsHTML = "";
+        qObj.opts.forEach((opt, oIdx) => {
+          optsHTML += `
+            <label>
+              <input type="radio" name="q_${index}" value="${oIdx}"> ${opt}
+            </label>
+          `;
+        });
+        qDiv.innerHTML = `<p>${qObj.q}</p><div class="quiz-opt">${optsHTML}</div>`;
+        container.appendChild(qDiv);
+      });
+
+      document.getElementById("quizResults").innerHTML = "";
+      document.getElementById("quizModal").style.display = "flex";
+    }
+
+    function submitQuiz() {
+      let score = 0;
+      QUIZ_QUESTIONS.forEach((qObj, index) => {
+        const selected = document.querySelector(`input[name="q_${index}"]:checked`);
+        if (selected && parseInt(selected.value) === qObj.ans) {
+          score++;
+        }
+      });
+
+      const resultsDiv = document.getElementById("quizResults");
+      resultsDiv.innerHTML = `You scored ${score} out of 5! <br><br><strong>Correct Answers Key:</strong><br>` +
+        QUIZ_QUESTIONS.map((q, i) => `${i+1}. ${q.opts[q.ans]}`).join("<br>");
+    }
+
+    function closeQuiz() {
+      document.getElementById("quizModal").style.display = "none";
+    }
+  </script>
+</body>
+</html>
