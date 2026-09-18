@@ -299,7 +299,7 @@
         <div class="canvas-container">
             <canvas id="beamCanvas"></canvas>
         </div>
-        <div class="instruction">💡 Tap or click anywhere on the beam above to drop a measurement probe.</div>
+        <div class="instruction">💡 Tap or click anywhere on the beam above to drop a measurement probe. Use the formula overlays to verify manually.</div>
 
         <div class="probe-display" id="probeResult">
             <div>📍 <strong>Probe Location:</strong> <span id="probeX">--</span> cm</div>
@@ -362,6 +362,21 @@
         return w * 10; // Convert cm to mm
     }
 
+    // Helper to draw rounded rectangles for the HUD
+    function drawRoundRect(ctx, x, y, width, height, radius) {
+        ctx.beginPath();
+        ctx.moveTo(x + radius, y);
+        ctx.lineTo(x + width - radius, y);
+        ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+        ctx.lineTo(x + width, y + height - radius);
+        ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+        ctx.lineTo(x + radius, y + height);
+        ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+        ctx.lineTo(x, y + radius);
+        ctx.quadraticCurveTo(x, y, x + radius, y);
+        ctx.closePath();
+    }
+
     function updateSimulation() {
         // Fetch Geometry Inputs
         currentL = parseFloat(document.getElementById('lenRange').value);
@@ -377,7 +392,7 @@
         let b_cm = b_mm / 10;
         let h_cm = h_mm / 10;
         let I = (b_cm * Math.pow(h_cm, 3)) / 12; // Moment of Inertia in cm^4
-        document.getElementById('inertiaVal').innerText = I.toFixed(4);
+        document.getElementById('inertiaVal').innerText = I.toExponential(4);
 
         // Fetch Load
         const loadKg = parseFloat(document.getElementById('loadRange').value);
@@ -430,10 +445,11 @@
             document.getElementById('probeY').innerText = probeW.toFixed(4);
         }
 
-        drawCanvas(boundary, P, currentL);
+        // Pass all properties to drawCanvas for the overlay HUD
+        drawCanvas(boundary, P, loadKg, currentL, E_GPa, I);
     }
 
-    function drawCanvas(boundary, P, L) {
+    function drawCanvas(boundary, P, loadKg, L, E_GPa, I) {
         const canvas = document.getElementById('beamCanvas');
         const ctx = canvas.getContext('2d');
         
@@ -448,7 +464,7 @@
         const height = canvas.height;
         const padding = 60; // Side margins
         const drawWidth = width - (padding * 2);
-        const baseY = height / 3; // Position beam 1/3 down from top
+        const baseY = height / 2.2; // Position beam slightly above middle
 
         // 1. Draw Grid Background
         ctx.strokeStyle = '#f1f2f6';
@@ -488,9 +504,8 @@
         }
 
         // Calculate visual scale (magnification factor for drawing)
-        // Set a minimum threshold so straight lines don't break scaling
         const visualThreshold = maxModelDefl > 0.0001 ? maxModelDefl : 1; 
-        const maxDrawDefl = 120; 
+        const maxDrawDefl = 100; 
         const visualScale = maxDrawDefl / visualThreshold;
 
         // 4. Draw Deflected Beam
@@ -510,7 +525,6 @@
 
         // 5. Draw Center Load Arrow
         let midPx = padding + (drawWidth / 2);
-        let midPy = baseY + (maxModelDefl * visualScale);
         
         ctx.fillStyle = '#34495e';
         ctx.beginPath();
@@ -528,9 +542,47 @@
         
         ctx.font = 'bold 14px Segoe UI';
         ctx.textAlign = 'center';
-        ctx.fillText((P/9.81).toFixed(1) + " kg", midPx, baseY - 50);
+        ctx.fillText(loadKg.toFixed(1) + " kg", midPx, baseY - 50);
 
-        // 6. Draw Interactive Probe
+        // 6. Draw HUD (Heads-Up Display) for Parameters and Formulas
+        
+        // HUD Left: Properties
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        ctx.strokeStyle = '#bdc3c7';
+        ctx.lineWidth = 1;
+        drawRoundRect(ctx, 15, 15, 240, 110, 8);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#2c3e50';
+        ctx.font = 'bold 13px Segoe UI';
+        ctx.textAlign = 'left';
+        ctx.fillText("Calculated Parameters:", 25, 35);
+        
+        ctx.font = '12px Segoe UI';
+        ctx.fillText(`Load (P) = ${P.toFixed(2)} N  [${loadKg.toFixed(1)}kg × 9.81]`, 25, 55);
+        ctx.fillText(`Length (L) = ${L.toFixed(1)} cm`, 25, 75);
+        ctx.fillText(`Young's Modulus (E) = ${E_GPa} GPa`, 25, 95);
+        ctx.fillText(`Moment of Inertia (I) = ${I.toExponential(4)} cm⁴`, 25, 115);
+
+        // HUD Right: Formula
+        let formulaStr = boundary === 'simply_supported' 
+            ? "Max Defl. = (P × L³) / (48 × E × I)" 
+            : "Max Defl. = (P × L³) / (192 × E × I)";
+
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        drawRoundRect(ctx, width - 265, 15, 250, 60, 8);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#2c3e50';
+        ctx.font = 'bold 13px Segoe UI';
+        ctx.fillText("Verification Formula (Center):", width - 255, 35);
+        ctx.font = '13px Consolas, monospace';
+        ctx.fillStyle = '#e74c3c';
+        ctx.fillText(formulaStr, width - 255, 60);
+
+        // 7. Draw Interactive Probe
         if (selectedProbeX !== null) {
             let probePx = padding + (selectedProbeX / L) * drawWidth;
             
@@ -540,8 +592,8 @@
             let I_curr = (b_cm * Math.pow(h_cm, 3)) / 12;
             
             let matValue = document.getElementById('materialSelect').value;
-            let E_GPa = (matValue === 'custom') ? parseFloat(document.getElementById('customERange').value) : parseFloat(matValue);
-            let E_cm_curr = E_GPa * 100000;
+            let E_GPa_curr = (matValue === 'custom') ? parseFloat(document.getElementById('customERange').value) : parseFloat(matValue);
+            let E_cm_curr = E_GPa_curr * 100000;
             
             let probeW = calculateDeflection(selectedProbeX, L, P, E_cm_curr, I_curr, boundary);
             let probePy = baseY + (probeW * visualScale);
@@ -564,7 +616,8 @@
             ctx.stroke();
 
             ctx.fillStyle = '#2980b9';
-            ctx.fillRect(probePx + 10, probePy - 10, 90, 24);
+            drawRoundRect(ctx, probePx + 10, probePy - 10, 90, 24, 4);
+            ctx.fill();
             ctx.fillStyle = 'white';
             ctx.font = '12px Segoe UI';
             ctx.textAlign = 'left';
