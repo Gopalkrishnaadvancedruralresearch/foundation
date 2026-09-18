@@ -14,6 +14,7 @@
             --card-bg: #ffffff;
             --text: #2c3e50;
             --border: #dcdde1;
+            --section-bg: #f8f9fa;
         }
         body {
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
@@ -55,12 +56,10 @@
             margin-top: 15px;
             font-weight: 400;
             color: #cbd5e1;
-            text-transform: none;
-            letter-spacing: normal;
         }
         .container {
             display: grid;
-            grid-template-columns: 350px 1fr;
+            grid-template-columns: 380px 1fr;
             gap: 25px;
             max-width: 1400px;
             margin: 0 auto;
@@ -82,25 +81,42 @@
             padding-bottom: 10px;
             font-size: 1.2rem;
         }
+        .control-section {
+            background: var(--section-bg);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+        .control-section h4 {
+            margin: 0 0 15px 0;
+            color: var(--secondary);
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
         .control-group {
-            margin-bottom: 25px;
+            margin-bottom: 15px;
         }
         label {
             display: block;
             font-weight: 600;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
             color: #34495e;
+            font-size: 0.9rem;
         }
         select, input[type="range"] {
             width: 100%;
-            padding: 10px;
+            padding: 8px;
             border-radius: 6px;
             border: 1px solid #bdc3c7;
-            font-size: 1rem;
-            background-color: #f8f9fa;
+            font-size: 0.95rem;
+            background-color: #ffffff;
+            box-sizing: border-box;
         }
         input[type="range"] {
             cursor: pointer;
+            padding: 0;
         }
         .value-display {
             font-weight: bold;
@@ -109,6 +125,7 @@
             background: #fdeaea;
             padding: 2px 8px;
             border-radius: 4px;
+            font-size: 0.85rem;
         }
         .canvas-container {
             position: relative;
@@ -138,10 +155,6 @@
             justify-content: space-between;
             align-items: center;
         }
-        .probe-display span {
-            font-weight: bold;
-            font-size: 1.2rem;
-        }
         .instruction {
             font-size: 0.9rem;
             color: #7f8c8d;
@@ -162,7 +175,7 @@
             font-size: 0.95rem;
         }
         th, td {
-            padding: 10px 15px;
+            padding: 8px 12px;
             text-align: center;
             border-bottom: 1px solid #ecf0f1;
         }
@@ -189,14 +202,14 @@
         }
         .stat-box span {
             display: block;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: #7f8c8d;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             margin-bottom: 5px;
         }
         .stat-box strong {
-            font-size: 1.3rem;
+            font-size: 1.2rem;
             color: var(--primary);
         }
     </style>
@@ -215,27 +228,56 @@
     <div class="card">
         <h3>Experiment Parameters</h3>
         
-        <div class="control-group">
-            <label for="boundaryType">Boundary Condition:</label>
-            <select id="boundaryType" onchange="updateSimulation()">
-                <option value="simply_supported">Simply Supported Ends</option>
-                <option value="fixed">Fixed-Fixed Ends</option>
-            </select>
+        <!-- Geometry Section -->
+        <div class="control-section">
+            <h4>1. Beam Geometry</h4>
+            <div class="control-group">
+                <label>Length (L): <span id="lenVal" class="value-display">50 cm</span></label>
+                <input type="range" id="lenRange" min="50" max="100" step="1" value="50" oninput="updateSimulation()">
+            </div>
+            <div class="control-group">
+                <label>Width (b): <span id="widthVal" class="value-display">10.0 mm</span></label>
+                <input type="range" id="widthRange" min="4" max="25.4" step="0.1" value="10" oninput="updateSimulation()">
+            </div>
+            <div class="control-group">
+                <label>Thickness (h): <span id="thickVal" class="value-display">8.0 mm</span></label>
+                <input type="range" id="thickRange" min="0.4" max="25.4" step="0.1" value="8" oninput="updateSimulation()">
+            </div>
         </div>
 
-        <div class="control-group">
-            <label for="loadRange">Center Load (kg): <span id="loadVal" class="value-display">2.0 kg</span></label>
-            <input type="range" id="loadRange" min="1.0" max="4.0" step="0.1" value="2.0" oninput="updateSimulation()">
+        <!-- Material Section -->
+        <div class="control-section">
+            <h4>2. Material Properties</h4>
+            <div class="control-group">
+                <label for="materialSelect">Select Material:</label>
+                <select id="materialSelect" onchange="handleMaterialChange()">
+                    <option value="200">Steel (E ≈ 200 GPa)</option>
+                    <option value="117">Copper (E ≈ 117 GPa)</option>
+                    <option value="69">Aluminum (E ≈ 69 GPa)</option>
+                    <option value="11">Wood - Standard (E ≈ 11 GPa)</option>
+                    <option value="custom">Custom Modulus (Define E)</option>
+                </select>
+            </div>
+            <div class="control-group" id="customEGroup" style="display: none;">
+                <label>Custom E (GPa): <span id="customEVal" class="value-display">100 GPa</span></label>
+                <input type="range" id="customERange" min="1" max="400" step="1" value="100" oninput="updateSimulation()">
+            </div>
         </div>
 
-        <div class="control-group">
-            <label>Beam Properties:</label>
-            <ul style="margin: 0; padding-left: 20px; font-size: 0.95rem; color: #555;">
-                <li><strong>Length (L):</strong> 50 cm</li>
-                <li><strong>Width (b):</strong> 10 cm</li>
-                <li><strong>Depth (h):</strong> 8 mm (0.8 cm)</li>
-                <li><strong>Material:</strong> Steel (E ≈ 200 GPa)</li>
-            </ul>
+        <!-- Setup Section -->
+        <div class="control-section">
+            <h4>3. Load & Boundary</h4>
+            <div class="control-group">
+                <label for="boundaryType">Boundary Condition:</label>
+                <select id="boundaryType" onchange="updateSimulation()">
+                    <option value="simply_supported">Simply Supported Ends</option>
+                    <option value="fixed">Fixed-Fixed Ends</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label>Center Load: <span id="loadVal" class="value-display">2.0 kg</span></label>
+                <input type="range" id="loadRange" min="1.0" max="10.0" step="0.1" value="2.0" oninput="updateSimulation()">
+            </div>
         </div>
 
         <div class="stats-grid">
@@ -244,8 +286,8 @@
                 <strong id="maxDeflection">0.00 mm</strong>
             </div>
             <div class="stat-box">
-                <span>Applied Force</span>
-                <strong id="appliedLoad">0.00 N</strong>
+                <span>Moment of Inertia (I)</span>
+                <strong id="inertiaVal">0.00 cm⁴</strong>
             </div>
         </div>
     </div>
@@ -282,20 +324,25 @@
 </div>
 
 <script>
-    // --- Physics Constants ---
-    const L = 50.0; // Length in cm
-    const b = 10.0; // Width in cm
-    const h = 0.8;  // Height in cm (8 mm)
-    const I = (b * Math.pow(h, 3)) / 12; // Moment of Inertia in cm^4
-    const E_cm = 2e7; // Elastic Modulus in N/cm² (200 GPa)
-    
     // --- State Variables ---
     let points = [];
     let maxModelDefl = 0;
-    let selectedProbeX = null; // Stores user-clicked x coordinate on beam
+    let selectedProbeX = null; 
+    let currentL = 50; 
+
+    function handleMaterialChange() {
+        const matSelect = document.getElementById('materialSelect').value;
+        const customGroup = document.getElementById('customEGroup');
+        if (matSelect === 'custom') {
+            customGroup.style.display = 'block';
+        } else {
+            customGroup.style.display = 'none';
+        }
+        updateSimulation();
+    }
 
     // Core physics calculation function
-    function calculateDeflection(x, P, boundary) {
+    function calculateDeflection(x, L, P, E_cm, I, boundary) {
         let w = 0; // cm
         if (boundary === 'simply_supported') {
             if (x <= L / 2) {
@@ -316,21 +363,55 @@
     }
 
     function updateSimulation() {
+        // Fetch Geometry Inputs
+        currentL = parseFloat(document.getElementById('lenRange').value);
+        let b_mm = parseFloat(document.getElementById('widthRange').value);
+        let h_mm = parseFloat(document.getElementById('thickRange').value);
+        
+        // Update Geometry Labels
+        document.getElementById('lenVal').innerText = currentL + " cm";
+        document.getElementById('widthVal').innerText = b_mm.toFixed(1) + " mm";
+        document.getElementById('thickVal').innerText = h_mm.toFixed(1) + " mm";
+
+        // Convert Geometry to cm for calculations
+        let b_cm = b_mm / 10;
+        let h_cm = h_mm / 10;
+        let I = (b_cm * Math.pow(h_cm, 3)) / 12; // Moment of Inertia in cm^4
+        document.getElementById('inertiaVal').innerText = I.toFixed(4);
+
+        // Fetch Load
         const loadKg = parseFloat(document.getElementById('loadRange').value);
         document.getElementById('loadVal').innerText = loadKg.toFixed(1) + " kg";
-        
         const P = loadKg * 9.81; // Force in Newtons
-        document.getElementById('appliedLoad').innerText = P.toFixed(2) + " N";
 
+        // Fetch Material / Elastic Modulus
+        let matValue = document.getElementById('materialSelect').value;
+        let E_GPa = 200;
+        if (matValue === 'custom') {
+            E_GPa = parseFloat(document.getElementById('customERange').value);
+            document.getElementById('customEVal').innerText = E_GPa + " GPa";
+        } else {
+            E_GPa = parseFloat(matValue);
+        }
+        // Convert GPa to N/cm² (1 GPa = 10^5 N/cm²)
+        let E_cm = E_GPa * 100000; 
+
+        // Fetch Boundary Condition
         const boundary = document.getElementById('boundaryType').value;
+
+        // Ensure probe remains on the beam if beam shrinks
+        if (selectedProbeX !== null && selectedProbeX > currentL) {
+            selectedProbeX = currentL;
+            document.getElementById('probeX').innerText = selectedProbeX.toFixed(2);
+        }
 
         points = [];
         let dataRows = "";
         maxModelDefl = 0;
 
         // Generate points for rendering and table
-        for (let x = 0; x <= L; x += 1) {
-            let w_mm = calculateDeflection(x, P, boundary);
+        for (let x = 0; x <= currentL; x += 1) {
+            let w_mm = calculateDeflection(x, currentL, P, E_cm, I, boundary);
             
             if (Math.abs(w_mm) > maxModelDefl) {
                 maxModelDefl = Math.abs(w_mm);
@@ -345,14 +426,14 @@
 
         // Update probe display if a probe is currently active
         if (selectedProbeX !== null) {
-            let probeW = calculateDeflection(selectedProbeX, P, boundary);
+            let probeW = calculateDeflection(selectedProbeX, currentL, P, E_cm, I, boundary);
             document.getElementById('probeY').innerText = probeW.toFixed(4);
         }
 
-        drawCanvas(boundary, P);
+        drawCanvas(boundary, P, currentL);
     }
 
-    function drawCanvas(boundary, P) {
+    function drawCanvas(boundary, P, L) {
         const canvas = document.getElementById('beamCanvas');
         const ctx = canvas.getContext('2d');
         
@@ -387,12 +468,11 @@
         ctx.moveTo(padding, baseY);
         ctx.lineTo(padding + drawWidth, baseY);
         ctx.stroke();
-        ctx.setLineDash([]); // Reset dash
+        ctx.setLineDash([]); 
 
         // 3. Draw Supports
         ctx.fillStyle = '#2c3e50';
         if (boundary === 'simply_supported') {
-            // Pin & Roller Triangles
             const drawTriangle = (cx, cy) => {
                 ctx.beginPath();
                 ctx.moveTo(cx, cy);
@@ -403,15 +483,15 @@
             drawTriangle(padding, baseY);
             drawTriangle(padding + drawWidth, baseY);
         } else {
-            // Fixed Walls
             ctx.fillRect(padding - 20, baseY - 30, 20, 60);
             ctx.fillRect(padding + drawWidth, baseY - 30, 20, 60);
         }
 
         // Calculate visual scale (magnification factor for drawing)
-        // Ensures max deflection always drops exactly 120 pixels visually for easy viewing
+        // Set a minimum threshold so straight lines don't break scaling
+        const visualThreshold = maxModelDefl > 0.0001 ? maxModelDefl : 1; 
         const maxDrawDefl = 120; 
-        const visualScale = maxDrawDefl / (maxModelDefl || 1);
+        const visualScale = maxDrawDefl / visualThreshold;
 
         // 4. Draw Deflected Beam
         ctx.beginPath();
@@ -439,7 +519,7 @@
         ctx.lineWidth = 4;
         ctx.strokeStyle = '#34495e';
         ctx.stroke();
-        // Arrow head
+        
         ctx.beginPath();
         ctx.moveTo(midPx - 8, baseY - 15);
         ctx.lineTo(midPx + 8, baseY - 15);
@@ -448,15 +528,24 @@
         
         ctx.font = 'bold 14px Segoe UI';
         ctx.textAlign = 'center';
-        ctx.fillText("Load: " + (P/9.81).toFixed(1) + " kg", midPx, baseY - 50);
+        ctx.fillText((P/9.81).toFixed(1) + " kg", midPx, baseY - 50);
 
-        // 6. Draw Interactive Probe (If user clicked)
+        // 6. Draw Interactive Probe
         if (selectedProbeX !== null) {
             let probePx = padding + (selectedProbeX / L) * drawWidth;
-            let probeW = calculateDeflection(selectedProbeX, P, boundary);
+            
+            // Match physics function signature
+            let b_cm = parseFloat(document.getElementById('widthRange').value) / 10;
+            let h_cm = parseFloat(document.getElementById('thickRange').value) / 10;
+            let I_curr = (b_cm * Math.pow(h_cm, 3)) / 12;
+            
+            let matValue = document.getElementById('materialSelect').value;
+            let E_GPa = (matValue === 'custom') ? parseFloat(document.getElementById('customERange').value) : parseFloat(matValue);
+            let E_cm_curr = E_GPa * 100000;
+            
+            let probeW = calculateDeflection(selectedProbeX, L, P, E_cm_curr, I_curr, boundary);
             let probePy = baseY + (probeW * visualScale);
 
-            // Vertical indicator line
             ctx.beginPath();
             ctx.setLineDash([4, 4]);
             ctx.strokeStyle = '#2980b9';
@@ -466,7 +555,6 @@
             ctx.stroke();
             ctx.setLineDash([]);
 
-            // Highlighter circle
             ctx.beginPath();
             ctx.arc(probePx, probePy, 7, 0, Math.PI * 2);
             ctx.fillStyle = '#2980b9';
@@ -475,9 +563,8 @@
             ctx.lineWidth = 2;
             ctx.stroke();
 
-            // Coordinate Badge
             ctx.fillStyle = '#2980b9';
-            ctx.fillRect(probePx + 10, probePy - 10, 110, 24);
+            ctx.fillRect(probePx + 10, probePy - 10, 90, 24);
             ctx.fillStyle = 'white';
             ctx.font = '12px Segoe UI';
             ctx.textAlign = 'left';
@@ -489,7 +576,7 @@
         ctx.font = '12px Segoe UI';
         ctx.textAlign = 'center';
         ctx.fillText("0 cm", padding, baseY + 45);
-        ctx.fillText("50 cm", padding + drawWidth, baseY + 45);
+        ctx.fillText(L + " cm", padding + drawWidth, baseY + 45);
     }
 
     // --- Interactive Canvas Logic ---
@@ -498,19 +585,11 @@
         const rect = canvas.getBoundingClientRect();
         const padding = 60;
         const drawWidth = canvas.width - (padding * 2);
-        
-        // Get mouse position relative to canvas
         const mouseX = event.clientX - rect.left;
         
-        // Ensure click is within the beam's drawn width
         if (mouseX >= padding && mouseX <= padding + drawWidth) {
-            // Map pixel location back to physical beam length (0 to 50 cm)
-            selectedProbeX = ((mouseX - padding) / drawWidth) * L;
-            
-            // Update UI
+            selectedProbeX = ((mouseX - padding) / drawWidth) * currentL;
             document.getElementById('probeX').innerText = selectedProbeX.toFixed(2);
-            
-            // Re-trigger draw to show the new probe
             updateSimulation(); 
         }
     });
