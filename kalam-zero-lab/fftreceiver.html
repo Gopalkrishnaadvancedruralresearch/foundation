@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FFT Receiver & Data Logger - GARRF</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        canvas {
+            width: 100% !important;
+            height: 220px !important;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between font-sans">
+
+    <!-- HEADER -->
+    <header class="bg-slate-900 border-b border-slate-800 py-4 px-6 shadow-md">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+            
+            <!-- Left: Logo & Foundation Titles -->
+            <div class="flex items-center gap-4 text-center sm:text-left">
+                <img src="logo.jpeg" alt="GARRF Logo" onerror="this.onerror=null; this.src='https://via.placeholder.com/60?text=GARRF';" class="w-14 h-14 object-cover rounded-lg border border-slate-700 shadow">
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight text-emerald-400">
+                        Gopalkrishna Advanced Rural Research Foundation
+                    </h1>
+                    <p class="text-xs sm:text-sm font-medium text-slate-400">
+                        Dr. APJ Abdul Kalam Research Zero Funding Initiative
+                    </p>
+                </div>
+            </div>
+
+            <!-- Right: Indian Flag Icon / Badge -->
+            <div class="flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700 shadow-inner">
+                <span class="text-xl" role="img" aria-label="India Flag">🇮🇳</span>
+                <span class="text-xs font-semibold tracking-wider text-slate-300 uppercase">India Initiative</span>
+            </div>
+
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="max-w-7xl w-full mx-auto p-4 sm:p-6 flex-grow flex flex-col gap-6">
+        
+        <!-- Controls & Metrics Panel -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col lg:flex-row items-center justify-between gap-6">
+            
+            <!-- Action Controls -->
+            <div class="flex flex-wrap items-center gap-4 w-full lg:w-auto justify-center lg:justify-start">
+                <button id="startBtn" class="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-3 rounded-xl shadow-lg transition transform active:scale-95 flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 100-6 3 3 0 000 6z"></path></svg>
+                    Start Receiver
+                </button>
+                <button id="stopBtn" disabled class="flex-1 sm:flex-none bg-rose-600/50 cursor-not-allowed text-white font-bold px-6 py-3 rounded-xl shadow-lg transition flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"></path></svg>
+                    Stop & Download CSV
+                </button>
+            </div>
+
+            <!-- Settings (FFT Size & Smoothing) -->
+            <div class="flex flex-wrap items-center gap-4 justify-center">
+                <div class="flex flex-col gap-1">
+                    <label for="fftSizeSelect" class="text-xs font-semibold text-slate-400">FFT Size (Bins)</label>
+                    <select id="fftSizeSelect" class="bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="1024">1024</option>
+                        <option value="2048" selected>2048</option>
+                        <option value="4096">4096</option>
+                        <option value="8192">8192</option>
+                    </select>
+                </div>
+
+                <div class="flex flex-col gap-1">
+                    <label for="smoothSelect" class="text-xs font-semibold text-slate-400">Smoothing</label>
+                    <select id="smoothSelect" class="bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="0.5">0.5 (Fast)</option>
+                        <option value="0.8" selected>0.8 (Balanced)</option>
+                        <option value="0.95">0.95 (Smooth)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Live Metrics Box -->
+            <div class="bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 flex items-center gap-6 w-full lg:w-auto justify-around">
+                <div class="text-center">
+                    <span class="block text-[10px] uppercase tracking-wider text-slate-500">Peak Frequency</span>
+                    <span id="peakFreqVal" class="text-lg font-mono font-bold text-emerald-400">0 Hz</span>
+                </div>
+                <div class="h-8 w-px bg-slate-800"></div>
+                <div class="text-center">
+                    <span class="block text-[10px] uppercase tracking-wider text-slate-500">Bin Resolution</span>
+                    <span id="binResVal" class="text-lg font-mono font-bold text-sky-400">-- Hz</span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Canvases Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            <!-- Frequency Domain Spectrum (FFT) -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-lg flex flex-col">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-sm font-bold tracking-wide text-slate-300 uppercase flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        Frequency Domain (FFT Spectrum)
+                    </h2>
+                    <span class="text-xs text-slate-500 font-mono">Amplitude vs Frequency</span>
+                </div>
+                <div class="bg-slate-950 rounded-xl overflow-hidden border border-slate-800 flex-grow relative flex items-center justify-center">
+                    <canvas id="fftCanvas" class="w-full h-56"></canvas>
+                    <div id="canvasOverlay" class="absolute inset-0 flex items-center justify-center bg-slate-950/80 text-slate-400 text-sm font-medium">
+                        Click "Start Receiver" to begin audio capture & logging
+                    </div>
+                </div>
+            </div>
+
+            <!-- Time Domain Waveform (Oscilloscope) -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-lg flex flex-col">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-sm font-bold tracking-wide text-slate-300 uppercase flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-sky-500"></span>
+                        Time Domain (Oscilloscope)
+                    </h2>
+                    <span class="text-xs text-slate-500 font-mono">Amplitude vs Time</span>
+                </div>
+                <div class="bg-slate-950 rounded-xl overflow-hidden border border-slate-800 flex-grow relative flex items-center justify-center">
+                    <canvas id="timeCanvas" class="w-full h-56"></canvas>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-slate-900 border-t border-slate-800 py-4 px-6 text-center text-xs text-slate-400">
+        <p>Developed by <strong class="text-slate-200">Dr. Annamdas Venu Gopal Madhav & Annamdas Shantanu Vasudev Krishna</strong></p>
+        <p class="mt-1 text-slate-500">Gopalkrishna Advanced Rural Research Foundation &bull; Open Educational Hardware & Software Initiative</p>
+    </footer>
+
+    <!-- SCRIPT -->
+    <script>
+        let audioCtx = null;
+        let analyser = null;
+        let microphone = null;
+        let sourceStream = null;
+        let isRunning = false;
+        let recordedFrames = [];
+
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const fftSizeSelect = document.getElementById('fftSizeSelect');
+        const smoothSelect = document.getElementById('smoothSelect');
+        const peakFreqVal = document.getElementById('peakFreqVal');
+        const binResVal = document.getElementById('binResVal');
+        const canvasOverlay = document.getElementById('canvasOverlay');
+
+        const fftCanvas = document.getElementById('fftCanvas');
+        const fftCtx = fftCanvas.getContext('2d');
+        const timeCanvas = document.getElementById('timeCanvas');
+        const timeCtx = timeCanvas.getContext('2d');
+
+        function resizeCanvases() {
+            fftCanvas.width = fftCanvas.parentElement.clientWidth;
+            fftCanvas.height = fftCanvas.parentElement.clientHeight || 220;
+            timeCanvas.width = timeCanvas.parentElement.clientWidth;
+            timeCanvas.height = timeCanvas.parentElement.clientHeight || 220;
+        }
+
+        window.addEventListener('resize', resizeCanvases);
+        resizeCanvases();
+
+        startBtn.addEventListener('click', async () => {
+            try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                sourceStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+                
+                microphone = audioCtx.createMediaStreamSource(sourceStream);
+                analyser = audioCtx.createAnalyser();
+
+                analyser.fftSize = parseInt(fftSizeSelect.value);
+                analyser.smoothingTimeConstant = parseFloat(smoothSelect.value);
+
+                microphone.connect(analyser);
+
+                isRunning = true;
+                recordedFrames = []; // Reset log buffer
+                canvasOverlay.style.display = 'none';
+                startBtn.disabled = true;
+                startBtn.classList.replace('bg-emerald-600', 'bg-emerald-600/50');
+                startBtn.classList.remove('hover:bg-emerald-500');
+                stopBtn.disabled = false;
+                stopBtn.classList.replace('bg-rose-600/50', 'bg-rose-600');
+
+                updateBinResolution();
+                visualize();
+            } catch (err) {
+                alert('Microphone access denied or audio device not available: ' + err.message);
+                console.error(err);
+            }
+        });
+
+        stopBtn.addEventListener('click', stopAndDownloadData);
+
+        function stopAndDownloadData() {
+            if (!isRunning) return;
+            isRunning = false;
+
+            if (sourceStream) {
+                sourceStream.getTracks().forEach(track => track.stop());
+            }
+            if (audioCtx && audioCtx.state !== 'closed') {
+                audioCtx.close();
+            }
+
+            cancelAnimationFrame(animationId);
+            canvasOverlay.style.display = 'flex';
+            startBtn.disabled = false;
+            startBtn.classList.replace('bg-emerald-600/50', 'bg-emerald-600');
+            startBtn.classList.add('hover:bg-emerald-500');
+            stopBtn.disabled = true;
+            stopBtn.classList.replace('bg-rose-600', 'bg-rose-600/50');
+
+            peakFreqVal.textContent = '0 Hz';
+            binResVal.textContent = '-- Hz';
+
+            // Trigger CSV Download if recorded data exists
+            if (recordedFrames.length > 0) {
+                exportCSV();
+            }
+        }
+
+        function exportCSV() {
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Timestamp (ms),Peak Frequency (Hz),Bin Index,Frequency (Hz),Amplitude (0-255)\r\n";
+
+            recordedFrames.forEach(frame => {
+                const time = frame.timestamp;
+                const peakF = frame.peakFreq;
+                frame.spectrum.forEach((amp, idx) => {
+                    const freq = idx * frame.binResolution;
+                    csvContent += `${time},${peakF.toFixed(2)},${idx},${freq.toFixed(2)},${amp}\r\n`;
+                });
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `GARRF_FFT_Data_${new Date().toISOString().slice(0,19).replace(/:/g,"-")}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        fftSizeSelect.addEventListener('change', () => {
+            if (analyser) {
+                analyser.fftSize = parseInt(fftSizeSelect.value);
+                updateBinResolution();
+            }
+        });
+
+        smoothSelect.addEventListener('change', () => {
+            if (analyser) {
+                analyser.smoothingTimeConstant = parseFloat(smoothSelect.value);
+            }
+        });
+
+        function updateBinResolution() {
+            if (audioCtx && analyser) {
+                const nyquist = audioCtx.sampleRate / 2;
+                const binCount = analyser.frequencyBinCount;
+                const resolution = nyquist / binCount;
+                binResVal.textContent = resolution.toFixed(2) + ' Hz';
+                return resolution;
+            }
+            return 0;
+        }
+
+        let animationId = null;
+        let lastLogTime = 0;
+
+        function visualize() {
+            if (!isRunning) return;
+
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArrayFreq = new Uint8Array(bufferLength);
+            const dataArrayTime = new Uint8Array(bufferLength);
+
+            function render() {
+                if (!isRunning) return;
+                animationId = requestAnimationFrame(render);
+
+                analyser.getByteFrequencyData(dataArrayFreq);
+                analyser.getByteTimeDomainData(dataArrayTime);
+
+                // --- 1. DRAW FREQUENCY SPECTRUM (FFT) ---
+                fftCtx.fillStyle = '#020617';
+                fftCtx.fillRect(0, 0, fftCanvas.width, fftCanvas.height);
+
+                const barWidth = (fftCanvas.width / bufferLength) * 2.5;
+                let x = 0;
+                let maxVal = -1;
+                let maxIndex = 0;
+
+                for (let i = 0; i < bufferLength; i++) {
+                    const barHeight = (dataArrayFreq[i] / 255) * fftCanvas.height;
+
+                    if (dataArrayFreq[i] > maxVal) {
+                        maxVal = dataArrayFreq[i];
+                        maxIndex = i;
+                    }
+
+                    const gradient = fftCtx.createLinearGradient(0, fftCanvas.height, 0, 0);
+                    gradient.addColorStop(0, '#059669');
+                    gradient.addColorStop(1, '#34d399');
+
+                    fftCtx.fillStyle = gradient;
+                    fftCtx.fillRect(x, fftCanvas.height - barHeight, barWidth, barHeight);
+
+                    x += barWidth + 1;
+                    if (x > fftCanvas.width) break;
+                }
+
+                const nyquist = audioCtx.sampleRate / 2;
+                const binRes = nyquist / bufferLength;
+                let peakFreq = 0;
+
+                if (audioCtx && maxVal > 30) {
+                    peakFreq = (maxIndex / bufferLength) * nyquist;
+                    peakFreqVal.textContent = peakFreq.toFixed(1) + ' Hz';
+                } else {
+                    peakFreqVal.textContent = '0 Hz';
+                }
+
+                // Log frame data every ~250ms while running
+                const now = performance.now();
+                if (now - lastLogTime > 250) {
+                    recordedFrames.push({
+                        timestamp: Math.round(now),
+                        peakFreq: peakFreq,
+                        binResolution: binRes,
+                        spectrum: Array.from(dataArrayFreq)
+                    });
+                    lastLogTime = now;
+                }
+
+                // --- 2. DRAW TIME DOMAIN OSCILLOSCOPE ---
+                timeCtx.fillStyle = '#020617';
+                timeCtx.fillRect(0, 0, timeCanvas.width, timeCanvas.height);
+
+                timeCtx.lineWidth = 2;
+                timeCtx.strokeStyle = '#38bdf8';
+                timeCtx.beginPath();
+
+                const sliceWidth = timeCanvas.width / bufferLength;
+                let tx = 0;
+
+                for (let i = 0; i < bufferLength; i++) {
+                    const v = dataArrayTime[i] / 128.0;
+                    const ty = v * (timeCanvas.height / 2);
+
+                    if (i === 0) {
+                        timeCtx.moveTo(tx, ty);
+                    } else {
+                        timeCtx.lineTo(tx, ty);
+                    }
+
+                    tx += sliceWidth;
+                }
+
+                timeCtx.lineTo(timeCanvas.width, timeCanvas.height / 2);
+                timeCtx.stroke();
+            }
+
+            render();
+        }
+    </script>
+</body>
+</html>
