@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Torsion Test Virtual Lab</title>
+    <!-- Chart.js for Graphing -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+        .header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .header-content {
+            text-align: center;
+            flex-grow: 1;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            letter-spacing: 1px;
+        }
+        .header h3 {
+            margin: 5px 0 0 0;
+            font-size: 14px;
+            font-weight: 400;
+            color: #bdc3c7;
+        }
+        .logo-left {
+            height: 60px;
+            width: 60px;
+            background-color: #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .logo-left img {
+            height: 100%;
+            width: 100%;
+            object-fit: contain;
+        }
+        .flag-right img {
+            height: 40px;
+            border: 1px solid #fff;
+            border-radius: 4px;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 20px;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .panel {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            flex: 1;
+            min-width: 300px;
+        }
+        .visualization-panel {
+            flex: 2;
+            min-width: 500px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        canvas {
+            background: #ecf0f1;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+            margin-top: 10px;
+            max-width: 100%;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        input[type="number"], input[type="range"] {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            width: 100%;
+            background-color: #2980b9;
+            color: white;
+            border: none;
+            padding: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background-color: #3498db;
+        }
+        .btn-clear {
+            background-color: #e74c3c;
+        }
+        .btn-clear:hover {
+            background-color: #c0392b;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 13px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #2c3e50;
+            color: white;
+        }
+        .footer {
+            background-color: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 15px;
+            margin-top: 30px;
+            font-weight: bold;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Section -->
+    <header class="header">
+        <div class="logo-left">
+            <img src="logo.jpeg" alt="Logo" onerror="this.onerror=null; this.src='https://via.placeholder.com/60?text=Logo';">
+        </div>
+        <div class="header-content">
+            <h1>Gopalkrishna Advanced Rural Research Foundation</h1>
+            <h3>(Dr. APJ Abdul Kalam Research Zero Funding Initiative)</h3>
+        </div>
+        <div class="flag-right">
+            <img src="https://upload.wikimedia.org/wikipedia/en/4/41/Flag_of_India.svg" alt="India Flag">
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Controls Panel -->
+        <div class="panel">
+            <h3>Experiment Controls</h3>
+            <p style="font-size: 12px; color: #555;">Torsion Test on a Circular Rod</p>
+            
+            <div class="form-group">
+                <label>Theoretical Modulus of Rigidity (G) in GPa:</label>
+                <input type="number" id="matG" value="80" disabled>
+                <small style="color:gray;">Standard Steel (80 GPa)</small>
+            </div>
+            <div class="form-group">
+                <label>Rod Length (L) in mm:</label>
+                <input type="number" id="rodLength" value="500" step="10">
+            </div>
+            <div class="form-group">
+                <label>Rod Diameter (d) in mm:</label>
+                <input type="number" id="rodDiameter" value="6" step="0.5">
+            </div>
+            
+            <hr>
+            
+            <div class="form-group">
+                <label>Applied Torque (T) in N·m: <span id="torqueVal">0</span></label>
+                <input type="range" id="appliedTorque" min="0" max="50" value="0" step="1">
+            </div>
+
+            <button onclick="recordData()">Apply Torque & Record Observation</button>
+            <button class="btn-clear" onclick="clearData()">Clear Data</button>
+        </div>
+
+        <!-- Visualization Panel -->
+        <div class="visualization-panel panel">
+            <h3>Live Simulation</h3>
+            <canvas id="simCanvas" width="600" height="300"></canvas>
+            <p id="liveReadout" style="font-weight: bold; margin-top: 15px; color: #d35400;">Angle of Twist: 0.00°</p>
+        </div>
+
+        <!-- Data & Graph Panel -->
+        <div class="panel" style="flex: 2; min-width: 100%;">
+            <h3>Observation Table & Graph</h3>
+            <div style="display: flex; flex-wrap: wrap; gap: 20px;">
+                <div style="flex: 1; min-width: 300px; overflow-x: auto;">
+                    <table id="dataTable">
+                        <thead>
+                            <tr>
+                                <th>Trial</th>
+                                <th>Torque (N·m)</th>
+                                <th>Theor. Twist (°)</th>
+                                <th>Actual Twist (°)</th>
+                                <th>Calculated G (GPa)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data populated here -->
+                        </tbody>
+                    </table>
+                </div>
+                <div style="flex: 1; min-width: 300px;">
+                    <canvas id="chartCanvas"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer Section -->
+    <div class="footer">
+        Developed by Dr. Annamdas Venu Gopal Madhav & Annamdas Shantanu Vasudev Krishna
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        // DOM Elements
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        const torqueSlider = document.getElementById('appliedTorque');
+        const torqueValLabel = document.getElementById('torqueVal');
+        const liveReadout = document.getElementById('liveReadout');
+        const tableBody = document.querySelector('#dataTable tbody');
+
+        let trialCount = 0;
+        let chartInstance = null;
+        
+        // Data Arrays for Chart
+        let torqueData = [];
+        let actualTwistData = [];
+        let theorTwistData = [];
+
+        // Real-time Slider Update
+        torqueSlider.addEventListener('input', function() {
+            torqueValLabel.textContent = this.value;
+            drawSimulation(parseFloat(this.value));
+        });
+
+        // Torsion Math
+        function calculateTorsion(torque) {
+            const G_Pa = parseFloat(document.getElementById('matG').value) * 1e9; // Convert GPa to Pa
+            const L_m = parseFloat(document.getElementById('rodLength').value) / 1000; // mm to m
+            const d_m = parseFloat(document.getElementById('rodDiameter').value) / 1000; // mm to m
+
+            // Polar Moment of Inertia (J = pi * d^4 / 32)
+            const J = (Math.PI * Math.pow(d_m, 4)) / 32;
+
+            // Theoretical Twist in Radians (Theta = T * L / G * J)
+            let thetaRad = (torque * L_m) / (G_Pa * J);
+            let thetaDeg = thetaRad * (180 / Math.PI);
+            return { thetaDeg, L_m, d_m, J };
+        }
+
+        function drawSimulation(torque) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const { thetaDeg } = calculateTorsion(torque);
+            
+            // Add visual noise for display purposes just so user sees variation, 
+            // but keep the live read fairly close.
+            let displayAngle = thetaDeg;
+            liveReadout.textContent = `Angle of Twist: ${displayAngle.toFixed(3)}°`;
+
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+
+            // Draw fixed support (Left)
+            ctx.fillStyle = "#7f8c8d";
+            ctx.fillRect(50, centerY - 40, 30, 80);
+            
+            // Draw hatched lines for fixed support
+            ctx.beginPath();
+            ctx.strokeStyle = "#2c3e50";
+            for(let i=0; i<80; i+=10) {
+                ctx.moveTo(50, centerY - 40 + i);
+                ctx.lineTo(80, centerY - 30 + i);
+            }
+            ctx.stroke();
+
+            // Draw Rod
+            ctx.fillStyle = "#bdc3c7";
+            ctx.fillRect(80, centerY - 15, 380, 30);
+            ctx.strokeStyle = "#95a5a6";
+            ctx.strokeRect(80, centerY - 15, 380, 30);
+
+            // Draw twisting longitudinal line on rod (Simulation of twist)
+            ctx.beginPath();
+            ctx.strokeStyle = "#c0392b";
+            ctx.lineWidth = 3;
+            // Draw a curve representing the twist
+            let segments = 20;
+            ctx.moveTo(80, centerY);
+            for(let i=0; i<=segments; i++) {
+                let x = 80 + (i * (380/segments));
+                // Sine wave variation to simulate wrapped line based on angle
+                let twistOffset = (i / segments) * displayAngle * 0.5; 
+                let y = centerY + Math.sin(twistOffset) * 15;
+                
+                // Keep y within rod bounds visually
+                if (y > centerY + 14) y = centerY + 14;
+                if (y < centerY - 14) y = centerY - 14;
+                
+                ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // Draw Chuck / Wheel at right end
+            ctx.beginPath();
+            ctx.ellipse(460, centerY, 15, 45, 0, 0, 2 * Math.PI);
+            ctx.fillStyle = "#34495e";
+            ctx.fill();
+            ctx.stroke();
+
+            // Draw Torque Arrow (curved arrow)
+            if (torque > 0) {
+                ctx.beginPath();
+                ctx.strokeStyle = "#e67e22";
+                ctx.lineWidth = 4;
+                ctx.arc(460, centerY, 55, -Math.PI/2, Math.PI/2 - (Math.PI/4), false);
+                ctx.stroke();
+
+                // Arrow head
+                ctx.beginPath();
+                ctx.fillStyle = "#e67e22";
+                ctx.moveTo(460 + 55, centerY + 30);
+                ctx.lineTo(460 + 45, centerY + 15);
+                ctx.lineTo(460 + 65, centerY + 15);
+                ctx.fill();
+
+                ctx.fillStyle = "#d35400";
+                ctx.font = "bold 14px Arial";
+                ctx.fillText(`T = ${torque} N·m`, 470, centerY - 65);
+            }
+        }
+
+        function recordData() {
+            const torque = parseFloat(torqueSlider.value);
+            if (torque === 0) return alert("Please apply a torque greater than 0.");
+
+            const mathRes = calculateTorsion(torque);
+            const theorDeg = mathRes.thetaDeg;
+
+            // Introduce realistic lab discrepancy (+/- 3%)
+            const errorMargin = (Math.random() - 0.5) * 0.06;
+            const actualDeg = theorDeg + (theorDeg * errorMargin);
+
+            // Calculate Experimental G based on actual twist
+            // G = (T * L) / (J * thetaRad)
+            const actualRad = actualDeg * (Math.PI / 180);
+            let calcG_Pa = (torque * mathRes.L_m) / (mathRes.J * actualRad);
+            let calcG_GPa = calcG_Pa / 1e9;
+
+            trialCount++;
+
+            // Append to Table
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${trialCount}</td>
+                <td>${torque}</td>
+                <td>${theorDeg.toFixed(3)}</td>
+                <td>${actualDeg.toFixed(3)}</td>
+                <td>${calcG_GPa.toFixed(2)}</td>
+            `;
+            tableBody.appendChild(row);
+
+            // Append to Chart Data Arrays
+            torqueData.push(torque);
+            actualTwistData.push(actualDeg);
+            theorTwistData.push(theorDeg);
+
+            updateChart();
+        }
+
+        function clearData() {
+            trialCount = 0;
+            torqueData = [];
+            actualTwistData = [];
+            theorTwistData = [];
+            tableBody.innerHTML = '';
+            torqueSlider.value = 0;
+            torqueValLabel.textContent = "0";
+            drawSimulation(0);
+            updateChart();
+        }
+
+        function updateChart() {
+            const ctxChart = document.getElementById('chartCanvas').getContext('2d');
+            
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            chartInstance = new Chart(ctxChart, {
+                type: 'line',
+                data: {
+                    labels: torqueData,
+                    datasets: [
+                        {
+                            label: 'Actual Twist Angle (°)',
+                            data: actualTwistData,
+                            borderColor: '#e74c3c',
+                            backgroundColor: 'rgba(231, 76, 60, 0.2)',
+                            pointRadius: 5,
+                            fill: true,
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Theoretical Twist Angle (°)',
+                            data: theorTwistData,
+                            borderColor: '#2980b9',
+                            borderDash: [5, 5],
+                            pointRadius: 0,
+                            fill: false,
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Torque (N·m)', font: {weight: 'bold'} }
+                        },
+                        y: {
+                            title: { display: true, text: 'Angle of Twist (Degrees)', font: {weight: 'bold'} },
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Torque vs. Angle of Twist'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize empty state
+        drawSimulation(0);
+        updateChart();
+    </script>
+</body>
+</html>
