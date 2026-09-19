@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brinell & Rockwell Hardness Testing Virtual Lab</title>
+    <!-- Chart.js for Graphing -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+        .header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .header-content {
+            text-align: center;
+            flex-grow: 1;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 22px;
+            letter-spacing: 1px;
+        }
+        .header h3 {
+            margin: 5px 0 0 0;
+            font-size: 13px;
+            font-weight: 400;
+            color: #bdc3c7;
+        }
+        .logo-left {
+            height: 60px;
+            width: 60px;
+            background-color: #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .logo-left img {
+            height: 100%;
+            width: 100%;
+            object-fit: contain;
+        }
+        .flag-right img {
+            height: 40px;
+            border: 1px solid #fff;
+            border-radius: 4px;
+        }
+        .nav-tabs {
+            display: flex;
+            background-color: #34495e;
+            justify-content: center;
+            gap: 10px;
+            padding: 10px;
+        }
+        .tab-btn {
+            background-color: #2c3e50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 15px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        .tab-btn.active {
+            background-color: #2980b9;
+        }
+        .tab-btn:hover {
+            background-color: #1abc9c;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 20px;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .panel {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            flex: 1;
+            min-width: 300px;
+        }
+        .visualization-panel {
+            flex: 2;
+            min-width: 500px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        canvas {
+            background: #ecf0f1;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+            margin-top: 10px;
+            max-width: 100%;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        select, input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button.action-btn {
+            width: 100%;
+            background-color: #2980b9;
+            color: white;
+            border: none;
+            padding: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        button.action-btn:hover {
+            background-color: #3498db;
+        }
+        button.action-btn:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+        .btn-clear {
+            background-color: #e74c3c;
+        }
+        .btn-clear:hover {
+            background-color: #c0392b;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 13px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #2c3e50;
+            color: white;
+        }
+        .theory-box {
+            background: #f8f9fa;
+            border-left: 4px solid #2980b9;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 4px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .theory-box h4 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        .tab-content {
+            display: none;
+            width: 100%;
+        }
+        .tab-content.active {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .footer {
+            background-color: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 15px;
+            margin-top: 30px;
+            font-weight: bold;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Section -->
+    <header class="header">
+        <div class="logo-left">
+            <img src="logo.jpeg" alt="Logo" onerror="this.onerror=null; this.src='https://via.placeholder.com/60?text=Logo';">
+        </div>
+        <div class="header-content">
+            <h1>Gopalkrishna Advanced Rural Research Foundation</h1>
+            <h3>(Dr. APJ Abdul Kalam Research Zero Funding Initiative)</h3>
+        </div>
+        <div class="flag-right">
+            <img src="https://upload.wikimedia.org/wikipedia/en/4/41/Flag_of_India.svg" alt="India Flag">
+        </div>
+    </header>
+
+    <!-- Navigation Tabs for Brinell & Rockwell -->
+    <div class="nav-tabs">
+        <button class="tab-btn active" onclick="switchTab('brinell')">Brinell Hardness Test</button>
+        <button class="tab-btn" onclick="switchTab('rockwell')">Rockwell Hardness Test</button>
+    </div>
+
+    <!-- MAIN CONTAINER -->
+    <div class="container">
+
+        <!-- ================= BRINELL TEST TAB ================= -->
+        <div id="brinell" class="tab-content active">
+            <!-- Controls Panel -->
+            <div class="panel" style="flex: 1;">
+                <h3>Brinell Controls</h3>
+                <p style="font-size: 12px; color: #555;">Indenter: Hardened Steel Ball (Dia: 10 mm)</p>
+                
+                <div class="form-group">
+                    <label>Select Material Specimen:</label>
+                    <select id="bMaterial">
+                        <option value="mild_steel">Mild Steel (~150 HBW)</option>
+                        <option value="aluminum">Aluminum Alloy (~70 HBW)</option>
+                        <option value="copper">Copper (~95 HBW)</option>
+                        <option value="cast_iron">Cast Iron (~220 HBW)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Applied Load (P):</label>
+                    <select id="bLoad">
+                        <option value="3000">3000 kgf (Standard Ferrous)</option>
+                        <option value="1000">1000 kgf (Medium Materials)</option>
+                        <option value="500">500 kgf (Non-Ferrous / Soft)</option>
+                    </select>
+                </div>
+                
+                <hr>
+                <button class="action-btn" id="bRunBtn" onclick="runBrinellTest()">Apply Indentation & Calculate HBW</button>
+                <button class="action-btn btn-clear" onclick="clearBrinellData()">Clear Data</button>
+
+                <div class="theory-box">
+                    <h4>Brinell Formula</h4>
+                    <p><b>HBW</b> = $\frac{2P}{\pi D (D - \sqrt{D^2 - d^2})}$</p>
+                    <p>Where $P$ = Load (kgf), $D$ = Ball diameter (10 mm), $d$ = Indentation diameter (mm).</p>
+                </div>
+            </div>
+
+            <!-- Visualization Panel -->
+            <div class="visualization-panel panel" style="flex: 2;">
+                <h3>Brinell Indentation Simulation</h3>
+                <canvas id="bCanvas" width="550" height="300"></canvas>
+                <p id="bReadout" style="font-weight: bold; margin-top: 15px; color: #d35400;">Hardness Value: 0.0 HBW</p>
+            </div>
+
+            <!-- Data & Graph Panel -->
+            <div class="panel" style="flex: 2; min-width: 100%;">
+                <h3>Brinell Observation Table & Graph</h3>
+                <div style="display: flex; flex-wrap: wrap; gap: 20px;">
+                    <div style="flex: 1; min-width: 300px; overflow-x: auto;">
+                        <table id="bTable">
+                            <thead>
+                                <tr>
+                                    <th>Trial</th>
+                                    <th>Material</th>
+                                    <th>Load (kgf)</th>
+                                    <th>Indentation Dia (d mm)</th>
+                                    <th>Hardness (HBW)</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <div style="flex: 1; min-width: 300px;">
+                        <canvas id="bChartCanvas"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- ================= ROCKWELL TEST TAB ================= -->
+        <div id="rockwell" class="tab-content">
+            <!-- Controls Panel -->
+            <div class="panel" style="flex: 1;">
+                <h3>Rockwell Controls</h3>
+                <p style="font-size: 12px; color: #555;">Scale: Scale B (1/16" Ball) or Scale C (Diamond Cone)</p>
+                
+                <div class="form-group">
+                    <label>Select Material Specimen:</label>
+                    <select id="rMaterial">
+                        <option value="carbon_steel">High Carbon Steel (HRC ~ 60)</option>
+                        <option value="brass">Brass Sheet (HRB ~ 80)</option>
+                        <option value="annealed_steel">Annealed Steel (HRB ~ 70)</option>
+                        <option value="tool_steel">Hardened Tool Steel (HRC ~ 65)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Rockwell Scale & Indenter:</label>
+                    <select id="rScale">
+                        <option value="HRC">Scale HRC (Diamond Cone, 150 kgf)</option>
+                        <option value="HRB">Scale HRB (1/16" Ball, 100 kgf)</option>
+                    </select>
+                </div>
+                
+                <hr>
+                <button class="action-btn" id="rRunBtn" onclick="runRockwellTest()">Perform Rockwell Test</button>
+                <button class="action-btn btn-clear" onclick="clearRockwellData()">Clear Data</button>
+
+                <div class="theory-box">
+                    <h4>Rockwell Principle</h4>
+                    <p>Measures permanent depth increase of penetration under minor (10 kgf) and major loads. Direct digital readout.</p>
+                    <p><b>HR</b> = $N - \frac{h}{0.002}$</p>
+                </div>
+            </div>
+
+            <!-- Visualization Panel -->
+            <div class="visualization-panel panel" style="flex: 2;">
+                <h3>Rockwell Depth Penetration Simulation</h3>
+                <canvas id="rCanvas" width="550" height="300"></canvas>
+                <p id="rReadout" style="font-weight: bold; margin-top: 15px; color: #d35400;">Hardness Value: 0.0 HR</p>
+            </div>
+
+            <!-- Data & Graph Panel -->
+            <div class="panel" style="flex: 2; min-width: 100%;">
+                <h3>Rockwell Observation Table & Graph</h3>
+                <div style="display: flex; flex-wrap: wrap; gap: 20px;">
+                    <div style="flex: 1; min-width: 300px; overflow-x: auto;">
+                        <table id="rTable">
+                            <thead>
+                                <tr>
+                                    <th>Trial</th>
+                                    <th>Material</th>
+                                    <th>Scale</th>
+                                    <th>Penetration Depth (mm)</th>
+                                    <th>Hardness Value</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <div style="flex: 1; min-width: 300px;">
+                        <canvas id="rChartCanvas"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Footer Section -->
+    <div class="footer">
+        Developed by Dr. Annamdas Venu Gopal Madhav & Annamdas Shantanu Vasudev Krishna
+    </div>
+
+    <!-- Application Logic Script -->
+    <script>
+        // Tab Switching Logic
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(tabId).classList.add('active');
+            event.currentTarget.classList.add('active');
+            
+            if(tabId === 'brinell') updateBChart();
+            else updateRChart();
+        }
+
+        // ================= BRINELL LAB SCRIPT =================
+        const bCanvas = document.getElementById('bCanvas');
+        const bCtx = bCanvas.getContext('2d');
+        let bTrialCount = 0;
+        let bChartInstance = null;
+        let bLabels = [];
+        let bData = [];
+
+        const bMaterials = {
+            mild_steel: { name: 'Mild Steel', baseHbw: 150 },
+            aluminum: { name: 'Aluminum Alloy', baseHbw: 70 },
+            copper: { name: 'Copper', baseHbw: 95 },
+            cast_iron: { name: 'Cast Iron', baseHbw: 220 }
+        };
+
+        function drawBrinellScene(indentProgress) {
+            bCtx.clearRect(0, 0, bCanvas.width, bCanvas.height);
+
+            // Specimen block
+            bCtx.fillStyle = "#cfd8dc";
+            bCtx.strokeStyle = "#455a64";
+            bCtx.lineWidth = 2;
+            bCtx.fillRect(125, 160, 300, 100);
+            bCtx.strokeRect(125, 160, 300, 100);
+
+            // Indenter Ball & Shaft moving downwards with indentation progress (0 to 1)
+            let indenterY = 160 - 50 + (indentProgress * 15);
+            
+            // Indenter shaft
+            bCtx.fillStyle = "#37474f";
+            bCtx.fillRect(265, indenterY - 40, 20, 45);
+
+            // Indenter Ball (10mm scale representation -> radius 25px)
+            bCtx.beginPath();
+            bCtx.arc(275, indenterY, 25, 0, 2 * Math.PI);
+            bCtx.fillStyle = "#90a4ae";
+            bCtx.fill();
+            bCtx.strokeStyle = "#263238";
+            bCtx.lineWidth = 2;
+            bCtx.stroke();
+
+            // Indentation depression impression left on block surface
+            if (indentProgress > 0.5) {
+                bCtx.fillStyle = "#37474f";
+                bCtx.beginPath();
+                bCtx.arc(275, 160, indentProgress * 12, 0, Math.PI, false);
+                bCtx.fill();
+            }
+
+            // Machine Ram / Load Head
+            bCtx.fillStyle = "#2c3e50";
+            bCtx.fillRect(240, indenterY - 70, 70, 25);
+        }
+
+        function runBrinellTest() {
+            document.getElementById('bRunBtn').disabled = true;
+            const matKey = document.getElementById('bMaterial').value;
+            const loadVal = parseFloat(document.getElementById('bLoad').value);
+            const matObj = bMaterials[matKey];
+
+            // Calculate hardness with minor noise
+            const noise = (Math.random() - 0.5) * 6;
+            let hbw = (matObj.baseHbw * (loadVal / 3000) * 0.8) + (matObj.baseHbw * 0.2) + noise;
+            if (hbw < 30) hbw = 30;
+
+            // Calculate indent diameter 'd' from HBW formula backwards: HBW = 2P / (pi*D*(D-sqrt(D^2-d^2)))
+            // D = 10mm
+            let D = 10;
+            let term = (2 * loadVal) / (Math.PI * D * hbw);
+            let valUnderSqrt = D - term;
+            let dIndent = Math.sqrt(Math.max(0, D*D - (valUnderSqrt*valUnderSqrt)));
+            if (isNaN(dIndent) || dIndent <= 0.5) dIndent = 2.5;
+
+            let progress = 0;
+            function animateIndentation() {
+                if (progress < 1) {
+                    progress += 0.05;
+                    drawBrinellScene(progress);
+                    requestAnimationFrame(animateIndentation);
+                } else {
+                    setTimeout(() => {
+                        drawBrinellScene(0); // reset ram
+                        bTrialCount++;
+                        document.getElementById('bReadout').innerHTML = `Hardness Value: ${hbw.toFixed(1)} HBW (d = ${dIndent.toFixed(2)} mm)`;
+
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${bTrialCount}</td>
+                            <td>${matObj.name}</td>
+                            <td>${loadVal} kgf</td>
+                            <td>${dIndent.toFixed(2)}</td>
+                            <td>${hbw.toFixed(1)}</td>
+                        `;
+                        document.querySelector('#bTable tbody').appendChild(row);
+
+                        bLabels.push(`Trial ${bTrialCount} (${matObj.name})`);
+                        bData.push(parseFloat(hbw.toFixed(1)));
+                        updateBChart();
+                        document.getElementById('bRunBtn').disabled = false;
+                    }, 400);
+                }
+            }
+            animateIndentation();
+        }
+
+        function clearBrinellData() {
+            bTrialCount = 0;
+            bLabels = [];
+            bData = [];
+            document.querySelector('#bTable tbody').innerHTML = '';
+            document.getElementById('bReadout').textContent = "Hardness Value: 0.0 HBW";
+            drawBrinellScene(0);
+            updateBChart();
+        }
+
+        function updateBChart() {
+            const ctx = document.getElementById('bChartCanvas').getContext('2d');
+            if (bChartInstance) bChartInstance.destroy();
+
+            bChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: bLabels,
+                    datasets: [{
+                        label: 'Brinell Hardness (HBW)',
+                        data: bData,
+                        backgroundColor: '#2980b9',
+                        borderColor: '#1f618d',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { beginAtZero: true, title: {display: true, text: 'HBW'} }
+                    }
+                }
+            });
+        }
+
+
+        // ================= ROCKWELL LAB SCRIPT =================
+        const rCanvas = document.getElementById('rCanvas');
+        const rCtx = rCanvas.getContext('2d');
+        let rTrialCount = 0;
+        let rChartInstance = null;
+        let rLabels = [];
+        let rData = [];
+
+        const rMaterials = {
+            carbon_steel: { name: 'High Carbon Steel', baseHr: 60, scale: 'HRC' },
+            brass: { name: 'Brass Sheet', baseHr: 80, scale: 'HRB' },
+            annealed_steel: { name: 'Annealed Steel', baseHr: 70, scale: 'HRB' },
+            tool_steel: { name: 'Hardened Tool Steel', baseHr: 65, scale: 'HRC' }
+        };
+
+        function drawRockwellScene(progress, isDiamond) {
+            rCtx.clearRect(0, 0, rCanvas.width, rCanvas.height);
+
+            // Specimen Block
+            rCtx.fillStyle = "#cfd8dc";
+            rCtx.strokeStyle = "#455a64";
+            rCtx.lineWidth = 2;
+            rCtx.fillRect(125, 160, 300, 100);
+            rCtx.strokeRect(125, 160, 300, 100);
+
+            let tipY = 160 - 30 + (progress * 20);
+
+            // Indenter shape (Diamond Cone vs Ball)
+            rCtx.fillStyle = "#34495e";
+            if (isDiamond) {
+                // Diamond Cone
+                rCtx.beginPath();
+                rCtx.moveTo(275, tipY + 20);
+                rCtx.lineTo(265, tipY - 30);
+                rCtx.lineTo(285, tipY - 30);
+                rCtx.closePath();
+                rCtx.fill();
+            } else {
+                // Ball indenter
+                rCtx.fillRect(270, tipY - 30, 10, 30);
+                rCtx.beginPath();
+                rCtx.arc(275, tipY, 10, 0, 2 * Math.PI);
+                rCtx.fillStyle = "#7f8c8d";
+                rCtx.fill();
+            }
+        }
+
+        function runRockwellTest() {
+            document.getElementById('rRunBtn').disabled = true;
+            const matKey = document.getElementById('rMaterial').value;
+            const scaleType = document.getElementById('rScale').value;
+            const matObj = rMaterials[matKey];
+
+            const noise = (Math.random() - 0.5) * 3;
+            let hrVal = matObj.baseHr + noise;
+            let depthMM = 0.2 - (hrVal * 0.002);
+            if(depthMM < 0.02) depthMM = 0.02;
+
+            let isDiamond = scaleType === 'HRC';
+            let progress = 0;
+
+            function animateRockwell() {
+                if(progress < 1) {
+                    progress += 0.08;
+                    drawRockwellScene(progress, isDiamond);
+                    requestAnimationFrame(animateRockwell);
+                } else {
+                    setTimeout(() => {
+                        drawRockwellScene(0, isDiamond);
+                        rTrialCount++;
+                        document.getElementById('rReadout').innerHTML = `Hardness Value: ${hrVal.toFixed(1)} ${scaleType} (Depth: ${depthMM.toFixed(3)} mm)`;
+
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${rTrialCount}</td>
+                            <td>${matObj.name}</td>
+                            <td>${scaleType}</td>
+                            <td>${depthMM.toFixed(3)}</td>
+                            <td>${hrVal.toFixed(1)} ${scaleType}</td>
+                        `;
+                        document.querySelector('#rTable tbody').appendChild(row);
+
+                        rLabels.push(`Trial ${rTrialCount} (${scaleType})`);
+                        rData.push(parseFloat(hrVal.toFixed(1)));
+                        updateRChart();
+                        document.getElementById('rRunBtn').disabled = false;
+                    }, 400);
+                }
+            }
+            animateRockwell();
+        }
+
+        function clearRockwellData() {
+            rTrialCount = 0;
+            rLabels = [];
+            rData = [];
+            document.querySelector('#rTable tbody').innerHTML = '';
+            document.getElementById('rReadout').textContent = "Hardness Value: 0.0 HR";
+            drawRockwellScene(0, true);
+            updateRChart();
+        }
+
+        function updateRChart() {
+            const ctx = document.getElementById('rChartCanvas').getContext('2d');
+            if (rChartInstance) rChartInstance.destroy();
+
+            rChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: rLabels,
+                    datasets: [{
+                        label: 'Rockwell Hardness Value',
+                        data: rData,
+                        backgroundColor: '#e67e22',
+                        borderColor: '#d35400',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { beginAtZero: true, title: {display: true, text: 'Hardness Units'} }
+                    }
+                }
+            });
+        }
+
+        // Initialize default views
+        drawBrinellScene(0);
+        drawRockwellScene(0, true);
+        updateBChart();
+        updateRChart();
+    </script>
+</body>
+</html>
