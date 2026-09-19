@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GARRF Advanced Vertical Tensile Testing & Local Probing Suite</title>
+    <title>GARRF Advanced Vertical Tensile Testing & Cup-and-Cone Suite</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -39,22 +39,29 @@
 </head>
 <body class="bg-dark-900 text-slate-100 font-sans min-h-screen flex flex-col antialiased selection:bg-cyan-500 selection:text-white">
 
-    <!-- Top Header Structure -->
+    <!-- Top Header Structure with logo.jpeg and India Flag -->
     <header class="bg-dark-800 border-b border-dark-700 sticky top-0 z-50 px-6 py-4 shadow-md flex items-center justify-between">
         <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400 font-bold">
-                <i class="fa-solid fa-arrows-up-down"></i>
+            <!-- Logo Image Container (logo.jpeg) -->
+            <div class="w-12 h-12 rounded-xl bg-dark-700 border border-cyan-500/40 flex items-center justify-center overflow-hidden shadow-inner shrink-0">
+                <img src="logo.jpeg" alt="GARRF Logo" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <!-- Fallback icon if logo.jpeg is missing in local folder -->
+                <div class="w-full h-full bg-cyan-500/20 text-cyan-400 font-bold items-center justify-center hidden text-xs">
+                    <i class="fa-solid fa-atom"></i>
+                </div>
             </div>
             <div>
                 <h1 class="text-base sm:text-lg font-bold tracking-tight text-white flex items-center gap-2">
-                    Gopalkrishna Advanced Rural Research Foundation 
+                    Gopalkrishna Advanced Rural Research Foundation
                     <span class="text-xs px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">Zero Funding Initiative</span>
                 </h1>
-                <p class="text-xs text-slate-400">Vertical Tensile & Localized Strain Probing Suite | Open Access Engineering Education</p>
+                <p class="text-xs text-slate-400"> Vertical Tensile & Cup-and-Cone Probing Suite | Open Access Engineering Education</p>
             </div>
         </div>
-        <div class="flex items-center gap-4">
-            <span class="text-2xl" title="India">🇮🇳</span>
+        <!-- India Flag & Country Badge -->
+        <div class="flex items-center gap-2.5 bg-dark-900/80 px-3 py-1.5 rounded-xl border border-dark-700 shadow-inner">
+            <span class="text-xl" title="India">🇮🇳</span>
+            <span class="text-xs font-semibold text-slate-300 hidden sm:inline">India</span>
         </div>
     </header>
 
@@ -64,7 +71,7 @@
         <section class="lg:col-span-1 bg-dark-800/80 backdrop-blur-md border border-dark-700 rounded-2xl p-5 flex flex-col gap-5 shadow-xl h-fit">
             
             <!-- Step 1: Specimen Configuration -->
-            <div class="flex flex-col gap-3 border-b border-dark-700 pb-4">
+            <div id="setupSectionContainer" class="flex flex-col gap-3 border-b border-dark-700 pb-4 transition-all">
                 <h2 class="font-semibold text-slate-200 flex items-center gap-2 text-xs uppercase tracking-wider">
                     <i class="fa-solid fa-sliders text-cyan-400"></i> 1. Specimen & Material Setup
                 </h2>
@@ -72,9 +79,9 @@
                 <div class="flex flex-col gap-1.5">
                     <label class="text-xs text-slate-400">Material Type</label>
                     <select id="materialSelect" class="bg-dark-900 border border-dark-700 text-slate-200 text-xs rounded-xl p-2.5 outline-none focus:border-cyan-500">
-                        <option value="steel">Structural Steel (E=200 GPa, Sy=250 MPa)</option>
-                        <option value="aluminum">Aluminum 6061 (E=68 GPa, Sy=276 MPa)</option>
-                        <option value="brass">Cartridge Brass (E=105 GPa, Sy=200 MPa)</option>
+                        <option value="steel">Structural Steel (Classic Cup-and-Cone)</option>
+                        <option value="aluminum">Aluminum 6061 (Sharper Shear Lips / Slanted)</option>
+                        <option value="brass">Cartridge Brass (Ductile Shear Cup)</option>
                     </select>
                 </div>
 
@@ -89,13 +96,18 @@
                     </div>
                 </div>
 
-                <button id="applySetupBtn" class="w-full py-2 rounded-xl bg-dark-700 hover:bg-dark-600 text-cyan-400 border border-cyan-500/30 text-xs font-semibold transition flex items-center justify-center gap-2">
+                <div class="flex flex-col gap-1">
+                    <label class="text-[11px] text-slate-400">Discretization Divisions (50 - 100)</label>
+                    <input id="inputDivisions" type="number" value="50" min="50" max="100" class="bg-dark-900 border border-dark-700 text-white font-mono text-xs rounded-xl p-2 outline-none focus:border-cyan-500">
+                </div>
+
+                <button id="applySetupBtn" class="w-full py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold shadow-lg shadow-cyan-600/20 transition flex items-center justify-center gap-2">
                     <i class="fa-solid fa-check"></i> Initialize Setup Rig
                 </button>
             </div>
 
             <!-- Step 2: Loading & Pausing Controls -->
-            <div class="flex flex-col gap-3 border-b border-dark-700 pb-4">
+            <div id="loadingSectionContainer" class="flex flex-col gap-3 border-b border-dark-700 pb-4 opacity-40 pointer-events-none transition-opacity duration-300">
                 <h2 class="font-semibold text-slate-200 flex items-center gap-2 text-xs uppercase tracking-wider">
                     <i class="fa-solid fa-play text-cyan-400"></i> 2. Loading & Pause Control
                 </h2>
@@ -103,16 +115,16 @@
                 <div class="flex flex-col gap-1.5">
                     <div class="flex justify-between items-center text-xs">
                         <span class="text-slate-400 font-medium">Applied Load (Pull)</span>
-                        <span id="loadValLabel" class="font-mono text-cyan-400 bg-dark-900 px-2 py-0.5 rounded">0 kN</span>
+                        <span id="loadValLabel" class="font-mono text-cyan-400 bg-dark-900 px-2 py-0.5 rounded">0 / L kN (Unknown)</span>
                     </div>
-                    <input id="loadSlider" type="range" min="0" max="100" step="0.5" value="0" class="w-full accent-cyan-500 bg-dark-700 h-2 rounded-lg cursor-pointer">
+                    <input id="loadSlider" type="range" min="0" max="100" step="0.1" value="0" disabled class="w-full accent-cyan-500 bg-dark-700 h-2 rounded-lg cursor-pointer">
                 </div>
 
                 <div class="grid grid-cols-2 gap-2">
-                    <button id="autoPullBtn" class="py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold shadow-lg shadow-cyan-500/25 transition flex items-center justify-center gap-2 text-xs">
+                    <button id="autoPullBtn" disabled class="py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold shadow-lg shadow-cyan-500/25 transition flex items-center justify-center gap-2 text-xs opacity-60 cursor-not-allowed">
                         <i class="fa-solid fa-play" id="autoPullIcon"></i> <span id="autoPullText">Start / Resume</span>
                     </button>
-                    <button id="pausePullBtn" class="py-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 transition flex items-center justify-center gap-2 text-xs font-medium">
+                    <button id="pausePullBtn" disabled class="py-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 transition flex items-center justify-center gap-2 text-xs font-medium opacity-60 cursor-not-allowed">
                         <i class="fa-solid fa-pause"></i> Pause Test
                     </button>
                 </div>
@@ -164,7 +176,31 @@
                     <span class="text-xs text-slate-400 font-medium flex items-center gap-1.5">
                         <i class="fa-solid fa-triangle-exclamation text-cyan-400"></i> Rig Status
                     </span>
-                    <span id="phaseDisplay" class="text-sm font-bold font-mono text-emerald-400 mt-3">Ready (Paused)</span>
+                    <span id="phaseDisplay" class="text-sm font-bold font-mono text-amber-400 mt-3">Awaiting Initialization</span>
+                </div>
+            </div>
+
+            <!-- Post-Fracture Summary Panel (Appears after breaking) -->
+            <div id="fractureSummaryCard" class="hidden bg-gradient-to-r from-red-950/60 via-dark-800 to-dark-800 border border-red-500/40 rounded-2xl p-5 shadow-2xl flex flex-col gap-3">
+                <div class="flex items-center justify-between border-b border-red-500/30 pb-2">
+                    <h3 class="font-bold text-red-400 text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-triangle-exclamation"></i> Material Fracture Halted & Rupture Summary
+                    </h3>
+                    <span id="fractureMaterialBadge" class="text-xs font-mono bg-red-500/20 text-red-300 px-2.5 py-1 rounded-lg border border-red-500/30">Test Completed</span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+                    <div class="bg-dark-900/80 p-3 rounded-xl border border-dark-700 flex flex-col gap-1">
+                        <span class="text-[11px] text-slate-400">Calculated Fracture Load ($L_{fracture}$)</span>
+                        <span id="finalFractureLoadLabel" class="font-mono text-red-400 font-bold text-base">-- kN</span>
+                    </div>
+                    <div class="bg-dark-900/80 p-3 rounded-xl border border-dark-700 flex flex-col gap-1">
+                        <span class="text-[11px] text-slate-400">True Stress at Fracture ($\sigma_{true}$)</span>
+                        <span id="finalTrueStress" class="font-mono text-amber-400 font-bold text-base">-- MPa</span>
+                    </div>
+                    <div class="bg-dark-900/80 p-3 rounded-xl border border-dark-700 flex flex-col gap-1">
+                        <span class="text-[11px] text-slate-400">True Strain at Fracture ($\epsilon_{true}$)</span>
+                        <span id="finalTrueStrain" class="font-mono text-emerald-400 font-bold text-base">-- mm/mm</span>
+                    </div>
                 </div>
             </div>
 
@@ -173,9 +209,9 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <h2 class="font-semibold text-white flex items-center gap-2 text-sm">
-                            <i class="fa-solid fa-video text-cyan-400"></i> Experimental Setup & Interactive Rod Probing Plane
+                            <i class="fa-solid fa-video text-cyan-400"></i> Experimental Setup & Material Fracture Plane
                         </h2>
-                        <p class="text-xs text-slate-400">Click anywhere directly on the rod to inspect local stress and strain at that exact height coordinate.</p>
+                        <p class="text-xs text-slate-400">Rig halts instantly at dynamic fracture load ($L$ kN). Slider locks out automatically upon rupture.</p>
                     </div>
                 </div>
                 <div class="relative w-full h-80 sm:h-96 bg-dark-900 rounded-xl overflow-hidden border border-dark-700 shadow-inner flex items-center justify-center">
@@ -186,20 +222,20 @@
             <!-- Educational Explanation Card -->
             <div class="bg-dark-800/90 border border-cyan-500/30 rounded-2xl p-5 shadow-xl flex flex-col gap-3">
                 <h3 class="font-semibold text-cyan-400 text-xs uppercase tracking-wider flex items-center gap-2">
-                    <i class="fa-solid fa-book-open"></i> How to Use the Probing & Pause Features
+                    <i class="fa-solid fa-book-open"></i> Material-Specific Ductile Fracture Behavior
                 </h3>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-300">
                     <div class="bg-dark-900/60 p-3 rounded-xl border border-dark-700 flex flex-col gap-1.5">
-                        <span class="font-bold text-white flex items-center gap-1.5"><i class="fa-solid fa-1 text-cyan-400"></i> Set Dimensions & Setup</span>
-                        <p class="text-slate-400 leading-relaxed">Enter your preferred initial length ($L_0$) and diameter ($D_0$), pick a material, and click Initialize Setup Rig to configure the testing frame.</p>
+                        <span class="font-bold text-white flex items-center gap-1.5"><i class="fa-solid fa-shield-halved text-cyan-400"></i> Structural Steel</span>
+                        <p class="text-slate-400 leading-relaxed">Exhibits classic symmetric **cup-and-cone** failure with a fibrous central region and $45^\circ$ shear lip rim.</p>
                     </div>
                     <div class="bg-dark-900/60 p-3 rounded-xl border border-dark-700 flex flex-col gap-1.5">
-                        <span class="font-bold text-white flex items-center gap-1.5"><i class="fa-solid fa-2 text-cyan-400"></i> Pause at Will</span>
-                        <p class="text-slate-400 leading-relaxed">Run the automatic pull test or use the load slider manually. Hit **Pause** at any load level (e.g., right before yielding or during necking) to freeze the experiment.</p>
+                        <span class="font-bold text-white flex items-center gap-1.5"><i class="fa-solid fa-feather text-cyan-400"></i> Aluminum 6061</span>
+                        <p class="text-slate-400 leading-relaxed">Displays sharper slanted shear lips and higher localized necking elongation due to FCC slip systems.</p>
                     </div>
                     <div class="bg-dark-900/60 p-3 rounded-xl border border-dark-700 flex flex-col gap-1.5">
-                        <span class="font-bold text-white flex items-center gap-1.5"><i class="fa-solid fa-3 text-cyan-400"></i> Probe Various Locations</span>
-                        <p class="text-slate-400 leading-relaxed">Click any point along the vertical rod to view how local strain spikes at the center due to necking while remaining uniform near the grips.</p>
+                        <span class="font-bold text-white flex items-center gap-1.5"><i class="fa-solid fa-coins text-cyan-400"></i> Cartridge Brass</span>
+                        <p class="text-slate-400 leading-relaxed">Features smooth ductile cup formation with excellent reduction in area and fine dimpled rupture surfaces.</p>
                     </div>
                 </div>
             </div>
@@ -222,22 +258,27 @@
 
     <script>
         const tensileState = {
+            isInitialized: false,
             load: 0, // kN
-            maxLoad: 100,
+            fractureLoad: 0, // Calculated dynamically upon init (L kN)
             L0: 200, // mm
             D0: 12.5, // mm
+            divisions: 50,
             material: 'steel',
             E: 200000, // MPa
             Sy: 250, // MPa
+            UTS: 460, // MPa
             isAutoPulling: false,
             isPaused: true,
-            probeYNorm: 0.5 // Normalized position from top (0.0 to 1.0)
+            isFractured: false,
+            probeYNorm: 0.5, // Normalized position from top (0.0 to 1.0)
+            loggedCSVRows: []
         };
 
         const materialsData = {
-            steel: { E: 200000, Sy: 250, name: 'Structural Steel' },
-            aluminum: { E: 68000, Sy: 276, name: 'Aluminum 6061' },
-            brass: { E: 105000, Sy: 200, name: 'Cartridge Brass' }
+            steel: { E: 200000, Sy: 250, UTS: 460, name: 'Structural Steel (Cup-and-Cone)' },
+            aluminum: { E: 68000, Sy: 276, UTS: 310, name: 'Aluminum 6061 (Slanted Shear)' },
+            brass: { E: 105000, Sy: 200, UTS: 380, name: 'Cartridge Brass (Ductile Shear)' }
         };
 
         const loadSlider = document.getElementById('loadSlider');
@@ -246,11 +287,19 @@
         const stressDisplay = document.getElementById('stressDisplay');
         const diameterDisplay = document.getElementById('diameterDisplay');
         const phaseDisplay = document.getElementById('phaseDisplay');
+        const fractureSummaryCard = document.getElementById('fractureSummaryCard');
+        const fractureMaterialBadge = document.getElementById('fractureMaterialBadge');
+        const finalFractureLoadLabel = document.getElementById('finalFractureLoadLabel');
+        const finalTrueStress = document.getElementById('finalTrueStress');
+        const finalTrueStrain = document.getElementById('finalTrueStrain');
         
         const inputL0 = document.getElementById('inputL0');
         const inputD0 = document.getElementById('inputD0');
+        const inputDivisions = document.getElementById('inputDivisions');
         const materialSelect = document.getElementById('materialSelect');
         const applySetupBtn = document.getElementById('applySetupBtn');
+        const setupSectionContainer = document.getElementById('setupSectionContainer');
+        const loadingSectionContainer = document.getElementById('loadingSectionContainer');
 
         const autoPullBtn = document.getElementById('autoPullBtn');
         const autoPullIcon = document.getElementById('autoPullIcon');
@@ -280,102 +329,196 @@
         applySetupBtn.addEventListener('click', () => {
             tensileState.L0 = parseFloat(inputL0.value) || 200;
             tensileState.D0 = parseFloat(inputD0.value) || 12.5;
+            let divVal = parseInt(inputDivisions.value) || 50;
+            tensileState.divisions = Math.max(50, Math.min(100, divVal));
+            inputDivisions.value = tensileState.divisions;
+
             tensileState.material = materialSelect.value;
             tensileState.E = materialsData[tensileState.material].E;
             tensileState.Sy = materialsData[tensileState.material].Sy;
+            tensileState.UTS = materialsData[tensileState.material].UTS;
+
+            // CALCULATE EXACT DYNAMIC FRACTURE LOAD (L kN) BASED ON AREA & UTS
+            let A0 = Math.PI * Math.pow(tensileState.D0 / 2, 2); // mm^2
+            tensileState.fractureLoad = parseFloat(((tensileState.UTS * A0) / 1000).toFixed(2)); // in kN
+
             tensileState.load = 0;
+            loadSlider.max = tensileState.fractureLoad;
             loadSlider.value = 0;
+            loadSlider.removeAttribute('disabled');
+            tensileState.isInitialized = true;
             tensileState.isAutoPulling = false;
             tensileState.isPaused = true;
+            tensileState.isFractured = false;
+            tensileState.loggedCSVRows = [];
+            fractureSummaryCard.classList.add('hidden');
+
+            // Freeze section 1 inputs
+            inputL0.setAttribute('disabled', 'true');
+            inputD0.setAttribute('disabled', 'true');
+            inputDivisions.setAttribute('disabled', 'true');
+            materialSelect.setAttribute('disabled', 'true');
+            applySetupBtn.setAttribute('disabled', 'true');
+            applySetupBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            setupSectionContainer.classList.add('opacity-75');
+
+            // Unlock section 2
+            loadingSectionContainer.classList.remove('opacity-40', 'pointer-events-none');
+            autoPullBtn.removeAttribute('disabled');
+            autoPullBtn.classList.remove('opacity-60', 'cursor-not-allowed');
+            pausePullBtn.removeAttribute('disabled');
+            pausePullBtn.classList.remove('opacity-60', 'cursor-not-allowed');
+
             updateTensileCalculations();
             renderTensileCanvas();
         });
 
         function getLocalPropertiesAt(normY) {
-            // normY goes from 0 (top grip) to 1 (bottom grip)
             let F = tensileState.load * 1000; // N
             let A0 = Math.PI * Math.pow(tensileState.D0 / 2, 2);
             let globalStress = F / A0; // MPa
 
             let globalStrain = 0;
             let minDiameter = tensileState.D0;
+            let yieldLoad = (tensileState.Sy * A0) / 1000;
+            let fracLoad = tensileState.fractureLoad;
 
             if (tensileState.load === 0) {
                 globalStrain = 0;
                 minDiameter = tensileState.D0;
-            } else if (globalStress <= tensileState.Sy) {
+            } else if (F / 1000 <= yieldLoad) {
                 globalStrain = globalStress / tensileState.E;
-                minDiameter = tensileState.D0 * (1 - 0.3 * globalStrain);
+                minDiameter = tensileState.D0 * (1 - 0.05 * (tensileState.load / yieldLoad));
             } else {
-                let plasticProgress = (globalStress - tensileState.Sy) / (tensileState.Sy * 0.8);
-                globalStrain = (tensileState.Sy / tensileState.E) + Math.pow(plasticProgress, 1.5) * 0.25;
-                if (tensileState.load > 70) {
-                    let neckProgress = (tensileState.load - 70) / 30;
-                    minDiameter = tensileState.D0 * (0.9 - neckProgress * 0.45);
-                } else {
-                    minDiameter = tensileState.D0 * (1 - 0.3 * globalStrain);
-                }
+                let plasticProgress = (tensileState.load - yieldLoad) / Math.max(1, (fracLoad - yieldLoad));
+                globalStrain = (tensileState.Sy / tensileState.E) + Math.pow(plasticProgress, 1.2) * 0.3;
+                
+                // Monotonic necking reduction ending precisely at fracture load
+                minDiameter = tensileState.D0 * (1.0 - 0.70 * Math.min(1.0, plasticProgress));
             }
 
-            // Local variation: Necking concentrates heavily at center (normY = 0.5)
-            let distanceFromCenter = Math.abs(normY - 0.5); // 0 at center, 0.5 at ends
-            let neckFactor = Math.exp(-Math.pow(distanceFromCenter * 3, 2)); // Gaussian peak at center
+            let distanceFromCenter = Math.abs(normY - 0.5); 
+            let neckFactor = Math.exp(-Math.pow(distanceFromCenter * 5, 2)); 
             
             let localDiameter = tensileState.D0;
             let localStrain = 0;
 
-            if (tensileState.load <= 55) {
-                localDiameter = minDiameter;
+            if (F / 1000 <= yieldLoad) {
+                localDiameter = tensileState.D0 * (1.0 - 0.05 * (tensileState.load / yieldLoad) * (1 - 0.1 * neckFactor));
                 localStrain = globalStrain;
             } else {
-                // Center shrinks much more, ends stay closer to grips
-                let diameterDiff = tensileState.D0 - minDiameter;
-                localDiameter = tensileState.D0 - diameterDiff * neckFactor * 1.3;
-                localDiameter = Math.max(0.5, localDiameter); // prevent negative
-                localStrain = globalStrain * (1 + 2.5 * neckFactor * (tensileState.load / 100));
+                let totalDiaReduction = tensileState.D0 - minDiameter;
+                localDiameter = tensileState.D0 - totalDiaReduction * neckFactor;
+                localDiameter = Math.max(0.15, localDiameter); 
+                localStrain = globalStrain * (1 + 3.5 * neckFactor * (tensileState.load / fracLoad));
             }
 
             let localArea = Math.PI * Math.pow(localDiameter / 2, 2);
-            let localStress = localArea > 0 ? F / localArea : 0;
+            let localTrueStress = localArea > 0 ? F / localArea : 0;
+            let localTrueStrain = Math.log(A0 / Math.max(0.05, localArea));
 
-            return { localDiameter, localStrain, localStress, globalStrain, globalStress, minDiameter };
+            return { localDiameter, localStrain, localTrueStress, localTrueStrain, globalStrain, globalStress, minDiameter };
+        }
+
+        function recordStepDataToCSV() {
+            if (!tensileState.isInitialized) return;
+            let currentElongation = (tensileState.globalStrain || 0) * tensileState.L0;
+            let currentTotalLength = tensileState.L0 + currentElongation;
+            let stepDivs = tensileState.divisions;
+            let sliceLength = currentTotalLength / stepDivs;
+
+            for (let i = 0; i <= stepDivs; i++) {
+                let currentPosFromBottom = i * sliceLength;
+                let normY = 1.0 - (i / stepDivs); 
+                let props = getLocalPropertiesAt(normY);
+
+                tensileState.loggedCSVRows.push({
+                    load: tensileState.load.toFixed(2),
+                    divisionIndex: i,
+                    heightPositionFromBottom_mm: currentPosFromBottom.toFixed(2),
+                    localDiameter_mm: Math.max(0, props.localDiameter).toFixed(4),
+                    localTrueStress_MPa: props.localTrueStress.toFixed(2),
+                    localTrueStrain: props.localTrueStrain.toFixed(5)
+                });
+            }
+        }
+
+        function exportCSVFile() {
+            if (tensileState.loggedCSVRows.length === 0) return;
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Load_kN,Division_Index,Height_From_Bottom_mm,Local_Diameter_mm,Local_True_Stress_MPa,Local_True_Strain\n";
+
+            tensileState.loggedCSVRows.forEach(row => {
+                csvContent += `${row.load},${row.divisionIndex},${row.heightPositionFromBottom_mm},${row.localDiameter_mm},${row.localTrueStress_MPa},${row.localTrueStrain}\n`;
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `Tensile_Fracture_Report_${tensileState.material}_${tensileState.divisions}div.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
 
         function updateTensileCalculations() {
-            let res = getLocalPropertiesAt(0.5); // center values for global display
+            if (!tensileState.isInitialized) {
+                loadValLabel.textContent = `0 / L kN (Unknown)`;
+                phaseDisplay.textContent = "Awaiting Initialization";
+                phaseDisplay.className = "text-sm font-bold font-mono text-amber-400";
+                return;
+            }
+
+            let res = getLocalPropertiesAt(0.5); 
+            tensileState.globalStrain = res.globalStrain;
+
             let phaseText = "Paused / Ready";
             let phaseColor = "text-emerald-400";
 
             if (tensileState.load === 0) {
-                phaseText = "Initial Setup Ready";
-                phaseColor = "text-slate-400";
-            } else if (tensileState.load <= 55) {
+                phaseText = "Rig Initialized (Ready)";
+                phaseColor = "text-cyan-400";
+            } else if (tensileState.isFractured || tensileState.load >= tensileState.fractureLoad) {
+                phaseText = "Fracture Reached (Rig Halted)";
+                phaseColor = "text-red-500";
+            } else if (tensileState.load <= (tensileState.Sy * Math.PI * Math.pow(tensileState.D0/2,2))/1000) {
                 phaseText = "Elastic Region (Uniform)";
                 phaseColor = "text-emerald-400";
-            } else if (tensileState.load < 80) {
+            } else if (tensileState.load < tensileState.fractureLoad * 0.8) {
                 phaseText = "Plastic Yielding & Hardening";
                 phaseColor = "text-cyan-400";
-            } else if (tensileState.load < 100) {
+            } else {
                 phaseText = "Localized Necking Active";
                 phaseColor = "text-amber-400";
-            } else {
-                phaseText = "Rupture / Fracture Occurred";
-                phaseColor = "text-red-500";
             }
 
-            loadValLabel.textContent = `${tensileState.load.toFixed(1)} kN`;
+            loadValLabel.textContent = `${tensileState.load.toFixed(1)} / ${tensileState.fractureLoad} kN`;
             strainDisplay.innerHTML = `${res.globalStrain.toFixed(4)} <span class="text-xs text-cyan-400 font-normal">mm/mm</span>`;
             stressDisplay.innerHTML = `${res.globalStress.toFixed(1)} <span class="text-xs text-cyan-400 font-normal">MPa</span>`;
             diameterDisplay.innerHTML = `${Math.max(0, res.minDiameter).toFixed(2)} <span class="text-xs text-cyan-400 font-normal">mm</span>`;
             phaseDisplay.textContent = phaseText;
             phaseDisplay.className = `text-sm font-bold font-mono ${phaseColor}`;
 
-            // Update Probe Readout for current probeYNorm
             let probeRes = getLocalPropertiesAt(tensileState.probeYNorm);
             probePosLabel.textContent = `y = ${(tensileState.probeYNorm * 100).toFixed(0)}% height`;
             probeDiaLabel.textContent = `${Math.max(0, probeRes.localDiameter).toFixed(2)} mm`;
-            probeStrainLabel.textContent = `${probeRes.localStrain.toFixed(4)} mm/mm`;
-            probeStressLabel.textContent = `${probeRes.localStress.toFixed(1)} MPa`;
+            probeStrainLabel.textContent = `${probeRes.localTrueStrain.toFixed(4)} (True)`;
+            probeStressLabel.textContent = `${probeRes.localTrueStress.toFixed(1)} MPa`;
+
+            if (tensileState.isFractured) {
+                finalFractureLoadLabel.textContent = `${tensileState.fractureLoad} kN`;
+                finalTrueStress.textContent = `${res.localTrueStress.toFixed(1)} MPa`;
+                finalTrueStrain.textContent = `${res.localTrueStrain.toFixed(4)}`;
+                fractureMaterialBadge.textContent = materialsData[tensileState.material].name;
+                fractureSummaryCard.classList.remove('hidden');
+
+                // LOCK OUT CONTROLS IMMEDIATELY AT FRACTURE
+                loadSlider.setAttribute('disabled', 'true');
+                autoPullBtn.setAttribute('disabled', 'true');
+                autoPullBtn.classList.add('opacity-60', 'cursor-not-allowed');
+                pausePullBtn.setAttribute('disabled', 'true');
+                pausePullBtn.classList.add('opacity-60', 'cursor-not-allowed');
+            }
         }
 
         function renderTensileCanvas() {
@@ -385,7 +528,6 @@
 
             tensileCtx.clearRect(0, 0, width, height);
 
-            // Draw grid
             tensileCtx.strokeStyle = '#1f2937';
             tensileCtx.lineWidth = 1;
             for (let i = 1; i < 6; i++) {
@@ -396,13 +538,11 @@
             let centerX = width / 2;
             let topY = 75;
             let bottomY = height - 75;
-            let baseHeight = bottomY - topY;
-            let elongation = (tensileState.load / 100) * 60;
+            let elongation = tensileState.isInitialized ? (tensileState.load / tensileState.fractureLoad) * 60 : 0;
             let currentTopY = topY - elongation / 2;
             let currentBottomY = bottomY + elongation / 2;
             let currentRodHeight = currentBottomY - currentTopY;
 
-            // Draw Rig Framework (Load frame pillars)
             tensileCtx.strokeStyle = '#374151';
             tensileCtx.lineWidth = 6;
             tensileCtx.beginPath();
@@ -410,13 +550,11 @@
             tensileCtx.moveTo(centerX + 70, 30); tensileCtx.lineTo(centerX + 70, height - 30);
             tensileCtx.stroke();
 
-            // Draw Top and Bottom Grips
             tensileCtx.fillStyle = '#4b5563';
             tensileCtx.fillRect(centerX - 45, currentTopY - 35, 90, 35);
             tensileCtx.fillRect(centerX - 45, currentBottomY, 90, 35);
 
-            // Draw Load Indicator Arrow
-            if (tensileState.load > 0) {
+            if (tensileState.load > 0 && !tensileState.isFractured) {
                 tensileCtx.strokeStyle = '#06b6d4';
                 tensileCtx.lineWidth = 3;
                 tensileCtx.beginPath();
@@ -431,21 +569,76 @@
                 tensileCtx.fill();
             }
 
-            if (tensileState.load >= 100) {
-                // Fracture halves
-                let halfH = currentRodHeight / 2 - 6;
+            if (!tensileState.isInitialized) {
+                tensileCtx.fillStyle = '#94a3b8';
+                tensileCtx.font = '13px sans-serif';
+                tensileCtx.textAlign = 'center';
+                tensileCtx.fillText('Click "Initialize Setup Rig" to Load Specimen', centerX, currentTopY + currentRodHeight / 2);
+            } else if (tensileState.isFractured || tensileState.load >= tensileState.fractureLoad) {
+                // MATERIAL-SPECIFIC FRACTURE RENDER GEOMETRIES
+                let halfH = currentRodHeight / 2 - 12;
                 let gradTop = tensileCtx.createLinearGradient(centerX - 25, currentTopY, centerX + 25, currentTopY);
-                gradTop.addColorStop(0, '#0e7490'); gradTop.addColorStop(0.5, '#22d3ee'); gradTop.addColorStop(1, '#0e7490');
+                
+                if (tensileState.material === 'aluminum') {
+                    gradTop.addColorStop(0, '#0284c7'); gradTop.addColorStop(0.5, '#38bdf8'); gradTop.addColorStop(1, '#0284c7');
+                } else if (tensileState.material === 'brass') {
+                    gradTop.addColorStop(0, '#b45309'); gradTop.addColorStop(0.5, '#f59e0b'); gradTop.addColorStop(1, '#b45309');
+                } else {
+                    gradTop.addColorStop(0, '#0e7490'); gradTop.addColorStop(0.5, '#22d3ee'); gradTop.addColorStop(1, '#0e7490');
+                }
                 tensileCtx.fillStyle = gradTop;
-                tensileCtx.fillRect(centerX - 12, currentTopY, 24, halfH);
-                tensileCtx.fillRect(centerX - 12, currentBottomY - halfH, 24, halfH);
+
+                if (tensileState.material === 'aluminum') {
+                    // Slanted Shear Failure Profile for Aluminum
+                    tensileCtx.beginPath();
+                    tensileCtx.moveTo(centerX - 12, currentTopY);
+                    tensileCtx.lineTo(centerX + 12, currentTopY);
+                    tensileCtx.lineTo(centerX + 12, currentTopY + halfH);
+                    tensileCtx.lineTo(centerX + 6, currentTopY + halfH + 16); 
+                    tensileCtx.lineTo(centerX - 6, currentTopY + halfH + 8);
+                    tensileCtx.lineTo(centerX - 12, currentTopY + halfH);
+                    tensileCtx.closePath();
+                    tensileCtx.fill();
+
+                    tensileCtx.beginPath();
+                    tensileCtx.moveTo(centerX - 12, currentBottomY);
+                    tensileCtx.lineTo(centerX + 12, currentBottomY);
+                    tensileCtx.lineTo(centerX + 12, currentBottomY - halfH);
+                    tensileCtx.lineTo(centerX + 6, currentBottomY - halfH - 8);
+                    tensileCtx.lineTo(centerX - 6, currentBottomY - halfH - 16);
+                    tensileCtx.lineTo(centerX - 12, currentBottomY - halfH);
+                    tensileCtx.closePath();
+                    tensileCtx.fill();
+                } else {
+                    // Classic Cup and Cone for Steel & Brass
+                    tensileCtx.beginPath();
+                    tensileCtx.moveTo(centerX - 12, currentTopY);
+                    tensileCtx.lineTo(centerX + 12, currentTopY);
+                    tensileCtx.lineTo(centerX + 12, currentTopY + halfH);
+                    tensileCtx.lineTo(centerX + 3, currentTopY + halfH + 12); 
+                    tensileCtx.lineTo(centerX - 3, currentTopY + halfH + 12);
+                    tensileCtx.lineTo(centerX - 12, currentTopY + halfH);
+                    tensileCtx.closePath();
+                    tensileCtx.fill();
+
+                    tensileCtx.beginPath();
+                    tensileCtx.moveTo(centerX - 12, currentBottomY);
+                    tensileCtx.lineTo(centerX + 12, currentBottomY);
+                    tensileCtx.lineTo(centerX + 12, currentBottomY - halfH);
+                    tensileCtx.lineTo(centerX + 12, currentBottomY - halfH - 12); 
+                    tensileCtx.lineTo(centerX + 3, currentBottomY - halfH - 4);  
+                    tensileCtx.lineTo(centerX - 3, currentBottomY - halfH - 4);  
+                    tensileCtx.lineTo(centerX - 12, currentBottomY - halfH - 12); 
+                    tensileCtx.lineTo(centerX - 12, currentBottomY - halfH);
+                    tensileCtx.closePath();
+                    tensileCtx.fill();
+                }
 
                 tensileCtx.fillStyle = '#ef4444';
-                tensileCtx.font = 'bold 13px sans-serif';
+                tensileCtx.font = 'bold 12px sans-serif';
                 tensileCtx.textAlign = 'center';
-                tensileCtx.fillText('FRACTURE RUPTURE (100 kN)', centerX, currentTopY + halfH + 15);
+                tensileCtx.fillText(`FRACTURE HALTED: ${materialsData[tensileState.material].name.split(' ')[0]} (${tensileState.fractureLoad} kN)`, centerX, currentTopY + halfH + 34);
             } else {
-                // Draw smooth contour rod by sampling height slices
                 const slices = 40;
                 let sliceH = currentRodHeight / slices;
 
@@ -462,7 +655,13 @@
                     let r2 = (prop2.localDiameter / tensileState.D0) * 18;
 
                     let gradSlice = tensileCtx.createLinearGradient(centerX - r1, y1, centerX + r1, y1);
-                    gradSlice.addColorStop(0, '#0e7490'); gradSlice.addColorStop(0.5, '#22d3ee'); gradSlice.addColorStop(1, '#0e7490');
+                    if (tensileState.material === 'aluminum') {
+                        gradSlice.addColorStop(0, '#0284c7'); gradSlice.addColorStop(0.5, '#38bdf8'); gradSlice.addColorStop(1, '#0284c7');
+                    } else if (tensileState.material === 'brass') {
+                        gradSlice.addColorStop(0, '#b45309'); gradSlice.addColorStop(0.5, '#f59e0b'); gradSlice.addColorStop(1, '#b45309');
+                    } else {
+                        gradSlice.addColorStop(0, '#0e7490'); gradSlice.addColorStop(0.5, '#22d3ee'); gradSlice.addColorStop(1, '#0e7490');
+                    }
                     tensileCtx.fillStyle = gradSlice;
 
                     tensileCtx.beginPath();
@@ -475,33 +674,33 @@
                 }
             }
 
-            // Draw Probe Marker Crosshair on Rod
-            let probeYCoord = currentTopY + tensileState.probeYNorm * currentRodHeight;
-            let probeProps = getLocalPropertiesAt(tensileState.probeYNorm);
-            let probeRadius = (probeProps.localDiameter / tensileState.D0) * 18;
+            if (tensileState.isInitialized && !tensileState.isFractured) {
+                let probeYCoord = currentTopY + tensileState.probeYNorm * currentRodHeight;
+                let probeProps = getLocalPropertiesAt(tensileState.probeYNorm);
+                let probeRadius = (probeProps.localDiameter / tensileState.D0) * 18;
 
-            tensileCtx.strokeStyle = '#f59e0b';
-            tensileCtx.lineWidth = 2;
-            tensileCtx.beginPath();
-            tensileCtx.arc(centerX, probeYCoord, Math.max(8, probeRadius + 4), 0, 2 * Math.PI);
-            tensileCtx.stroke();
+                tensileCtx.strokeStyle = '#f59e0b';
+                tensileCtx.lineWidth = 2;
+                tensileCtx.beginPath();
+                tensileCtx.arc(centerX, probeYCoord, Math.max(8, probeRadius + 4), 0, 2 * Math.PI);
+                tensileCtx.stroke();
 
-            // Probe callout tag
-            tensileCtx.fillStyle = '#f59e0b';
-            tensileCtx.font = '11px monospace';
-            tensileCtx.textAlign = 'left';
-            tensileCtx.fillText(`► Probe (y=${(tensileState.probeYNorm*100).toFixed(0)}%)`, centerX + probeRadius + 15, probeYCoord + 4);
+                tensileCtx.fillStyle = '#f59e0b';
+                tensileCtx.font = '11px monospace';
+                tensileCtx.textAlign = 'left';
+                tensileCtx.fillText(`► Probe (y=${(tensileState.probeYNorm*100).toFixed(0)}%)`, centerX + probeRadius + 15, probeYCoord + 4);
+            }
         }
 
-        // Canvas Click to Probe Location
         tensileCanvas.addEventListener('click', (e) => {
+            if (!tensileState.isInitialized || tensileState.isFractured) return;
             const rect = tensileCanvas.getBoundingClientRect();
             const clickY = e.clientY - rect.top;
             const height = rect.height;
 
             let topY = 75;
             let bottomY = height - 75;
-            let elongation = (tensileState.load / 100) * 60;
+            let elongation = (tensileState.load / tensileState.fractureLoad) * 60;
             let currentTopY = topY - elongation / 2;
             let currentBottomY = bottomY + elongation / 2;
             let currentRodHeight = currentBottomY - currentTopY;
@@ -515,16 +714,34 @@
         });
 
         loadSlider.addEventListener('input', (e) => {
+            if (!tensileState.isInitialized || tensileState.isFractured) return;
+            let prevLoad = tensileState.load;
             tensileState.load = parseFloat(e.target.value);
             tensileState.isPaused = true;
             tensileState.isAutoPulling = false;
             autoPullIcon.className = "fa-solid fa-play";
             autoPullText.textContent = "Start / Resume";
+
+            if (tensileState.load > prevLoad) {
+                recordStepDataToCSV();
+            }
+
+            if (tensileState.load >= tensileState.fractureLoad) {
+                tensileState.load = tensileState.fractureLoad;
+                tensileState.isFractured = true;
+                recordStepDataToCSV();
+                updateTensileCalculations();
+                renderTensileCanvas();
+                exportCSVFile();
+                return;
+            }
+
             updateTensileCalculations();
             renderTensileCanvas();
         });
 
         autoPullBtn.addEventListener('click', () => {
+            if (!tensileState.isInitialized || tensileState.isFractured) return;
             tensileState.isAutoPulling = true;
             tensileState.isPaused = false;
             autoPullIcon.className = "fa-solid fa-rotate fa-spin";
@@ -533,6 +750,7 @@
         });
 
         pausePullBtn.addEventListener('click', () => {
+            if (!tensileState.isInitialized || tensileState.isFractured) return;
             tensileState.isAutoPulling = false;
             tensileState.isPaused = true;
             autoPullIcon.className = "fa-solid fa-play";
@@ -545,8 +763,28 @@
             tensileState.load = 0;
             tensileState.isAutoPulling = false;
             tensileState.isPaused = true;
+            tensileState.isFractured = false;
+            tensileState.loggedCSVRows = [];
+            
+            // Unfreeze Section 1 Inputs
+            inputL0.removeAttribute('disabled');
+            inputD0.removeAttribute('disabled');
+            inputDivisions.removeAttribute('disabled');
+            materialSelect.removeAttribute('disabled');
+            applySetupBtn.removeAttribute('disabled');
+            applySetupBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            setupSectionContainer.classList.remove('opacity-75');
+
+            // Lock Section 2 Controls
+            loadingSectionContainer.classList.add('opacity-40', 'pointer-events-none');
+            autoPullBtn.setAttribute('disabled', 'true');
+            pausePullBtn.setAttribute('disabled', 'true');
+            loadSlider.setAttribute('disabled', 'true');
             loadSlider.value = 0;
+
+            tensileState.isInitialized = false;
             tensileState.probeYNorm = 0.5;
+            fractureSummaryCard.classList.add('hidden');
             autoPullIcon.className = "fa-solid fa-play";
             autoPullText.textContent = "Start / Resume";
             updateTensileCalculations();
@@ -554,18 +792,40 @@
         });
 
         function runAutoPullLoop() {
-            if (!tensileState.isAutoPulling || tensileState.isPaused) return;
-            if (tensileState.load >= 100) {
+            if (!tensileState.isAutoPulling || tensileState.isPaused || tensileState.isFractured) return;
+            let increment = tensileState.fractureLoad / 200;
+            if (tensileState.load >= tensileState.fractureLoad) {
+                tensileState.load = tensileState.fractureLoad;
+                tensileState.isFractured = true;
                 tensileState.isAutoPulling = false;
                 tensileState.isPaused = true;
                 autoPullIcon.className = "fa-solid fa-play";
-                autoPullText.textContent = "Start / Resume";
+                autoPullText.textContent = "Test Halted at Fracture";
+                loadSlider.value = tensileState.fractureLoad;
+                recordStepDataToCSV();
+                updateTensileCalculations();
+                renderTensileCanvas();
+                exportCSVFile();
                 return;
             }
-            tensileState.load = Math.min(100, tensileState.load + 0.5);
+            tensileState.load = Math.min(tensileState.fractureLoad, tensileState.load + increment);
             loadSlider.value = tensileState.load;
+            recordStepDataToCSV();
             updateTensileCalculations();
             renderTensileCanvas();
+
+            if (tensileState.load >= tensileState.fractureLoad) {
+                tensileState.isFractured = true;
+                tensileState.isAutoPulling = false;
+                tensileState.isPaused = true;
+                autoPullIcon.className = "fa-solid fa-play";
+                autoPullText.textContent = "Test Halted at Fracture";
+                updateTensileCalculations();
+                renderTensileCanvas();
+                exportCSVFile();
+                return;
+            }
+
             setTimeout(runAutoPullLoop, 90);
         }
 
@@ -575,7 +835,7 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'GARRF_Tensile_Probing_Suite.html';
+            a.download = 'GARRF_Material_Fracture_Suite.html';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
