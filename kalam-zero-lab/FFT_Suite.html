@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GARRF Dual-Phone SHM & Acoustic Suite (Transceiver / Receiver / Generator)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            900: '#090d16',
+                            800: '#111827',
+                            700: '#1f2937',
+                            600: '#374151'
+                        },
+                        accent: {
+                            500: '#06b6d4',
+                            600: '#0891b2'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #111827; }
+        ::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #06b6d4; }
+        canvas { touch-action: none; }
+    </style>
+</head>
+<body class="bg-dark-900 text-slate-100 font-sans min-h-screen flex flex-col antialiased selection:bg-cyan-500 selection:text-white">
+
+    <!-- Top Header Structure -->
+    <header class="bg-dark-800 border-b border-dark-700 sticky top-0 z-50 px-4 py-3 shadow-md flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <img src="logo.jpeg" alt="GARRF Logo" class="w-12 h-12 rounded-xl object-cover border-2 border-cyan-500 bg-dark-700" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'50\' height=\'50\'><circle cx=\'25\' cy=\'25\' r=\'24\' fill=\'%23111827\'/><text x=\'50%\' y=\'50%\' font-size=\'10\' fill=\'%2306b6d4\' text-anchor=\'middle\' dominant-baseline=\'central\'>GARRF</text></svg>';">
+            <div>
+                <h1 class="text-base sm:text-lg font-bold tracking-tight text-white flex items-center gap-2">
+                    Dual-Phone SHM & Acoustic Suite
+                    <span class="text-xs px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">Zero Funding Initiative</span>
+                </h1>
+                <p class="text-xs text-slate-400">Gopalkrishna Advanced Rural Research Foundation | Open Access Engineering Education</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-4">
+            <span class="text-2xl" title="India">🇮🇳</span>
+            <button id="masterToggleBtn" class="px-5 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold shadow-lg shadow-cyan-500/25 transition flex items-center gap-2 text-sm">
+                <i id="masterToggleIcon" class="fa-solid fa-play"></i> <span id="masterToggleText">Start Suite</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-4 gap-6">
+        
+        <!-- Sidebar Controls -->
+        <section class="lg:col-span-1 bg-dark-800/80 backdrop-blur-md border border-dark-700 rounded-2xl p-5 flex flex-col gap-5 shadow-xl h-fit">
+            <div class="flex items-center justify-between border-b border-dark-700 pb-3">
+                <h2 class="font-semibold text-slate-200 flex items-center gap-2 text-sm">
+                    <i class="fa-solid fa-layer-group text-cyan-400"></i> Operating Mode
+                </h2>
+                <span id="fpsCounter" class="text-xs font-mono bg-dark-700 text-cyan-400 px-2 py-0.5 rounded">60 FPS</span>
+            </div>
+
+            <!-- Mode Selector 1, 2, 3 -->
+            <div class="flex flex-col gap-2">
+                <label class="text-xs font-medium text-slate-400 uppercase tracking-wider">Select Configuration</label>
+                <div class="grid grid-cols-3 gap-1.5">
+                    <button data-mode="1" class="mode-tab py-2.5 px-2 rounded-xl border border-cyan-500 bg-cyan-500/10 text-cyan-300 font-medium text-xs flex flex-col items-center justify-center gap-1 transition">
+                        <i class="fa-solid fa-bolt"></i> <span>1. Generator</span>
+                    </button>
+                    <button data-mode="2" class="mode-tab py-2.5 px-2 rounded-xl border border-dark-700 bg-dark-700 hover:border-slate-600 text-slate-300 font-medium text-xs flex flex-col items-center justify-center gap-1 transition">
+                        <i class="fa-solid fa-microphone"></i> <span>2. Receiver</span>
+                    </button>
+                    <button data-mode="3" class="mode-tab py-2.5 px-2 rounded-xl border border-dark-700 bg-dark-700 hover:border-slate-600 text-slate-300 font-medium text-xs flex flex-col items-center justify-center gap-1 transition">
+                        <i class="fa-solid fa-tower-broadcast"></i> <span>3. Both (Sync)</span>
+                    </button>
+                </div>
+                <p id="modeDescText" class="text-[11px] text-slate-400 bg-dark-900/60 p-2.5 rounded-lg border border-dark-700 mt-1">
+                    <strong class="text-cyan-400">Mode 1:</strong> Outputs acoustic/structural signals up to 10 kHz (Use on Phone A).
+                </p>
+            </div>
+
+            <!-- Generator Control Panel (Active in Mode 1 & Mode 3) -->
+            <div id="generatorPanel" class="flex flex-col gap-4 border-t border-dark-700 pt-4">
+                <h3 class="font-semibold text-slate-300 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                    <i class="fa-solid fa-sliders text-cyan-400"></i> Signal Generation
+                </h3>
+                
+                <div class="grid grid-cols-3 gap-2">
+                    <button data-wave="sine" class="wave-btn py-2 rounded-lg border border-cyan-500 bg-cyan-500/20 text-cyan-300 text-xs font-medium transition">Sine</button>
+                    <button data-wave="square" class="wave-btn py-2 rounded-lg border border-dark-700 bg-dark-700 text-slate-300 text-xs font-medium transition">Square</button>
+                    <button data-wave="sawtooth" class="wave-btn py-2 rounded-lg border border-dark-700 bg-dark-700 text-slate-300 text-xs font-medium transition">Saw</button>
+                    <button data-wave="triangle" class="wave-btn py-2 rounded-lg border border-dark-700 bg-dark-700 text-slate-300 text-xs font-medium transition">Triangle</button>
+                    <button data-wave="noise" class="wave-btn py-2 rounded-lg border border-dark-700 bg-dark-700 text-slate-300 text-xs font-medium transition">Noise</button>
+                    <button data-wave="sweep" class="wave-btn py-2 rounded-lg border border-dark-700 bg-dark-700 text-cyan-400 font-bold transition flex items-center justify-center gap-1"><i class="fa-solid fa-wave-square"></i> Sweep</button>
+                </div>
+
+                <!-- Frequency Slider (Max 10kHz with 8kHz marker) -->
+                <div id="freqContainer" class="flex flex-col gap-1.5">
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-slate-400 font-medium">Frequency (Max 10 kHz)</span>
+                        <span id="freqVal" class="font-mono text-cyan-400 bg-dark-900 px-2 py-0.5 rounded">440 Hz</span>
+                    </div>
+                    <input id="freqSlider" type="range" min="20" max="10000" step="1" value="440" class="w-full accent-cyan-500 bg-dark-700 h-2 rounded-lg cursor-pointer">
+                    <div class="flex justify-between text-[10px] text-slate-500 font-mono px-0.5">
+                        <span>20Hz</span>
+                        <span class="text-cyan-500/80 font-bold">8kHz check</span>
+                        <span>10kHz</span>
+                    </div>
+                </div>
+
+                <!-- Sweep Configuration -->
+                <div id="sweepConfigContainer" class="flex flex-col gap-2 hidden">
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-slate-400 font-medium">Sweep Duration</span>
+                        <span id="sweepStatusLabel" class="font-mono text-cyan-400 bg-dark-900 px-2 py-0.5 rounded">Ready</span>
+                    </div>
+                    <select id="sweepDurationSelect" class="w-full bg-dark-700 border border-dark-600 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 transition">
+                        <option value="60">1 Minute Sweep</option>
+                        <option value="120">2 Minutes Sweep</option>
+                        <option value="300">5 Minutes Sweep</option>
+                        <option value="600" selected>10 Minutes Sweep</option>
+                    </select>
+                </div>
+
+                <!-- Volume Slider -->
+                <div class="flex flex-col gap-1.5">
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-slate-400 font-medium">Volume / Amplitude</span>
+                        <span id="volVal" class="font-mono text-cyan-400 bg-dark-900 px-2 py-0.5 rounded">50%</span>
+                    </div>
+                    <input id="volSlider" type="range" min="0" max="1" step="0.01" value="0.5" class="w-full accent-cyan-500 bg-dark-700 h-2 rounded-lg cursor-pointer">
+                </div>
+            </div>
+
+            <!-- Receiver Sync & Timestamp Panel (Active in Mode 2 & Mode 3) -->
+            <div id="receiverPanel" class="flex flex-col gap-4 border-t border-dark-700 pt-4">
+                <h3 class="font-semibold text-slate-300 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                    <i class="fa-solid fa-clock text-cyan-400"></i> Receiver Timestamp & Sync (25cm Away)
+                </h3>
+                <div class="flex flex-col gap-2 bg-dark-900/80 p-3 rounded-xl border border-dark-700">
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-slate-400">Trigger Epoch:</span>
+                        <span id="triggerEpochDisplay" class="font-mono text-cyan-400">Not Triggered</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-slate-400">Time-of-Flight (Est):</span>
+                        <span id="tofDisplay" class="font-mono text-emerald-400">-- ms (~25cm: 0.73ms)</span>
+                    </div>
+                    <button id="markTriggerBtn" class="mt-1 py-2 px-3 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-xs font-semibold transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-bullseye"></i> Mark Sync Trigger Timestamp
+                    </button>
+                </div>
+            </div>
+
+            <hr class="border-dark-700">
+
+            <!-- FFT Settings -->
+            <div class="flex flex-col gap-4">
+                <h3 class="font-semibold text-slate-400 text-xs uppercase tracking-wider">FFT Parameters</h3>
+                <div class="flex flex-col gap-1.5">
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-slate-400 font-medium">FFT Resolution</span>
+                        <span id="fftSizeVal" class="font-mono text-cyan-400 bg-dark-900 px-2 py-0.5 rounded">2048</span>
+                    </div>
+                    <select id="fftSizeSelect" class="w-full bg-dark-700 border border-dark-600 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 transition">
+                        <option value="1024">1024</option>
+                        <option value="2048" selected>2048 (Balanced)</option>
+                        <option value="4096">4096 (High Res)</option>
+                    </select>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Display Canvases -->
+        <section class="lg:col-span-3 flex flex-col gap-6">
+            
+            <!-- Metrics Banner -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div class="bg-dark-800/80 border border-dark-700 rounded-2xl p-4 flex flex-col justify-between shadow-lg">
+                    <span class="text-xs text-slate-400 font-medium flex items-center gap-1.5">
+                        <i class="fa-solid fa-bullseye text-cyan-400"></i> Peak Freq
+                    </span>
+                    <span id="peakFreqDisplay" class="text-xl font-bold font-mono text-white mt-2">0.0 <span class="text-xs text-cyan-400 font-normal">Hz</span></span>
+                </div>
+                <div class="bg-dark-800/80 border border-dark-700 rounded-2xl p-4 flex flex-col justify-between shadow-lg">
+                    <span class="text-xs text-slate-400 font-medium flex items-center gap-1.5">
+                        <i class="fa-solid fa-volume-high text-cyan-400"></i> Amplitude
+                    </span>
+                    <span id="peakAmpDisplay" class="text-xl font-bold font-mono text-white mt-2">-∞ <span class="text-xs text-cyan-400 font-normal">dB</span></span>
+                </div>
+                <div class="bg-dark-800/80 border border-dark-700 rounded-2xl p-4 flex flex-col justify-between shadow-lg">
+                    <span class="text-xs text-slate-400 font-medium flex items-center gap-1.5">
+                        <i class="fa-solid fa-wave-square text-cyan-400"></i> Sample Rate
+                    </span>
+                    <span id="sampleRateDisplay" class="text-xl font-bold font-mono text-white mt-2">44.1 <span class="text-xs text-cyan-400 font-normal">kHz</span></span>
+                </div>
+                <div class="bg-dark-800/80 border border-dark-700 rounded-2xl p-4 flex flex-col justify-between shadow-lg">
+                    <span class="text-xs text-slate-400 font-medium flex items-center gap-1.5">
+                        <i class="fa-solid fa-stopwatch text-cyan-400"></i> Sync Timestamp
+                    </span>
+                    <span id="syncTimestampDisplay" class="text-lg font-bold font-mono text-emerald-400 mt-2">000.0 <span class="text-xs text-slate-400 font-normal">ms</span></span>
+                </div>
+            </div>
+
+            <!-- Frequency Spectrum Canvas Card (0 - 10 kHz Capped View) -->
+            <div class="bg-dark-800/80 border border-dark-700 rounded-2xl p-5 shadow-xl flex flex-col gap-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="font-semibold text-white flex items-center gap-2 text-sm">
+                            <i class="fa-solid fa-chart-area text-cyan-400"></i> FFT Frequency Spectrum (0 - 10 kHz Hardware Limit View)
+                        </h2>
+                        <p class="text-xs text-slate-400">Optimized phone spectrum view focusing on structural & acoustic frequencies</p>
+                    </div>
+                </div>
+                <div class="relative w-full h-64 sm:h-72 bg-dark-900 rounded-xl overflow-hidden border border-dark-700 shadow-inner">
+                    <canvas id="freqCanvas" class="w-full h-full block"></canvas>
+                </div>
+                <div class="flex justify-between text-xs font-mono text-slate-400 px-1">
+                    <span>0 Hz</span>
+                    <span>5.0 kHz</span>
+                    <span class="text-cyan-400 font-bold">10.0 kHz (Max Limit)</span>
+                </div>
+            </div>
+
+            <!-- Time Domain Oscilloscope Canvas Card -->
+            <div class="bg-dark-800/80 border border-dark-700 rounded-2xl p-5 shadow-xl flex flex-col gap-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="font-semibold text-white flex items-center gap-2 text-sm">
+                            <i class="fa-solid fa-wave-square text-cyan-400"></i> Time Domain Waveform & Arrival Tracking
+                        </h2>
+                        <p class="text-xs text-slate-400">Real-time signal capture across 25cm–50cm distance separation</p>
+                    </div>
+                </div>
+                <div class="relative w-full h-40 sm:h-48 bg-dark-900 rounded-xl overflow-hidden border border-dark-700 shadow-inner">
+                    <canvas id="timeCanvas" class="w-full h-full block"></canvas>
+                </div>
+            </div>
+
+            <!-- EXPERIMENTAL NOTES & INSTRUCTIONS CARD -->
+            <div class="bg-dark-800/90 border border-cyan-500/30 rounded-2xl p-5 shadow-xl flex flex-col gap-3">
+                <h3 class="font-semibold text-cyan-400 text-xs uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-circle-info"></i> Experimental Notes & User Guide (Built-in Transducers Only)
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-300">
+                    <div class="bg-dark-900/60 p-3 rounded-xl border border-dark-700 flex flex-col gap-1.5">
+                        <span class="font-bold text-white flex items-center gap-1.5"><i class="fa-solid fa-1 text-cyan-400"></i> Mode 1: Generator Only</span>
+                        <p class="text-slate-400 leading-relaxed">Uses <strong>1 Phone (Phone A)</strong>. Generates continuous tones, sweeps, or waveforms strictly capped at <strong>10 kHz</strong> to respect smartphone acoustic speaker thresholds.</p>
+                    </div>
+                    <div class="bg-dark-900/60 p-3 rounded-xl border border-dark-700 flex flex-col gap-1.5">
+                        <span class="font-bold text-white flex items-center gap-1.5"><i class="fa-solid fa-2 text-cyan-400"></i> Mode 2: Receiver Only</span>
+                        <p class="text-slate-400 leading-relaxed">Uses a <strong>separate Phone (Phone B)</strong> placed <strong>25 cm to 50 cm away</strong>. Captures acoustic/vibration signals via microphone, logs arrival timestamps, and tracks time-of-flight.</p>
+                    </div>
+                    <div class="bg-dark-900/60 p-3 rounded-xl border border-dark-700 flex flex-col gap-1.5">
+                        <span class="font-bold text-white flex items-center gap-1.5"><i class="fa-solid fa-3 text-cyan-400"></i> Mode 3: Both (Transceiver)</span>
+                        <p class="text-slate-400 leading-relaxed">Runs generation and live sensing simultaneously on a single device, or coordinates cross-device testing. <em>Note: This experiment relies purely on built-in phone speakers and microphones; external jack connections will be integrated in a separate future experiment.</em></p>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Bottom Footer Structure & Download Note -->
+    <footer class="bg-dark-800 border-t border-dark-700 px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
+        <div>
+            <p>Developed by <strong class="text-cyan-400">Dr. Annamdas Venu Gopal Madhav & Annamdas Shantanu Vasudev Krishna</strong></p>
+            <p class="mt-0.5">Gopalkrishna Advanced Rural Research Foundation | Zero Funding Open Science Initiative</p>
+        </div>
+        <div>
+            <button id="downloadAppBtn" class="px-4 py-2 rounded-xl bg-dark-700 hover:bg-dark-600 text-cyan-400 border border-cyan-500/30 transition flex items-center gap-2 font-medium">
+                <i class="fa-solid fa-download"></i> Save/Download App File
+            </button>
+        </div>
+    </footer>
+
+    <script>
+        let audioCtx = null;
+        let analyser = null;
+        let microphoneStream = null;
+        let oscillator = null;
+        let gainNode = null;
+        let noiseNode = null;
+        let isRunning = false;
+
+        let sweepStartTime = 0;
+        let sweepTimerId = null;
+        let currentSweepMagnitudeFactor = 0.1;
+        let triggerEpochTime = null;
+
+        const state = {
+            mode: '1', // '1' = Generator, '2' = Receiver, '3' = Both
+            waveform: 'sine',
+            frequency: 440,
+            volume: 0.5,
+            fftSize: 2048,
+            smoothing: 0.80,
+            sweepDuration: 600
+        };
+
+        const masterToggleBtn = document.getElementById('masterToggleBtn');
+        const masterToggleIcon = document.getElementById('masterToggleIcon');
+        const masterToggleText = document.getElementById('masterToggleText');
+        const freqSlider = document.getElementById('freqSlider');
+        const freqVal = document.getElementById('freqVal');
+        const volSlider = document.getElementById('volSlider');
+        const volVal = document.getElementById('volVal');
+        const fftSizeSelect = document.getElementById('fftSizeSelect');
+        const fftSizeVal = document.getElementById('fftSizeVal');
+        const generatorPanel = document.getElementById('generatorPanel');
+        const receiverPanel = document.getElementById('receiverPanel');
+        const freqContainer = document.getElementById('freqContainer');
+        const sweepConfigContainer = document.getElementById('sweepConfigContainer');
+        const sweepDurationSelect = document.getElementById('sweepDurationSelect');
+        const sweepStatusLabel = document.getElementById('sweepStatusLabel');
+        const modeDescText = document.getElementById('modeDescText');
+        const downloadAppBtn = document.getElementById('downloadAppBtn');
+        const markTriggerBtn = document.getElementById('markTriggerBtn');
+        const triggerEpochDisplay = document.getElementById('triggerEpochDisplay');
+        const tofDisplay = document.getElementById('tofDisplay');
+        const syncTimestampDisplay = document.getElementById('syncTimestampDisplay');
+
+        const peakFreqDisplay = document.getElementById('peakFreqDisplay');
+        const peakAmpDisplay = document.getElementById('peakAmpDisplay');
+        const sampleRateDisplay = document.getElementById('sampleRateDisplay');
+        const freqCanvas = document.getElementById('freqCanvas');
+        const timeCanvas = document.getElementById('timeCanvas');
+        const fpsCounter = document.getElementById('fpsCounter');
+
+        const freqCtx = freqCanvas.getContext('2d');
+        const timeCtx = timeCanvas.getContext('2d');
+
+        let peakArray = [];
+        let frameCount = 0;
+        let fpsTimer = 0;
+
+        function resizeCanvases() {
+            const dpr = window.devicePixelRatio || 1;
+            [freqCanvas, timeCanvas].forEach(canvas => {
+                const rect = canvas.parentElement.getBoundingClientRect();
+                canvas.width = rect.width * dpr;
+                canvas.height = rect.height * dpr;
+            });
+            freqCtx.scale(dpr, dpr);
+            timeCtx.scale(dpr, dpr);
+        }
+        window.addEventListener('resize', resizeCanvases);
+
+        function initAudio() {
+            if (audioCtx) return;
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            audioCtx = new AudioContext();
+            analyser = audioCtx.createAnalyser();
+            analyser.fftSize = state.fftSize;
+            analyser.smoothingTimeConstant = state.smoothing;
+
+            gainNode = audioCtx.createGain();
+            gainNode.gain.setValueAtTime(state.volume, audioCtx.currentTime);
+            gainNode.connect(analyser);
+            analyser.connect(audioCtx.destination);
+
+            updateSampleRateInfo();
+        }
+
+        function updateSampleRateInfo() {
+            if (!audioCtx) return;
+            const sr = audioCtx.sampleRate;
+            sampleRateDisplay.innerHTML = `${(sr / 1000).toFixed(1)} <span class="text-xs text-cyan-400 font-normal">kHz</span>`;
+        }
+
+        async function startSuite() {
+            initAudio();
+            if (audioCtx.state === 'suspended') {
+                await audioCtx.resume();
+            }
+
+            if (state.mode === '1') {
+                setupGeneratorSignal();
+            } else if (state.mode === '2') {
+                await setupMicrophoneSignal();
+            } else if (state.mode === '3') {
+                setupGeneratorSignal();
+                await setupMicrophoneSignal();
+            }
+
+            isRunning = true;
+            masterToggleBtn.className = "px-5 py-2 rounded-xl bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-400 hover:to-rose-500 text-white font-semibold shadow-lg shadow-red-500/25 transition flex items-center gap-2 text-sm";
+            masterToggleIcon.className = "fa-solid fa-stop";
+            masterToggleText.textContent = "Stop Suite";
+
+            triggerEpochTime = performance.now();
+            triggerEpochDisplay.textContent = `${triggerEpochTime.toFixed(2)} ms`;
+
+            requestAnimationFrame(renderLoop);
+        }
+
+        function stopSuite() {
+            isRunning = false;
+            stopGeneratorSignal();
+            stopMicrophoneSignal();
+
+            masterToggleBtn.className = "px-5 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold shadow-lg shadow-cyan-500/25 transition flex items-center gap-2 text-sm";
+            masterToggleIcon.className = "fa-solid fa-play";
+            masterToggleText.textContent = "Start Suite";
+        }
+
+        function stopGeneratorSignal() {
+            if (oscillator) { try { oscillator.stop(); oscillator.disconnect(); } catch(e){} oscillator = null; }
+            if (noiseNode) { try { noiseNode.stop(); noiseNode.disconnect(); } catch(e){} noiseNode = null; }
+            if (sweepTimerId) { clearInterval(sweepTimerId); sweepTimerId = null; }
+        }
+
+        function stopMicrophoneSignal() {
+            if (microphoneStream) {
+                microphoneStream.getTracks().forEach(track => track.stop());
+                microphoneStream = null;
+            }
+            if (window.micSource) {
+                try { window.micSource.disconnect(); } catch(e){}
+                window.micSource = null;
+            }
+        }
+
+        function setupGeneratorSignal() {
+            stopGeneratorSignal();
+            if (!audioCtx) return;
+
+            if (state.waveform === 'noise') {
+                const bufferSize = audioCtx.sampleRate * 2;
+                const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const output = noiseBuffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) { output[i] = Math.random() * 2 - 1; }
+                noiseNode = audioCtx.createBufferSource();
+                noiseNode.buffer = noiseBuffer;
+                noiseNode.loop = true;
+                noiseNode.connect(gainNode);
+                noiseNode.start();
+            } else if (state.waveform === 'sweep') {
+                oscillator = audioCtx.createOscillator();
+                oscillator.type = 'sine';
+                let startFreq = 20, endFreq = 10000, duration = state.sweepDuration;
+                oscillator.frequency.setValueAtTime(startFreq, audioCtx.currentTime);
+                sweepStartTime = audioCtx.currentTime;
+                currentSweepMagnitudeFactor = 0.1;
+                oscillator.connect(gainNode);
+                oscillator.start();
+
+                sweepTimerId = setInterval(() => {
+                    if (!isRunning || state.waveform !== 'sweep') return;
+                    let elapsed = audioCtx.currentTime - sweepStartTime;
+                    let progress = Math.min(1.0, elapsed / duration);
+                    let currentSweepFreq = startFreq + (endFreq - startFreq) * progress;
+                    oscillator.frequency.setValueAtTime(currentSweepFreq, audioCtx.currentTime);
+                    currentSweepMagnitudeFactor = 0.1 + 0.9 * progress;
+                    let mins = Math.floor(elapsed / 60), secs = Math.floor(elapsed % 60);
+                    sweepStatusLabel.textContent = `${Math.round(currentSweepFreq)} Hz [${mins}m ${secs}s]`;
+                    if (progress >= 1.0) sweepStartTime = audioCtx.currentTime;
+                }, 100);
+            } else {
+                oscillator = audioCtx.createOscillator();
+                let safeFreq = Math.min(10000, state.frequency);
+                oscillator.type = state.waveform;
+                oscillator.frequency.setValueAtTime(safeFreq, audioCtx.currentTime);
+                oscillator.connect(gainNode);
+                oscillator.start();
+            }
+        }
+
+        async function setupMicrophoneSignal() {
+            try {
+                microphoneStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                window.micSource = audioCtx.createMediaStreamSource(microphoneStream);
+                window.micSource.connect(analyser);
+            } catch (err) {
+                alert("Microphone permission required for Receiver or Both mode.");
+            }
+        }
+
+        function renderLoop(timestamp) {
+            if (!isRunning) return;
+
+            frameCount++;
+            if (timestamp - fpsTimer > 1000) {
+                fpsCounter.textContent = `${frameCount} FPS`;
+                frameCount = 0;
+                fpsTimer = timestamp;
+            }
+
+            syncTimestampDisplay.textContent = `${(performance.now() - (triggerEpochTime || performance.now())).toFixed(1)} ms`;
+
+            const width = freqCanvas.parentElement.clientWidth;
+            const height = freqCanvas.parentElement.clientHeight;
+            const timeWidth = timeCanvas.parentElement.clientWidth;
+            const timeHeight = timeCanvas.parentElement.clientHeight;
+
+            renderFrequencySpectrum(width, height);
+            renderTimeDomain(timeWidth, timeHeight);
+
+            requestAnimationFrame(renderLoop);
+        }
+
+        function renderFrequencySpectrum(width, height) {
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            analyser.getByteFrequencyData(dataArray);
+
+            if (peakArray.length !== bufferLength) peakArray = new Array(bufferLength).fill(0);
+
+            freqCtx.clearRect(0, 0, width, height);
+
+            freqCtx.strokeStyle = '#1f2937';
+            freqCtx.lineWidth = 1;
+            for (let i = 1; i < 5; i++) {
+                let y = (height / 5) * i;
+                freqCtx.beginPath(); freqCtx.moveTo(0, y); freqCtx.lineTo(width, y); freqCtx.stroke();
+            }
+
+            const nyquist = audioCtx.sampleRate / 2;
+            const maxDisplayFreq = 10000;
+            const maxDisplayBin = Math.floor(bufferLength * (maxDisplayFreq / nyquist));
+
+            let maxVal = -1, maxIndex = 0;
+            for (let i = 0; i < maxDisplayBin; i++) {
+                if (dataArray[i] > maxVal) { maxVal = dataArray[i]; maxIndex = i; }
+            }
+
+            let dominantFreq = (maxIndex / bufferLength) * nyquist;
+            let dbVal = (maxVal / 255) * 100 - 100;
+
+            peakFreqDisplay.innerHTML = `${dominantFreq.toFixed(1)} <span class="text-xs text-cyan-400 font-normal">Hz</span>`;
+            peakAmpDisplay.innerHTML = `${maxVal > 0 ? dbVal.toFixed(1) : '-∞'} <span class="text-xs text-cyan-400 font-normal">dB</span>`;
+
+            const gradient = freqCtx.createLinearGradient(0, 0, 0, height);
+            gradient.addColorStop(0, 'rgba(6, 182, 212, 0.4)');
+            gradient.addColorStop(1, 'rgba(6, 182, 212, 0.0)');
+
+            freqCtx.beginPath();
+            let sliceWidth = width / maxDisplayBin;
+            let x = 0;
+            for (let i = 0; i < maxDisplayBin; i++) {
+                let v = dataArray[i] / 255;
+                let y = height - (v * height);
+                if (i === 0) freqCtx.moveTo(x, y); else freqCtx.lineTo(x, y);
+                x += sliceWidth;
+            }
+            freqCtx.lineTo(width, height); freqCtx.lineTo(0, height);
+            freqCtx.fillStyle = gradient; freqCtx.fill();
+
+            freqCtx.beginPath();
+            x = 0;
+            for (let i = 0; i < maxDisplayBin; i++) {
+                let v = dataArray[i] / 255;
+                let y = height - (v * height);
+                if (i === 0) freqCtx.moveTo(x, y); else freqCtx.lineTo(x, y);
+                x += sliceWidth;
+            }
+            freqCtx.strokeStyle = '#06b6d4';
+            freqCtx.lineWidth = 2;
+            freqCtx.stroke();
+        }
+
+        function renderTimeDomain(width, height) {
+            const bufferLength = analyser.fftSize;
+            const dataArray = new Uint8Array(bufferLength);
+            analyser.getByteTimeDomainData(dataArray);
+
+            timeCtx.clearRect(0, 0, width, height);
+
+            timeCtx.strokeStyle = '#1f2937';
+            timeCtx.lineWidth = 1;
+            timeCtx.beginPath();
+            timeCtx.moveTo(0, height / 2); timeCtx.lineTo(width, height / 2); timeCtx.stroke();
+
+            timeCtx.beginPath();
+            let sliceWidth = width / bufferLength;
+            let x = 0;
+            for (let i = 0; i < bufferLength; i++) {
+                let v = (dataArray[i] / 128.0 - 1.0);
+                if (state.mode !== '2' && state.waveform === 'sweep') v *= currentSweepMagnitudeFactor;
+                let scaledY = (height / 2) - (v * (height / 2) * 0.85);
+                if (i === 0) timeCtx.moveTo(x, scaledY); else timeCtx.lineTo(x, scaledY);
+                x += sliceWidth;
+            }
+            timeCtx.strokeStyle = '#10b981';
+            timeCtx.lineWidth = 2;
+            timeCtx.stroke();
+        }
+
+        document.querySelectorAll('.mode-tab').forEach(btn => {
+            btn.addEventListener('click', () => {
+                state.mode = btn.getAttribute('data-mode');
+                document.querySelectorAll('.mode-tab').forEach(b => {
+                    b.className = "mode-tab py-2.5 px-2 rounded-xl border border-dark-700 bg-dark-700 text-slate-300 font-medium text-xs flex flex-col items-center justify-center gap-1 transition";
+                });
+                btn.className = "mode-tab py-2.5 px-2 rounded-xl border border-cyan-500 bg-cyan-500/10 text-cyan-300 font-medium text-xs flex flex-col items-center justify-center gap-1 transition";
+
+                if (state.mode === '1') {
+                    generatorPanel.classList.remove('hidden');
+                    receiverPanel.classList.add('hidden');
+                    modeDescText.innerHTML = `<strong class="text-cyan-400">Mode 1 (Generator):</strong> Outputs calibrated signals up to 10 kHz (Use on Phone A).`;
+                } else if (state.mode === '2') {
+                    generatorPanel.classList.add('hidden');
+                    receiverPanel.classList.remove('hidden');
+                    modeDescText.innerHTML = `<strong class="text-cyan-400">Mode 2 (Receiver):</strong> Listens via mic at 25-50cm distance with timestamp logging (Use on Phone B).`;
+                } else if (state.mode === '3') {
+                    generatorPanel.classList.remove('hidden');
+                    receiverPanel.classList.remove('hidden');
+                    modeDescText.innerHTML = `<strong class="text-cyan-400">Mode 3 (Both):</strong> Simultaneous generation and sensing on a single device transceiver.`;
+                }
+
+                if (isRunning) { stopSuite(); startSuite(); }
+            });
+        });
+
+        document.querySelectorAll('.wave-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                state.waveform = btn.getAttribute('data-wave');
+                document.querySelectorAll('.wave-btn').forEach(b => {
+                    b.className = "wave-btn py-2 rounded-lg border border-dark-700 bg-dark-700 text-slate-300 text-xs font-medium transition";
+                });
+                btn.className = "wave-btn py-2 rounded-lg border border-cyan-500 bg-cyan-500/20 text-cyan-300 text-xs font-medium transition";
+
+                if (state.waveform === 'sweep') {
+                    freqContainer.classList.add('hidden');
+                    sweepConfigContainer.classList.remove('hidden');
+                } else {
+                    freqContainer.classList.remove('hidden');
+                    sweepConfigContainer.classList.add('hidden');
+                }
+                if (isRunning && state.mode !== '2') setupGeneratorSignal();
+            });
+        });
+
+        freqSlider.addEventListener('input', (e) => {
+            state.frequency = Math.min(10000, parseFloat(e.target.value));
+            freqVal.textContent = `${state.frequency} Hz`;
+            if (oscillator && state.waveform !== 'sweep' && state.waveform !== 'noise' && state.mode !== '2') {
+                oscillator.frequency.setValueAtTime(state.frequency, audioCtx.currentTime);
+            }
+        });
+
+        volSlider.addEventListener('input', (e) => {
+            state.volume = parseFloat(e.target.value);
+            volVal.textContent = `${Math.round(state.volume * 100)}%`;
+            if (gainNode && audioCtx) gainNode.gain.setValueAtTime(state.volume, audioCtx.currentTime);
+        });
+
+        sweepDurationSelect.addEventListener('change', (e) => {
+            state.sweepDuration = parseInt(e.target.value);
+            if (isRunning && state.waveform === 'sweep' && state.mode !== '2') setupGeneratorSignal();
+        });
+
+        fftSizeSelect.addEventListener('change', (e) => {
+            state.fftSize = parseInt(e.target.value);
+            fftSizeVal.textContent = state.fftSize;
+            if (analyser) analyser.fftSize = state.fftSize;
+            updateSampleRateInfo();
+            peakArray = [];
+        });
+
+        markTriggerBtn.addEventListener('click', () => {
+            let markTime = performance.now();
+            let delta = markTime - (triggerEpochTime || markTime);
+            tofDisplay.textContent = `${delta.toFixed(2)} ms`;
+        });
+
+        masterToggleBtn.addEventListener('click', () => {
+            if (isRunning) stopSuite(); else startSuite();
+        });
+
+        downloadAppBtn.addEventListener('click', () => {
+            const htmlContent = document.documentElement.outerHTML;
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'GARRF_Dual_Phone_SHM_Suite.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+
+        window.onload = () => { resizeCanvases(); };
+    </script>
+</body>
+</html>
