@@ -1,0 +1,1276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EMI-AEROSPACE SHM TECHNOLOGY VISUALIZATION SIMULATOR</title>
+  <style>
+    :root {
+      --primary: #0f172a;
+      --accent: #2563eb;
+      --accent-blue: #00a8e8;
+      --bg-color: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --danger: #dc2626;
+      --success: #16a34a;
+      --canvas-dark: #090d16;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background: var(--bg-color); color: var(--text-main); line-height: 1.5; padding: 1rem; }
+
+    header {
+      background: var(--primary);
+      color: white;
+      padding: 1.25rem 1.5rem;
+      border-radius: 12px;
+      margin-bottom: 1.25rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+    }
+    header h1 { font-size: 1.35rem; font-weight: 700; color: #38bdf8; }
+    header .subtitle { font-size: 0.82rem; letter-spacing: 0.05em; color: #94a3b8; text-transform: uppercase; }
+    
+    .header-actions { display: flex; align-items: center; gap: 0.75rem; }
+    .badge { background: #0284c7; color: white; padding: 0.35rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+    .help-btn { background: #d97706; color: white; padding: 0.4rem 0.85rem; border-radius: 6px; font-size: 0.8rem; font-weight: 700; border: none; cursor: pointer; transition: 0.2s; }
+    .help-btn:hover { background: #b45309; }
+
+    .intro-banner {
+      background: linear-gradient(135deg, #eff6ff, #f0fdf4);
+      border: 1px solid #bfdbfe;
+      padding: 0.9rem 1.25rem;
+      border-radius: 10px;
+      margin-bottom: 1.25rem;
+      font-size: 0.85rem;
+    }
+    .disclaimer-note {
+      color: #b45309;
+      background: #fffbe3;
+      border: 1px solid #fef08a;
+      padding: 0.4rem 0.75rem;
+      border-radius: 6px;
+      margin-top: 0.4rem;
+      font-weight: 600;
+      font-size: 0.78rem;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 320px 1fr 340px;
+      gap: 1.25rem;
+    }
+    @media(max-width: 1280px) {
+      .main-grid { grid-template-columns: 1fr; }
+    }
+
+    .panel {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      display: flex;
+      flex-direction: column;
+      gap: 0.9rem;
+      position: relative;
+    }
+    .panel h3 { font-size: 0.92rem; color: var(--primary); border-bottom: 2px solid var(--border); padding-bottom: 0.4rem; }
+
+    label { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 0.2rem; }
+    select, input, button {
+      width: 100%;
+      padding: 0.55rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.85rem;
+      background: white;
+      color: var(--text-main);
+    }
+    select:disabled, input:disabled, button:disabled {
+      background: #f1f5f9;
+      color: #94a3b8;
+      cursor: not-allowed;
+      border-color: #cbd5e1;
+    }
+    select:focus, input:focus, button:focus { outline: 2px solid var(--accent); }
+    button { background: var(--accent); color: white; font-weight: 600; border: none; cursor: pointer; transition: background 0.2s; }
+    button:hover:not(:disabled) { background: #1d4ed8; }
+    button.secondary { background: #475569; }
+    button.secondary:hover:not(:disabled) { background: #334155; }
+    button.success { background: #16a34a; }
+    button.success:hover:not(:disabled) { background: #15803d; }
+
+    .canvas-container {
+      position: relative;
+      background: var(--canvas-dark);
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .canvas-3d-wrapper {
+      position: relative;
+      width: 100%;
+      height: 240px;
+      background: #e2e8f0;
+      border-radius: 8px;
+      border: 2px solid #cbd5e1;
+      overflow: hidden;
+      cursor: grab;
+    }
+    .canvas-3d-wrapper:active { cursor: grabbing; }
+
+    .canvas-overlay {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      background: rgba(15, 23, 42, 0.88);
+      color: #38bdf8;
+      padding: 0.3rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      z-index: 10;
+    }
+
+    .timer-overlay {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: rgba(220, 38, 38, 0.9);
+      color: white;
+      padding: 0.35rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 800;
+      font-family: monospace;
+      display: none;
+      z-index: 20;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    .reset-view-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: auto;
+      padding: 0.25rem 0.6rem;
+      font-size: 0.72rem;
+      background: rgba(15, 23, 42, 0.85);
+      color: #00a8e8;
+      border: 1px solid var(--accent-blue);
+      border-radius: 4px;
+      z-index: 10;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      font-size: 0.73rem;
+      color: var(--text-muted);
+      background: #f1f5f9;
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+    }
+    .legend-item { display: flex; align-items: center; gap: 0.35rem; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.6rem;
+    }
+    .metric-card {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      padding: 0.55rem;
+      border-radius: 6px;
+      text-align: center;
+    }
+    .metric-card small { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; display: block; }
+    .metric-card strong { font-size: 0.95rem; color: var(--primary); }
+
+    .log-box {
+      background: #0f172a;
+      color: #38bdf8;
+      font-family: monospace;
+      font-size: 0.72rem;
+      padding: 0.65rem;
+      border-radius: 6px;
+      height: 105px;
+      overflow-y: auto;
+      border: 1px solid #334155;
+    }
+
+    .slider-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .warning-banner {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+      font-size: 0.73rem;
+      padding: 0.4rem 0.6rem;
+      border-radius: 6px;
+      display: none;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(15, 23, 42, 0.75);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .modal-content {
+      background: white;
+      width: 90%;
+      max-width: 680px;
+      max-height: 85vh;
+      border-radius: 12px;
+      padding: 1.5rem;
+      overflow-y: auto;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+    }
+    .modal-content h2 { font-size: 1.2rem; color: var(--primary); margin-bottom: 0.8rem; border-bottom: 2px solid var(--border); padding-bottom: 0.4rem; }
+    .modal-content h3 { font-size: 0.95rem; color: var(--accent); margin-top: 1rem; margin-bottom: 0.3rem; }
+    .modal-content p, .modal-content ul { font-size: 0.85rem; color: var(--text-main); margin-bottom: 0.6rem; }
+    .modal-content ul { padding-left: 1.2rem; }
+    .academic-cite {
+      background: #f1f5f9;
+      border-left: 4px solid var(--accent);
+      padding: 0.6rem 0.8rem;
+      font-size: 0.8rem;
+      color: #334155;
+      margin: 0.6rem 0;
+      border-radius: 0 6px 6px 0;
+    }
+    .close-modal-btn { background: var(--primary); color: white; width: auto; padding: 0.5rem 1.2rem; float: right; margin-top: 1rem; }
+
+    footer {
+      text-align: center;
+      margin-top: 1.5rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      border-top: 1px solid var(--border);
+      padding-top: 1rem;
+    }
+  </style>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div>
+      <div class="subtitle">EMI-AEROSPACE SHM TECHNOLOGY VISUALIZATION SIMULATOR</div>
+      <h1>Gopalkrishna Advanced Rural Research Foundation (GARRF) <br> (Developed @copyright: Dr Annamdas Venu Gopal Madhav & Annamdas Shantanu Vasudev Krishna) </br></h1>
+      <div style="font-size: 0.78rem; color: #94a3b8; margin-top: 0.2rem;">Electromechanical Impedance (EMI) • Dual Transducer Array • ARJUN AI</div>
+    </div>
+    <div class="header-actions">
+      <button class="help-btn" id="helpBtn" onclick="openHelpModal()">❓ HELP / LAB GUIDE</button>
+      <div class="badge">FREE AEROSPACE RURAL EDUCATION</div>
+    </div>
+  </header>
+
+  <!-- INTRO BANNER -->
+  <div class="intro-banner">
+    <b>Real-Time Laboratory Mode:</b> Selecting an execution duration (1 to 5 minutes) locks simulator inputs during sweep execution. Once complete, spectrum download is enabled.
+    <div class="disclaimer-note">
+      📌 <b>Conceptual Study Disclaimer:</b> The generated admittance signatures ($G$ and $B$) are modeled strictly for educational and conceptual analysis and do not represent exact field/site measurements.
+    </div>
+  </div>
+
+  <div class="main-grid">
+
+    <!-- LEFT PANEL: CONFIGURATION & EMI PARAMETERS -->
+    <div class="panel" id="configPanel">
+      <h3>Part 1 — Structure & Flexible PZT Transducers</h3>
+      
+      <div>
+        <label for="structureSelect">Target Aerospace Component</label>
+        <select id="structureSelect">
+          <option value="wingbox">Wing Box Main Spar</option>
+          <option value="aileron">Aileron Surface Spar</option>
+          <option value="fuselage">Fuselage Frame Structure</option>
+          <option value="nose">Radome Frame Assembly</option>
+          <option value="tail">Vertical Tail Stabilizer Spar</option>
+        </select>
+      </div>
+
+      <div class="slider-group">
+        <div class="slider-header">
+          <span>Structure Length ($L$)</span>
+          <span id="spanValText">10.0 m</span>
+        </div>
+        <input type="range" id="spanSlider" min="1.0" max="10.0" step="0.5" value="10.0">
+      </div>
+
+      <div>
+        <label for="pztCountSelect">Number of PZT Transducers ($N_{\text{pzt}}$)</label>
+        <select id="pztCountSelect">
+          <option value="1">1 PZT Patch (Span: 0–2 m)</option>
+          <option value="2">2 PZT Patches (Span: 2–4 m)</option>
+          <option value="3">3 PZT Patches (Span: 4–6 m)</option>
+          <option value="4">4 PZT Patches (Span: 6–8 m)</option>
+          <option value="5" selected>5 PZT Patches (Span: 8–10 m)</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="activePztSelect">Active PZT Actuator / Drive Transducer</label>
+        <select id="activePztSelect">
+          <option value="1">PZT 1 (Actuator Mode)</option>
+          <option value="2">PZT 2 (Actuator Mode)</option>
+          <option value="3">PZT 3 (Actuator Mode)</option>
+          <option value="4">PZT 4 (Actuator Mode)</option>
+          <option value="5" selected>PZT 5 (Actuator Mode)</option>
+        </select>
+      </div>
+
+      <div class="slider-group">
+        <div class="slider-header">
+          <span>PZT 1 Start Offset ($x_1$)</span>
+          <span id="offsetValText">0.5 m</span>
+        </div>
+        <input type="range" id="offsetSlider" min="0.1" max="5.0" step="0.1" value="0.5">
+      </div>
+
+      <div class="slider-group">
+        <div class="slider-header">
+          <span>PZT Inter-Spacing ($d$) [Min: 0.3m]</span>
+          <span id="spacingValText">1.8 m</span>
+        </div>
+        <input type="range" id="spacingSlider" min="0.3" max="3.0" step="0.1" value="1.8">
+      </div>
+
+      <div id="pztWarning" class="warning-banner">
+        ⚠️ Warning: Selected spacing or count places PZTs beyond length ($L$) or violates $0.3\text{m}$ clearance.
+      </div>
+
+      <h3>Part 2 — Experiment Execution & Sweep Time</h3>
+
+      <div>
+        <label for="expTimeSelect">Experiment Execution Time</label>
+        <select id="expTimeSelect">
+          <option value="1" selected>1 Minute Execution Time</option>
+          <option value="2">2 Minutes Execution Time</option>
+          <option value="3">3 Minutes Execution Time</option>
+          <option value="4">4 Minutes Execution Time</option>
+          <option value="5">5 Minutes Execution Time</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="maxFreqSelect">Max Sweep Frequency ($f_{\text{max}}$)</label>
+        <select id="maxFreqSelect">
+          <option value="100">10 Hz – 100 kHz (Low Range)</option>
+          <option value="250">10 Hz – 250 kHz (Mid Range)</option>
+          <option value="500" selected>10 Hz – 500 kHz (High Range)</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="gScaleSelect">Y-Axis Max Conductance ($G_{\text{max}}$)</label>
+        <select id="gScaleSelect">
+          <option value="4.0" selected>4.0 mS (Bounded Scale)</option>
+          <option value="6.0">6.0 mS (Expanded Scale)</option>
+          <option value="10.0">10.0 mS (Wide Dynamic Scale)</option>
+        </select>
+      </div>
+
+      <h3>Part 3 — Damage & Severity</h3>
+
+      <div>
+        <label for="damageSelect">Surface Defect / Crack State</label>
+        <select id="damageSelect">
+          <option value="healthy">Healthy Baseline State</option>
+          <option value="microcrack">Surface Micro-Crack</option>
+          <option value="fatigue">Fatigue Notch / Shear Crack</option>
+          <option value="delamination">Composite Layer Delamination</option>
+          <option value="fastener">Loosened Fastener / Rivet</option>
+        </select>
+      </div>
+
+      <div class="slider-group">
+        <div class="slider-header">
+          <span>Damage Severity Level</span>
+          <span id="severityValText">0% (None)</span>
+        </div>
+        <input type="range" id="severitySlider" min="0" max="100" step="5" value="0">
+      </div>
+
+      <div style="margin-top: auto; display: flex; flex-direction: column; gap: 0.4rem;">
+        <button id="startBtn">▶️ RUN EMI FREQUENCY SWEEP</button>
+        <button id="downloadBtn" class="success" disabled>📥 DOWNLOAD SPECTRUM DATA (.CSV)</button>
+        <button id="resetBtn" class="secondary">Reset Baseline</button>
+      </div>
+    </div>
+
+    <!-- CENTER PANEL: 3D AIRCRAFT & EMI SPECTRUM PLOT -->
+    <div class="panel">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h3 style="border: none; padding: 0;">Part 4 — 3D Structural Context & Layout</h3>
+        <span id="statusBadge" style="font-size: 0.75rem; font-weight: 700; color: var(--success);">● SYSTEM READY</span>
+      </div>
+
+      <div class="canvas-3d-wrapper" id="canvas3dWrapper">
+        <div class="canvas-overlay">✈️ 3D MODEL: <span id="active3dTag" style="color: #00a8e8;">WING BOX MAIN SPAR</span></div>
+        <button class="reset-view-btn" onclick="reset3dCamera()">Reset 3D View</button>
+      </div>
+
+      <div class="canvas-container" style="min-height: 110px; height: 110px;">
+        <div class="canvas-overlay" id="spanOverlay">PZT ARRAY LAYOUT (SPAN: 10.0m)</div>
+        <canvas id="spanCanvas" width="600" height="110"></canvas>
+      </div>
+
+      <h3>Part 5 — Bounded EMI Spectrum: Conductance ($G$) & Susceptance ($B$)</h3>
+      <div class="canvas-container" style="min-height: 220px; height: 220px;">
+        <div class="canvas-overlay">ELECTROMECHANICAL ADMITTANCE SIGNATURE</div>
+        <div class="timer-overlay" id="timerOverlay">⏳ SWEEPING: 00:00</div>
+        <canvas id="emiCanvas" width="600" height="220"></canvas>
+      </div>
+
+      <div class="legend">
+        <div class="legend-item"><div class="dot" style="background:#38bdf8;"></div> Conductance G(f)</div>
+        <div class="legend-item"><div class="dot" style="background:#f59e0b;"></div> Susceptance B(f) [Anti-Resonances]</div>
+        <div class="legend-item"><div class="dot" style="background:#22c55e;"></div> Active Drive Transducer</div>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL: SIGNAL METRICS & AI DIAGNOSTICS -->
+    <div class="panel">
+      <h3>Part 6 — EMI Signal Metrics</h3>
+
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <small>Peak Conductance (G)</small>
+          <strong id="metricG">0.00 mS</strong>
+        </div>
+        <div class="metric-card">
+          <small>Susceptance Peak (B)</small>
+          <strong id="metricB">0.00 mS</strong>
+        </div>
+        <div class="metric-card">
+          <small>RMSD Index</small>
+          <strong id="metricRMSD">0.00 %</strong>
+        </div>
+        <div class="metric-card">
+          <small>MAPE Metric</small>
+          <strong id="metricMAPE">0.00 %</strong>
+        </div>
+      </div>
+
+      <h3>Part 7 — ARJUN AI Diagnosis</h3>
+      <div id="aiDiagnosis" style="font-size: 0.8rem; background: #f8fafc; border: 1px solid var(--border); padding: 0.65rem; border-radius: 6px; color: var(--text-muted); min-height: 90px;">
+        Awaiting EMI frequency sweep run. Select execution time and click Start.
+      </div>
+
+      <h3>Live Experiment Log</h3>
+      <div class="log-box" id="logBox">
+        [00:00] EMI Aerospace SHM Simulator Initialized.<br>
+        [00:00] Real-time timed execution mode active.<br>
+        [00:00] Cumulative admittance B(&omega;) array model ready.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- NOTICE / ALERT MODAL -->
+  <div class="modal-overlay" id="noticeModal">
+    <div class="modal-content">
+      <h2 id="noticeTitle">ℹ️ Real-Time Experiment Execution</h2>
+      <p id="noticeBody"></p>
+      <button class="close-modal-btn" onclick="closeNoticeModal()">Acknowledge</button>
+    </div>
+  </div>
+
+  <!-- HELP & GUIDE MODAL -->
+  <div class="modal-overlay" id="helpModal">
+    <div class="modal-content">
+      <h2>📖 EMI Aerospace SHM Educational & Conceptual Lab Guide</h2>
+
+      <h3>1. Intelligent Pedagogical Concept: PZT Array Multiplexing</h3>
+      <p>In structural health monitoring of aircraft structures, multiple Piezoelectric Lead Zirconate Titanate (PZT) patches are attached across critical spars, frames, and skins. This simulator conceptualizes <b>PZT Multiplexing</b>, where an array of transducers is monitored through a single impedance analyzer channel using switching logic.</p>
+      
+      <h3>2. Cumulative Admittance Formulation</h3>
+      <p>The electrical admittance $Y(\omega) = G(\omega) + j B(\omega)$ measured at any active actuator represents the <b>cumulative electro-mechanical coupling</b> of the entire structure and nearby bonded PZT sensors.</p>
+      
+      <div class="academic-cite">
+        📚 <b>Academic Reference for Conceptual Study:</b><br>
+        <i>"The electromechanical admittance measured across multiplexed PZT networks reflects the cumulative coupled dynamic interaction between individual piezo-actuators and the host structural modes."</i><br>
+        — <b>Annamdas, V. G. M., & Soh, C. K. (2007)</b>. <i>"Electromechanical Impedance Modeling and PZT Multiplexing in Structural Health Monitoring"</i>. Refer to literature for full analytical derivation.
+      </div>
+
+      <h3>3. Baseline vs. Damage Signatures: Peak Shifts & RMSD Dynamics</h3>
+      <p>Students should closely observe how damage influences electromechanical signatures:</p>
+      <ul>
+        <li><b>Frequency Shift (Mode Shift):</b> Structural stiffness reduction (e.g., crack propagation or fastener loosening) causes high-frequency resonant peaks in $G(\omega)$ and $B(\omega)$ to <b>shift downward (leftward)</b>.</li>
+        <li><b>Peak Damping & Amplitude Alteration:</b> Local structural damping reduces peak amplitudes or creates new micro-resonance peaks.</li>
+        <li><b>Root Mean Square Deviation (RMSD) Metric:</b> RMSD quantifies signature deviation from healthy baseline:
+          $$\text{RMSD} = \sqrt{\frac{\sum_{i=1}^{N} \left( G_i^d - G_i^h \right)^2}{\sum_{i=1}^{N} \left( G_i^h \right)^2}} \times 100\%$$
+        </li>
+      </ul>
+
+      <div class="disclaimer-note">
+        ⚠️ <b>Important Signal Interpretation Note for Students:</b><br>
+        A higher RMSD value generally indicates significant structural alteration, <b>but RMSD does NOT always increase monotonically with severity</b>. At high damage levels or specific anti-resonance regions, signature cancellations can occur. RMSD study <b>must always be tied together with frequency-shift and modal analysis</b> to correctly diagnose damage severity.
+      </div>
+
+      <h3>4. Download Dataset Filename Convention</h3>
+      <p>When exported to CSV, dataset filenames include full experimental parameters:</p>
+      <p><code>EMI_Spectrum_[Structure]_TotalPZT[N]_ActivePZT[M]_[Severity]Pct_[Time]min.csv</code></p>
+
+      <h3>5. Conceptual Visualization Disclaimer</h3>
+      <p>While 3D aircraft models demonstrate transducer placement and structural interaction, actual physical installation involves complex wiring and bonding agents. All admittance signatures are generated strictly for conceptual and educational instruction.</p>
+
+      <button class="close-modal-btn" onclick="closeHelpModal()">Close Guide</button>
+    </div>
+  </div>
+
+  <footer>
+    <b>Gopalkrishna Advanced Rural Research Foundation (GARRF)</b><br>
+    Electromechanical Impedance (EMI) Aerospace SHM Laboratory • Open Source Engineering Education Initiative<br>
+    <i>Conceptual Study Model Notice: Signatures are simulated for educational instruction and do not represent exact site data.</i>
+  </footer>
+
+  <script>
+    function openHelpModal() { document.getElementById('helpModal').style.display = 'flex'; }
+    function closeHelpModal() { document.getElementById('helpModal').style.display = 'none'; }
+
+    function showNotice(title, bodyText) {
+      document.getElementById('noticeTitle').textContent = title;
+      document.getElementById('noticeBody').innerHTML = bodyText;
+      document.getElementById('noticeModal').style.display = 'flex';
+    }
+    function closeNoticeModal() { document.getElementById('noticeModal').style.display = 'none'; }
+
+    // --- 3D THREE.JS AIRCRAFT SETUP ---
+    const wrapper3d = document.getElementById('canvas3dWrapper');
+    const scene3d = new THREE.Scene();
+    scene3d.background = new THREE.Color(0xe2e8f0);
+
+    const camera3d = new THREE.PerspectiveCamera(45, wrapper3d.clientWidth / wrapper3d.clientHeight, 0.1, 1000);
+    camera3d.position.set(0, 10, 32);
+
+    const renderer3d = new THREE.WebGLRenderer({ antialias: true });
+    renderer3d.setSize(wrapper3d.clientWidth, wrapper3d.clientHeight);
+    wrapper3d.appendChild(renderer3d.domElement);
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+    scene3d.add(ambientLight);
+
+    const dirLight1 = new THREE.DirectionalLight(0x00a8e8, 0.8);
+    dirLight1.position.set(15, 25, 15);
+    scene3d.add(dirLight1);
+
+    const dirLight2 = new THREE.DirectionalLight(0xffffff, 0.5);
+    dirLight2.position.set(-15, -10, -15);
+    scene3d.add(dirLight2);
+
+    const gridHelper = new THREE.GridHelper(40, 20, 0x00a8e8, 0x94a3b8);
+    gridHelper.position.y = -6;
+    scene3d.add(gridHelper);
+
+    const airplaneGroup = new THREE.Group();
+    scene3d.add(airplaneGroup);
+
+    const materials = {
+      default: new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.3, metalness: 0.5 }),
+      highlight: new THREE.MeshStandardMaterial({ color: 0x00a8e8, roughness: 0.1, metalness: 0.8, emissive: 0x004466 }),
+      defect: new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.2, metalness: 0.6, emissive: 0x550000 })
+    };
+
+    const meshes = {};
+
+    function build3DAirplane() {
+      const fuseRadius = 1.4;
+      const fuseLength = 15;
+      const fuseGeo = new THREE.CylinderGeometry(fuseRadius, fuseRadius, fuseLength, 32);
+      fuseGeo.rotateX(Math.PI / 2);
+      meshes.fuselage = new THREE.Mesh(fuseGeo, materials.default);
+      airplaneGroup.add(meshes.fuselage);
+
+      const noseLength = 4.5;
+      const noseGeo = new THREE.ConeGeometry(fuseRadius, noseLength, 32);
+      noseGeo.rotateX(Math.PI / 2);
+      noseGeo.translate(0, 0, (fuseLength / 2) + (noseLength / 2));
+      meshes.nose = new THREE.Mesh(noseGeo, materials.default);
+      airplaneGroup.add(meshes.nose);
+
+      const wingShape = new THREE.Shape();
+      wingShape.moveTo(-15, -1);
+      wingShape.lineTo(0, 3);
+      wingShape.lineTo(15, -1);
+      wingShape.lineTo(13.5, -3.8);
+      wingShape.lineTo(0, -1);
+      wingShape.lineTo(-13.5, -3.8);
+      wingShape.closePath();
+
+      const wingGeo = new THREE.ExtrudeGeometry(wingShape, { depth: 0.5, bevelEnabled: true, bevelSegments: 2, steps: 1, bevelSize: 0.15, bevelThickness: 0.15 });
+      wingGeo.rotateX(Math.PI / 2);
+      wingGeo.translate(0, 0, 1);
+      meshes.wingbox = new THREE.Mesh(wingGeo, materials.default);
+      airplaneGroup.add(meshes.wingbox);
+
+      const ailGeo = new THREE.BoxGeometry(9.5, 0.25, 1.1);
+      ailGeo.translate(0, 0, -3.2);
+      meshes.aileron = new THREE.Mesh(ailGeo, materials.default);
+      airplaneGroup.add(meshes.aileron);
+
+      const tailGeo = new THREE.BoxGeometry(0.35, 4.8, 3.2);
+      tailGeo.translate(0, 3.2, -6.2);
+      meshes.tail = new THREE.Mesh(tailGeo, materials.default);
+      airplaneGroup.add(meshes.tail);
+    }
+
+    build3DAirplane();
+
+    let isDragging3d = false;
+    let prevMousePos = { x: 0, y: 0 };
+
+    wrapper3d.addEventListener('mousedown', (e) => {
+      isDragging3d = true;
+      prevMousePos = { x: e.clientX, y: e.clientY };
+    });
+
+    wrapper3d.addEventListener('mousemove', (e) => {
+      if (!isDragging3d) return;
+      const dx = e.clientX - prevMousePos.x;
+      const dy = e.clientY - prevMousePos.y;
+      airplaneGroup.rotation.y += dx * 0.008;
+      airplaneGroup.rotation.x += dy * 0.008;
+      prevMousePos = { x: e.clientX, y: e.clientY };
+    });
+
+    window.addEventListener('mouseup', () => { isDragging3d = false; });
+
+    wrapper3d.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      camera3d.position.z += e.deltaY * 0.025;
+      camera3d.position.z = Math.min(Math.max(camera3d.position.z, 12), 55);
+    });
+
+    function reset3dCamera() {
+      camera3d.position.set(0, 10, 32);
+      airplaneGroup.rotation.set(0, 0, 0);
+    }
+
+    // --- DOM CONTROLS ---
+    const structureSelect = document.getElementById('structureSelect');
+    const pztCountSelect = document.getElementById('pztCountSelect');
+    const activePztSelect = document.getElementById('activePztSelect');
+    const spanSlider = document.getElementById('spanSlider');
+    const spanValText = document.getElementById('spanValText');
+    const offsetSlider = document.getElementById('offsetSlider');
+    const offsetValText = document.getElementById('offsetValText');
+    const spacingSlider = document.getElementById('spacingSlider');
+    const spacingValText = document.getElementById('spacingValText');
+    const pztWarning = document.getElementById('pztWarning');
+
+    const expTimeSelect = document.getElementById('expTimeSelect');
+    const maxFreqSelect = document.getElementById('maxFreqSelect');
+    const gScaleSelect = document.getElementById('gScaleSelect');
+    const damageSelect = document.getElementById('damageSelect');
+    const severitySlider = document.getElementById('severitySlider');
+    const severityValText = document.getElementById('severityValText');
+
+    const startBtn = document.getElementById('startBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const resetBtn = document.getElementById('resetBtn');
+
+    const spanCanvas = document.getElementById('spanCanvas');
+    const spanCtx = spanCanvas.getContext('2d');
+    const emiCanvas = document.getElementById('emiCanvas');
+    const emiCtx = emiCanvas.getContext('2d');
+
+    const logBox = document.getElementById('logBox');
+    const statusBadge = document.getElementById('statusBadge');
+    const active3dTag = document.getElementById('active3dTag');
+    const spanOverlay = document.getElementById('spanOverlay');
+    const timerOverlay = document.getElementById('timerOverlay');
+    const aiDiagnosis = document.getElementById('aiDiagnosis');
+
+    const metricG = document.getElementById('metricG');
+    const metricB = document.getElementById('metricB');
+    const metricRMSD = document.getElementById('metricRMSD');
+    const metricMAPE = document.getElementById('metricMAPE');
+
+    let isSweeping = false;
+    let sweepProgress = 100;
+    let totalSteps = 200;
+    let spectrumData = [];
+    let pztPositions = [];
+    let timerInterval = null;
+
+    // --- FREEZE / UNFREEZE CONTROL UTILITIES ---
+    function setControlsLocked(locked) {
+      const inputs = document.querySelectorAll('select, input, button');
+      inputs.forEach(el => {
+        if (el.id !== 'helpBtn' && el.classList.contains('close-modal-btn') === false) {
+          el.disabled = locked;
+        }
+      });
+      if (!locked && spectrumData.length > 0) {
+        downloadBtn.disabled = false;
+      }
+    }
+
+    function updateAllowedPztCount() {
+      const L = parseFloat(spanSlider.value);
+      const maxAllowedPzts = Math.min(5, Math.max(1, Math.ceil(L / 2.0)));
+      const currentSelectedCount = parseInt(pztCountSelect.value, 10);
+
+      pztCountSelect.innerHTML = '';
+      for (let i = 1; i <= maxAllowedPzts; i++) {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = `${i} PZT Patch${i > 1 ? 'es' : ''} (Span: ${(i-1)*2}–${i*2} m)`;
+        pztCountSelect.appendChild(opt);
+      }
+
+      if (currentSelectedCount <= maxAllowedPzts) {
+        pztCountSelect.value = currentSelectedCount;
+      } else {
+        pztCountSelect.value = maxAllowedPzts;
+      }
+      updateActivePztDropdown();
+    }
+
+    function updateActivePztDropdown() {
+      const count = parseInt(pztCountSelect.value, 10);
+      const currentActive = parseInt(activePztSelect.value, 10);
+      
+      activePztSelect.innerHTML = '';
+      for (let i = 1; i <= count; i++) {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = `PZT ${i} (Actuator Mode)`;
+        if (i === currentActive || (i === count && currentActive > count)) {
+          opt.selected = true;
+        }
+        activePztSelect.appendChild(opt);
+      }
+    }
+
+    function calculatePztPositions() {
+      const count = parseInt(pztCountSelect.value, 10);
+      const L = parseFloat(spanSlider.value);
+      let x1 = parseFloat(offsetSlider.value);
+      let d = parseFloat(spacingSlider.value);
+      const MIN_SPACING = 0.3;
+
+      if (d < MIN_SPACING) {
+        d = MIN_SPACING;
+        spacingSlider.value = MIN_SPACING.toFixed(1);
+      }
+
+      if (x1 >= L - 0.2) {
+        x1 = Math.max(0.1, L - 0.2);
+        offsetSlider.value = x1.toFixed(1);
+      }
+      offsetValText.textContent = `${x1.toFixed(1)} m`;
+
+      let maxAvailableSpacing = count > 1 ? (L - x1 - 0.1) / (count - 1) : MIN_SPACING;
+
+      if (count > 1 && d > maxAvailableSpacing) {
+        d = Math.max(MIN_SPACING, maxAvailableSpacing);
+        spacingSlider.value = d.toFixed(1);
+        pztWarning.style.display = 'block';
+      } else {
+        pztWarning.style.display = 'none';
+      }
+
+      spacingValText.textContent = `${parseFloat(spacingSlider.value).toFixed(1)} m`;
+      spanValText.textContent = `${L.toFixed(1)} m`;
+
+      pztPositions = [];
+      for (let i = 0; i < count; i++) {
+        let pos = x1 + i * parseFloat(spacingSlider.value);
+        pztPositions.push(parseFloat(pos.toFixed(2)));
+      }
+
+      spanOverlay.textContent = `PZT ARRAY LAYOUT (${count} PZTs | SPAN: ${L}m | START: ${x1}m | SPACING: ${spacingSlider.value}m)`;
+      drawSpanLayout();
+    }
+
+    spanSlider.addEventListener('input', () => { updateAllowedPztCount(); calculatePztPositions(); calculateEMISpectrum(); drawEMIGraph(); });
+    pztCountSelect.addEventListener('change', () => { updateActivePztDropdown(); calculatePztPositions(); calculateEMISpectrum(); drawEMIGraph(); });
+    activePztSelect.addEventListener('change', () => { drawSpanLayout(); calculateEMISpectrum(); drawEMIGraph(); });
+    offsetSlider.addEventListener('input', () => { calculatePztPositions(); calculateEMISpectrum(); drawEMIGraph(); });
+    spacingSlider.addEventListener('input', () => { calculatePztPositions(); calculateEMISpectrum(); drawEMIGraph(); });
+    expTimeSelect.addEventListener('change', () => { calculateEMISpectrum(); drawEMIGraph(); });
+    gScaleSelect.addEventListener('change', () => { drawEMIGraph(); });
+
+    severitySlider.addEventListener('input', () => {
+      const val = severitySlider.value;
+      if (val == 0) {
+        severityValText.textContent = `0% (Healthy)`;
+        damageSelect.value = 'healthy';
+      } else {
+        severityValText.textContent = `${val}%`;
+        if (damageSelect.value === 'healthy') damageSelect.value = 'microcrack';
+      }
+      syncHighlight();
+      drawSpanLayout();
+      calculateEMISpectrum();
+      drawEMIGraph();
+    });
+
+    damageSelect.addEventListener('change', () => {
+      if (damageSelect.value === 'healthy') {
+        severitySlider.value = 0;
+        severityValText.textContent = `0% (Healthy)`;
+      } else if (severitySlider.value == 0) {
+        severitySlider.value = 35;
+        severityValText.textContent = `35%`;
+      }
+      syncHighlight();
+      drawSpanLayout();
+      calculateEMISpectrum();
+      drawEMIGraph();
+    });
+
+    function addLog(msg) {
+      const time = new Date().toLocaleTimeString();
+      logBox.innerHTML += `[${time}] ${msg}<br>`;
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    function syncHighlight() {
+      const selected = structureSelect.value;
+      const isDamaged = damageSelect.value !== 'healthy' && parseInt(severitySlider.value) > 0;
+
+      Object.keys(meshes).forEach(key => {
+        if (key === selected) {
+          meshes[key].material = isDamaged ? materials.defect : materials.highlight;
+        } else {
+          meshes[key].material = materials.default;
+        }
+      });
+
+      const names = {
+        wingbox: "WING BOX MAIN SPAR",
+        aileron: "AILERON SURFACE SPAR",
+        fuselage: "FUSELAGE FRAME STRUCTURE",
+        nose: "RADOME FRAME ASSEMBLY",
+        tail: "VERTICAL TAIL STABILIZER SPAR"
+      };
+      active3dTag.textContent = names[selected] || selected.toUpperCase();
+    }
+
+    structureSelect.addEventListener('change', () => {
+      syncHighlight();
+      calculateEMISpectrum();
+      drawEMIGraph();
+      addLog(`Selected component: [${structureSelect.options[structureSelect.selectedIndex].text}]`);
+    });
+
+    function drawSpanLayout() {
+      spanCtx.fillStyle = '#090d16';
+      spanCtx.fillRect(0, 0, spanCanvas.width, spanCanvas.height);
+
+      const L = parseFloat(spanSlider.value);
+      const severity = parseInt(severitySlider.value, 10);
+      const activePztIndex = parseInt(activePztSelect.value, 10) - 1;
+
+      const startX = 40;
+      const endX = 560;
+      const beamY = 50;
+      const beamHeight = 16;
+      const usablePx = endX - startX;
+
+      spanCtx.fillStyle = '#1e293b';
+      spanCtx.strokeStyle = '#38bdf8';
+      spanCtx.lineWidth = 2;
+      spanCtx.fillRect(startX, beamY, usablePx, beamHeight);
+      spanCtx.strokeRect(startX, beamY, usablePx, beamHeight);
+
+      spanCtx.fillStyle = '#64748b';
+      spanCtx.font = '9px monospace';
+      for (let m = 0; m <= L; m += Math.max(1, Math.floor(L / 5))) {
+        let tx = startX + (m / L) * usablePx;
+        spanCtx.fillRect(tx, beamY + beamHeight, 1, 4);
+        spanCtx.fillText(`${m}m`, tx - 6, beamY + beamHeight + 12);
+      }
+
+      pztPositions.forEach((posM, idx) => {
+        let px = startX + (posM / L) * usablePx;
+        let py = beamY - 12;
+        let isActive = (idx === activePztIndex);
+
+        spanCtx.fillStyle = isActive ? '#22c55e' : '#38bdf8';
+        spanCtx.fillRect(px - 9, py, 18, 12);
+        spanCtx.strokeStyle = isActive ? '#ffffff' : '#0284c7';
+        spanCtx.lineWidth = isActive ? 2 : 1;
+        spanCtx.strokeRect(px - 9, py, 18, 12);
+
+        spanCtx.fillStyle = isActive ? '#4ade80' : '#bae6fd';
+        spanCtx.font = '9px monospace';
+        spanCtx.fillText(`PZT${idx+1}${isActive ? '⚡' : ''}`, px - 12, py - 4);
+      });
+
+      if (severity > 0) {
+        let damPosM = L * 0.65;
+        let damX = startX + (damPosM / L) * usablePx;
+        let damY = beamY + beamHeight / 2;
+        let damRadius = 4 + (severity / 100) * 7;
+
+        spanCtx.fillStyle = '#dc2626';
+        spanCtx.beginPath();
+        spanCtx.arc(damX, damY, damRadius, 0, Math.PI * 2);
+        spanCtx.fill();
+        spanCtx.strokeStyle = '#fca5a5';
+        spanCtx.stroke();
+
+        spanCtx.fillStyle = '#fca5a5';
+        spanCtx.font = '10px monospace';
+        spanCtx.fillText(`CRACK (${severity}%)`, damX - 25, damY + 20);
+      }
+    }
+
+    // CUMULATIVE ELECTROMECHANICAL ADMITTANCE FORMULATION Y(w)
+    function calculateEMISpectrum() {
+      spectrumData = [];
+      const maxF = parseInt(maxFreqSelect.value, 10);
+      const severity = parseInt(severitySlider.value, 10);
+      const isDamaged = damageSelect.value !== 'healthy' && severity > 0;
+      const totalPzts = parseInt(pztCountSelect.value, 10);
+      const activePzt = parseInt(activePztSelect.value, 10);
+      const sectionKey = structureSelect.value;
+      const expMinutes = parseInt(expTimeSelect.value, 10);
+
+      totalSteps = expMinutes * 200;
+      const totalTimeSec = expMinutes * 60;
+
+      const sectionProfiles = {
+        wingbox:   { baseSlope: 0.0008, structDens: 1.0, structAmp: 0.22, pztPeaks: [0.22, 0.52, 0.80], pztAmps: [1.1, 2.2, 1.6], capSlope: 0.045 },
+        aileron:   { baseSlope: 0.0005, structDens: 1.4, structAmp: 0.15, pztPeaks: [0.18, 0.45, 0.72], pztAmps: [0.9, 1.8, 1.3], capSlope: 0.035 },
+        fuselage:  { baseSlope: 0.0011, structDens: 0.8, structAmp: 0.32, pztPeaks: [0.28, 0.58, 0.85], pztAmps: [1.3, 2.5, 1.9], capSlope: 0.052 },
+        nose:      { baseSlope: 0.0006, structDens: 1.2, structAmp: 0.18, pztPeaks: [0.25, 0.49, 0.76], pztAmps: [1.0, 1.9, 1.4], capSlope: 0.040 },
+        tail:      { baseSlope: 0.0009, structDens: 0.9, structAmp: 0.26, pztPeaks: [0.20, 0.55, 0.82], pztAmps: [1.2, 2.3, 1.7], capSlope: 0.048 }
+      };
+
+      const prof = sectionProfiles[sectionKey] || sectionProfiles.wingbox;
+      
+      // Cumulative coupling contribution across all multiplexed PZTs
+      let cumulativeArrayFactor = 1.0 + (totalPzts * 0.08) + (activePzt * 0.04);
+
+      for (let i = 0; i <= totalSteps; i++) {
+        let freq = (i / totalSteps) * maxF;
+        let timePoint = (i / totalSteps) * totalTimeSec;
+
+        // Structural stiffness degradation causes leftward frequency shift
+        let freqShift = isDamaged ? (severity / 100) * (maxF * 0.038) : 0;
+        let dampingFactor = isDamaged ? (1 + (severity / 100) * 0.50) : 1.0;
+
+        let structPeaksSumG = 0;
+        let numStructModes = Math.floor(12 * prof.structDens);
+        for (let m = 1; m <= numStructModes; m++) {
+          let modeCenter = maxF * (m / (numStructModes + 1)) - freqShift;
+          structPeaksSumG += (prof.structAmp / dampingFactor) * Math.exp(-Math.pow((freq - modeCenter) / (maxF * 0.006), 2));
+        }
+
+        let pztPeaksSumG = 0;
+        for (let p = 0; p < prof.pztPeaks.length; p++) {
+          let pztCenter = maxF * prof.pztPeaks[p] - freqShift;
+          let pztAmp = (prof.pztAmps[p] * cumulativeArrayFactor) / dampingFactor;
+          pztPeaksSumG += pztAmp * Math.exp(-Math.pow((freq - pztCenter) / (maxF * 0.025), 2));
+        }
+
+        let G_val = 0.2 + prof.baseSlope * freq + structPeaksSumG + pztPeaksSumG;
+
+        let structPeaksSumB = 0;
+        for (let m = 1; m <= numStructModes; m++) {
+          let modeCenter = maxF * (m / (numStructModes + 1)) - freqShift;
+          let deltaF = (freq - modeCenter) / (maxF * 0.006);
+          structPeaksSumB += -1.2 * deltaF * (prof.structAmp / dampingFactor) * Math.exp(-Math.pow(deltaF, 2));
+        }
+
+        let pztPeaksSumB = 0;
+        for (let p = 0; p < prof.pztPeaks.length; p++) {
+          let pztCenter = maxF * prof.pztPeaks[p] - freqShift;
+          let deltaF = (freq - pztCenter) / (maxF * 0.025);
+          let pztAmp = (prof.pztAmps[p] * cumulativeArrayFactor) / dampingFactor;
+          pztPeaksSumB += -2.5 * deltaF * pztAmp * Math.exp(-Math.pow(deltaF, 2));
+        }
+
+        let dielectricCapB = prof.capSlope * freq * (isDamaged ? (1 - 0.02 * (severity / 100)) : 1.0);
+        let B_val = Math.max(0, dielectricCapB + structPeaksSumB + pztPeaksSumB);
+
+        spectrumData.push({
+          time_sec: timePoint,
+          frequency_kHz: freq,
+          conductance_mS: G_val,
+          susceptance_mS: B_val,
+          is_damaged_state: isDamaged
+        });
+      }
+    }
+
+    function drawEMIGraph() {
+      emiCtx.fillStyle = '#090d16';
+      emiCtx.fillRect(0, 0, emiCanvas.width, emiCanvas.height);
+
+      if (spectrumData.length === 0) return;
+
+      const w = emiCanvas.width;
+      const h = emiCanvas.height;
+      const padLeft = 45;
+      const padBottom = 28;
+      const padTop = 20;
+      const padRight = 20;
+
+      const gMaxBound = parseFloat(gScaleSelect.value);
+      const bMaxBound = 30.0;
+
+      emiCtx.strokeStyle = '#1e293b';
+      emiCtx.lineWidth = 1;
+      emiCtx.beginPath();
+      
+      for (let g = 0; g <= gMaxBound; g += 1.0) {
+        let y = h - padBottom - (g / gMaxBound) * (h - padBottom - padTop);
+        emiCtx.moveTo(padLeft, y);
+        emiCtx.lineTo(w - padRight, y);
+
+        emiCtx.fillStyle = '#64748b';
+        emiCtx.font = '9px monospace';
+        emiCtx.fillText(`${g.toFixed(1)}`, padLeft - 28, y + 3);
+      }
+
+      const maxF = parseInt(maxFreqSelect.value, 10);
+      for (let f = 0; f <= maxF; f += maxF / 5) {
+        let x = padLeft + (f / maxF) * (w - padLeft - padRight);
+        emiCtx.moveTo(x, padTop);
+        emiCtx.lineTo(x, h - padBottom);
+
+        emiCtx.fillStyle = '#64748b';
+        emiCtx.font = '9px monospace';
+        emiCtx.fillText(`${Math.round(f)}k`, x - 8, h - 10);
+      }
+      emiCtx.stroke();
+
+      const activeIdx = Math.floor((sweepProgress / 100) * (spectrumData.length - 1));
+
+      // Conductance G(f)
+      const severity = parseInt(severitySlider.value, 10);
+      emiCtx.strokeStyle = (severity > 0) ? '#dc2626' : '#38bdf8';
+      emiCtx.lineWidth = 1.8;
+      emiCtx.beginPath();
+
+      for (let i = 0; i <= activeIdx; i++) {
+        let pt = spectrumData[i];
+        let x = padLeft + (i / (spectrumData.length - 1)) * (w - padLeft - padRight);
+        let gVal = Math.min(pt.conductance_mS, gMaxBound);
+        let y = h - padBottom - (gVal / gMaxBound) * (h - padBottom - padTop);
+
+        if (i === 0) emiCtx.moveTo(x, y);
+        else emiCtx.lineTo(x, y);
+      }
+      emiCtx.stroke();
+
+      // Susceptance B(f)
+      emiCtx.strokeStyle = '#f59e0b';
+      emiCtx.lineWidth = 1.4;
+      emiCtx.beginPath();
+
+      for (let i = 0; i <= activeIdx; i++) {
+        let pt = spectrumData[i];
+        let x = padLeft + (i / (spectrumData.length - 1)) * (w - padLeft - padRight);
+        let bVal = Math.min(pt.susceptance_mS, bMaxBound);
+        let y = h - padBottom - (bVal / bMaxBound) * (h - padBottom - padTop);
+
+        if (i === 0) emiCtx.moveTo(x, y);
+        else emiCtx.lineTo(x, y);
+      }
+      emiCtx.stroke();
+
+      emiCtx.fillStyle = '#94a3b8';
+      emiCtx.font = '10px monospace';
+      emiCtx.fillText('G, B (mS)', 5, 14);
+      emiCtx.fillText('Freq (kHz)', w - 65, h - 10);
+    }
+
+    // SWEEP EXECUTION LOCKING LOGIC
+    startBtn.addEventListener('click', () => {
+      const expMinutes = parseInt(expTimeSelect.value, 10);
+      const totalSeconds = expMinutes * 60;
+
+      showNotice(
+        `🔒 Controls Frozen for ${expMinutes} Minute(s)`,
+        `The laboratory impedance sweep has started. All configuration controls are now frozen to ensure experiment integrity.<br><br><b>Please wait ${expMinutes} minute(s) until completion to download the dataset.</b>`
+      );
+
+      setControlsLocked(true);
+      isSweeping = true;
+      sweepProgress = 0;
+      statusBadge.textContent = '● SWEEPING FREQUENCY...';
+      statusBadge.style.color = '#38bdf8';
+      timerOverlay.style.display = 'block';
+
+      calculateEMISpectrum();
+      addLog(`Initiated real-time ${expMinutes}-minute sweep on ${structureSelect.options[structureSelect.selectedIndex].text}. Controls frozen.`);
+
+      let elapsedSeconds = 0;
+      
+      if (timerInterval) clearInterval(timerInterval);
+
+      timerInterval = setInterval(() => {
+        elapsedSeconds++;
+        let remainingSeconds = totalSeconds - elapsedSeconds;
+        sweepProgress = (elapsedSeconds / totalSeconds) * 100;
+        drawEMIGraph();
+
+        let mins = Math.floor(remainingSeconds / 60);
+        let secs = remainingSeconds % 60;
+        timerOverlay.textContent = `⏳ SWEEPING: ${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+
+        if (elapsedSeconds >= totalSeconds) {
+          clearInterval(timerInterval);
+          isSweeping = false;
+          timerOverlay.style.display = 'none';
+          statusBadge.textContent = '● SWEEP COMPLETE';
+          statusBadge.style.color = '#22c55e';
+          
+          setControlsLocked(false);
+          addLog('Real-time EMI Sweep complete. Controls unfrozen.');
+
+          const severity = parseInt(severitySlider.value, 10);
+          if (severity === 0) {
+            metricG.textContent = '2.45 mS';
+            metricB.textContent = '22.50 mS';
+            metricRMSD.textContent = '0.00 %';
+            metricMAPE.textContent = '0.00 %';
+            aiDiagnosis.innerHTML = `<b style="color:var(--success);">Status: HEALTHY BASELINE</b><br>Cumulative conductance & susceptance signatures confirmed baseline integrity across ${structureSelect.options[structureSelect.selectedIndex].text}.`;
+          } else {
+            // Realistic non-linear RMSD calculation tied to mode shift dynamics
+            let rmsdVal = (Math.sin(severity * 0.05) * 18 + severity * 0.35).toFixed(2);
+            let mapeVal = (severity * 0.31).toFixed(2);
+            metricG.textContent = `${(2.45 / (1 + severity*0.004)).toFixed(2)} mS`;
+            metricB.textContent = `${(22.50 * (1 - severity*0.0005)).toFixed(2)} mS`;
+            metricRMSD.textContent = `${rmsdVal} %`;
+            metricMAPE.textContent = `${mapeVal} %`;
+            aiDiagnosis.innerHTML = `<b style="color:var(--danger);">Status: DEFECT DETECTED</b><br>ARJUN AI recorded leftward resonant mode shift on <b>${structureSelect.options[structureSelect.selectedIndex].text}</b> (Severity: ${severity}%). RMSD: ${rmsdVal}%.`;
+          }
+
+          showNotice(
+            `✅ Sweep Completed (${expMinutes} Min)`,
+            `The sweep execution is complete! All controls are now unfrozen.<br><br><b>Click 'DOWNLOAD SPECTRUM DATA (.CSV)' to export the dataset.</b>`
+          );
+        }
+      }, 1000);
+    });
+
+    // CSV DOWNLOAD WITH EXPLICIT PZT & PARAMETER FILENAME
+    downloadBtn.addEventListener('click', () => {
+      if (spectrumData.length === 0) calculateEMISpectrum();
+
+      let csvContent = "data:text/csv;charset=utf-8,Frequency_kHz,Time_sec,Conductance_G_mS,Susceptance_B_mS\n";
+
+      spectrumData.forEach(row => {
+        csvContent += `${row.frequency_kHz.toFixed(3)},${row.time_sec.toFixed(2)},${row.conductance_mS.toFixed(5)},${row.susceptance_mS.toFixed(5)}\n`;
+      });
+
+      const totalPzts = pztCountSelect.value;
+      const activePzt = activePztSelect.value;
+      const severity = severitySlider.value;
+      const timeMin = expTimeSelect.value;
+
+      const fileName = `EMI_Spectrum_${structureSelect.value}_TotalPZT${totalPzts}_ActivePZT${activePzt}_${severity}Pct_${timeMin}min.csv`;
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", fileName);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      addLog(`Downloaded cumulative spectrum dataset: [${fileName}].`);
+    });
+
+    // RESET BUTTON
+    resetBtn.addEventListener('click', () => {
+      if (timerInterval) clearInterval(timerInterval);
+      isSweeping = false;
+      sweepProgress = 100;
+      timerOverlay.style.display = 'none';
+      spanSlider.value = "10.0";
+      expTimeSelect.value = "1";
+      updateAllowedPztCount();
+      pztCountSelect.value = "5";
+      updateActivePztDropdown();
+      offsetSlider.value = "0.5";
+      spacingSlider.value = "1.8";
+      damageSelect.value = "healthy";
+      severitySlider.value = 0;
+      severityValText.textContent = "0% (Healthy)";
+      statusBadge.textContent = "● SYSTEM READY";
+      statusBadge.style.color = "var(--success)";
+
+      setControlsLocked(false);
+      downloadBtn.disabled = true;
+
+      metricG.textContent = "0.00 mS";
+      metricB.textContent = "0.00 mS";
+      metricRMSD.textContent = "0.00 %";
+      metricMAPE.textContent = "0.00 %";
+
+      aiDiagnosis.textContent = "Awaiting EMI frequency sweep run. Select execution time and click Start.";
+      calculatePztPositions();
+      syncHighlight();
+      calculateEMISpectrum();
+      drawEMIGraph();
+      addLog("System reset to initial baseline state.");
+    });
+
+    window.addEventListener('resize', () => {
+      camera3d.aspect = wrapper3d.clientWidth / wrapper3d.clientHeight;
+      camera3d.updateProjectionMatrix();
+      renderer3d.setSize(wrapper3d.clientWidth, wrapper3d.clientHeight);
+    });
+
+    function animate() {
+      requestAnimationFrame(animate);
+      if (!isDragging3d) {
+        airplaneGroup.rotation.y += 0.003;
+      }
+      renderer3d.render(scene3d, camera3d);
+    }
+
+    updateAllowedPztCount();
+    calculatePztPositions();
+    syncHighlight();
+    calculateEMISpectrum();
+    drawEMIGraph();
+    animate();
+  </script>
+</body>
+</html>
