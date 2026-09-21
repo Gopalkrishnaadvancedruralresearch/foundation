@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aircraft Structural Components Visualizer | GARRF</title>
+  <style>
+    :root {
+      --bg-dark: #1e293b;
+      --panel-bg: #334155;
+      --card-bg: #475569;
+      --accent-blue: #00d2ff;
+      --accent-blue-glow: rgba(0, 210, 255, 0.4);
+      --text-light: #f8fafc;
+      --text-muted: #cbd5e1;
+      --border-color: #64748b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-light);
+      padding: 1.5rem;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: var(--panel-bg);
+      padding: 1.25rem 2rem;
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header h1 {
+      font-size: 1.5rem;
+      color: var(--accent-blue);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    header p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .badge {
+      background: var(--accent-blue);
+      color: #0f172a;
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 0.4rem 0.8rem;
+      border-radius: 20px;
+      text-transform: uppercase;
+    }
+
+    .container {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 1.5rem;
+      flex: 1;
+    }
+
+    @media (max-width: 992px) {
+      .container { grid-template-columns: 1fr; }
+    }
+
+    .visualizer-card {
+      background: var(--panel-bg);
+      border-radius: 12px;
+      padding: 1.25rem;
+      border: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      margin-bottom: 0.75rem;
+      color: var(--accent-blue);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .canvas-wrapper {
+      position: relative;
+      flex: 1;
+      min-height: 420px;
+      background: #0f172a;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      overflow: hidden;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .instruction-overlay {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid var(--accent-blue);
+      color: var(--accent-blue);
+      padding: 0.4rem 0.8rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      pointer-events: none;
+    }
+
+    .parts-menu {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+
+    .part-btn {
+      background: var(--card-bg);
+      color: var(--text-light);
+      border: 1px solid var(--border-color);
+      padding: 0.6rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+
+    .part-btn:hover {
+      background: #52657d;
+      border-color: var(--accent-blue);
+    }
+
+    .part-btn.active {
+      background: var(--accent-blue);
+      color: #0f172a;
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 10px var(--accent-blue-glow);
+    }
+
+    /* INSET PANEL STYLES */
+    .inset-panel {
+      background: var(--panel-bg);
+      border-radius: 12px;
+      padding: 1.25rem;
+      border: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .inset-canvas-box {
+      background: #0f172a;
+      border: 2px solid var(--accent-blue);
+      border-radius: 8px;
+      height: 220px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 0 15px var(--accent-blue-glow);
+    }
+
+    .inset-tag {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: var(--accent-blue);
+      color: #0f172a;
+      font-size: 0.65rem;
+      font-weight: 800;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      letter-spacing: 0.05em;
+    }
+
+    .info-card {
+      background: var(--card-bg);
+      border-radius: 8px;
+      padding: 1rem;
+      border: 1px solid var(--border-color);
+      flex: 1;
+    }
+
+    .info-card h2 {
+      font-size: 1.25rem;
+      color: var(--accent-blue);
+      margin-bottom: 0.5rem;
+    }
+
+    .info-card p {
+      font-size: 0.85rem;
+      line-height: 1.5;
+      color: var(--text-muted);
+    }
+
+    .specs-list {
+      margin-top: 0.75rem;
+      list-style: none;
+      font-size: 0.8rem;
+    }
+
+    .specs-list li {
+      padding: 0.35rem 0;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .specs-list li span {
+      color: var(--text-light);
+      font-weight: 600;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 1.5rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div>
+      <h1>Gopalkrishna Advanced Rural Research Foundation</h1>
+      <p> Aero-Structural Component Explorer • Interactive Aircraft Inspection Tool • Virtual Lab</p>
+    </div>
+    <div class="badge">Interactive Student Module</div>
+  </header>
+
+  <div class="container">
+    <!-- MAIN 3D AIRPLANE VISUALIZER -->
+    <div class="visualizer-card">
+      <div class="card-title">✈️ Main Airplane Structural View</div>
+      <div class="canvas-wrapper">
+        <div class="instruction-overlay">💡 CLICK ON BLUE HIGHLIGHTED PARTS OR BUTTONS BELOW</div>
+        <canvas id="mainCanvas"></canvas>
+      </div>
+
+      <!-- BUTTONS FOR QUICK SELECTION -->
+      <div class="parts-menu">
+        <button class="part-btn active" onclick="selectPart('wingbox')">Wing Box Panel</button>
+        <button class="part-btn" onclick="selectPart('aileron')">Aileron Control Surface</button>
+        <button class="part-btn" onclick="selectPart('fuselage')">Fuselage Main Spar</button>
+        <button class="part-btn" onclick="selectPart('nose')">Radome / Nose Cone</button>
+        <button class="part-btn" onclick="selectPart('tail')">Vertical Tail Stabilizer</button>
+      </div>
+    </div>
+
+    <!-- INSET ZOOM & DETAIL PANEL -->
+    <div class="inset-panel">
+      <div class="card-title">🔍 Inset View: Component Detail</div>
+      
+      <div class="inset-canvas-box">
+        <div class="inset-tag">INSET ZOOM-IN VIEW</div>
+        <canvas id="insetCanvas"></canvas>
+      </div>
+
+      <div class="info-card">
+        <h2 id="partTitle">Wing Box Panel</h2>
+        <p id="partDesc">Primary load-bearing structure of the aircraft wing. Designed to withstand bending and torsional forces during flight maneuvers.</p>
+
+        <ul class="specs-list">
+          <li>Material: <span id="partMat">CFRP Composite Sandwich</span></li>
+          <li>Primary Function: <span id="partFunc">Bending & Shear Load Transfer</span></li>
+          <li>SHM Integration: <span id="partSensor">Embedded PZT Smart Skin Array</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Gopalkrishna Advanced Rural Research Foundation (GARRF) • Open-Source Aerospace Education
+  </footer>
+
+  <script>
+    const mainCanvas = document.getElementById('mainCanvas');
+    const mainCtx = mainCanvas.getContext('2d');
+    const insetCanvas = document.getElementById('insetCanvas');
+    const insetCtx = insetCanvas.getContext('2d');
+
+    let currentPart = 'wingbox';
+    let animAngle = 0;
+
+    // Component Database
+    const partsData = {
+      wingbox: {
+        title: "Wing Box Panel",
+        desc: "The structural heart of the wing. It supports heavy flexural loads and internal fuel tank stresses during flight.",
+        mat: "CFRP Sandwich Panel",
+        func: "Bending & Shear Support",
+        sensor: "PZT Lamb Wave Piezo-Array"
+      },
+      aileron: {
+        title: "Aileron Control Surface",
+        desc: "Hinged flight control surface attached to the trailing edge of the wing to control roll maneuverability.",
+        mat: "Aluminum-Lithium Alloy",
+        func: "Roll Flight Control",
+        sensor: "Rivet-Line Strain Sensors"
+      },
+      fuselage: {
+        title: "Fuselage Main Spar",
+        desc: "Central structural body that links wings, cabin, and tail, absorbing cabin pressurization and axial bending.",
+        mat: "Titanium / Composite Frames",
+        func: "Structural Skeleton",
+        sensor: "Optical Fiber & PZT Patch"
+      },
+      nose: {
+        title: "Radome / Nose Cone",
+        desc: "Streamlined aerodynamic nose section housing weather radar systems, designed with high microwave transparency.",
+        mat: "Fiberglass Composite",
+        func: "Radar Protection & Aerodynamics",
+        sensor: "Impact Sensing Micro-Skin"
+      },
+      tail: {
+        title: "Vertical Tail Stabilizer",
+        desc: "Provides directional stability along the yaw axis and houses the rudder control surface.",
+        mat: "Carbon Composite",
+        func: "Yaw Directional Stability",
+        sensor: "Flutter Detection Acoustic Array"
+      }
+    };
+
+    function resizeCanvases() {
+      mainCanvas.width = mainCanvas.parentElement.clientWidth;
+      mainCanvas.height = mainCanvas.parentElement.clientHeight;
+      insetCanvas.width = insetCanvas.parentElement.clientWidth;
+      insetCanvas.height = insetCanvas.parentElement.clientHeight;
+    }
+
+    window.addEventListener('resize', resizeCanvases);
+
+    function selectPart(partKey) {
+      currentPart = partKey;
+
+      // Update UI button styling
+      document.querySelectorAll('.part-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.getAttribute('onclick').includes(partKey)) {
+          btn.classList.add('active');
+        }
+      });
+
+      // Update Info Text
+      const data = partsData[partKey];
+      document.getElementById('partTitle').textContent = data.title;
+      document.getElementById('partDesc').textContent = data.desc;
+      document.getElementById('partMat').textContent = data.mat;
+      document.getElementById('partFunc').textContent = data.func;
+      document.getElementById('partSensor').textContent = data.sensor;
+    }
+
+    // DRAW MAIN 3D AIRPLANE MODEL
+    function drawMainAirplane() {
+      const w = mainCanvas.width;
+      const h = mainCanvas.height;
+      const cx = w / 2;
+      const cy = h / 2 + 20;
+
+      mainCtx.clearRect(0, 0, w, h);
+
+      // Draw Grid Lines in Background
+      mainCtx.strokeStyle = '#1e293b';
+      mainCtx.lineWidth = 1;
+      for (let x = 0; x < w; x += 30) {
+        mainCtx.beginPath(); mainCtx.moveTo(x, 0); mainCtx.lineTo(x, h); mainCtx.stroke();
+      }
+      for (let y = 0; y < h; y += 30) {
+        mainCtx.beginPath(); mainCtx.moveTo(0, y); mainCtx.lineTo(w, y); mainCtx.stroke();
+      }
+
+      // Aircraft Drawing Setup
+      mainCtx.save();
+      mainCtx.translate(cx, cy);
+
+      // Helper function to color highlighted parts
+      function getPartStyle(partName) {
+        if (currentPart === partName) {
+          return { fill: '#00d2ff', stroke: '#ffffff', glow: true };
+        }
+        return { fill: '#334155', stroke: '#64748b', glow: false };
+      }
+
+      // 1. MAIN FUSELAGE
+      let fusStyle = getPartStyle('fuselage');
+      mainCtx.fillStyle = fusStyle.fill;
+      mainCtx.strokeStyle = fusStyle.stroke;
+      mainCtx.lineWidth = 2;
+      if (fusStyle.glow) { mainCtx.shadowColor = '#00d2ff'; mainCtx.shadowBlur = 15; }
+      
+      mainCtx.beginPath();
+      mainCtx.ellipse(0, 0, 22, 160, 0, 0, Math.PI * 2);
+      mainCtx.fill(); mainCtx.stroke();
+      mainCtx.shadowBlur = 0;
+
+      // 2. NOSE CONE
+      let noseStyle = getPartStyle('nose');
+      mainCtx.fillStyle = noseStyle.fill;
+      mainCtx.strokeStyle = noseStyle.stroke;
+      if (noseStyle.glow) { mainCtx.shadowColor = '#00d2ff'; mainCtx.shadowBlur = 15; }
+
+      mainCtx.beginPath();
+      mainCtx.moveTo(-22, -100);
+      mainCtx.quadraticCurveTo(0, -185, 22, -100);
+      mainCtx.closePath();
+      mainCtx.fill(); mainCtx.stroke();
+      mainCtx.shadowBlur = 0;
+
+      // 3. WINGS (LEFT & RIGHT WING BOX)
+      let wingStyle = getPartStyle('wingbox');
+      mainCtx.fillStyle = wingStyle.fill;
+      mainCtx.strokeStyle = wingStyle.stroke;
+      if (wingStyle.glow) { mainCtx.shadowColor = '#00d2ff'; mainCtx.shadowBlur = 20; }
+
+      // Left Wing Box
+      mainCtx.beginPath();
+      mainCtx.moveTo(-20, -20);
+      mainCtx.lineTo(-190, 40);
+      mainCtx.lineTo(-180, 80);
+      mainCtx.lineTo(-20, 30);
+      mainCtx.closePath();
+      mainCtx.fill(); mainCtx.stroke();
+
+      // Right Wing Box
+      mainCtx.beginPath();
+      mainCtx.moveTo(20, -20);
+      mainCtx.lineTo(190, 40);
+      mainCtx.lineTo(180, 80);
+      mainCtx.lineTo(20, 30);
+      mainCtx.closePath();
+      mainCtx.fill(); mainCtx.stroke();
+      mainCtx.shadowBlur = 0;
+
+      // 4. AILERONS
+      let ailStyle = getPartStyle('aileron');
+      mainCtx.fillStyle = ailStyle.fill;
+      mainCtx.strokeStyle = ailStyle.stroke;
+      if (ailStyle.glow) { mainCtx.shadowColor = '#00d2ff'; mainCtx.shadowBlur = 15; }
+
+      // Left Aileron
+      mainCtx.beginPath();
+      mainCtx.moveTo(-120, 62);
+      mainCtx.lineTo(-180, 80);
+      mainCtx.lineTo(-175, 92);
+      mainCtx.lineTo(-118, 70);
+      mainCtx.closePath();
+      mainCtx.fill(); mainCtx.stroke();
+
+      // Right Aileron
+      mainCtx.beginPath();
+      mainCtx.moveTo(120, 62);
+      mainCtx.lineTo(180, 80);
+      mainCtx.lineTo(175, 92);
+      mainCtx.lineTo(118, 70);
+      mainCtx.closePath();
+      mainCtx.fill(); mainCtx.stroke();
+      mainCtx.shadowBlur = 0;
+
+      // 5. VERTICAL TAIL & STABILIZERS
+      let tailStyle = getPartStyle('tail');
+      mainCtx.fillStyle = tailStyle.fill;
+      mainCtx.strokeStyle = tailStyle.stroke;
+      if (tailStyle.glow) { mainCtx.shadowColor = '#00d2ff'; mainCtx.shadowBlur = 15; }
+
+      // Tail Wings
+      mainCtx.beginPath();
+      mainCtx.moveTo(-15, 120); mainCtx.lineTo(-70, 155); mainCtx.lineTo(-65, 170); mainCtx.lineTo(-15, 145);
+      mainCtx.moveTo(15, 120); mainCtx.lineTo(70, 155); mainCtx.lineTo(65, 170); mainCtx.lineTo(15, 145);
+      mainCtx.fill(); mainCtx.stroke();
+
+      // Vertical Fin
+      mainCtx.fillRect(-5, 110, 10, 50);
+      mainCtx.strokeRect(-5, 110, 10, 50);
+      mainCtx.shadowBlur = 0;
+
+      mainCtx.restore();
+    }
+
+    // DRAW INSET ZOOMED-IN VIEW
+    function drawInsetView() {
+      const w = insetCanvas.width;
+      const h = insetCanvas.height;
+      const cx = w / 2;
+      const cy = h / 2;
+
+      insetCtx.clearRect(0, 0, w, h);
+
+      // Dark Background Grid
+      insetCtx.fillStyle = '#0f172a';
+      insetCtx.fillRect(0, 0, w, h);
+
+      insetCtx.save();
+      insetCtx.translate(cx, cy);
+
+      if (currentPart === 'wingbox') {
+        // Detailed Cross Section of Wing Box
+        insetCtx.fillStyle = '#1e293b';
+        insetCtx.strokeStyle = '#00d2ff';
+        insetCtx.lineWidth = 3;
+        insetCtx.fillRect(-100, -40, 200, 80);
+        insetCtx.strokeRect(-100, -40, 200, 80);
+
+        // Internal Ribs & Stringers
+        insetCtx.strokeStyle = '#475569';
+        insetCtx.lineWidth = 2;
+        insetCtx.beginPath();
+        insetCtx.moveTo(-40, -40); insetCtx.lineTo(-40, 40);
+        insetCtx.moveTo(40, -40); insetCtx.lineTo(40, 40);
+        insetCtx.stroke();
+
+        // Animated Smart Skin Wave Waves
+        let r = (animAngle * 2) % 60;
+        insetCtx.strokeStyle = 'rgba(0, 210, 255, 0.7)';
+        insetCtx.beginPath();
+        insetCtx.arc(0, 0, r, 0, Math.PI * 2);
+        insetCtx.stroke();
+
+        // PZT Sensor Patch
+        insetCtx.fillStyle = '#00d2ff';
+        insetCtx.fillRect(-8, -8, 16, 16);
+
+      } else if (currentPart === 'aileron') {
+        // Aerodynamic Hinge & Flap Profile
+        insetCtx.beginPath();
+        insetCtx.moveTo(-90, 0);
+        insetCtx.lineTo(40, -35);
+        insetCtx.lineTo(80, 0);
+        insetCtx.lineTo(40, 35);
+        insetCtx.closePath();
+        insetCtx.fillStyle = '#1e293b';
+        insetCtx.fill();
+        insetCtx.strokeStyle = '#00d2ff';
+        insetCtx.lineWidth = 3;
+        insetCtx.stroke();
+
+        // Hinge Pin
+        insetCtx.fillStyle = '#ffffff';
+        insetCtx.beginPath(); insetCtx.arc(-60, 0, 8, 0, Math.PI * 2); insetCtx.fill();
+
+      } else if (currentPart === 'fuselage') {
+        // Cylindrical Frame Section
+        insetCtx.strokeStyle = '#00d2ff';
+        insetCtx.lineWidth = 4;
+        insetCtx.beginPath(); insetCtx.arc(0, 0, 65, 0, Math.PI * 2); insetCtx.stroke();
+
+        insetCtx.strokeStyle = '#475569';
+        insetCtx.lineWidth = 2;
+        insetCtx.beginPath(); insetCtx.arc(0, 0, 50, 0, Math.PI * 2); insetCtx.stroke();
+
+      } else if (currentPart === 'nose') {
+        // Radome Dish Radar View
+        insetCtx.strokeStyle = '#00d2ff';
+        insetCtx.lineWidth = 3;
+        insetCtx.beginPath(); insetCtx.arc(0, 0, 70, Math.PI * 0.7, Math.PI * 1.3); insetCtx.stroke();
+
+        // Rotating Sweep Line
+        let sweepX = Math.cos(animAngle * 0.05) * 60;
+        let sweepY = Math.sin(animAngle * 0.05) * 60;
+        insetCtx.strokeStyle = 'rgba(0, 210, 255, 0.8)';
+        insetCtx.beginPath(); insetCtx.moveTo(0, 0); insetCtx.lineTo(sweepX, sweepY); insetCtx.stroke();
+
+      } else if (currentPart === 'tail') {
+        // Vertical Fin Profile
+        insetCtx.beginPath();
+        insetCtx.moveTo(-50, 60);
+        insetCtx.lineTo(20, -60);
+        insetCtx.lineTo(60, -50);
+        insetCtx.lineTo(20, 60);
+        insetCtx.closePath();
+        insetCtx.fillStyle = '#1e293b';
+        insetCtx.fill();
+        insetCtx.strokeStyle = '#00d2ff';
+        insetCtx.lineWidth = 3;
+        insetCtx.stroke();
+      }
+
+      insetCtx.restore();
+    }
+
+    // CLICK INTERACTION ON MAIN CANVAS
+    mainCanvas.addEventListener('click', (e) => {
+      const rect = mainCanvas.getBoundingClientRect();
+      const clickX = e.clientX - rect.left - (mainCanvas.width / 2);
+      const clickY = e.clientY - rect.top - (mainCanvas.height / 2);
+
+      // Simple Distance-based click region detection
+      if (Math.abs(clickX) < 35 && clickY < -90) {
+        selectPart('nose');
+      } else if (Math.abs(clickX) > 40 && Math.abs(clickX) < 180 && clickY > 50 && clickY < 100) {
+        selectPart('aileron');
+      } else if (Math.abs(clickX) > 20 && Math.abs(clickX) < 190 && clickY > -30 && clickY < 80) {
+        selectPart('wingbox');
+      } else if (clickY > 100) {
+        selectPart('tail');
+      } else if (Math.abs(clickX) < 30) {
+        selectPart('fuselage');
+      }
+    });
+
+    // ANIMATION LOOP
+    function animate() {
+      animAngle += 1;
+      drawMainAirplane();
+      drawInsetView();
+      requestAnimationFrame(animate);
+    }
+
+    // INITIALIZATION
+    resizeCanvases();
+    selectPart('wingbox');
+    animate();
+  </script>
+</body>
+</html>
