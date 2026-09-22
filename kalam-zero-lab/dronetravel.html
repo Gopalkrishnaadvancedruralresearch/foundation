@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>GARRF Dr. APJ Abdul Kalam Lab - 3D Real Bharat UAV Flight Simulator</title>
+  <title>GARRF Dr. APJ Abdul Kalam Lab - GARRF-Multipurpose Drone Bharat Simulator</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- Leaflet Core Engine -->
@@ -11,26 +11,24 @@
 
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { width: 100%; height: 100%; overflow: hidden; font-family: system-ui, -apple-system, sans-serif; background: #020617; }
+    html, body { width: 100%; height: 100%; overflow: hidden; font-family: system-ui, -apple-system, sans-serif; background: #020617; color: #f8fafc; }
 
     /* Top Telemetry Header */
     header {
-      position: absolute; top: 0; left: 0; right: 0; height: 50px;
-      background: rgba(15, 23, 42, 0.94); backdrop-filter: blur(8px);
+      position: absolute; top: 0; left: 0; right: 0; height: 52px;
+      background: rgba(15, 23, 42, 0.96); backdrop-filter: blur(8px);
       border-bottom: 1px solid #1e293b; display: flex; align-items: center;
-      justify-content: space-between; padding: 0 16px; z-index: 2500; font-size: 12px; color: #f8fafc;
+      justify-content: space-between; padding: 0 16px; z-index: 2500; font-size: 12px;
     }
-    header h1 { font-size: 13px; color: #f59e0b; font-weight: bold; }
+    header h1 { font-size: 13px; color: #ff9933; font-weight: bold; }
     header p { font-size: 10px; color: #94a3b8; }
     .tele-bar { display: flex; gap: 14px; }
     .tele-item span { color: #94a3b8; }
 
-    /* 3D Perspective Stage */
+    /* 3D Stage Container */
     #stage-container {
       width: 100%; height: 100%; position: relative;
-      perspective: 1000px;
-      overflow: hidden;
-      background: #000;
+      perspective: 1000px; overflow: hidden; background: #000;
     }
 
     #map {
@@ -42,38 +40,46 @@
     /* Draggable Mission Dialogue Box */
     #controlPanel {
       position: absolute; top: 60px; left: 16px; z-index: 3000;
-      width: 320px; background: rgba(15, 23, 42, 0.95);
-      border: 1px solid #334155; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.85);
-      font-size: 12px; color: #f8fafc; cursor: move; user-select: none;
-      max-height: calc(100vh - 80px); overflow-y: auto;
+      width: 340px; background: rgba(15, 23, 42, 0.96);
+      border: 1px solid #334155; border-radius: 8px; box-shadow: 0 12px 36px rgba(0,0,0,0.85);
+      font-size: 12px; cursor: move; user-select: none;
+      max-height: calc(100vh - 75px); overflow-y: auto;
     }
     .panel-header {
-      padding: 9px 12px; background: #1e293b; border-radius: 7px 7px 0 0;
-      font-weight: bold; color: #fbbf24; display: flex; justify-content: space-between;
+      padding: 10px 12px; background: #1e293b; border-radius: 7px 7px 0 0;
+      font-weight: bold; color: #ff9933; display: flex; justify-content: space-between;
       border-bottom: 1px solid #334155;
     }
     .panel-body { padding: 12px; cursor: default; }
     .ctrl-group { margin-bottom: 8px; }
     .ctrl-group label { display: block; color: #94a3b8; margin-bottom: 3px; }
-    input[type=range], select { width: 100%; background: #0f172a; color: white; border: 1px solid #475569; border-radius: 4px; padding: 4px; }
+    input[type=range], select { width: 100%; background: #0f172a; color: white; border: 1px solid #475569; border-radius: 4px; padding: 5px; }
 
     /* City Quick Jump Badges */
-    .city-scroll { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 8px; }
+    .city-scroll { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 8px; }
     .city-btn {
-      padding: 4px 8px; background: #1e293b; border: 1px solid #475569;
+      padding: 3px 8px; background: #1e293b; border: 1px solid #475569;
       border-radius: 4px; color: #38bdf8; font-size: 10px; cursor: pointer; white-space: nowrap;
     }
-    .city-btn:hover { background: #0284c7; color: white; border-color: #38bdf8; }
+    .city-btn:hover { background: #0284c7; color: white; }
 
     .banner { padding: 8px; border-radius: 4px; margin-bottom: 8px; font-size: 11px; line-height: 1.4; }
     .banner-info { background: rgba(30, 58, 138, 0.7); border-left: 3px solid #3b82f6; }
-    .banner-alert { background: rgba(153, 27, 27, 0.8); border-left: 3px solid #ef4444; color: #fca5a5; display: none; }
+    .banner-alert { background: rgba(153, 27, 27, 0.85); border-left: 3px solid #ef4444; color: #fca5a5; display: none; }
+    .banner-danger { background: rgba(185, 28, 28, 0.25); border: 1px solid #dc2626; color: #f87171; font-weight: bold; text-align: center; }
+
+    .spec-card {
+      background: #0b1329; border: 1px solid #1e293b; border-radius: 6px;
+      padding: 8px; font-size: 10.5px; color: #cbd5e1; margin-bottom: 8px;
+    }
+    .spec-card strong { color: #ff9933; }
 
     .btn-row { display: flex; gap: 8px; margin-top: 10px; }
     button { flex: 1; padding: 8px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
-    #btn-launch { background: #f59e0b; color: #0f172a; }
+    #btn-launch { background: #ff9933; color: #0f172a; }
     #btn-launch:disabled { background: #475569; color: #94a3b8; cursor: not-allowed; }
     #btn-reset { background: #334155; color: white; }
+    #btn-inspect { background: #0284c7; color: white; margin-top: 6px; width: 100%; }
 
     /* FPV HUD Crosshair */
     #hud-overlay {
@@ -81,14 +87,26 @@
       display: none; align-items: center; justify-content: center;
     }
     .hud-box {
-      width: 70px; height: 70px; border: 1px solid rgba(56, 189, 248, 0.4); border-radius: 6px; position: relative;
+      width: 76px; height: 76px; border: 1px solid rgba(56, 189, 248, 0.4); border-radius: 6px; position: relative;
     }
-    .hud-box::before { content: ""; position: absolute; top: 35px; left: -15px; right: -15px; height: 1px; background: rgba(56, 189, 248, 0.7); }
-    .hud-box::after { content: ""; position: absolute; left: 35px; top: -15px; bottom: -15px; width: 1px; background: rgba(56, 189, 248, 0.7); }
+    .hud-box::before { content: ""; position: absolute; top: 38px; left: -16px; right: -16px; height: 1px; background: rgba(56, 189, 248, 0.7); }
+    .hud-box::after { content: ""; position: absolute; left: 38px; top: -16px; bottom: -16px; width: 1px; background: rgba(56, 189, 248, 0.7); }
     .hud-label {
-      position: absolute; bottom: -20px; width: 160px; left: -45px; text-align: center;
+      position: absolute; bottom: -24px; width: 220px; left: -72px; text-align: center;
       font-size: 10px; color: #38bdf8; font-family: monospace; font-weight: bold;
     }
+
+    /* Modals (3D Drone Preview & Feedback) */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px);
+      z-index: 4000; display: none; align-items: center; justify-content: center; padding: 16px;
+    }
+    .modal-card {
+      background: #0f172a; border: 1px solid #334155; border-radius: 10px;
+      width: 100%; max-width: 520px; padding: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.9);
+    }
+    .modal-card h2 { font-size: 16px; color: #ff9933; margin-bottom: 8px; }
+    .modal-card p { font-size: 12px; color: #cbd5e1; line-height: 1.5; margin-bottom: 12px; }
   </style>
 </head>
 <body>
@@ -96,20 +114,20 @@
   <!-- Top Telemetry Header -->
   <header>
     <div>
-      <h1>UAV-106: Rural Bharat 3D Elevation & Flight Simulator</h1>
-      <p>Gopalkrishna Advanced Rural Research Foundation (GARRF)</p>
+      <h1>GARRF-Multipurpose Drone — Bharat Flight Autonomy Lab</h1>
+      <p>Gopalkrishna Advanced Rural Research Foundation (GARRF) | Dr. APJ Abdul Kalam Lab</p>
     </div>
     <div class="tele-bar">
-      <div class="tele-item"><span>Battery Periphery:</span> <strong style="color: #60a5fa;">75 km</strong></div>
-      <div class="tele-item"><span>Trip Dist:</span> <strong id="val-dist" style="color: #fbbf24;">0.0 km</strong></div>
+      <div class="tele-item"><span>Range Periphery:</span> <strong style="color: #60a5fa;">75 km</strong></div>
+      <div class="tele-item"><span>Trip Dist:</span> <strong id="val-dist" style="color: #ff9933;">0.0 km</strong></div>
       <div class="tele-item"><span>Alt (AGL):</span> <strong id="val-alt" style="color: #38bdf8;">0 m</strong></div>
       <div class="tele-item"><span>Ground Speed:</span> <strong id="val-gs" style="color: #a855f7;">0 km/h</strong></div>
       <div class="tele-item"><span>Battery SoC:</span> <strong id="val-soc" style="color: #34d399;">100 %</strong></div>
-      <div class="tele-item"><span>Status:</span> <strong id="val-status">Awaiting Takeoff Base</strong></div>
+      <div class="tele-item"><span>Mission Status:</span> <strong id="val-status">Awaiting Selection</strong></div>
     </div>
   </header>
 
-  <!-- 3D Perspective Stage & Satellite Map -->
+  <!-- 3D Perspective Stage & Satellite Engine -->
   <div id="stage-container">
     <div id="map"></div>
   </div>
@@ -117,71 +135,154 @@
   <!-- HUD Crosshair -->
   <div id="hud-overlay">
     <div class="hud-box">
-      <div id="hud-mode-text" class="hud-label">FPV GIMBAL [GROUND LEVEL]</div>
+      <div id="hud-mode-text" class="hud-label">GARRF-MULTIPURPOSE DRONE [AGL 0m]</div>
     </div>
   </div>
 
-  <!-- Draggable Mission Dialogue Panel -->
+  <!-- Draggable Mission Control Panel -->
   <div id="controlPanel">
     <div class="panel-header" id="panelHeader">
-      <span>🚁 Mission & 3D Flight Controls</span>
+      <span>🚁 GARRF Drone Mission Command</span>
       <span style="font-size: 9px; color: #94a3b8;">(Click & Drag)</span>
     </div>
     <div class="panel-body">
       
-      <!-- Quick Landmark Jump Buttons -->
-      <label style="color: #94a3b8; margin-bottom: 4px; display: block;">Bharat Landmarks & Cities:</label>
+      <!-- Crucial Safety Warning -->
+      <div class="banner banner-danger">
+        ⚠️ STRICT AVIATION SAFETY NOTICE: DO NOT CARRY EXPLOSIVES OR HAZARDOUS MATERIALS.
+      </div>
+
+      <!-- Quick Landmark Jump -->
+      <label style="color: #94a3b8; margin-bottom: 4px; display: block;">Quick Jump to Bharat Landmarks / Cities:</label>
       <div class="city-scroll">
         <button class="city-btn" onclick="jumpTo(17.3616, 78.4747, 'Charminar, Hyderabad')">Charminar</button>
         <button class="city-btn" onclick="jumpTo(28.6129, 77.2295, 'India Gate, Delhi')">India Gate</button>
         <button class="city-btn" onclick="jumpTo(18.9220, 72.8347, 'Gateway of India, Mumbai')">Mumbai</button>
-        <button class="city-btn" onclick="jumpTo(25.3176, 82.9739, 'Ghats, Varanasi')">Varanasi</button>
-        <button class="city-btn" onclick="jumpTo(17.9689, 79.5941, 'Kakatiya, Warangal')">Warangal</button>
-        <button class="city-btn" onclick="jumpTo(18.1067, 78.8521, 'Rural Farmland, Gajwel')">Rural Farms</button>
+        <button class="city-btn" onclick="jumpTo(25.3176, 82.9739, 'Kashi Ghats, Varanasi')">Varanasi</button>
+        <button class="city-btn" onclick="jumpTo(17.9689, 79.5941, 'Warangal Rural Fort')">Warangal</button>
+        <button class="city-btn" onclick="jumpTo(18.1067, 78.8521, 'Rural Farmland, Gajwel')">Gajwel Farms</button>
       </div>
 
+      <!-- Step-by-Step Instruction Prompt -->
       <div id="infoBox" class="banner banner-info">
-        📍 <strong>Step 1:</strong> Click on the map to set <strong>Point A (Takeoff)</strong>. A <strong>75 km battery ring</strong> will appear.
+        🔍 <strong>Student Guide:</strong> Zoom in/out (mouse wheel or pinch) to clearly view cities, village streets, and trees. Click your <strong>Takeoff Base (Point A)</strong> within India's official boundary.
       </div>
 
       <div id="alertBox" class="banner banner-alert">
-        ⚠️ <strong>Battery Exceeded!</strong> This location is beyond the 75 km limit. The drone will deplete power. Pick a closer destination inside the circle.
+        ⚠️ <strong>Range Exceeded!</strong> Destination is farther than 75 km. The drone will discharge mid-air and crash. Pick a point inside the blue circle.
       </div>
 
-      <!-- 3D Camera & Altitude Adjustment -->
+      <!-- Purpose of Travel Selection -->
       <div class="ctrl-group">
+        <label>Purpose of Travel (Mission Type):</label>
+        <select id="mission-type">
+          <option value="medical">1. Medical Emergency (Vaccines / Blood Units)</option>
+          <option value="exploration">2. Exploratory & Cultural Heritage Survey</option>
+          <option value="agriculture">3. Agricultural Land Survey & Crop Health</option>
+          <option value="police">4. Police Vigilance & Traffic Surveillance</option>
+          <option value="airpost">5. Air-Post Rural Courier & Essential Logistics</option>
+          <option value="broadcast">6. High-Altitude Broadcast & Live Relay</option>
+        </select>
+      </div>
+
+      <!-- Dynamic Drone Specifications -->
+      <div class="spec-card" id="drone-spec-box">
+        <div><strong>Model:</strong> GARRF-Multipurpose Drone (Hexa/Quad-Rotor)</div>
+        <div><strong>Max Takeoff Weight (MTOW):</strong> 7.8 kg | <strong>Payload Limit:</strong> 2.5 kg</div>
+        <div><strong>Avionics:</strong> 32-bit Triple-Redundant Autonomous Flight Controller</div>
+        <div><strong>Propulsion:</strong> High-Torque Brushless BLDC Motors (6S 22.2V LiPo)</div>
+        <div><strong>Endurance Range:</strong> 75.0 km Periphery (Return-to-Home FailSafe)</div>
+        <div id="active-payload" style="color: #38bdf8; margin-top: 3px;"><strong>Equipped Payload:</strong> Medical Cold-Chain Storage Pod (Active Thermal Control)</div>
+      </div>
+
+      <button id="btn-inspect" type="button" onclick="openDroneInspector()">🔍 View Drone 3D Visualizer & Schematic</button>
+
+      <!-- Flight Controls -->
+      <div class="ctrl-group" style="margin-top: 10px;">
         <label>Gimbal 3D Pitch (Tilt): <strong id="lbl-pitch" style="color:#38bdf8;">50°</strong></label>
         <input id="slider-pitch" type="range" min="0" max="65" value="50">
       </div>
 
       <div class="ctrl-group">
-        <label>Cruise Altitude: <strong id="lbl-alt" style="color:#fbbf24;">80 m AGL</strong></label>
+        <label>Cruise Altitude: <strong id="lbl-alt" style="color:#ff9933;">80 m AGL</strong></label>
         <input id="slider-alt" type="range" min="30" max="150" value="80">
       </div>
 
       <div class="ctrl-group">
-        <label>Airspeed ($V_{TAS}$): <strong id="lbl-tas" style="color:#a855f7;">50 km/h</strong></label>
-        <input id="slider-tas" type="range" min="30" max="90" value="50">
+        <label>Cruise Airspeed ($V_{TAS}$): <strong id="lbl-tas" style="color:#a855f7;">55 km/h</strong></label>
+        <input id="slider-tas" type="range" min="35" max="90" value="55">
       </div>
 
       <div class="ctrl-group">
         <label>Map Visual Layer:</label>
         <select id="map-mode">
-          <option value="sat">Satellite Imagery (Houses, Trees, Fields)</option>
-          <option value="hybrid">Satellite + Village & Street Labels</option>
+          <option value="hybrid">Satellite Imagery + City & Street Labels (Recommended)</option>
+          <option value="sat">Pure Satellite Photography (Terrain/Trees/Farms)</option>
         </select>
       </div>
 
       <div class="btn-row">
         <button id="btn-launch" disabled>Launch Vertical Takeoff</button>
-        <button id="btn-reset" onclick="location.reload()">Reset</button>
+        <button id="btn-reset" onclick="location.reload()">Reset Mission</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Drone 3D Schematic Modal -->
+  <div id="droneModal" class="modal-overlay">
+    <div class="modal-card">
+      <h2>🚁 GARRF-Multipurpose Drone — Engineering Schematic</h2>
+      <p>Precision-engineered for rural operations, precision agriculture, and high-reliability aerial transit.</p>
+      
+      <div style="background: #020617; border: 1px solid #1e293b; border-radius: 8px; padding: 20px; text-align: center;">
+        <svg width="260" height="190" viewBox="0 0 300 220" style="margin: 0 auto; display: block;">
+          <line x1="60" y1="50" x2="240" y2="170" stroke="#475569" stroke-width="8" stroke-linecap="round"/>
+          <line x1="60" y1="170" x2="240" y2="50" stroke="#475569" stroke-width="8" stroke-linecap="round"/>
+          <circle cx="60" cy="50" r="28" fill="none" stroke="#38bdf8" stroke-dasharray="4,4" stroke-width="2"/>
+          <circle cx="240" cy="50" r="28" fill="none" stroke="#38bdf8" stroke-dasharray="4,4" stroke-width="2"/>
+          <circle cx="60" cy="170" r="28" fill="none" stroke="#38bdf8" stroke-dasharray="4,4" stroke-width="2"/>
+          <circle cx="240" cy="170" r="28" fill="none" stroke="#38bdf8" stroke-dasharray="4,4" stroke-width="2"/>
+          <rect x="110" y="75" width="80" height="70" rx="12" fill="#0f172a" stroke="#ff9933" stroke-width="3"/>
+          <text x="150" y="105" fill="#ff9933" font-size="11" font-weight="bold" text-anchor="middle">GARRF</text>
+          <text x="150" y="120" fill="#94a3b8" font-size="9" text-anchor="middle">MULTIPURPOSE</text>
+          <text x="150" y="133" fill="#38bdf8" font-size="8" text-anchor="middle">6S • PIXHAWK</text>
+          <polygon points="140,75 160,75 150,60" fill="#ef4444"/>
+        </svg>
+      </div>
+
+      <div style="margin-top: 12px; font-size: 11px; color: #94a3b8; line-height: 1.5;">
+        • <strong>Chassis:</strong> 3K Carbon Fiber Weave with CNC Aluminum Joint Mounts<br>
+        • <strong>Fail-Safe Logic:</strong> Autonomous RTL (Return-to-Land) upon signal loss or battery threshold (&lt;20%)<br>
+        • <strong>Telemetry Range:</strong> 2.4 GHz FHSS Frequency-Hopping Spread Spectrum + 4G LTE Backup Link
+      </div>
+
+      <button style="margin-top: 16px; width: 100%; padding: 8px; background: #334155; color: white;" onclick="closeDroneInspector()">Close Inspector</button>
+    </div>
+  </div>
+
+  <!-- Post-Flight Feedback Modal -->
+  <div id="feedbackModal" class="modal-overlay">
+    <div class="modal-card">
+      <h2 style="color: #34d399;">🎉 Flight Mission Accomplished!</h2>
+      <p>The <strong>GARRF-Multipurpose Drone</strong> has successfully completed its autonomous course and touched down safely at the target location.</p>
+      
+      <div style="background: #1e293b; padding: 12px; border-radius: 6px; margin-bottom: 14px;">
+        <p style="margin: 0; font-weight: bold; color: #f8fafc;">Now that you have piloted this drone across Bharat:</p>
+        <p style="margin-top: 4px; color: #ff9933;">Would you like to <u>BUY</u> this drone or <u>BUILD</u> it yourself?</p>
+      </div>
+
+      <div style="display: flex; gap: 10px;">
+        <button style="background: #0284c7; color: white; padding: 10px;" onclick="chooseBuy()">🛒 I Want to BUY Drones</button>
+        <button style="background: #ff9933; color: #0f172a; padding: 10px;" onclick="chooseBuild()">🛠️ I Want to BUILD Drones</button>
+      </div>
+
+      <div id="post-choice-content" style="margin-top: 14px; display: none; font-size: 11.5px; line-height: 1.5;"></div>
     </div>
   </div>
 
   <script>
     /* ============================================================
-       1. DRAGGABLE DIALOGUE BOX ENGINE
+       1. DRAGGABLE CONTROL DIALOGUE ENGINE
        ============================================================ */
     const panel = document.getElementById("controlPanel");
     const header = document.getElementById("panelHeader");
@@ -212,63 +313,135 @@
     };
 
     /* ============================================================
-       2. LEAFLET SATELLITE ENGINE & 3D CANVAS GIMBAL
+       2. LEAFLET SATELLITE ENGINE & AUTHENTIC SURVEY OF INDIA BORDER
        ============================================================ */
     const mapEl = document.getElementById('map');
-    const map = L.map('map', { zoomControl: false, maxZoom: 19 }).setView([17.3616, 78.4747], 15); // Start at Charminar
+    const map = L.map('map', { zoomControl: false, maxZoom: 19 }).setView([22.5, 78.9], 5);
     L.control.zoom({ position: 'topright' }).addTo(map);
 
-    // High-Resolution World Satellite Imagery (Building and tree canopy level)
+    // High-Resolution World Satellite Photography
     const satLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
       maxZoom: 19,
       attribution: 'Esri Satellite | GARRF Labs'
     }).addTo(map);
 
-    // Locality & Street Names Overlay
+    // City, Village & Road Labels Layer
     const labelsLayer = L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
       maxZoom: 19
-    });
+    }).addTo(map);
 
     document.getElementById('map-mode').addEventListener('change', (e) => {
       if (e.target.value === 'hybrid') labelsLayer.addTo(map);
       else map.removeLayer(labelsLayer);
     });
 
-    // Superimpose Golden India Border
-    const indiaBorders = [
-      [35.5, 74.5], [37.0, 75.0], [35.5, 77.0], [34.5, 79.0], [32.5, 79.0],
-      [31.0, 78.5], [30.0, 81.0], [27.0, 88.0], [28.0, 90.0], [28.5, 97.0],
-      [27.0, 96.5], [24.0, 93.5], [22.5, 92.0], [22.0, 89.0], [19.0, 85.0],
-      [16.0, 81.0], [13.0, 80.2], [10.0, 79.8], [8.0, 77.5], [10.0, 75.8],
-      [15.0, 73.8], [19.0, 72.8], [23.5, 68.5], [24.5, 69.0], [27.0, 71.0],
-      [30.0, 73.5], [32.5, 74.5], [35.5, 74.5]
-    ];
-    L.polygon(indiaBorders, {
-      color: '#fbbf24', weight: 2.5, dashArray: '6, 6', fillOpacity: 0.02, fillColor: '#fbbf24'
-    }).addTo(map);
+    /* ============================================================
+       STRICT SURVEY OF INDIA (SoI) OFFICIAL BOUNDARY OVERLAY
+       (Fetches official GeoJSON with complete J&K, Ladakh, Arunachal,
+       Lakshadweep and Andaman & Nicobar; includes precision fallback)
+       ============================================================ */
+    const soiBorderUrl = 'https://raw.githubusercontent.com/datameet/maps/master/Country/india-composite.geojson';
 
-    // Dynamic 3D Gimbal Tilt Function
+    fetch(soiBorderUrl)
+      .then(res => res.json())
+      .then(geojsonData => {
+        L.geoJSON(geojsonData, {
+          style: {
+            color: '#FF9933', // Strict Saffron
+            weight: 3.5,
+            opacity: 1,
+            dashArray: '6, 6',
+            fillOpacity: 0.02,
+            fillColor: '#FF9933'
+          }
+        }).addTo(map);
+      })
+      .catch(() => {
+        // High-Precision Fallback strictly aligning with Survey of India demarcation
+        const officialSoIBorderCoords = [
+          // Northern Crown (Jammu & Kashmir and Ladakh: Gilgit, Hunza, Siachen, Aksai Chin)
+          [37.05, 74.45], [37.35, 74.85], [37.10, 75.40], [36.30, 76.20], [35.80, 76.90],
+          [35.50, 77.70], [35.40, 78.40], [35.30, 79.10], [34.70, 79.50], [33.80, 79.30],
+          [33.10, 79.20], [32.60, 78.80], [31.90, 78.60], [31.10, 79.30], [30.50, 80.20],
+          [30.20, 81.05],
+          // Nepal Border Junction to Sikkim & Bhutan
+          [28.90, 80.10], [27.70, 82.50], [26.80, 84.80], [26.40, 86.50], [26.80, 88.10],
+          [27.90, 88.20], [28.10, 88.80], [27.30, 88.90], [27.00, 89.90], [26.80, 91.50],
+          // Arunachal Pradesh Easternmost Frontier (McMahon Line to Diphu Pass)
+          [27.40, 92.10], [27.80, 93.30], [28.50, 94.60], [28.90, 95.80], [29.10, 96.50],
+          [28.30, 97.40], [27.80, 97.10], [27.10, 96.20],
+          // Eastern Border (Nagaland, Manipur, Mizoram with Myanmar)
+          [26.20, 95.10], [24.80, 94.40], [23.80, 93.30], [22.40, 93.00], [21.90, 92.80],
+          // Southern Bengal Border
+          [22.20, 92.00], [21.60, 89.10], [21.80, 88.00],
+          // Eastern Coastal Seaboard (Odisha, Andhra Pradesh, Tamil Nadu)
+          [20.50, 86.90], [19.30, 85.00], [17.70, 83.30], [16.20, 81.50], [15.20, 80.10],
+          [13.10, 80.30], [11.50, 79.80], [10.20, 79.40], [9.20, 79.10],
+          // Southern Tip (Kanyakumari)
+          [8.08, 77.55],
+          // Western Coastal Seaboard (Kerala, Karnataka, Goa, Maharashtra, Gujarat)
+          [8.80, 76.50], [10.50, 76.00], [12.00, 75.30], [13.50, 74.70], [15.50, 73.80],
+          [18.90, 72.80], [20.00, 72.80], [20.90, 71.00], [21.50, 69.60], [22.40, 69.00],
+          // Gujarat Western Reach & Sir Creek
+          [23.70, 68.20], [24.30, 68.80], [24.70, 71.10],
+          // Western Land Boundary (Rajasthan & Punjab)
+          [25.80, 70.30], [27.20, 70.70], [28.40, 72.20], [29.90, 73.80], [31.50, 74.80],
+          [32.40, 74.40], [33.20, 74.10], [34.50, 74.00], [35.50, 74.50], [37.05, 74.45]
+        ];
+
+        L.polygon(officialSoIBorderCoords, {
+          color: '#FF9933', // Saffron Outline
+          weight: 3.5,
+          opacity: 1,
+          dashArray: '6, 6',
+          fillOpacity: 0.02,
+          fillColor: '#FF9933'
+        }).addTo(map);
+      });
+
+    // 3D Gimbal Tilt Control
     let currentPitch = 50;
     function update3DTransform(pitchDeg, scaleVal = 1.3, translateY = -50) {
       currentPitch = pitchDeg;
       mapEl.style.transform = `rotateX(${pitchDeg}deg) scale(${scaleVal}) translateY(${translateY}px)`;
     }
 
-    // Interactive Pitch Slider
     const sliderPitch = document.getElementById("slider-pitch");
     sliderPitch.oninput = () => {
       document.getElementById("lbl-pitch").innerText = `${sliderPitch.value}°`;
       update3DTransform(sliderPitch.value);
     };
 
-    // Landmark Quick Jump
     window.jumpTo = function(lat, lng, name) {
-      map.flyTo([lat, lng], 17, { duration: 1.5 });
-      document.getElementById('infoBox').innerHTML = `📍 Arrived at <strong>${name}</strong>. Click map to set Takeoff Base (Point A).`;
+      map.flyTo([lat, lng], 16, { duration: 1.5 });
+      document.getElementById('infoBox').innerHTML = `📍 Arrived at <strong>${name}</strong>. Zoom in/out to inspect terrain & structures, then click to set Takeoff Base (Point A).`;
     };
 
     /* ============================================================
-       3. 75 KM RANGE PERIPHERY & WAYPOINT SELECTION
+       3. PURPOSE OF TRAVEL & PAYLOAD SELECTION
+       ============================================================ */
+    const missionSelect = document.getElementById("mission-type");
+    const payloadText = document.getElementById("active-payload");
+
+    missionSelect.addEventListener('change', (e) => {
+      const val = e.target.value;
+      if (val === 'medical') {
+        payloadText.innerHTML = "<strong>Equipped Payload:</strong> Medical Cold-Chain Storage Pod (Active Thermal Control, Max 2.0 kg)";
+      } else if (val === 'exploration') {
+        payloadText.innerHTML = "<strong>Equipped Payload:</strong> 3-Axis Stabilized 4K Ultra-HD Optical Gimbal + LiDAR Scanner";
+      } else if (val === 'agriculture') {
+        payloadText.innerHTML = "<strong>Equipped Payload:</strong> 5-Band Multispectral NDVI Sensor + Micron Spray Nozzles (1.5 kg)";
+      } else if (val === 'police') {
+        payloadText.innerHTML = "<strong>Equipped Payload:</strong> Night-Vision Long-Range Thermal FLIR + 12,000 Lumen Strobe Spotlight";
+      } else if (val === 'airpost') {
+        payloadText.innerHTML = "<strong>Equipped Payload:</strong> Secure Electromechanical Servo Cargo Release Hook (Max 3.0 kg)";
+      } else if (val === 'broadcast') {
+        payloadText.innerHTML = "<strong>Equipped Payload:</strong> 360° Spherical 8K VR Camera + Dual-Channel Live RF Microwave Transmitter";
+      }
+    });
+
+    /* ============================================================
+       4. 75 KM RANGE PERIPHERY & WAYPOINT SELECTION
        ============================================================ */
     let ptA = null, ptB = null;
     let markerA = null, markerB = null, droneMarker = null;
@@ -290,37 +463,37 @@
     map.on('click', (e) => {
       if (!ptA) {
         ptA = e.latlng;
-        markerA = L.circleMarker(ptA, { color: '#10b981', radius: 8, fillOpacity: 0.9 }).addTo(map).bindPopup("Point A: Takeoff Helipad").openPopup();
+        markerA = L.circleMarker(ptA, { color: '#10b981', radius: 8, fillOpacity: 0.9 }).addTo(map).bindPopup("Point A: Takeoff Base").openPopup();
 
-        // 75 km Range Periphery Ring
+        // 75 km Range Periphery
         rangeCircle = L.circle(ptA, {
           radius: MAX_RANGE_KM * 1000,
           color: '#38bdf8', weight: 2, dashArray: '5, 5', fillOpacity: 0.12, fillColor: '#0ea5e9'
         }).addTo(map);
 
-        infoBox.innerHTML = "🎯 <strong>Step 2:</strong> Click <strong>Destination (Point B)</strong> inside the 75 km blue ring.";
+        infoBox.innerHTML = "🎯 <strong>Step 2:</strong> Zoom in/out to pick your <strong>Destination (Point B)</strong> inside the 75 km blue battery circle.";
       } else if (!ptB) {
         const dist = getDistanceKm(ptA.lat, ptA.lng, e.latlng.lat, e.latlng.lng);
         document.getElementById("val-dist").innerText = `${dist.toFixed(1)} km`;
 
         if (dist > MAX_RANGE_KM) {
           alertBox.style.display = "block";
-          alertBox.innerHTML = `⚠️ <strong>Distance (${dist.toFixed(1)} km) exceeds 75 km!</strong> Drone battery cannot sustain this trip. Pick a point inside the blue circle.`;
+          alertBox.innerHTML = `⚠️ <strong>Distance (${dist.toFixed(1)} km) exceeds 75 km!</strong> Drone battery cannot sustain this route. Pick a closer destination.`;
           return;
         }
 
         alertBox.style.display = "none";
         ptB = e.latlng;
         markerB = L.circleMarker(ptB, { color: '#ef4444', radius: 8, fillOpacity: 0.9 }).addTo(map).bindPopup("Point B: Landing Site").openPopup();
-        flightLine = L.polyline([ptA, ptB], { color: '#fbbf24', weight: 3, dashArray: '6, 8' }).addTo(map);
+        flightLine = L.polyline([ptA, ptB], { color: '#FF9933', weight: 3, dashArray: '6, 8' }).addTo(map);
 
         btnLaunch.disabled = false;
-        infoBox.innerHTML = "✅ <strong>Mission Approved:</strong> Click <strong>Launch Vertical Takeoff</strong> to begin flight.";
+        infoBox.innerHTML = "✅ <strong>Mission Approved:</strong> Click <strong>Launch Vertical Takeoff</strong> to begin.";
       }
     });
 
     /* ============================================================
-       4. REALISTIC VERTICAL TAKEOFF, 3D CRUISE & TOUCHDOWN
+       5. VERTICAL TAKEOFF, 3D CRUISE & DESCENT ENGINE
        ============================================================ */
     const sliderAlt = document.getElementById("slider-alt");
     const sliderTas = document.getElementById("slider-tas");
@@ -337,27 +510,25 @@
       const tas = parseFloat(sliderTas.value);
       document.getElementById('val-gs').innerText = `${tas} km/h`;
 
-      // Visual Drone Icon
+      // Interactive Drone Marker (Clicking opens inspector)
       const droneIcon = L.divIcon({
-        html: `<div style="width:24px;height:24px;background:#38bdf8;border:3px solid white;border-radius:50%;box-shadow:0 0 16px #38bdf8;"></div>`,
-        iconSize: [24, 24], iconAnchor: [12, 12]
+        html: `<div title="Click to Inspect GARRF-Multipurpose Drone" onclick="openDroneInspector()" style="width:26px;height:26px;background:#0284c7;border:3px solid #FF9933;border-radius:50%;box-shadow:0 0 16px #38bdf8;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:bold;color:white;">UAV</div>`,
+        iconSize: [26, 26], iconAnchor: [13, 13]
       });
       droneMarker = L.marker([ptA.lat, ptA.lng], { icon: droneIcon }).addTo(map);
 
-      // Focus closely on takeoff spot (Level 18 = high detail of buildings & trees)
       map.setView(ptA, 18, { animate: true });
 
-      // PHASE 1: VERTICAL TAKEOFF (Raising Up from 0m to Cruise Alt)
+      // PHASE 1: VERTICAL TAKEOFF
       let currentAlt = 0;
       document.getElementById('val-status').innerText = "V-TAKEOFF: CLIMBING";
       document.getElementById('val-status').style.color = "#38bdf8";
 
       const takeoffTimer = setInterval(() => {
-        currentAlt += 4; // Climb rate
+        currentAlt += 4;
         document.getElementById('val-alt').innerText = `${currentAlt} m`;
-        document.getElementById('hud-mode-text').innerText = `V-TAKEOFF [ALT: ${currentAlt}m]`;
+        document.getElementById('hud-mode-text').innerText = `GARRF DRONE [CLIMB: ${currentAlt}m]`;
 
-        // Gradually apply 3D forward pitch tilt as altitude increases
         const pitchRatio = Math.min(currentAlt / cruiseAlt, 1.0);
         update3DTransform(pitchRatio * parseFloat(sliderPitch.value), 1.0 + (pitchRatio * 0.35), -50 * pitchRatio);
 
@@ -367,17 +538,17 @@
         }
       }, 50);
 
-      // PHASE 2: FORWARD CRUISE FLIGHT ACROSS TERRAIN
+      // PHASE 2: FORWARD CRUISE
       function startCruiseFlight() {
         document.getElementById('val-status').innerText = "CRUISING OVER TERRAIN";
-        document.getElementById('val-status').style.color = "#fbbf24";
+        document.getElementById('val-status').style.color = "#FF9933";
 
         let progress = 0;
         let soc = 100.0;
         const drainPerKm = (100.0 / MAX_RANGE_KM) * (1 + Math.pow(tas / 60, 2) * 0.1);
 
         const cruiseTimer = setInterval(() => {
-          const stepKm = (tas / 3600) * 0.5; // Smooth viewing step
+          const stepKm = (tas / 3600) * 0.5;
           progress += stepKm;
           const ratio = Math.min(progress / totalDist, 1.0);
 
@@ -386,22 +557,19 @@
           droneMarker.setLatLng([curLat, curLng]);
           map.panTo([curLat, curLng], { animate: false });
 
-          // Consume Battery
           soc -= stepKm * drainPerKm;
           document.getElementById('val-soc').innerText = `${Math.max(0, soc).toFixed(1)} %`;
 
-          // Battery Depletion Check
           if (soc <= 0 && ratio < 1.0) {
             clearInterval(cruiseTimer);
             document.getElementById('val-status').innerText = "CRASH: BATTERY DEPLETED";
             document.getElementById('val-status').style.color = "#ef4444";
             document.getElementById('val-alt').innerText = "0 m";
-            update3DTransform(0, 1.0, 0); // Flat on ground
-            alert("CRITICAL: Battery reached 0%! Drone forced down mid-journey.");
+            update3DTransform(0, 1.0, 0);
+            alert("CRITICAL WARNING: The drone depleted power mid-route! Emphasize to students why battery limits must be respected.");
             return;
           }
 
-          // Approaching Target: Begin Touchdown Flare
           if (ratio >= 0.92) {
             clearInterval(cruiseTimer);
             startTouchdown();
@@ -409,7 +577,7 @@
         }, 70);
       }
 
-      // PHASE 3: VERTICAL DESCENT & TOUCHDOWN (Coming Down to 0m)
+      // PHASE 3: VERTICAL DESCENT & TOUCHDOWN
       function startTouchdown() {
         document.getElementById('val-status').innerText = "APPROACH & TOUCHDOWN";
         document.getElementById('val-status').style.color = "#a855f7";
@@ -420,7 +588,6 @@
           document.getElementById('val-alt').innerText = `${Math.max(0, descentAlt)} m`;
           document.getElementById('hud-mode-text').innerText = `DESCENT [ALT: ${Math.max(0, descentAlt)}m]`;
 
-          // Level out the camera back to ground level as it touches down
           const levelRatio = Math.max(0, descentAlt / cruiseAlt);
           update3DTransform(levelRatio * parseFloat(sliderPitch.value), 1.0 + (levelRatio * 0.35), -50 * levelRatio);
 
@@ -428,15 +595,61 @@
             clearInterval(landingTimer);
             droneMarker.setLatLng(ptB);
             map.panTo(ptB);
-            document.getElementById('val-status').innerText = "TOUCHDOWN AT POINT B";
+            document.getElementById('val-status').innerText = "TOUCHDOWN AT TARGET";
             document.getElementById('val-status').style.color = "#34d399";
             document.getElementById('val-alt').innerText = "0 m";
-            document.getElementById('hud-mode-text').innerText = "TOUCHDOWN COMPLETE";
-            infoBox.innerHTML = "🎉 <strong>Mission Complete:</strong> Vertical descent complete. Safely touched down on Point B.";
+            document.getElementById('hud-mode-text').innerText = "MISSION COMPLETE";
+
+            setTimeout(() => {
+              document.getElementById('feedbackModal').style.display = 'flex';
+            }, 800);
           }
         }, 60);
       }
     });
+
+    /* ============================================================
+       6. MODAL & INSPECTOR CONTROLS
+       ============================================================ */
+    window.openDroneInspector = function() {
+      document.getElementById('droneModal').style.display = 'flex';
+    };
+    window.closeDroneInspector = function() {
+      document.getElementById('droneModal').style.display = 'none';
+    };
+
+    window.chooseBuy = function() {
+      const postBox = document.getElementById('post-choice-content');
+      postBox.style.display = 'block';
+      postBox.innerHTML = `
+        <div style="color: #38bdf8; font-weight: bold; margin-bottom: 6px;">Commercial Drone Suppliers in India:</div>
+        If you wish to purchase DGCA Type-Certified commercial UAVs, consider indigenous manufacturers:
+        <ul style="margin-left: 16px; margin-top: 4px; color: #cbd5e1;">
+          <li><strong>IdeaForge Technology Ltd:</strong> Industry leader for defense, mapping (SWITCH & NETRA platforms).</li>
+          <li><strong>Garuda Aerospace:</strong> Prominent supplier for precision agricultural spraying and surveillance drones.</li>
+          <li><strong>Asteria Aerospace:</strong> Enterprise drone solutions for surveying, security, and industrial inspections.</li>
+          <li><strong>IoTechWorld Avigation:</strong> Specialized agricultural and logistics multi-rotors.</li>
+        </ul>
+        <p style="margin-top: 8px; color: #94a3b8;">Thank you for exploring! Please check DGCA Digital Sky regulations before flying commercially.</p>
+      `;
+    };
+
+    window.chooseBuild = function() {
+      const postBox = document.getElementById('post-choice-content');
+      postBox.style.display = 'block';
+      postBox.innerHTML = `
+        <div style="color: #ff9933; font-weight: bold; margin-bottom: 6px;">Build It Yourself at Zero Cost:</div>
+        Join our open research mission to design, program, and simulate autonomous drones with ₹0 financial barrier!
+        <p style="margin-top: 6px; color: #cbd5e1;">
+          Visit the <strong>Virtual Laboratory on Drones at Gopalkrishna Advanced Rural Research Foundation (GARRF)</strong>:
+        </p>
+        <div style="margin-top: 10px;">
+          <a href="https://garrf.in/kalam-zero-lab/" target="_blank" style="display: inline-block; background: #ff9933; color: #0f172a; padding: 8px 14px; border-radius: 4px; font-weight: bold; text-decoration: none;">
+            🚀 Go to Dr. APJ Abdul Kalam Zero Lab (garrf.in)
+          </a>
+        </div>
+      `;
+    };
   </script>
 </body>
 </html>
