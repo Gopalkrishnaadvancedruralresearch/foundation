@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Advanced Transistor & 3D Heterogeneous Packaging Lab - GARRF</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              dark: '#020617',
+              card: '#0B1528',
+              cyan: '#00F0FF',
+              emerald: '#10B981',
+              gold: '#FFD700',
+              purple: '#8B5CF6',
+              laser: '#FF0055',
+              blue: '#3B82F6'
+            }
+          },
+          fontFamily: {
+            sans: ['Space Grotesk', 'sans-serif'],
+            serif: ['Cinzel', 'serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          animation: {
+            'pulse-glow': 'pulseGlow 2s infinite alternate',
+            'spin-slow': 'spin 22s linear infinite',
+            'float': 'float 4s ease-in-out infinite'
+          },
+          keyframes: {
+            pulseGlow: {
+              '0%': { filter: 'drop-shadow(0 0 5px rgba(0, 240, 255, 0.3))' },
+              '100%': { filter: 'drop-shadow(0 0 18px rgba(0, 240, 255, 0.8))' }
+            },
+            float: {
+              '0%, 100%': { transform: 'translateY(0px)' },
+              '50%': { transform: 'translateY(-6px)' }
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #020617;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 4px;
+      border: 1px solid rgba(0, 240, 255, 0.2);
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #00F0FF;
+    }
+
+    .glow-border {
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.15);
+      border: 1px solid rgba(0, 240, 255, 0.25);
+    }
+    .glow-border-gold {
+      box-shadow: 0 0 15px rgba(255, 215, 0, 0.15);
+      border: 1px solid rgba(255, 215, 0, 0.3);
+    }
+
+    /* Micro-engraved Circular Text */
+    .circular-text-container {
+      position: absolute;
+      width: 330px;
+      height: 330px;
+      pointer-events: none;
+    }
+    .circular-text path {
+      fill: none;
+    }
+    .circular-text text {
+      fill: rgba(0, 240, 255, 0.45);
+      font-size: 8.8px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      font-family: 'Space Grotesk', sans-serif;
+      text-transform: uppercase;
+    }
+
+    /* Background Circuit Pattern */
+    .bg-grid-pattern {
+      background-size: 36px 36px;
+      background-image: 
+        linear-gradient(to right, rgba(0, 240, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0, 240, 255, 0.035) 1px, transparent 1px);
+    }
+  </style>
+</head>
+
+<body class="bg-[#020617] text-slate-100 font-sans min-h-screen flex flex-col relative overflow-x-hidden bg-grid-pattern">
+
+  <div class="fixed -top-40 -left-40 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+  <div class="fixed top-1/2 -right-40 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl pointer-events-none"></div>
+  <div class="fixed -bottom-40 left-1/3 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+  <header class="sticky top-0 z-40 backdrop-blur-md bg-[#020617]/85 border-b border-cyan-500/20 px-4 lg:px-8 py-3">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+      
+      <!-- Logo & Title -->
+      <div class="flex items-center gap-3.5">
+        <a href="https://garrf.in/" target="_blank" rel="noopener noreferrer" class="group flex items-center gap-2">
+          <!-- GARRF Logo Frame -->
+          <div class="w-11 h-11 rounded-lg bg-gradient-to-br from-cyan-500 via-blue-600 to-emerald-500 p-[1px] glow-border transition-transform group-hover:scale-105">
+            <div class="w-full h-full bg-[#0B1528] rounded-[7px] flex items-center justify-center font-serif text-cyan-400 font-bold text-xl overflow-hidden">
+              <img src="logo.jpeg" alt="GARRF" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='https://placehold.co/100x100/0B1528/00F0FF?text=GARRF';">
+            </div>
+          </div>
+        </a>
+
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+              GOPALKRISHNA ADVANCED RURAL RESEARCH FOUNDATION
+            </span>
+            <!-- Indian Flag SVG -->
+            <svg class="w-5 h-3.5 rounded shadow-sm shrink-0" viewBox="0 0 600 400">
+              <rect width="600" height="133.3" fill="#FF9933"/>
+              <rect y="133.3" width="600" height="133.3" fill="#FFFFFF"/>
+              <rect y="266.6" width="600" height="133.3" fill="#128807"/>
+              <g transform="translate(300,200)">
+                <circle r="50" fill="none" stroke="#000080" stroke-width="8"/>
+                <circle r="8" fill="#000080"/>
+                <path d="M 0 -50 L 0 50 M -50 0 L 50 0 M -35.3 -35.3 L 35.3 35.3 M -35.3 35.3 L 35.3 -35.3" stroke="#000080" stroke-width="4"/>
+              </g>
+            </svg>
+          </div>
+          <h1 class="text-base lg:text-lg font-bold font-serif tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-white to-emerald-300">
+            KRISHNA - Advanced Transistor & 3D Heterogeneous Packaging Lab
+          </h1>
+          <p class="text-[11px] text-slate-400 font-serif">
+            Sub-2nm Gate-All-Around (GAA) Nanosheets, 2.5D Interposers, TSVs & 3D Chiplet Systems
+          </p>
+        </div>
+      </div>
+
+      <!-- Action Buttons & Navigation -->
+      <div class="flex items-center gap-2.5">
+        <a href="https://garrf.in/" target="_blank" class="text-xs px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 hover:border-cyan-400 hover:text-cyan-300 transition-all flex items-center gap-1.5">
+          <i class="fa-solid fa-house text-xs"></i> Home
+        </a>
+        <a href="https://garrf.in/kalam-zero-lab/" target="_blank" class="text-xs px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 hover:border-cyan-400 hover:text-cyan-300 transition-all flex items-center gap-1.5">
+          <i class="fa-solid fa-flask text-xs"></i> Virtual Lab
+        </a>
+
+        <button onclick="toggleModal('modal-help')" class="text-xs px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-500/20 to-emerald-600/20 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/30 transition-all flex items-center gap-1.5 glow-border">
+          <i class="fa-solid fa-circle-question text-cyan-400"></i> Lab Guide
+        </button>
+
+        <div class="bg-slate-900/90 border border-amber-500/30 px-3 py-1 rounded-lg flex items-center gap-2">
+          <i class="fa-solid fa-eye text-amber-400 text-xs"></i>
+          <span class="text-[11px] text-slate-400">Views:</span>
+          <span id="visitor-count" class="font-mono text-xs text-amber-300 font-bold">1,842</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 lg:px-8 py-6 space-y-8 flex-1 w-full">
+
+    <!-- VIRTUAL TWINS DOCK -->
+    <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <button onclick="openTwin('device')" class="p-3 rounded-xl bg-slate-900/80 border border-cyan-500/30 hover:border-cyan-400 transition-all text-left group hover:shadow-[0_0_20px_rgba(0,240,255,0.2)]">
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-[10px] font-mono text-cyan-400">TWIN #01</span>
+          <i class="fa-solid fa-microchip text-cyan-400 group-hover:scale-110 transition-transform"></i>
+        </div>
+        <div class="font-bold text-sm text-slate-100 group-hover:text-cyan-300">Transistor Device Twin</div>
+        <div class="text-[11px] text-slate-400">Ion/Ioff Leakage & SS</div>
+      </button>
+
+      <button onclick="openTwin('interposer')" class="p-3 rounded-xl bg-slate-900/80 border border-emerald-500/30 hover:border-emerald-400 transition-all text-left group hover:shadow-[0_0_20px_rgba(16,185,129,0.2)]">
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-[10px] font-mono text-emerald-400">TWIN #02</span>
+          <i class="fa-solid fa-layer-group text-emerald-400 group-hover:scale-110 transition-transform"></i>
+        </div>
+        <div class="font-bold text-sm text-slate-100 group-hover:text-emerald-300">Interposer Substrate Twin</div>
+        <div class="text-[11px] text-slate-400">Signal Eye & Crosstalk</div>
+      </button>
+
+      <button onclick="openTwin('bonding')" class="p-3 rounded-xl bg-slate-900/80 border border-purple-500/30 hover:border-purple-400 transition-all text-left group hover:shadow-[0_0_20px_rgba(139,92,246,0.2)]">
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-[10px] font-mono text-purple-400">TWIN #03</span>
+          <i class="fa-solid fa-compress text-purple-400 group-hover:scale-110 transition-transform"></i>
+        </div>
+        <div class="font-bold text-sm text-slate-100 group-hover:text-purple-300">Packaging Equipment Twin</div>
+        <div class="text-[11px] text-slate-400">Bonding Force & Reflow Profile</div>
+      </button>
+
+      <button onclick="openTwin('chiplet')" class="p-3 rounded-xl bg-slate-900/80 border border-amber-500/30 hover:border-amber-400 transition-all text-left group hover:shadow-[0_0_20px_rgba(255,215,0,0.2)]">
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-[10px] font-mono text-amber-400">TWIN #04</span>
+          <i class="fa-solid fa-calculator text-amber-400 group-hover:scale-110 transition-transform"></i>
+        </div>
+        <div class="font-bold text-sm text-slate-100 group-hover:text-amber-300">Chiplet Fab & Yield Twin</div>
+        <div class="text-[11px] text-slate-400">Known Good Die (KGD) Cost</div>
+      </button>
+    </section>
+
+    <!-- SECTION 1: INTERACTIVE VISUALIZER CANVAS STUDIO -->
+    <section class="rounded-2xl bg-slate-950/90 border border-cyan-500/30 p-4 lg:p-6 glow-border relative overflow-hidden">
+      
+      <!-- Studio Toolbar -->
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pb-4 border-b border-slate-800">
+        <div class="flex items-center gap-3">
+          <div class="w-3 h-3 rounded-full bg-cyan-400 animate-ping"></div>
+          <h2 class="font-serif font-bold text-lg text-cyan-300 flex items-center gap-2">
+            <i class="fa-solid fa-cubes-stacked"></i> Advanced Transistor & 3D Packaging Visualizer
+          </h2>
+        </div>
+
+        <!-- Mode Switcher -->
+        <div class="flex items-center bg-slate-900 p-1 rounded-xl border border-slate-800 gap-1">
+          <button id="btn-mode-transistor" onclick="switchVisualizerMode('transistor')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-cyan-500 text-slate-950 shadow-md transition-all">
+            Transistor Structure
+          </button>
+          <button id="btn-mode-interposer" onclick="switchVisualizerMode('interposer')" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-all">
+            2.5D Interposer & TSV
+          </button>
+          <button id="btn-mode-heatmap" onclick="switchVisualizerMode('heatmap')" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-all">
+            3D Stacked Thermal Map
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Interactive Visualizer Canvas Area -->
+      <div class="relative min-h-[380px] sm:min-h-[460px] flex items-center justify-center my-4 rounded-xl bg-[#02050E] border border-cyan-950 overflow-hidden">
+        
+        <!-- Micro-Engraved Circular Text -->
+        <div class="circular-text-container flex items-center justify-center animate-spin-slow opacity-50">
+          <svg viewBox="0 0 300 300" class="w-full h-full">
+            <path id="textPath" d="M 150, 150 m -120, 0 a 120,120 0 1,1 240,0 a 120,120 0 1,1 -240,0" />
+            <text>
+              <textPath href="#textPath" startOffset="0%">
+                Gopalkrishna Advanced Rural Research Foundation • Gopalkrishna Advanced Rural Research Foundation •
+              </textPath>
+            </text>
+          </svg>
+        </div>
+
+        <!-- VIEW 1: Transistor Architecture (Planar / FinFET / GAA Nanosheet) -->
+        <svg id="svg-view-transistor" class="w-full h-[420px]" viewBox="0 0 800 450">
+          <defs>
+            <linearGradient id="gate-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#00F0FF"/>
+              <stop offset="100%" stop-color="#3B82F6"/>
+            </linearGradient>
+
+            <linearGradient id="channel-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#10B981"/>
+              <stop offset="50%" stop-color="#FFD700"/>
+              <stop offset="100%" stop-color="#10B981"/>
+            </linearGradient>
+
+            <filter id="glow-cyan-trans" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="4" result="blur" />
+              <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
+          </defs>
+
+          <!-- Silicon Substrate Base -->
+          <rect x="50" y="280" width="700" height="130" rx="10" fill="#07101E" stroke="#1E293B" stroke-width="2"/>
+          <text x="70" y="380" fill="#00F0FF" font-family="JetBrains Mono" font-size="11" opacity="0.6">p-Type Silicon Substrate (300mm Bulk Wafer)</text>
+
+          <!-- Dynamic SVG Group rendered via JavaScript based on Architecture Selection (Planar, FinFET, GAA) -->
+          <g id="dynamic-transistor-graphics">
+            <!-- Injected by JS -->
+          </g>
+
+          <!-- Status Indicator Label inside Canvas -->
+          <text id="transistor-arch-label" x="70" y="70" fill="#FFD700" font-family="JetBrains Mono" font-size="14" font-weight="bold">
+            ARCHITECTURE: Gate-All-Around (GAA) Nanosheet (2nm Node)
+          </text>
+        </svg>
+
+        <!-- VIEW 2: 2.5D Silicon Interposer & TSVs (Hidden by default) -->
+        <svg id="svg-view-interposer" class="w-full h-[420px] hidden" viewBox="0 0 800 450">
+          <rect x="60" y="40" width="680" height="370" rx="12" fill="#040A18" stroke="#1E293B"/>
+          
+          <!-- Substrate Package Base -->
+          <rect x="100" y="340" width="600" height="40" rx="4" fill="#0F172A" stroke="#334155"/>
+          <text x="320" y="365" fill="#94A3B8" font-family="JetBrains Mono" font-size="11">Organic Package Substrate & BGA Balls</text>
+
+          <!-- Silicon Interposer Layer -->
+          <rect x="140" y="220" width="520" height="60" rx="4" fill="#0369A1" stroke="#00F0FF" stroke-width="1.5"/>
+          <text x="300" y="255" fill="#FFFFFF" font-family="JetBrains Mono" font-size="12" font-weight="bold">Silicon Interposer (Fine-Pitch Cu Traces)</text>
+
+          <!-- Through-Silicon Vias (TSVs) -->
+          <g stroke="#FFD700" stroke-width="3" stroke-dasharray="4 2">
+            <line x1="200" y1="220" x2="200" y2="280"/>
+            <line x1="240" y1="220" x2="240" y2="280"/>
+            <line x1="380" y1="220" x2="380" y2="280"/>
+            <line x1="420" y1="220" x2="420" y2="280"/>
+            <line x1="560" y1="220" x2="560" y2="280"/>
+            <line x1="600" y1="220" x2="600" y2="280"/>
+          </g>
+
+          <!-- Micro-bumps -->
+          <g fill="#10B981">
+            <circle cx="200" cy="210" r="5"/> <circle cx="240" cy="210" r="5"/>
+            <circle cx="380" cy="210" r="5"/> <circle cx="420" cy="210" r="5"/>
+            <circle cx="560" cy="210" r="5"/> <circle cx="600" cy="210" r="5"/>
+          </g>
+
+          <!-- Top Chiplets -->
+          <!-- Compute Core Chiplet -->
+          <rect x="160" y="100" width="140" height="100" rx="6" fill="#1E1B4B" stroke="#8B5CF6" stroke-width="2"/>
+          <text x="180" y="145" fill="#C4B5FD" font-family="JetBrains Mono" font-size="12" font-weight="bold">Logic Chiplet</text>
+          <text x="185" y="165" fill="#94A3B8" font-family="JetBrains Mono" font-size="10">(3nm Core Engine)</text>
+
+          <!-- AI Accelerator Chiplet -->
+          <rect x="330" y="100" width="140" height="100" rx="6" fill="#064E3B" stroke="#10B981" stroke-width="2"/>
+          <text x="350" y="145" fill="#6EE7B7" font-family="JetBrains Mono" font-size="12" font-weight="bold">AI NPU Chiplet</text>
+          <text x="360" y="165" fill="#94A3B8" font-family="JetBrains Mono" font-size="10">(Tensor Matrix)</text>
+
+          <!-- HBM3 Stacked Memory -->
+          <g transform="translate(510, 80)">
+            <rect x="0" y="0" width="140" height="25" rx="3" fill="#701A75" stroke="#F0ABFC"/>
+            <rect x="0" y="30" width="140" height="25" rx="3" fill="#701A75" stroke="#F0ABFC"/>
+            <rect x="0" y="60" width="140" height="25" rx="3" fill="#701A75" stroke="#F0ABFC"/>
+            <rect x="0" y="90" width="140" height="25" rx="3" fill="#4A044E" stroke="#FF0055" stroke-width="1.5"/>
+            <text x="15" y="106" fill="#FFD700" font-family="JetBrains Mono" font-size="10" font-weight="bold">HBM3 Stack (12-Hi)</text>
+          </g>
+        </svg>
+
+        <!-- VIEW 3: 3D Stacked Thermal Heatmap (Hidden by default) -->
+        <svg id="svg-view-heatmap" class="w-full h-[420px] hidden" viewBox="0 0 800 450">
+          <rect x="80" y="40" width="640" height="370" rx="12" fill="#0B061A" stroke="#8B5CF6"/>
+          <text x="110" y="75" fill="#F0ABFC" font-family="JetBrains Mono" font-size="14" font-weight="bold">3D Stacked Die Thermal Gradients & Junction Hotspots</text>
+
+          <!-- Top Layer: Memory Stack Heat -->
+          <rect x="220" y="110" width="360" height="60" rx="6" fill="url(#heat-top)" stroke="#EF4444" stroke-width="2"/>
+          <text x="240" y="145" fill="#FFFFFF" font-family="JetBrains Mono" font-size="12" font-weight="bold">Top DRAM Die Stack (T_j = 68°C)</text>
+
+          <!-- Middle Layer: Logic Compute Hotspot -->
+          <rect x="220" y="190" width="360" height="80" rx="6" fill="url(#heat-mid)" stroke="#DC2626" stroke-width="2.5"/>
+          <text x="240" y="235" fill="#FFFFFF" font-family="JetBrains Mono" font-size="13" font-weight="bold">Compute Logic Core (Hotspot T_j = 92°C)</text>
+
+          <!-- Bottom Layer: Base Passive Interposer -->
+          <rect x="200" y="290" width="400" height="40" rx="6" fill="#1E3A8A" stroke="#3B82F6"/>
+          <text x="240" y="315" fill="#93C5FD" font-family="JetBrains Mono" font-size="11">Base Active Interposer (T_j = 45°C)</text>
+
+          <!-- Heat Sink / TIM Indication -->
+          <path d="M 220 90 L 580 90 M 250 80 L 250 100 M 350 80 L 350 100 M 450 80 L 450 100 M 550 80 L 550 100" stroke="#00F0FF" stroke-width="3"/>
+          <text x="310" y="75" fill="#00F0FF" font-family="JetBrains Mono" font-size="11">Integrated Heat Spreader (IHS) & TIM</text>
+
+          <!-- Gradients definition -->
+          <defs>
+            <linearGradient id="heat-top" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#EAB308"/>
+              <stop offset="50%" stop-color="#EF4444"/>
+              <stop offset="100%" stop-color="#EAB308"/>
+            </linearGradient>
+            <linearGradient id="heat-mid" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#EF4444"/>
+              <stop offset="40%" stop-color="#7F1D1D"/>
+              <stop offset="50%" stop-color="#B91C1C"/>
+              <stop offset="100%" stop-color="#EF4444"/>
+            </linearGradient>
+          </defs>
+        </svg>
+
+        <!-- Status Overlay -->
+        <div class="absolute bottom-3 left-4 flex items-center gap-2 bg-slate-900/90 border border-slate-800 px-3 py-1.5 rounded-lg text-xs font-mono text-cyan-300">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span id="canvas-status">STATUS: Live Gate-All-Around (GAA) Electron Motion</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 2: 5-STEP GUIDED PROCESS WORKFLOWS -->
+    <section class="rounded-2xl bg-slate-900/80 border border-slate-800 p-4 lg:p-6 glow-border">
+      
+      <!-- Workflow Header & Step Tabs -->
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+        <div>
+          <span class="text-xs font-mono text-cyan-400 uppercase tracking-widest">Multi-Step Packaging Guided Lab</span>
+          <h2 class="text-xl font-bold font-serif text-slate-100">Interactive Heterogeneous System Workstation</h2>
+        </div>
+
+        <!-- Step Selector Tabs -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0">
+          <button id="tab-step-1" onclick="loadWorkflowStep(1)" class="px-3 py-2 rounded-xl text-xs font-semibold bg-cyan-500 text-slate-950 flex items-center gap-2 shadow-lg transition-all shrink-0">
+            <span class="w-5 h-5 rounded-full bg-slate-950 text-cyan-400 flex items-center justify-center font-mono text-[10px]">1</span> Transistor
+          </button>
+          <button id="tab-step-2" onclick="loadWorkflowStep(2)" class="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 hover:text-white flex items-center gap-2 transition-all shrink-0">
+            <span class="w-5 h-5 rounded-full bg-slate-700 text-slate-300 flex items-center justify-center font-mono text-[10px]">2</span> 2.5D Interposer
+          </button>
+          <button id="tab-step-3" onclick="loadWorkflowStep(3)" class="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 hover:text-white flex items-center gap-2 transition-all shrink-0">
+            <span class="w-5 h-5 rounded-full bg-slate-700 text-slate-300 flex items-center justify-center font-mono text-[10px]">3</span> 3D TSV Bonding
+          </button>
+          <button id="tab-step-4" onclick="loadWorkflowStep(4)" class="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 hover:text-white flex items-center gap-2 transition-all shrink-0">
+            <span class="w-5 h-5 rounded-full bg-slate-700 text-slate-300 flex items-center justify-center font-mono text-[10px]">4</span> HBM Memory
+          </button>
+          <button id="tab-step-5" onclick="loadWorkflowStep(5)" class="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 hover:text-white flex items-center gap-2 transition-all shrink-0">
+            <span class="w-5 h-5 rounded-full bg-slate-700 text-slate-300 flex items-center justify-center font-mono text-[10px]">5</span> Thermal Management
+          </button>
+        </div>
+      </div>
+
+      <!-- WORKSTATION GRID: Left Controls, Right Response Graph -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- LEFT: Dynamic Control Sliders (5 Cols) -->
+        <div id="controls-container" class="lg:col-span-5 bg-slate-950/70 p-5 rounded-xl border border-slate-800 space-y-5">
+          <!-- Dynamically Injected by JS -->
+        </div>
+
+        <!-- RIGHT: Response Graph & Observation Card (7 Cols) -->
+        <div class="lg:col-span-7 flex flex-col justify-between space-y-4">
+          
+          <!-- Dynamic Chart Box -->
+          <div class="bg-slate-950/90 p-4 rounded-xl border border-slate-800 flex-1 flex flex-col">
+            <div class="flex items-center justify-between mb-2">
+              <h3 id="graph-title" class="text-sm font-bold font-mono text-cyan-300">Subthreshold Current-Voltage (I-V) Characteristics</h3>
+              <span id="graph-badge" class="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">REAL-TIME SIMULATION</span>
+            </div>
+
+            <!-- Dynamic Graph Canvas Container -->
+            <div class="w-full h-[220px] bg-[#020612] rounded-lg border border-slate-900 p-2 relative flex items-center justify-center">
+              <svg id="svg-dynamic-graph" class="w-full h-full" viewBox="0 0 500 200">
+                <!-- Dynamically rendered by JavaScript -->
+              </svg>
+            </div>
+          </div>
+
+          <!-- Observation Box -->
+          <div class="bg-slate-950/90 p-4 rounded-xl border border-amber-500/20 glow-border-gold">
+            <h4 class="text-xs font-mono font-bold text-amber-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <i class="fa-solid fa-microscope"></i> What Changed? Physics & Observation
+            </h4>
+            <p id="observation-text" class="text-xs text-slate-300 leading-relaxed font-sans">
+              Changing from Planar to GAA Nanosheet provides gate electrostatic control from all 4 sides, reducing Subthreshold Swing (SS) towards the theoretical limit of ~60 mV/dec and suppressing Drain-Induced Barrier Lowering (DIBL).
+            </p>
+            <div class="mt-3 pt-2 border-t border-slate-800 flex items-center justify-between text-[11px] font-mono">
+              <span class="text-slate-400">Key Metric:</span>
+              <span id="key-metric-display" class="text-cyan-300 font-bold">Subthreshold Swing: 63.5 mV/dec | Ion/Ioff: 1.4e7</span>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SECTION 3: AI LAB ASSISTANT -->
+    <section class="rounded-2xl bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 border border-cyan-500/30 p-4 lg:p-6 glow-border">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-emerald-600 p-0.5">
+          <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center text-cyan-300">
+            <i class="fa-solid fa-robot text-lg"></i>
+          </div>
+        </div>
+        <div>
+          <h2 class="text-lg font-bold font-serif text-slate-100">AI Packaging & Transistor Lab Assistant</h2>
+          <p class="text-xs text-slate-400">Powered by GARRF Semiconductor Physics & Heterogeneous Systems Knowledgebase</p>
+        </div>
+      </div>
+
+      <!-- Quick Try-Asking Chips -->
+      <div class="flex flex-wrap gap-2 mb-4">
+        <span class="text-xs text-slate-400 self-center">Try asking:</span>
+        <button onclick="askAI('What is GAA Nanosheet?')" class="text-xs px-2.5 py-1 rounded-full bg-slate-800 hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-slate-700 transition-all">
+          What is GAA Nanosheet?
+        </button>
+        <button onclick="askAI('How do TSVs work?')" class="text-xs px-2.5 py-1 rounded-full bg-slate-800 hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-slate-700 transition-all">
+          How do TSVs work?
+        </button>
+        <button onclick="askAI('Why is heat a problem in 3D stacking?')" class="text-xs px-2.5 py-1 rounded-full bg-slate-800 hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-slate-700 transition-all">
+          Why heat in 3D stacking?
+        </button>
+        <button onclick="askAI('Explain HBM bandwidth')" class="text-xs px-2.5 py-1 rounded-full bg-slate-800 hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-slate-700 transition-all">
+          Explain HBM bandwidth
+        </button>
+      </div>
+
+      <!-- Chat Output Container -->
+      <div class="bg-[#02050D] p-4 rounded-xl border border-slate-800 min-h-[140px] max-h-[220px] overflow-y-auto mb-3 font-mono text-xs space-y-3" id="ai-chat-output">
+        <div class="flex items-start gap-2.5 text-cyan-300">
+          <i class="fa-solid fa-robot mt-0.5 text-cyan-400"></i>
+          <div>
+            <span class="font-bold text-cyan-400">AI Assistant:</span> Welcome to the KRISHNA Advanced Transistor & 3D Heterogeneous Packaging Lab! Select an experiment step above or ask me any question regarding sub-2nm Gate-All-Around (GAA) nanosheets, silicon interposers, TSV aspect ratios, or HBM3 memory stacking.
+          </div>
+        </div>
+      </div>
+
+      <!-- Chat Input Field -->
+      <div class="flex gap-2">
+        <input id="ai-input" type="text" placeholder="Ask about nanosheet ribbon thickness, micro-bump pitch, or thermal throttling..." 
+               class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-slate-100 focus:outline-none focus:border-cyan-400 transition-all font-sans"
+               onkeypress="if(event.key==='Enter') sendAIQuestion()">
+        <button onclick="sendAIQuestion()" class="px-4 py-2 bg-gradient-to-r from-cyan-500 to-emerald-600 hover:from-cyan-400 hover:to-emerald-500 text-slate-950 font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-md">
+          <i class="fa-solid fa-paper-plane"></i> Ask AI
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="mt-12 border-t border-cyan-500/20 bg-[#02050E] py-6 px-4 lg:px-8 text-center text-xs text-slate-400">
+    <div class="max-w-7xl mx-auto space-y-2">
+      <p class="font-serif">
+        Developed by <span class="text-cyan-300 font-semibold">Dr. Annamdas Venu Gopal Madhav</span> & <span class="text-amber-300 font-semibold">Annamdas Shantanu Vasudev Krishna</span>
+      </p>
+      <p class="text-slate-500 flex items-center justify-center gap-3">
+        <span>In association with <a href="https://garrf.in/" target="_blank" class="text-cyan-400 hover:underline">Gopalkrishna Advanced Rural Research Foundation (garrf.in)</a></span>
+        <span>•</span>
+        <a href="chip.pdf" target="_blank" class="text-amber-400 hover:underline flex items-center gap-1">
+          <i class="fa-solid fa-file-pdf"></i> Download Chip Architecture PDF
+        </a>
+      </p>
+      <p class="text-[10px] text-slate-600 font-mono">
+        © 2026 GARRF Advanced Transistor & Heterogeneous Packaging Division. All Rights Reserved.
+      </p>
+    </div>
+  </footer>
+
+  <!-- MODAL: HELP & LEARNING OUTCOMES -->
+  <div id="modal-help" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-cyan-500/40 rounded-2xl max-w-2xl w-full p-6 space-y-4 glow-border max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-lg font-bold font-serif text-cyan-300 flex items-center gap-2">
+          <i class="fa-solid fa-book-bookmark"></i> Lab Guide & Student Learning Outcomes
+        </h3>
+        <button onclick="toggleModal('modal-help')" class="text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs text-slate-300 leading-relaxed font-sans">
+        <h4 class="font-bold text-amber-300 font-mono uppercase">How to Perform Experiments:</h4>
+        <ol class="list-decimal pl-5 space-y-1.5 text-slate-300">
+          <li><strong>Select Visual Mode:</strong> Switch between Transistor Architecture, 2.5D Interposer, and 3D Thermal Heatmap at the canvas top.</li>
+          <li><strong>Interactive Steps 1-5:</strong> Adjust parameters like Gate Length, Micro-bump Pitch, TSV Aspect Ratio, and Cooling Efficiency.</li>
+          <li><strong>Observe Real-Time Graphs:</strong> Monitor subthreshold swing, insertion loss (S21), stress contours, and HBM memory bandwidth.</li>
+          <li><strong>Inspect Virtual Twins:</strong> Open the Virtual Twin buttons at the top to inspect device leakage, substrate crosstalk, and Known Good Die (KGD) fab economics.</li>
+          <li><strong>Download Reference Materials:</strong> Access <a href="chip.pdf" target="_blank" class="text-cyan-400 underline">chip.pdf</a> for chiplet design rules and physical layout guidelines.</li>
+        </ol>
+
+        <h4 class="font-bold text-cyan-300 font-mono uppercase pt-2">Student Learning Outcomes (SLOs):</h4>
+        <ul class="list-disc pl-5 space-y-1 text-slate-300">
+          <li>Understand sub-2nm Gate-All-Around (GAA) nanosheet physics and short-channel effect suppression.</li>
+          <li>Analyze high-density signal integrity and insertion loss across 2.5D silicon interposers.</li>
+          <li>Evaluate mechanical stress and void defect rates in Through-Silicon Vias (TSVs) during direct hybrid bonding.</li>
+          <li>Calculate High-Bandwidth Memory (HBM3) throughput as a function of bus width and stack height.</li>
+          <li>Formulate dynamic thermal management strategies for high-density 3D stacked system-in-package architectures.</li>
+        </ul>
+      </div>
+
+      <div class="pt-3 border-t border-slate-800 text-right">
+        <button onclick="toggleModal('modal-help')" class="px-4 py-2 bg-cyan-500 text-slate-950 font-bold rounded-xl text-xs hover:bg-cyan-400 transition-all">
+          Got It, Start Lab
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: VIRTUAL TWIN TELEMETRY DIALOG -->
+  <div id="modal-twin" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-3xl w-full p-6 space-y-5 glow-border max-h-[90vh] overflow-y-auto" id="twin-modal-content">
+      <!-- Dynamically filled by JavaScript -->
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC ENGINE -->
+  <script>
+    /* ==========================================================================
+       VISITOR COUNTER USING LOCAL STORAGE
+       ========================================================================== */
+    function initVisitorCounter() {
+      let count = localStorage.getItem('garrf_transistor_lab_visits');
+      if (!count) {
+        count = 1842;
+      } else {
+        count = parseInt(count) + 1;
+      }
+      localStorage.setItem('garrf_transistor_lab_visits', count);
+      document.getElementById('visitor-count').textContent = Number(count).toLocaleString();
+    }
+
+    /* ==========================================================================
+       MODAL CONTROLLER
+       ========================================================================== */
+    function toggleModal(modalId) {
+      const modal = document.getElementById(modalId);
+      if (modal) {
+        modal.classList.toggle('hidden');
+      }
+    }
+
+    /* ==========================================================================
+       VISUALIZER VIEW SWITCHER
+       ========================================================================== */
+    function switchVisualizerMode(mode) {
+      const vTrans = document.getElementById('svg-view-transistor');
+      const vInter = document.getElementById('svg-view-interposer');
+      const vHeat = document.getElementById('svg-view-heatmap');
+      const status = document.getElementById('canvas-status');
+
+      const btnTrans = document.getElementById('btn-mode-transistor');
+      const btnInter = document.getElementById('btn-mode-interposer');
+      const btnHeat = document.getElementById('btn-mode-heatmap');
+
+      [btnTrans, btnInter, btnHeat].forEach(btn => {
+        btn.className = "px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-all";
+      });
+
+      vTrans.classList.add('hidden');
+      vInter.classList.add('hidden');
+      vHeat.classList.add('hidden');
+
+      if (mode === 'transistor') {
+        vTrans.classList.remove('hidden');
+        btnTrans.className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-cyan-500 text-slate-950 shadow-md transition-all";
+        status.textContent = "STATUS: Live Gate-All-Around (GAA) Electron Motion";
+      } else if (mode === 'interposer') {
+        vInter.classList.remove('hidden');
+        btnInter.className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500 text-slate-950 shadow-md transition-all";
+        status.textContent = "STATUS: 2.5D Silicon Interposer TSV & Micro-Bump Signal Routing";
+      } else if (mode === 'heatmap') {
+        vHeat.classList.remove('hidden');
+        btnHeat.className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-purple-500 text-slate-950 shadow-md transition-all";
+        status.textContent = "STATUS: 3D Stacked Die Junction Temperature Heatmap";
+      }
+    }
+
+    /* ==========================================================================
+       EXPERIMENT LAB STATE & WORKFLOW ENGINE
+       ========================================================================== */
+    let currentStep = 1;
+
+    const labState = {
+      // Step 1: Transistor Architecture
+      architecture: 'GAA', // 'Planar', 'FinFET', 'GAA'
+      gateLength: 12, // nm
+      nanosheetCount: 3,
+      vddVoltage: 0.7, // V
+
+      // Step 2: 2.5D Interposer
+      bumpPitch: 35, // µm
+      traceWidth: 2.0, // µm
+      interposerLen: 15, // mm
+
+      // Step 3: 3D TSV & Direct Bonding
+      tsvAspectRatio: 10, // 10:1
+      bondingPressure: 45, // MPa
+      bondingTemp: 300, // °C
+
+      // Step 4: High Bandwidth Memory
+      dramStackCount: 8, // 8-Hi
+      busWidth: 1024, // bits
+      clockFreq: 1.6, // GHz
+
+      // Step 5: Thermal & Power
+      coolingMethod: 'Liquid', // 'Air', 'Liquid', 'Microfluidic'
+      dvfsScale: 1.0 // 1.0x to 1.5x
+    };
+
+    function loadWorkflowStep(step) {
+      currentStep = step;
+
+      for (let i = 1; i <= 5; i++) {
+        const tab = document.getElementById(`tab-step-${i}`);
+        if (i === step) {
+          tab.className = "px-3 py-2 rounded-xl text-xs font-semibold bg-cyan-500 text-slate-950 flex items-center gap-2 shadow-lg transition-all shrink-0";
+        } else {
+          tab.className = "px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 hover:text-white flex items-center gap-2 transition-all shrink-0";
+        }
+      }
+
+      renderControls();
+      updateSimulationOutputs();
+    }
+
+    function renderControls() {
+      const container = document.getElementById('controls-container');
+      
+      if (currentStep === 1) {
+        container.innerHTML = `
+          <div class="space-y-1">
+            <h3 class="text-sm font-bold font-serif text-cyan-300">Step 1: Transistor Architecture Selection</h3>
+            <p class="text-xs text-slate-400">Compare Planar MOSFET, FinFET, and Gate-All-Around (GAA) Nanosheet.</p>
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-xs font-mono text-slate-300">Device Topology:</label>
+            <div class="grid grid-cols-3 gap-1.5">
+              <button onclick="labState.architecture='Planar'; updateTransistorSVG(); updateSimulationOutputs();" 
+                      class="px-2 py-1.5 rounded-lg text-xs font-mono font-bold ${labState.architecture==='Planar'?'bg-cyan-500 text-slate-950':'bg-slate-900 text-slate-400'} border border-slate-700">Planar</button>
+              <button onclick="labState.architecture='FinFET'; updateTransistorSVG(); updateSimulationOutputs();" 
+                      class="px-2 py-1.5 rounded-lg text-xs font-mono font-bold ${labState.architecture==='FinFET'?'bg-cyan-500 text-slate-950':'bg-slate-900 text-slate-400'} border border-slate-700">FinFET</button>
+              <button onclick="labState.architecture='GAA'; updateTransistorSVG(); updateSimulationOutputs();" 
+                      class="px-2 py-1.5 rounded-lg text-xs font-mono font-bold ${labState.architecture==='GAA'?'bg-cyan-500 text-slate-950':'bg-slate-900 text-slate-400'} border border-slate-700">GAA Nano</button>
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <div class="flex justify-between text-xs font-mono">
+              <span class="text-slate-300">Gate Length (L_g):</span>
+              <span class="text-cyan-400 font-bold">${labState.gateLength} nm</span>
+            </div>
+            <input type="range" min="5" max="28" step="1" value="${labState.gateLength}" 
+                   oninput="labState.gateLength=parseInt(this.value); updateSimulationOutputs();"
+                   class="w-full accent-cyan-400 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+          </div>
+
+          <div class="space-y-1">
+            <div class="flex justify-between text-xs font-mono">
+              <span class="text-slate-300">Supply Voltage (V_dd):</span>
+              <span class="text-cyan-400 font-bold">${labState.vddVoltage} V</span>
+            </div>
+            <input type="range" min="0.5" max="1.2" step="0.05" value="${labState.vddVoltage}" 
+                   oninput="labState.vddVoltage=parseFloat(this.value); updateSimulationOutputs();"
+                   class="w-full accent-cyan-400 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+          </div>
+        `;
+      } else if (currentStep === 2) {
+        container.innerHTML = `
+          <div class="space-y-1">
+            <h3 class="text-sm font-bold font-serif text-cyan-300">Step 2: 2.5D Silicon Interposer Design</h3>
+            <p class="text-xs text-slate-400">Configure fine-pitch interposer traces and micro-bump interconnects.</p>
+          </div>
+
+          <div class="space-y-1">
+            <div class="flex justify-between text-xs font-mono">
+              <span class="text-slate-300">Micro-bump Pitch:</span>
+              <span class="text-emerald-400 font-bold">${labState.bumpPitch} µm</span>
+            </div>
+            <input type="range" min="20" max="55" step="5" value="${labState.bumpPitch}" 
+                   oninput="labState.bumpPitch=parseInt(this.value); updateSimulationOutputs();"
+                   class="w-full accent-emerald-400 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+          </div>
+
+          <div class="space-y-1">
+            <div class="flex justify-between text-xs font-mono">
+              <span class="text-slate-300">Cu Trace Width:</span>
+              <span class="text-emerald-400 font-bold">${labState.traceWidth} µm</span>
+            </div>
+            <input type="range" min="0.8" max="5.0" step="0.2" value="${labState.traceWidth}" 
+                   oninput="labState.traceWidth=parseFloat(this.value); updateSimulationOutputs();"
+                   class="w-full accent-emerald-400 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+          </div>
+        `;
+      } else if (currentStep === 3) {
+        container.innerHTML = `
+          <div class="space-y-1">
+            <h3 class="text-sm font-bold font-serif text-cyan-300">Step 3: 3D TSV & Direct Hybrid Bonding</h3>
+            <p class="text-xs text-slate-400">Optimize TSV aspect ratio and thermo-compression bonding force.</p>
+          </div>
+
+          <div class="space-y-1">
+            <div class="flex justify-between text-xs font-mono">
+              <span class="text-slate-300">TSV Aspect Ratio (Depth:Width):</span>
+              <span class="text-purple-400 font-bold">${labState.tsvAspectRatio}:1</span>
+            </div>
+            <input type="range" min="5" max="20" step="1" value="${labState.tsvAspectRatio}" 
+                   oninput="labState.tsvAspectRatio=parseInt(this.value); updateSimulationOutputs();"
+                   class="w-full accent-purple-400 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+          </div>
+
+          <div class="space-y-1">
+            <div class="flex justify-between text-xs font-mono">
+              <span class="text-slate-300">Bonding Pressure:</span>
+              <span class="text-purple-400 font-bold">${labState.bondingPressure} MPa</span>
+            </div>
+            <input type="range" min="20" max="80" step="5" value="${labState.bondingPressure}" 
+                   oninput="labState.bondingPressure=parseInt(this.value); updateSimulationOutputs();"
+                   class="w-full accent-purple-400 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+          </div>
+        `;
+      } else if (currentStep === 4) {
+        container.innerHTML = `
+          <div class="space-y-1">
+            <h3 class="text-sm font-bold font-serif text-cyan-300">Step 4: High-Bandwidth Memory (HBM3) Stacking</h3>
+            <p class="text-xs text-slate-400">Stack 3D DRAM dies over logic base die for extreme bandwidth.</p>
+          </div>
+
+          <div class="space-y-1">
+            <div class="flex justify-between text-xs font-mono">
+              <span class="text-slate-300">DRAM Die Stack Height:</span>
+              <span class="text-amber-400 font-bold">${labState.dramStackCount}-Hi Stack</span>
+            </div>
+            <input type="range" min="4" max="16" step="4" value="${labState.dramStackCount}" 
+                   oninput="labState.dramStackCount=parseInt(this.value); updateSimulationOutputs();"
+                   class="w-full accent-amber-400 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+          </div>
+
+          <div class="space-y-1">
+            <div class="flex justify-between text-xs font-mono">
+              <span class="text-slate-300">Memory Bus Width:</span>
+              <span class="text-amber-400 font-bold">${labState.busWidth} bits</span>
+            </div>
+            <input type="range" min="512" max="2048" step="512" value="${labState.busWidth}" 
+                   oninput="labState.busWidth=parseInt(this.value); updateSimulationOutputs();"
+                   class="w-full accent-amber-400 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+          </div>
+        `;
+      } else if (currentStep === 5) {
+        container.innerHTML = `
+          <div class="space-y-1">
+            <h3 class="text-sm font-bold font-serif text-cyan-300">Step 5: Thermal & Dynamic Power Management</h3>
+            <p class="text-xs text-slate-400">Evaluate junction temperatures and microfluidic/air cooling performance.</p>
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-xs font-mono text-slate-300">Cooling Solution:</label>
+            <select onchange="labState.coolingMethod=this.value; updateSimulationOutputs();" 
+                    class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-cyan-300 font-mono">
+              <option value="Air" ${labState.coolingMethod==='Air'?'selected':''}>Air Heat Sink (R_th = 0.45 K/W)</option>
+              <option value="Liquid" ${labState.coolingMethod==='Liquid'?'selected':''}>Cold Plate Liquid (R_th = 0.18 K/W)</option>
+              <option value="Microfluidic" ${labState.coolingMethod==='Microfluidic'?'selected':''}>On-Chip Microfluidic (R_th = 0.08 K/W)</option>
+            </select>
+          </div>
+
+          <div class="space-y-1">
+            <div class="flex justify-between text-xs font-mono">
+              <span class="text-slate-300">Dynamic Voltage Frequency Scaling (DVFS):</span>
+              <span class="text-cyan-400 font-bold">${labState.dvfsScale}x Clock</span>
+            </div>
+            <input type="range" min="0.8" max="1.5" step="0.1" value="${labState.dvfsScale}" 
+                   oninput="labState.dvfsScale=parseFloat(this.value); updateSimulationOutputs();"
+                   class="w-full accent-cyan-400 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+          </div>
+        `;
+      }
+    }
+
+    function updateTransistorSVG() {
+      const g = document.getElementById('dynamic-transistor-graphics');
+      const label = document.getElementById('transistor-arch-label');
+      if (!g) return;
+
+      if (labState.architecture === 'Planar') {
+        label.textContent = "ARCHITECTURE: Planar MOSFET (28nm - 65nm Legacy)";
+        g.innerHTML = `
+          <!-- Planar Source and Drain -->
+          <rect x="150" y="220" width="140" height="60" fill="#EF4444" rx="4"/>
+          <text x="180" y="255" fill="#FFF" font-family="JetBrains Mono" font-size="12">Source (n+)</text>
+
+          <rect x="510" y="220" width="140" height="60" fill="#EF4444" rx="4"/>
+          <text x="550" y="255" fill="#FFF" font-family="JetBrains Mono" font-size="12">Drain (n+)</text>
+
+          <!-- Oxide Layer -->
+          <rect x="290" y="210" width="220" height="10" fill="#E2E8F0"/>
+          
+          <!-- Top Gate -->
+          <rect x="290" y="140" width="220" height="70" fill="url(#gate-grad)" rx="4"/>
+          <text x="350" y="180" fill="#FFF" font-family="JetBrains Mono" font-size="13" font-weight="bold">Gate Electrode</text>
+
+          <!-- Planar Channel Stream -->
+          <path d="M 290 235 L 510 235" stroke="#FFD700" stroke-width="6" stroke-dasharray="8 4"/>
+          <text x="320" y="260" fill="#FFD700" font-family="JetBrains Mono" font-size="10">Sub-surface Leakage Stream</text>
+        `;
+      } else if (labState.architecture === 'FinFET') {
+        label.textContent = "ARCHITECTURE: FinFET (3D Tri-Gate 16nm - 5nm)";
+        g.innerHTML = `
+          <!-- Fin Base -->
+          <rect x="350" y="180" width="100" height="100" fill="#10B981" rx="4"/>
+          <text x="375" y="240" fill="#000" font-family="JetBrains Mono" font-size="11" font-weight="bold">Si Fin</text>
+
+          <!-- Wraparound Tri-Gate -->
+          <path d="M 310 280 L 310 140 L 490 140 L 490 280" fill="none" stroke="#00F0FF" stroke-width="30"/>
+          <text x="350" y="125" fill="#00F0FF" font-family="JetBrains Mono" font-size="12" font-weight="bold">Tri-Gate (3-Sides)</text>
+        `;
+      } else if (labState.architecture === 'GAA') {
+        label.textContent = "ARCHITECTURE: Gate-All-Around (GAA) Nanosheet (2nm Node)";
+        g.innerHTML = `
+          <!-- Nanosheet Ribbon 1 -->
+          <rect x="240" y="130" width="320" height="20" rx="6" fill="#10B981" stroke="#34D399" stroke-width="2"/>
+          <!-- Nanosheet Ribbon 2 -->
+          <rect x="240" y="180" width="320" height="20" rx="6" fill="#10B981" stroke="#34D399" stroke-width="2"/>
+          <!-- Nanosheet Ribbon 3 -->
+          <rect x="240" y="230" width="320" height="20" rx="6" fill="#10B981" stroke="#34D399" stroke-width="2"/>
+
+          <!-- GAA Encapsulating Metal Gate -->
+          <rect x="340" y="100" width="120" height="170" fill="url(#gate-grad)" opacity="0.85" rx="8" stroke="#00F0FF" stroke-width="2"/>
+          <text x="360" y="185" fill="#FFF" font-family="JetBrains Mono" font-size="11" font-weight="bold">GAA Gate</text>
+
+          <!-- Electron flow particles -->
+          <circle cx="270" cy="140" r="3" fill="#FFD700"><animate attributeName="cx" from="240" to="560" dur="1s" repeatCount="indefinite"/></circle>
+          <circle cx="270" cy="190" r="3" fill="#FFD700"><animate attributeName="cx" from="240" to="560" dur="1.2s" repeatCount="indefinite"/></circle>
+          <circle cx="270" cy="240" r="3" fill="#FFD700"><animate attributeName="cx" from="240" to="560" dur="0.9s" repeatCount="indefinite"/></circle>
+        `;
+      }
+    }
+
+    function updateSimulationOutputs() {
+      const title = document.getElementById('graph-title');
+      const obs = document.getElementById('observation-text');
+      const metric = document.getElementById('key-metric-display');
+      const svg = document.getElementById('svg-dynamic-graph');
+
+      if (currentStep === 1) {
+        let ss = 63.5;
+        let dibl = 28;
+        let ionIoff = "2.8e7";
+
+        if (labState.architecture === 'Planar') {
+          ss = 98.0 + (30 - labState.gateLength) * 1.5;
+          dibl = 85.0;
+          ionIoff = "1.2e4";
+        } else if (labState.architecture === 'FinFET') {
+          ss = 72.0 + (20 - labState.gateLength) * 0.8;
+          dibl = 42.0;
+          ionIoff = "4.5e6";
+        }
+
+        title.textContent = "Subthreshold Current-Voltage (I_d - V_g) Characteristic";
+        obs.innerHTML = `Selected <strong>${labState.architecture}</strong> with Gate Length $L_g = ${labState.gateLength}\\text{ nm}$. GAA wrappers minimize subthreshold leakage ($I_{\\text{off}}$) and improve subthreshold slope toward the ideal limit.`;
+        metric.textContent = `Subthreshold Swing (SS): ${ss.toFixed(1)} mV/dec | DIBL: ${dibl.toFixed(1)} mV/V | Ion/Ioff: ${ionIoff}`;
+
+        renderIVCurve(svg, ss);
+
+      } else if (currentStep === 2) {
+        const loss = (0.2 + (15 / labState.traceWidth) * 0.15).toFixed(2);
+        const crosstalk = (-35 + (40 - labState.bumpPitch) * 0.4).toFixed(1);
+
+        title.textContent = "2.5D Interposer Insertion Loss (S21) Spectrum";
+        obs.innerHTML = `At micro-bump pitch of <strong>${labState.bumpPitch} µm</strong> and trace width of <strong>${labState.traceWidth} µm</strong>, high-frequency insertion loss is limited to <strong>-${loss} dB/mm</strong> at 28 GHz.`;
+        metric.textContent = `Insertion Loss (S21): -${loss} dB/mm | Far-End Crosstalk: ${crosstalk} dB`;
+
+        renderS21Curve(svg, parseFloat(loss));
+
+      } else if (currentStep === 3) {
+        const stress = Math.round(180 + labState.tsvAspectRatio * 12 + labState.bondingPressure * 1.5);
+        const voidRate = (0.05 + (labState.tsvAspectRatio / 100)).toFixed(3);
+
+        title.textContent = "TSV Thermo-Mechanical Von Mises Stress Profile";
+        obs.innerHTML = `TSV aspect ratio <strong>${labState.tsvAspectRatio}:1</strong> under <strong>${labState.bondingPressure} MPa</strong> thermo-compression produces peak interfacial mechanical stress of <strong>${stress} MPa</strong>.`;
+        metric.textContent = `Peak Von Mises Stress: ${stress} MPa | Void Defect Rate: ${voidRate}%`;
+
+        renderStressProfile(svg, stress);
+
+      } else if (currentStep === 4) {
+        const bandwidth = Math.round((labState.busWidth * labState.clockFreq * 2) / 8); // GB/s
+        const latency = (12.5 - (labState.dramStackCount * 0.2)).toFixed(1);
+
+        title.textContent = "HBM3 System Memory Throughput vs Latency";
+        obs.innerHTML = `Stacking <strong>${labState.dramStackCount} DRAM dies</strong> over a <strong>${labState.busWidth}-bit</strong> wide bus delivers an aggregate bandwidth of <strong>${bandwidth} GB/s</strong>.`;
+        metric.textContent = `HBM3 Bandwidth: ${bandwidth} GB/s | Access Latency: ${latency} ns`;
+
+        renderBandwidthBar(svg, bandwidth);
+
+      } else if (currentStep === 5) {
+        let rTh = 0.18;
+        if (labState.coolingMethod === 'Air') rTh = 0.45;
+        if (labState.coolingMethod === 'Microfluidic') rTh = 0.08;
+
+        const junctionTemp = Math.round(35 + (120 * labState.dvfsScale * rTh));
+        const throttleRisk = junctionTemp > 85 ? "HIGH" : "NORMAL";
+
+        title.textContent = "Dynamic Package Thermal Transient Response";
+        obs.innerHTML = `Using <strong>${labState.coolingMethod} cooling</strong> with DVFS at <strong>${labState.dvfsScale}x</strong>, maximum 3D junction temperature reaches <strong>${junctionTemp}°C</strong>.`;
+        metric.textContent = `Peak Junction Temp (T_j): ${junctionTemp}°C | Thermal Throttling: ${throttleRisk}`;
+
+        renderThermalTransient(svg, junctionTemp);
+      }
+    }
+
+    function renderIVCurve(svg, ss) {
+      let pathD = "M 20,180 ";
+      for (let x = 20; x <= 480; x += 10) {
+        const v = (x - 20) / 460;
+        const logI = (v * 1000) / ss;
+        const y = Math.max(20, 180 - logI * 12);
+        pathD += `L ${x},${y} `;
+      }
+      svg.innerHTML = `
+        <line x1="20" y1="180" x2="480" y2="180" stroke="#334155"/>
+        <path d="${pathD}" fill="none" stroke="#00F0FF" stroke-width="3"/>
+        <text x="30" y="30" fill="#00F0FF" font-family="JetBrains Mono" font-size="10">Log(I_d) vs V_g Subthreshold Slope</text>
+      `;
+    }
+
+    function renderS21Curve(svg, loss) {
+      let pathD = "M 20,30 ";
+      for (let x = 20; x <= 480; x += 10) {
+        const freq = (x - 20) / 10; // GHz
+        const y = 30 + freq * loss * 1.8;
+        pathD += `L ${x},${y} `;
+      }
+      svg.innerHTML = `
+        <line x1="20" y1="180" x2="480" y2="180" stroke="#334155"/>
+        <path d="${pathD}" fill="none" stroke="#10B981" stroke-width="2.5"/>
+        <text x="30" y="25" fill="#10B981" font-family="JetBrains Mono" font-size="10">S21 Insertion Loss (0 to 50 GHz)</text>
+      `;
+    }
+
+    function renderStressProfile(svg, stress) {
+      svg.innerHTML = `
+        <rect x="50" y="50" width="400" height="100" fill="#1E1B4B" rx="6" stroke="#8B5CF6"/>
+        <rect x="180" y="50" width="140" height="100" fill="#EF4444" opacity="0.7"/>
+        <text x="200" y="105" fill="#FFF" font-family="JetBrains Mono" font-size="11" font-weight="bold">TSV Stress Peak: ${stress} MPa</text>
+      `;
+    }
+
+    function renderBandwidthBar(svg, bw) {
+      const width = Math.min(440, (bw / 1200) * 440);
+      svg.innerHTML = `
+        <rect x="30" y="70" width="440" height="40" fill="#0F172A" rx="4" stroke="#334155"/>
+        <rect x="30" y="70" width="${width}" height="40" fill="#F59E0B" rx="4"/>
+        <text x="40" y="95" fill="#000" font-family="JetBrains Mono" font-size="12" font-weight="bold">HBM3 Bandwidth: ${bw} GB/s</text>
+      `;
+    }
+
+    function renderThermalTransient(svg, temp) {
+      const color = temp > 85 ? "#EF4444" : "#3B82F6";
+      svg.innerHTML = `
+        <line x1="20" y1="170" x2="480" y2="170" stroke="#334155"/>
+        <path d="M 20,170 Q 150,${200 - temp*1.5} 480,${200 - temp*1.5}" fill="none" stroke="${color}" stroke-width="3"/>
+        <text x="30" y="30" fill="${color}" font-family="JetBrains Mono" font-size="10">Thermal Steady-State T_j = ${temp}°C</text>
+      `;
+    }
+
+    const twinData = {
+      device: {
+        title: "Transistor Device Twin (Sub-2nm Node)",
+        icon: "fa-microchip text-cyan-400",
+        stats: [
+          { label: "Subthreshold Swing", val: "63.2 mV/dec" },
+          { label: "Ion Drive Current", val: "1.85 mA/µm" },
+          { label: "Ioff Leakage Current", val: "0.12 nA/µm" },
+          { label: "Gate Capacitance (Cgg)", val: "0.42 fF/µm" }
+        ],
+        desc: "Simulates electrostatic potential, quantum confinement in silicon nanosheet ribbons, and ballistic transport mechanics."
+      },
+      interposer: {
+        title: "Interposer Substrate Twin",
+        icon: "fa-layer-group text-emerald-400",
+        stats: [
+          { label: "Micro-bump Yield", val: "99.98 %" },
+          { label: "Trace Impedance (Z0)", val: "50.4 Ω" },
+          { label: "Eye Diagram Height", val: "380 mV" },
+          { label: "Jitter (RMS)", val: "1.12 ps" }
+        ],
+        desc: "Tracks high-frequency S-parameter signal integrity across fine-pitch Cu redistribution layers (RDL)."
+      },
+      bonding: {
+        title: "Thermo-Compression Equipment Twin",
+        icon: "fa-compress text-purple-400",
+        stats: [
+          { label: "Bonding Force", val: "48.2 MPa" },
+          { label: "Stage Temp Uniformity", val: "±0.8 °C" },
+          { label: "Die Placement Accuracy", val: "±0.25 µm" },
+          { label: "Cu-Cu Direct Grain Growth", val: "94.5 %" }
+        ],
+        desc: "Monitors real-time bonding force curves, reflow temperature profiles, and alignment tilt optics."
+      },
+      chiplet: {
+        title: "Chiplet Fab & Yield Economics Twin",
+        icon: "fa-calculator text-amber-400",
+        stats: [
+          { label: "Known Good Die (KGD)", val: "92.4 %" },
+          { label: "Packaged Chip Cost", val: "$142.50" },
+          { label: "Monolithic Alternative", val: "$385.00" },
+          { label: "Yield Savings", val: "63.0 %" }
+        ],
+        desc: "Calculates cost savings of modular chiplet decomposition vs large monolithic die yield loss."
+      }
+    };
+
+    function openTwin(type) {
+      const twin = twinData[type];
+      const content = document.getElementById('twin-modal-content');
+
+      let statsHtml = twin.stats.map(s => `
+        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+          <div class="text-[11px] text-slate-400 font-mono">${s.label}</div>
+          <div class="text-base font-bold text-cyan-300 font-mono mt-1">${s.val}</div>
+        </div>
+      `).join('');
+
+      content.innerHTML = `
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <h3 class="text-lg font-bold font-serif text-slate-100 flex items-center gap-2">
+            <i class="fa-solid ${twin.icon}"></i> ${twin.title}
+          </h3>
+          <button onclick="toggleModal('modal-twin')" class="text-slate-400 hover:text-white">
+            <i class="fa-solid fa-xmark text-lg"></i>
+          </button>
+        </div>
+
+        <p class="text-xs text-slate-300 font-sans">${twin.desc}</p>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 my-4">
+          ${statsHtml}
+        </div>
+
+        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+          <div class="flex items-center justify-between text-xs font-mono">
+            <span class="text-slate-400">Live Virtual Twin Stream:</span>
+            <span class="text-emerald-400 flex items-center gap-1">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> ONLINE / TELEMETRY ACTIVE
+            </span>
+          </div>
+        </div>
+
+        <div class="pt-2 text-right">
+          <button onclick="toggleModal('modal-twin')" class="px-4 py-2 bg-slate-800 text-slate-300 font-bold rounded-xl text-xs hover:bg-slate-700 transition-all">
+            Close Telemetry
+          </button>
+        </div>
+      `;
+
+      toggleModal('modal-twin');
+    }
+
+    const aiKnowledgebase = [
+      {
+        keywords: ["gaa", "nanosheet", "what is gaa"],
+        answer: "Gate-All-Around (GAA) Nanosheet wraps the metal gate completely around thin horizontal silicon channel ribbons on all 4 sides, providing superior electrostatic channel control compared to 3-sided FinFETs."
+      },
+      {
+        keywords: ["tsv", "through-silicon", "how do tsvs work"],
+        answer: "Through-Silicon Vias (TSVs) are vertical electrical copper interconnects etched directly through silicon dies, enabling ultra-short 3D interconnect paths with low latency."
+      },
+      {
+        keywords: ["heat", "3d stacking", "thermal"],
+        answer: "Heat is a major challenge in 3D stacking because overlapping active logic dies create thermal hotspots ($T_j > 90^\\circ\\text{C}$), requiring liquid cooling or microfluidic channels."
+      },
+      {
+        keywords: ["hbm", "bandwidth", "memory"],
+        answer: "High-Bandwidth Memory (HBM3) stacks vertical DRAM dies connected via TSVs over a wide 1024-bit memory bus, achieving speeds over 1 TB/s."
+      }
+    ];
+
+    function askAI(questionText) {
+      document.getElementById('ai-input').value = questionText;
+      sendAIQuestion();
+    }
+
+    function sendAIQuestion() {
+      const input = document.getElementById('ai-input');
+      const chatBox = document.getElementById('ai-chat-output');
+      const query = input.value.trim();
+
+      if (!query) return;
+
+      const userDiv = document.createElement('div');
+      userDiv.className = 'flex items-start gap-2.5 text-slate-200 font-sans';
+      userDiv.innerHTML = `
+        <i class="fa-solid fa-user mt-0.5 text-amber-400"></i>
+        <div><span class="font-bold text-amber-400">You:</span> ${query}</div>
+      `;
+      chatBox.appendChild(userDiv);
+      input.value = '';
+
+      let response = "Heterogeneous 3D integration combines specialized chiplets (Logic, Memory, AI) on a single silicon interposer, lowering total system cost while maximizing bandwidth.";
+
+      const lowerQ = query.toLowerCase();
+      for (let item of aiKnowledgebase) {
+        if (item.keywords.some(k => lowerQ.includes(k))) {
+          response = item.answer;
+          break;
+        }
+      }
+
+      setTimeout(() => {
+        const aiDiv = document.createElement('div');
+        aiDiv.className = 'flex items-start gap-2.5 text-cyan-300 font-sans';
+        aiDiv.innerHTML = `
+          <i class="fa-solid fa-robot mt-0.5 text-cyan-400"></i>
+          <div><span class="font-bold text-cyan-400">AI Assistant:</span> ${response}</div>
+        `;
+        chatBox.appendChild(aiDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }, 400);
+
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    window.onload = function() {
+      initVisitorCounter();
+      updateTransistorSVG();
+      loadWorkflowStep(1);
+    };
+  </script>
+</body>
+</html>
