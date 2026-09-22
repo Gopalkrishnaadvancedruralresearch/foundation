@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GARRF Drone Flight Autonomy Lab — Operational Manual</title>
+  <style>
+    :root {
+      --bg-dark: #0b111e;
+      --panel-bg: #131d31;
+      --accent-blue: #0284c7;
+      --accent-cyan: #38bdf8;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --border-color: #243552;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 24px 16px;
+    }
+
+    /* Container */
+    .viewer-container {
+      width: 100%;
+      max-width: 900px;
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Header */
+    .header-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      background: #0e1726;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .header-left img {
+      width: 44px;
+      height: 44px;
+      border-radius: 8px;
+      object-fit: cover;
+      background: #1e293b;
+      border: 1px solid var(--border-color);
+    }
+
+    .header-title h1 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #38bdf8;
+    }
+
+    .header-title p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .india-flag {
+      display: flex;
+      flex-direction: column;
+      width: 32px;
+      height: 22px;
+      border-radius: 3px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    .flag-saffron { background: #FF9933; height: 33.3%; }
+    .flag-white { background: #FFFFFF; height: 33.3%; display: flex; align-items: center; justify-content: center; }
+    .flag-green { background: #138808; height: 33.3%; }
+    .flag-chakra { width: 5px; height: 5px; border-radius: 50%; border: 1px solid #000080; }
+
+    /* Content Pages */
+    .manual-content {
+      padding: 32px 36px;
+      min-height: 580px;
+      line-height: 1.65;
+    }
+
+    .page {
+      display: none;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+
+    .page.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-radius: 4px;
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent-cyan);
+      margin-bottom: 12px;
+    }
+
+    h2 {
+      font-size: 1.45rem;
+      margin-bottom: 10px;
+      color: #ffffff;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 8px;
+    }
+
+    h3 {
+      font-size: 1.1rem;
+      color: #7dd3fc;
+      margin: 18px 0 8px 0;
+    }
+
+    p {
+      margin-bottom: 12px;
+      font-size: 0.92rem;
+      color: #cbd5e1;
+    }
+
+    ul, ol {
+      margin-left: 22px;
+      margin-bottom: 16px;
+      font-size: 0.92rem;
+      color: #cbd5e1;
+    }
+
+    li {
+      margin-bottom: 6px;
+    }
+
+    strong {
+      color: #ffffff;
+    }
+
+    /* Table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 0.85rem;
+    }
+
+    th, td {
+      border: 1px solid var(--border-color);
+      padding: 8px 12px;
+      text-align: left;
+    }
+
+    th {
+      background: #0f172a;
+      color: var(--accent-cyan);
+    }
+
+    tr:nth-child(even) {
+      background: rgba(255,255,255,0.02);
+    }
+
+    /* Footer Navigation */
+    .controls-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      background: #0e1726;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .btn {
+      padding: 8px 18px;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      background: #1e293b;
+      color: #ffffff;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn:hover:not(:disabled) {
+      background: var(--accent-blue);
+      border-color: var(--accent-blue);
+    }
+
+    .btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .page-indicator {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .page-pills {
+      display: flex;
+      gap: 6px;
+    }
+
+    .pill {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 1px solid var(--border-color);
+      background: #131d31;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .pill.active {
+      background: var(--accent-blue);
+      color: #fff;
+      border-color: var(--accent-cyan);
+      font-weight: 700;
+    }
+
+    /* Print styling */
+    @media print {
+      body {
+        background: #ffffff;
+        color: #000000;
+        padding: 0;
+      }
+      .viewer-container {
+        border: none;
+        box-shadow: none;
+        background: #ffffff;
+        max-width: 100%;
+      }
+      .controls-bar, .header-bar button {
+        display: none !important;
+      }
+      .page {
+        display: block !important;
+        page-break-after: always;
+        color: #000000;
+      }
+      h2, h3, strong {
+        color: #000000;
+      }
+      p, ul, ol, li, td {
+        color: #222222;
+      }
+      th {
+        background: #e2e8f0;
+        color: #000000;
+      }
+      th, td {
+        border-color: #94a3b8;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="viewer-container">
+    <!-- Header -->
+    <header class="header-bar">
+      <div class="header-left">
+        <img src="logo.jpeg" alt="GARRF Logo" onerror="this.src='https://via.placeholder.com/44x44/0284c7/ffffff?text=GARRF'" />
+        <div class="header-title">
+          <h1>Gopalkrishna Advanced Rural Research Foundation</h1>
+          <p>Dr. APJ Abdul Kalam Research Zero Funding Initiative</p>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 14px;">
+        <button class="btn" onclick="window.print()" title="Print or Save as PDF">🖨️ PDF / Print</button>
+        <div class="india-flag" title="Bharat Flight Autonomy">
+          <div class="flag-saffron"></div>
+          <div class="flag-white"><div class="flag-chakra"></div></div>
+          <div class="flag-green"></div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Paginated Content -->
+    <main class="manual-content">
+
+      <!-- PAGE 1: OVERVIEW & SECTION 1 ASSEMBLE -->
+      <section class="page active" id="page-1">
+        <span class="badge">Page 1 of 4 • Experiment 1</span>
+        <h2>1. ASSEMBLE: Hardware Integration Lab</h2>
+        <p><strong>Web Lab:</strong> <a href="https://garrf.in/kalam-zero-lab/droneassembly.html" target="_blank" style="color:#38bdf8;">garrf.in/kalam-zero-lab/droneassembly.html</a></p>
+        <p>This module provides structural assembly intuition for multi-rotor configurations. Students assemble each subassembly sequentially to understand mechanical balancing, center-of-gravity (CG), and weight constraints before physical flight.</p>
+
+        <h3>Sequential Assembly Order</h3>
+        <ol>
+          <li><strong>Chassis Core:</strong> Fix 3K twill carbon-fiber central plates with CNC aluminum arm folding brackets. Ensure hexacopter structural symmetry.</li>
+          <li><strong>Brushless Motors:</strong> Mount 6x 380KV BLDC motors paired with 40A ESCs, adhering strictly to alternating Clockwise (CW) and Counter-Clockwise (CCW) rotation pairings.</li>
+          <li><strong>Landing Skids:</strong> Fasten 28 cm high-clearance tubular carbon skids beneath the lower plate to ensure clearance for sensitive payload pods on unpaved terrain.</li>
+          <li><strong>Power Distribution & 6S LiPo:</strong> Wire the high-current distribution harness and place the 6S 22.2V LiPo battery centrally to align with the airframe's neutral vertical axis.</li>
+          <li><strong>Autopilot Integration:</strong> Isolate the 32-bit triple-redundant flight computer using silicone dampeners. Mount dual RTK GPS masts on elevated stems to avoid RF interference.</li>
+          <li><strong>Payload Canister:</strong> Slide and lock the selected mission module onto the ventral quick-release rail system.</li>
+        </ol>
+
+        <h3>Critical Pre-Flight Math</h3>
+        <ul>
+          <li><strong>Max Takeoff Weight (MTOW):</strong> Must not exceed <strong>7.8 kg</strong>. Base airframe + battery account for ~5.3 kg, leaving a maximum payload ceiling of <strong>2.5 kg</strong>.</li>
+          <li><strong>Thrust-to-Weight Ratio:</strong> Combined motor thrust must exceed <strong>2.0 : 1</strong> to maintain control in turbulent rural wind profiles.</li>
+        </ul>
+      </section>
+
+      <!-- PAGE 2: SECTION 2 3D HANGAR & 6 DRONE VARIANTS -->
+      <section class="page" id="page-2">
+        <span class="badge">Page 2 of 4 • Experiment 2 (Part A)</span>
+        <h2>2. 3D HANGAR: Interactive Inspection & 6 Mission Drones</h2>
+        <p><strong>Web Lab:</strong> <a href="https://garrf.in/kalam-zero-lab/drone3d.html" target="_blank" style="color:#38bdf8;">garrf.in/kalam-zero-lab/drone3d.html</a></p>
+        <p>The 3D Hangar allows 360° inspection, subassembly isolation, exploded views, and modular payload switching across the 6 specialized drone profiles:</p>
+
+        <h3>The 6 Mission Configurations</h3>
+        <ul>
+          <li><strong>1. Medical Emergency Drone:</strong> Active Peltier-regulated cold storage pod maintaining 2°C to 8°C for life-saving blood units, antivenoms, and vaccines.</li>
+          <li><strong>2. Exploratory & Cultural Heritage Drone:</strong> High-resolution LiDAR puck paired with a 4K photogrammetry sensor for archaeological site reconstruction.</li>
+          <li><strong>3. Agricultural Land Survey Drone:</strong> 5-band multispectral optical array delivering normalized difference vegetation index (NDVI) scans for precision farming.</li>
+          <li><strong>4. Police & Vigilance Surveillance Drone:</strong> 30x optical zoom with Long-Wave Infrared (LWIR) dual FLIR camera and dual-strobe emergency lights.</li>
+          <li><strong>5. Air-Post Rural Courier Drone:</strong> High-capacity cargo bay with servo-actuated drop hooks for last-mile delivery across rivers and hilly terrains.</li>
+          <li><strong>6. High-Altitude Broadcast & Relay Drone:</strong> Omnidirectional high-gain dipole antennas for emergency telecom and live telemetry relay.</li>
+        </ul>
+
+        <h3>3D Manipulation Guide</h3>
+        <ul>
+          <li><strong>Rotate / Orbit:</strong> Left-click and drag across the viewport.</li>
+          <li><strong>Pan:</strong> Right-click and drag to translate the camera focus point.</li>
+          <li><strong>Zoom:</strong> Mouse scroll wheel to zoom into individual motors or circuit connectors.</li>
+          <li><strong>Exploded View:</strong> Use the slider to spread parts along their axes for internal inspection.</li>
+        </ul>
+      </section>
+
+      <!-- PAGE 3: BOM & PROCUREMENT DIRECTORY -->
+      <section class="page" id="page-3">
+        <span class="badge">Page 3 of 4 • Experiment 2 (Part B)</span>
+        <h2>UAV Procurement Directory & BOM (September 2026)</h2>
+        <p>Estimated component costs and vetted suppliers for educational institutions and young makers building this hexacopter platform:</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Subsystem</th>
+              <th>Component Specification</th>
+              <th>Est. Cost (INR)</th>
+              <th>Indian & Global Suppliers</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Chassis</strong></td>
+              <td>680–850mm Carbon Hexacopter Frame</td>
+              <td>₹8,500 – ₹12,000</td>
+              <td>Robu.in, FlyRobo, UAVMarketplace</td>
+            </tr>
+            <tr>
+              <td><strong>Propulsion</strong></td>
+              <td>6x 380KV BLDC Motors + 40A ESCs</td>
+              <td>₹18,000 – ₹24,000</td>
+              <td>T-Motor, Sunnysky, Robu.in</td>
+            </tr>
+            <tr>
+              <td><strong>Avionics</strong></td>
+              <td>32-bit Triple-Redundant Autopilot + Dual RTK</td>
+              <td>₹28,000 – ₹38,000</td>
+              <td>CubePilot (Orange), Holybro, CUAV</td>
+            </tr>
+            <tr>
+              <td><strong>Battery</strong></td>
+              <td>6S 22.2V 16000–22000mAh Semi-Solid LiPo</td>
+              <td>₹16,000 – ₹22,000</td>
+              <td>Tattu, Gens Ace, Orange LiPo</td>
+            </tr>
+            <tr>
+              <td><strong>Telemetry</strong></td>
+              <td>2.4 GHz FHSS RC + 4G LTE Backup Link</td>
+              <td>₹14,000 – ₹19,000</td>
+              <td>RadioMaster, FrSky, Skydroid</td>
+            </tr>
+            <tr>
+              <td><strong>Payloads</strong></td>
+              <td>Modular Pods (Cold Pod / Multispectral / FLIR)</td>
+              <td>₹36,000 – ₹44,000</td>
+              <td>Garuda Aerospace, ideaForge, Local Lab</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p style="font-size:0.85rem; color:#94a3b8; margin-top:12px;">
+          <em>*Note: Costs represent September 2026 indicative market procurement estimates for academic and prototype builds.</em>
+        </p>
+      </section>
+
+      <!-- PAGE 4: SECTION 3 FLIGHT AUTONOMY -->
+      <section class="page" id="page-4">
+        <span class="badge">Page 4 of 4 • Experiment 3</span>
+        <h2>3. TRAVEL: Sovereign Flight Autonomy Lab</h2>
+        <p><strong>Web Lab:</strong> <a href="https://garrf.in/kalam-zero-lab/dronetravel.html" target="_blank" style="color:#38bdf8;">garrf.in/kalam-zero-lab/dronetravel.html</a></p>
+        <p>The mission dispatch simulator models real-world autonomous routing, battery discharge physics, and geofencing inside the official boundaries of India.</p>
+
+        <h3>Operational Flight Rules</h3>
+        <ul>
+          <li><strong>Geofenced Sovereignty:</strong> Takeoff Base (Point A) and Destination (Point B) must reside strictly within Indian sovereign territory.</li>
+          <li><strong>75 km Operational Periphery:</strong> Any mission target exceeding the 75 km blue radius circle triggers a range warning to prevent mid-air battery exhaustion.</li>
+          <li><strong>Failsafe RTL Threshold:</strong> Automatic Return-to-Land triggers if battery SoC drops to &le; 25% during flight.</li>
+          <li><strong>Dual Optical Telemetry:</strong>
+            <ul>
+              <li><em>Nadir 90° Top View:</em> Downward ground mapping for terrain and landing spot verification.</li>
+              <li><em>Forward FPV Camera:</em> Horizon navigation for obstacle awareness along the transit vector.</li>
+            </ul>
+          </li>
+        </ul>
+
+        <div style="background: rgba(2, 132, 199, 0.1); border-left: 4px solid var(--accent-cyan); padding: 12px 16px; margin-top: 18px; border-radius: 4px;">
+          <strong style="color: #38bdf8;">Mission Completion:</strong> Once Point B is reached and cargo is dropped/delivered, the drone initiates safe automated descent or return corridor navigation.
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Footer Controls -->
+    <footer class="controls-bar">
+      <button class="btn" id="prevBtn" onclick="changePage(-1)">&#8592; Previous Page</button>
+      
+      <div class="page-pills">
+        <div class="pill active" onclick="goToPage(1)">1</div>
+        <div class="pill" onclick="goToPage(2)">2</div>
+        <div class="pill" onclick="goToPage(3)">3</div>
+        <div class="pill" onclick="goToPage(4)">4</div>
+      </div>
+
+      <button class="btn" id="nextBtn" onclick="changePage(1)">Next Page &#8594;</button>
+    </footer>
+  </div>
+
+  <div style="text-align: center; margin-top: 14px; font-size: 0.8rem; color: #64748b;">
+    Developed by <strong>Dr. Annamdas Venu Gopal Madhav</strong> & <strong>Annamdas Shantanu Vasudev Krishna</strong> • Gopalkrishna Advanced Rural Research Foundation
+  </div>
+
+  <script>
+    let currentPage = 1;
+    const totalPages = 4;
+
+    function updateView() {
+      // Toggle pages
+      for (let i = 1; i <= totalPages; i++) {
+        const pageElem = document.getElementById(`page-${i}`);
+        if (pageElem) {
+          pageElem.classList.toggle('active', i === currentPage);
+        }
+      }
+
+      // Update pills
+      const pills = document.querySelectorAll('.pill');
+      pills.forEach((pill, idx) => {
+        pill.classList.toggle('active', idx + 1 === currentPage);
+      });
+
+      // Update button disabled states
+      document.getElementById('prevBtn').disabled = (currentPage === 1);
+      document.getElementById('nextBtn').disabled = (currentPage === totalPages);
+    }
+
+    function changePage(delta) {
+      const target = currentPage + delta;
+      if (target >= 1 && target <= totalPages) {
+        currentPage = target;
+        updateView();
+      }
+    }
+
+    function goToPage(page) {
+      if (page >= 1 && page <= totalPages) {
+        currentPage = page;
+        updateView();
+      }
+    }
+
+    // Initialize state
+    updateView();
+  </script>
+</body>
+</html>
