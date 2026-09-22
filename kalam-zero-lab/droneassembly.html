@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GARRF Drone Assembly & Flight Readiness Hangar | Dr. APJ Abdul Kalam Lab</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        hangar: {
+                            900: '#080d16',
+                            800: '#0f172a',
+                            700: '#1e293b',
+                            600: '#334155',
+                            hud: '#06b6d4',
+                            emerald: '#10b981',
+                            amber: '#f59e0b',
+                            crimson: '#ef4444'
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['JetBrains Mono', 'Menlo', 'Consolas', 'monospace'],
+                        sans: ['Inter', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom HUD grid lines & futuristic animations */
+        .grid-bg {
+            background-size: 32px 32px;
+            background-image: 
+                linear-gradient(to right, rgba(6, 182, 212, 0.06) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(6, 182, 212, 0.06) 1px, transparent 1px);
+        }
+        .hud-border {
+            border: 1px solid rgba(6, 182, 212, 0.25);
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.08) inset;
+        }
+        .rotor-spin {
+            animation: spin 0.12s linear infinite;
+            transform-origin: center;
+        }
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+        .pulse-subtle {
+            animation: pulseGlow 2.5s infinite ease-in-out;
+        }
+        @keyframes pulseGlow {
+            0%, 100% { filter: drop-shadow(0 0 2px rgba(6,182,212,0.4)); }
+            50% { filter: drop-shadow(0 0 12px rgba(6,182,212,0.8)); }
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #080d16;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #06b6d4;
+        }
+    </style>
+</head>
+<body class="bg-[#060a12] text-slate-200 min-h-screen font-sans antialiased overflow-x-hidden select-none">
+
+    <!-- Top Command Bar -->
+    <header class="border-b border-cyan-950/80 bg-slate-950/90 backdrop-blur sticky top-0 z-50 px-4 lg:px-8 py-3">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-700 flex items-center justify-center font-black text-white shadow-lg shadow-cyan-500/20 border border-cyan-300/30">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                    </svg>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xs font-mono font-bold tracking-widest text-cyan-400 uppercase bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800/40">
+                          Gopalkrishna Advanced Rural Research Foundation <br>(Dr. APJ Abdul Kalam Research Zero Funding Lab) </br></span>
+                        <span class="text-xs font-mono text-emerald-400 flex items-center gap-1">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                            HANGAR ACTIVE
+                        </span>
+                    </div>
+                    <h1 class="text-lg md:text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                        GARRF Drone Assembly & Flight Readiness Simulator
+                    </h1>
+                </div>
+            </div>
+
+            <!-- Profile Selector & Navigation Links -->
+            <div class="flex items-center gap-3 self-end md:self-center">
+                <div class="flex flex-col text-right">
+                    <span class="text-[10px] uppercase font-mono text-slate-400">Selected Autonomous Platform</span>
+                    <select id="droneProfileSelect" class="bg-slate-900 border border-cyan-700/60 text-cyan-300 text-xs rounded-md px-3 py-1.5 font-mono focus:outline-none focus:ring-1 focus:ring-cyan-400">
+                        <option value="medical">1. Medical Emergency (Cold-Chain Pod)</option>
+                        <option value="heritage">2. Cultural Heritage (LiDAR &amp; Photogrammetry)</option>
+                        <option value="agri">3. Precision Agri (Multispectral NDVI)</option>
+                        <option value="police">4. Police Vigilance (Thermal/PTZ Gimbal)</option>
+                        <option value="airpost">5. Rural Air-Post (Cargo Release Pod)</option>
+                        <option value="relay">6. High-Altitude Relay (RF Transponder)</option>
+                    </select>
+                </div>
+
+                <a href="https://garrf.in/kalam-zero-lab/dronetravel.html" target="_blank" class="px-3 py-1.5 rounded border border-cyan-500/40 bg-cyan-950/40 text-cyan-300 hover:bg-cyan-900/60 transition text-xs font-mono flex items-center gap-1.5" title="Go to flight map simulation">
+                    <span>Mission Map</span>
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 lg:px-8 py-6 space-y-6">
+        
+        <!-- Mission Banner Information -->
+        <div id="missionBanner" class="p-4 rounded-xl border border-cyan-900/60 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 z-10 relative">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span id="missionBadge" class="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-red-950/80 text-red-400 border border-red-700/50">Priority Mission</span>
+                        <h2 id="missionTitle" class="text-lg font-bold text-white">Medical Emergency Cold-Chain Transport</h2>
+                    </div>
+                    <p id="missionDesc" class="text-xs md:text-sm text-slate-300 mt-1 max-w-3xl">
+                        Autonomous high-speed delivery of temperature-sensitive vaccines (2°C–8°C) and fresh whole blood units to remote primary health centers across rural corridors.
+                    </p>
+                </div>
+                <div class="flex items-center gap-4 text-xs font-mono">
+                    <div class="bg-slate-900/80 border border-slate-700/50 p-2.5 rounded-lg text-center">
+                        <div class="text-slate-400 text-[10px]">PAYLOAD RATING</div>
+                        <div id="missionPayloadWeight" class="text-cyan-400 font-bold text-sm">1,450 g</div>
+                    </div>
+                    <div class="bg-slate-900/80 border border-slate-700/50 p-2.5 rounded-lg text-center">
+                        <div class="text-slate-400 text-[10px]">MISSION RADIUS</div>
+                        <div class="text-emerald-400 font-bold text-sm">75 km</div>
+                    </div>
+                </div>
+            </div>
+            <div class="absolute -right-10 -top-10 w-40 h-40 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none"></div>
+        </div>
+
+        <!-- 3-Column Engineering Layout: Components Shelf | Interactive Hangar Blueprint | Telemetry & Diagnostics -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            
+            <!-- COLUMN 1: Component Docking Shelf (lg:col-span-3) -->
+            <div class="lg:col-span-3 space-y-4">
+                <div class="bg-slate-950/80 rounded-xl p-4 border border-slate-800 hud-border">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
+                        <h3 class="text-xs font-mono uppercase font-bold text-cyan-400 tracking-wider flex items-center gap-1.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                            Assembly Rack (6 Parts)
+                        </h3>
+                        <span id="installedCountBadge" class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">0 / 6 Installed</span>
+                    </div>
+
+                    <p class="text-[11px] text-slate-400 mb-3">
+                        Click on any uninstalled component to snap it into the aerospace chassis or inspect specifications.
+                    </p>
+
+                    <!-- Component Buttons List -->
+                    <div class="space-y-2.5" id="componentsList">
+                        <!-- Component Item 1: Chassis -->
+                        <div id="card-chassis" onclick="toggleComponent('chassis')" class="component-card group p-3 rounded-lg border border-slate-800 bg-slate-900/60 hover:bg-slate-900 hover:border-cyan-500/50 cursor-pointer transition flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded bg-cyan-950/60 border border-cyan-800/40 flex items-center justify-center text-cyan-400 text-sm font-bold font-mono">1</div>
+                                <div>
+                                    <div class="text-xs font-semibold text-slate-200 group-hover:text-cyan-300 transition flex items-center gap-1">
+                                        Carbon Fiber Chassis
+                                    </div>
+                                    <div class="text-[10px] font-mono text-slate-400">3K Twill &bull; 950g</div>
+                                </div>
+                            </div>
+                            <span id="status-chassis" class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400">AWAITING</span>
+                        </div>
+
+                        <!-- Component Item 2: Propulsion -->
+                        <div id="card-propulsion" onclick="toggleComponent('propulsion')" class="component-card group p-3 rounded-lg border border-slate-800 bg-slate-900/60 hover:bg-slate-900 hover:border-cyan-500/50 cursor-pointer transition flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded bg-cyan-950/60 border border-cyan-800/40 flex items-center justify-center text-cyan-400 text-sm font-bold font-mono">2</div>
+                                <div>
+                                    <div class="text-xs font-semibold text-slate-200 group-hover:text-cyan-300 transition">BLDC Hexa-Propulsion</div>
+                                    <div class="text-[10px] font-mono text-slate-400">6x 400KV Motors &bull; 1,320g</div>
+                                </div>
+                            </div>
+                            <span id="status-propulsion" class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400">AWAITING</span>
+                        </div>
+
+                        <!-- Component Item 3: Battery -->
+                        <div id="card-battery" onclick="toggleComponent('battery')" class="component-card group p-3 rounded-lg border border-slate-800 bg-slate-900/60 hover:bg-slate-900 hover:border-cyan-500/50 cursor-pointer transition flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded bg-cyan-950/60 border border-cyan-800/40 flex items-center justify-center text-cyan-400 text-sm font-bold font-mono">3</div>
+                                <div>
+                                    <div class="text-xs font-semibold text-slate-200 group-hover:text-cyan-300 transition">6S 22.2V LiPo &amp; PDB</div>
+                                    <div class="text-[10px] font-mono text-slate-400">22,000mAh &bull; 2,100g</div>
+                                </div>
+                            </div>
+                            <span id="status-battery" class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400">AWAITING</span>
+                        </div>
+
+                        <!-- Component Item 4: Avionics -->
+                        <div id="card-avionics" onclick="toggleComponent('avionics')" class="component-card group p-3 rounded-lg border border-slate-800 bg-slate-900/60 hover:bg-slate-900 hover:border-cyan-500/50 cursor-pointer transition flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded bg-cyan-950/60 border border-cyan-800/40 flex items-center justify-center text-cyan-400 text-sm font-bold font-mono">4</div>
+                                <div>
+                                    <div class="text-xs font-semibold text-slate-200 group-hover:text-cyan-300 transition">Autopilot &amp; Dual GPS</div>
+                                    <div class="text-[10px] font-mono text-slate-400">Triple IMU RTK &bull; 280g</div>
+                                </div>
+                            </div>
+                            <span id="status-avionics" class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400">AWAITING</span>
+                        </div>
+
+                        <!-- Component Item 5: Payload -->
+                        <div id="card-payload" onclick="toggleComponent('payload')" class="component-card group p-3 rounded-lg border border-slate-800 bg-slate-900/60 hover:bg-slate-900 hover:border-cyan-500/50 cursor-pointer transition flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded bg-cyan-950/60 border border-cyan-800/40 flex items-center justify-center text-cyan-400 text-sm font-bold font-mono">5</div>
+                                <div>
+                                    <div id="payloadLabelName" class="text-xs font-semibold text-cyan-300 group-hover:text-cyan-200 transition">Cold-Chain Pod</div>
+                                    <div id="payloadLabelWeight" class="text-[10px] font-mono text-slate-400">Peltier 2°C-8°C &bull; 1,450g</div>
+                                </div>
+                            </div>
+                            <span id="status-payload" class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400">AWAITING</span>
+                        </div>
+
+                        <!-- Component Item 6: Landing Gear -->
+                        <div id="card-landinggear" onclick="toggleComponent('landinggear')" class="component-card group p-3 rounded-lg border border-slate-800 bg-slate-900/60 hover:bg-slate-900 hover:border-cyan-500/50 cursor-pointer transition flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded bg-cyan-950/60 border border-cyan-800/40 flex items-center justify-center text-cyan-400 text-sm font-bold font-mono">6</div>
+                                <div>
+                                    <div class="text-xs font-semibold text-slate-200 group-hover:text-cyan-300 transition">High-Clearance Skids</div>
+                                    <div class="text-[10px] font-mono text-slate-400">Carbon Shock Skids &bull; 340g</div>
+                                </div>
+                            </div>
+                            <span id="status-landinggear" class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400">AWAITING</span>
+                        </div>
+                    </div>
+
+                    <!-- Shelf Control Buttons -->
+                    <div class="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-slate-800">
+                        <button onclick="assembleAll()" class="w-full py-1.5 px-2 rounded bg-cyan-950/80 border border-cyan-600/50 hover:bg-cyan-900 text-cyan-300 text-xs font-mono font-medium transition">
+                            ⚡ Fast Build
+                        </button>
+                        <button onclick="resetAssembly()" class="w-full py-1.5 px-2 rounded bg-slate-900 border border-slate-700 hover:bg-slate-800 text-slate-300 text-xs font-mono font-medium transition">
+                            🔄 Strip Chassis
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Active Component Spec / Educational Inspector -->
+                <div class="bg-slate-950/80 rounded-xl p-4 border border-slate-800 text-xs">
+                    <div class="text-[10px] font-mono text-cyan-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+                        Aero Engineering Insight
+                    </div>
+                    <div id="inspectorTitle" class="font-bold text-slate-200 text-sm mb-1">Carbon Fiber Twill Matrix</div>
+                    <p id="inspectorText" class="text-slate-400 text-[11px] leading-relaxed">
+                        3K twill-weave carbon fiber yields high specific tensile strength, mitigating motor harmonic resonance from blurring telemetry cameras and destabilizing precision gyro algorithms.
+                    </p>
+                </div>
+            </div>
+
+            <!-- COLUMN 2: Visual Hangar Workbench (lg:col-span-6) -->
+            <div class="lg:col-span-6 space-y-4">
+                <div class="bg-slate-950 rounded-xl p-4 border border-cyan-900/50 hud-border relative overflow-hidden grid-bg flex flex-col items-center justify-center min-h-[500px]">
+                    
+                    <!-- HUD Status Corners -->
+                    <div class="absolute top-3 left-3 text-[10px] font-mono text-cyan-500/80 flex items-center gap-2">
+                        <span>SYS: APJ-KALAM-V6</span>
+                        <span class="text-slate-600">|</span>
+                        <span>GRID: 0.1mm ISO</span>
+                    </div>
+
+                    <div class="absolute top-3 right-3 text-[10px] font-mono">
+                        <span id="readinessTag" class="px-2 py-0.5 rounded bg-amber-950/80 text-amber-400 border border-amber-800/60 font-bold">
+                            UNARMED &bull; ASSEMBLY INCOMPLETE
+                        </span>
+                    </div>
+
+                    <!-- Interactive Schematic Drone SVG -->
+                    <div class="relative w-full max-w-[480px] aspect-square flex items-center justify-center">
+                        <svg id="droneSvg" viewBox="-250 -250 500 500" class="w-full h-full filter drop-shadow-[0_0_20px_rgba(6,182,212,0.15)]">
+                            <!-- Background Circular Safety Perimeter Rings -->
+                            <circle cx="0" cy="0" r="230" fill="none" stroke="#0f2b48" stroke-dasharray="6,6" stroke-width="1.2" opacity="0.6"/>
+                            <circle cx="0" cy="0" r="170" fill="none" stroke="#083344" stroke-width="1" opacity="0.4"/>
+                            <circle cx="0" cy="0" r="90" fill="none" stroke="#0e7490" stroke-width="0.75" opacity="0.4"/>
+                            
+                            <!-- Crosshair reference lines -->
+                            <line x1="-240" y1="0" x2="240" y2="0" stroke="#164e63" stroke-width="1" stroke-dasharray="4,4" opacity="0.4"/>
+                            <line x1="0" y1="-240" x2="0" y2="240" stroke="#164e63" stroke-width="1" stroke-dasharray="4,4" opacity="0.4"/>
+
+                            <!-- ================= PART 1: CHASSIS FRAME & CNC ARMS ================= -->
+                            <g id="svg-chassis" class="transition-all duration-500 opacity-0 scale-90 cursor-pointer" onclick="inspectPart('chassis')">
+                                <!-- 6 Hexa Arms radiating at 60 degree intervals -->
+                                <!-- Arm 1 (30 deg) -->
+                                <line x1="0" y1="0" x2="147" y2="-85" stroke="#334155" stroke-width="12" stroke-linecap="round"/>
+                                <line x1="0" y1="0" x2="147" y2="-85" stroke="#0284c7" stroke-width="4" stroke-dasharray="8,6"/>
+                                <!-- Arm 2 (90 deg) -->
+                                <line x1="0" y1="0" x2="170" y2="0" stroke="#334155" stroke-width="12" stroke-linecap="round"/>
+                                <line x1="0" y1="0" x2="170" y2="0" stroke="#0284c7" stroke-width="4" stroke-dasharray="8,6"/>
+                                <!-- Arm 3 (150 deg) -->
+                                <line x1="0" y1="0" x2="147" y2="85" stroke="#334155" stroke-width="12" stroke-linecap="round"/>
+                                <line x1="0" y1="0" x2="147" y2="85" stroke="#0284c7" stroke-width="4" stroke-dasharray="8,6"/>
+                                <!-- Arm 4 (210 deg) -->
+                                <line x1="0" y1="0" x2="-147" y2="85" stroke="#334155" stroke-width="12" stroke-linecap="round"/>
+                                <line x1="0" y1="0" x2="-147" y2="85" stroke="#0284c7" stroke-width="4" stroke-dasharray="8,6"/>
+                                <!-- Arm 5 (270 deg) -->
+                                <line x1="0" y1="0" x2="-170" y2="0" stroke="#334155" stroke-width="12" stroke-linecap="round"/>
+                                <line x1="0" y1="0" x2="-170" y2="0" stroke="#0284c7" stroke-width="4" stroke-dasharray="8,6"/>
+                                <!-- Arm 6 (330 deg) -->
+                                <line x1="0" y1="0" x2="-147" y2="-85" stroke="#334155" stroke-width="12" stroke-linecap="round"/>
+                                <line x1="0" y1="0" x2="-147" y2="-85" stroke="#0284c7" stroke-width="4" stroke-dasharray="8,6"/>
+
+                                <!-- Center Fuselage Plate (Hexagonal) -->
+                                <polygon points="0,-75 65,-37 65,37 0,75 -65,37 -65,-37" fill="#0f172a" stroke="#0284c7" stroke-width="3"/>
+                                <polygon points="0,-60 52,-30 52,30 0,60 -52,30 -52,-30" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="3,3"/>
+                                
+                                <!-- GARRF Monogram -->
+                                <text x="0" y="5" font-size="12" font-family="monospace" font-weight="900" fill="#38bdf8" text-anchor="middle" letter-spacing="3">GARRF</text>
+                            </g>
+
+                            <!-- ================= PART 6: LANDING GEAR SKIDS (Underneath) ================= -->
+                            <g id="svg-landinggear" class="transition-all duration-500 opacity-0 cursor-pointer" onclick="inspectPart('landinggear')">
+                                <!-- Left Skid Tube -->
+                                <rect x="-85" y="-130" width="10" height="260" rx="5" fill="#1e293b" stroke="#06b6d4" stroke-width="2"/>
+                                <!-- Right Skid Tube -->
+                                <rect x="75" y="-130" width="10" height="260" rx="5" fill="#1e293b" stroke="#06b6d4" stroke-width="2"/>
+                                <!-- Horizontal Cross Connectors -->
+                                <line x1="-85" y1="-50" x2="85" y2="-50" stroke="#475569" stroke-width="5"/>
+                                <line x1="-85" y1="50" x2="85" y2="50" stroke="#475569" stroke-width="5"/>
+                            </g>
+
+                            <!-- ================= PART 2: PROPULSION (Motors & Rotors) ================= -->
+                            <g id="svg-propulsion" class="transition-all duration-500 opacity-0 cursor-pointer" onclick="inspectPart('propulsion')">
+                                <!-- Rotor 1 (Top-Right) -->
+                                <g transform="translate(147, -85)">
+                                    <circle r="18" fill="#1e293b" stroke="#f59e0b" stroke-width="2"/>
+                                    <circle r="6" fill="#f59e0b"/>
+                                    <g id="blade-1" class="rotor-preview">
+                                        <line x1="-50" y1="0" x2="50" y2="0" stroke="#06b6d4" stroke-width="5" stroke-linecap="round" opacity="0.7"/>
+                                    </g>
+                                </g>
+                                <!-- Rotor 2 (Mid-Right) -->
+                                <g transform="translate(170, 0)">
+                                    <circle r="18" fill="#1e293b" stroke="#f59e0b" stroke-width="2"/>
+                                    <circle r="6" fill="#f59e0b"/>
+                                    <g id="blade-2" class="rotor-preview">
+                                        <line x1="-50" y1="0" x2="50" y2="0" stroke="#06b6d4" stroke-width="5" stroke-linecap="round" opacity="0.7"/>
+                                    </g>
+                                </g>
+                                <!-- Rotor 3 (Bottom-Right) -->
+                                <g transform="translate(147, 85)">
+                                    <circle r="18" fill="#1e293b" stroke="#f59e0b" stroke-width="2"/>
+                                    <circle r="6" fill="#f59e0b"/>
+                                    <g id="blade-3" class="rotor-preview">
+                                        <line x1="-50" y1="0" x2="50" y2="0" stroke="#06b6d4" stroke-width="5" stroke-linecap="round" opacity="0.7"/>
+                                    </g>
+                                </g>
+                                <!-- Rotor 4 (Bottom-Left) -->
+                                <g transform="translate(-147, 85)">
+                                    <circle r="18" fill="#1e293b" stroke="#f59e0b" stroke-width="2"/>
+                                    <circle r="6" fill="#f59e0b"/>
+                                    <g id="blade-4" class="rotor-preview">
+                                        <line x1="-50" y1="0" x2="50" y2="0" stroke="#06b6d4" stroke-width="5" stroke-linecap="round" opacity="0.7"/>
+                                    </g>
+                                </g>
+                                <!-- Rotor 5 (Mid-Left) -->
+                                <g transform="translate(-170, 0)">
+                                    <circle r="18" fill="#1e293b" stroke="#f59e0b" stroke-width="2"/>
+                                    <circle r="6" fill="#f59e0b"/>
+                                    <g id="blade-5" class="rotor-preview">
+                                        <line x1="-50" y1="0" x2="50" y2="0" stroke="#06b6d4" stroke-width="5" stroke-linecap="round" opacity="0.7"/>
+                                    </g>
+                                </g>
+                                <!-- Rotor 6 (Top-Left) -->
+                                <g transform="translate(-147, -85)">
+                                    <circle r="18" fill="#1e293b" stroke="#f59e0b" stroke-width="2"/>
+                                    <circle r="6" fill="#f59e0b"/>
+                                    <g id="blade-6" class="rotor-preview">
+                                        <line x1="-50" y1="0" x2="50" y2="0" stroke="#06b6d4" stroke-width="5" stroke-linecap="round" opacity="0.7"/>
+                                    </g>
+                                </g>
+                            </g>
+
+                            <!-- ================= PART 3: 6S LiPo & POWER HARNESS ================= -->
+                            <g id="svg-battery" class="transition-all duration-500 opacity-0 cursor-pointer" onclick="inspectPart('battery')">
+                                <rect x="-42" y="-45" width="84" height="42" rx="4" fill="#042f2e" stroke="#14b8a6" stroke-width="2.5"/>
+                                <text x="0" y="-20" font-size="9" font-family="monospace" font-weight="bold" fill="#2dd4bf" text-anchor="middle">6S 22.2V LiPo</text>
+                                <line x1="-30" y1="-2" x2="30" y2="-2" stroke="#14b8a6" stroke-width="3"/>
+                                <!-- Power Leads -->
+                                <path d="M 0,-45 L 0,-60" stroke="#ef4444" stroke-width="3"/>
+                                <path d="M 12,-45 L 12,-60" stroke="#0f172a" stroke-width="3"/>
+                            </g>
+
+                            <!-- ================= PART 4: AUTOPILOT / GPS / TELEMETRY ================= -->
+                            <g id="svg-avionics" class="transition-all duration-500 opacity-0 cursor-pointer" onclick="inspectPart('avionics')">
+                                <!-- Core Flight Controller Box -->
+                                <rect x="-24" y="-2" width="48" height="45" rx="3" fill="#18181b" stroke="#a855f7" stroke-width="2"/>
+                                <polygon points="0,6 -10,22 10,22" fill="#a855f7" opacity="0.7"/>
+                                <text x="0" y="36" font-size="7" font-family="monospace" fill="#e9d5ff" text-anchor="middle">FC TRIPLE-IMU</text>
+                                <!-- Mast Mounted Dual GPS pucks -->
+                                <circle cx="-42" cy="-60" r="10" fill="#1e293b" stroke="#a855f7" stroke-width="2"/>
+                                <line x1="-42" y1="-60" x2="-24" y2="-2" stroke="#6b21a8" stroke-width="2" stroke-dasharray="2,2"/>
+                                <circle cx="42" cy="-60" r="10" fill="#1e293b" stroke="#a855f7" stroke-width="2"/>
+                                <line x1="42" y1="-60" x2="24" y2="-2" stroke="#6b21a8" stroke-width="2" stroke-dasharray="2,2"/>
+                            </g>
+
+                            <!-- ================= PART 5: MISSION PAYLOAD POD (Dynamically rendered) ================= -->
+                            <g id="svg-payload" class="transition-all duration-500 opacity-0 cursor-pointer" onclick="inspectPart('payload')">
+                                <!-- Center bay payload pod -->
+                                <g id="payload-graphic">
+                                    <!-- Default: Medical Pod (Red Cross with Cold-Chain indicator) -->
+                                    <rect x="-32" y="48" width="64" height="42" rx="5" fill="#450a0a" stroke="#ef4444" stroke-width="2.5"/>
+                                    <rect x="-6" y="56" width="12" height="26" fill="#ef4444"/>
+                                    <rect x="-13" y="63" width="26" height="12" fill="#ef4444"/>
+                                    <text x="0" y="86" font-size="6" font-family="monospace" font-weight="bold" fill="#fecaca" text-anchor="middle">2°C-8°C POD</text>
+                                </g>
+                            </g>
+
+                            <!-- Blueprint Slot Placement Guides (when not installed) -->
+                            <g id="svg-slots" class="text-[9px] font-mono fill-cyan-400/50">
+                                <circle id="slot-center" cx="0" cy="0" r="40" stroke="#06b6d4" stroke-dasharray="4,4" stroke-width="1.5" fill="none"/>
+                            </g>
+                        </svg>
+                    </div>
+
+                    <!-- Bottom Quick-Tip HUD -->
+                    <div class="w-full mt-2 pt-2 border-t border-slate-900 flex items-center justify-between text-[11px] font-mono text-slate-400">
+                        <span class="flex items-center gap-1">
+                            <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            Click highlighted components on rack to attach
+                        </span>
+                        <span id="hangarAlertText" class="text-cyan-400">STATUS: READY FOR MOUNTING</span>
+                    </div>
+                </div>
+
+                <!-- Guided Assembly Workflow Progress Bar -->
+                <div class="bg-slate-950/80 rounded-xl p-3.5 border border-slate-800">
+                    <div class="flex justify-between text-xs font-mono mb-1.5">
+                        <span class="text-slate-400 uppercase font-semibold">Assembly Completion</span>
+                        <span id="progressPercentage" class="text-cyan-400 font-bold">0%</span>
+                    </div>
+                    <div class="w-full h-2.5 bg-slate-900 rounded-full overflow-hidden border border-slate-800">
+                        <div id="assemblyProgressBar" class="h-full bg-gradient-to-r from-cyan-500 to-emerald-400 transition-all duration-300 w-0"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COLUMN 3: Real-Time Engineering Metrics & Flight Test Panel (lg:col-span-3) -->
+            <div class="lg:col-span-3 space-y-4">
+                
+                <!-- Live Mass & Flight Physics Telemetry -->
+                <div class="bg-slate-950/80 rounded-xl p-4 border border-slate-800 hud-border">
+                    <h3 class="text-xs font-mono uppercase font-bold text-cyan-400 tracking-wider flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
+                        <span>Avionics &amp; Physics Specs</span>
+                        <span class="text-[9px] px-1.5 py-0.5 rounded bg-cyan-950 border border-cyan-800/40 text-cyan-300 font-mono">LIVE MODEL</span>
+                    </h3>
+
+                    <!-- Weight Gauge -->
+                    <div class="space-y-3 font-mono">
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-400">All-Up Weight (AUW)</span>
+                                <span id="telemetryAuw" class="text-white font-bold">0 g</span>
+                            </div>
+                            <div class="w-full h-1.5 bg-slate-900 rounded overflow-hidden">
+                                <div id="auwBar" class="h-full bg-cyan-400 transition-all w-0"></div>
+                            </div>
+                            <div class="flex justify-between text-[10px] text-slate-500 mt-0.5">
+                                <span>Empty Frame: 0g</span>
+                                <span>Max MTOW: 7,800g</span>
+                            </div>
+                        </div>
+
+                        <!-- CG Offset -->
+                        <div class="p-2.5 rounded bg-slate-900/60 border border-slate-800/80 flex items-center justify-between">
+                            <div>
+                                <div class="text-[10px] text-slate-400 uppercase">Center of Gravity (CG)</div>
+                                <div id="telemetryCg" class="text-xs font-bold text-emerald-400">OPTIMAL (0.0mm)</div>
+                            </div>
+                            <div class="w-5 h-5 rounded-full border border-emerald-500/50 flex items-center justify-center">
+                                <div class="w-1.5 h-1.5 bg-emerald-400 rounded-full"></div>
+                            </div>
+                        </div>
+
+                        <!-- Hover Endurance & Range -->
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="p-2 rounded bg-slate-900/60 border border-slate-800/80 text-center">
+                                <div class="text-[10px] text-slate-400 uppercase">Est. Hover</div>
+                                <div id="telemetryHover" class="text-sm font-bold text-cyan-300 font-mono">-- min</div>
+                            </div>
+                            <div class="p-2 rounded bg-slate-900/60 border border-slate-800/80 text-center">
+                                <div class="text-[10px] text-slate-400 uppercase">Max Range</div>
+                                <div id="telemetryRange" class="text-sm font-bold text-cyan-300 font-mono">-- km</div>
+                            </div>
+                        </div>
+
+                        <!-- Thrust-to-Weight Ratio -->
+                        <div class="p-2.5 rounded bg-slate-900/60 border border-slate-800/80 flex items-center justify-between">
+                            <span class="text-[10px] text-slate-400 uppercase">Thrust:Weight</span>
+                            <span id="telemetryTwr" class="text-xs font-bold text-amber-400 font-mono">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pre-Flight Diagnostics & Arming Checklist -->
+                <div class="bg-slate-950/80 rounded-xl p-4 border border-slate-800">
+                    <h3 class="text-xs font-mono uppercase font-bold text-slate-300 tracking-wider flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
+                        <span>Pre-Flight Checklist</span>
+                        <span id="checklistCount" class="text-[10px] font-mono text-slate-500">0 / 4 PASSED</span>
+                    </h3>
+
+                    <div class="space-y-2 text-xs font-mono">
+                        <label class="flex items-center space-x-2.5 p-1.5 rounded hover:bg-slate-900 cursor-pointer">
+                            <input type="checkbox" id="chk-gps" disabled onchange="checkDiagnosticStatus()" class="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0">
+                            <span id="txt-gps" class="text-slate-500 text-[11px]">GNSS RTK Satellites (≥ 14 Fix)</span>
+                        </label>
+                        <label class="flex items-center space-x-2.5 p-1.5 rounded hover:bg-slate-900 cursor-pointer">
+                            <input type="checkbox" id="chk-imu" disabled onchange="checkDiagnosticStatus()" class="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0">
+                            <span id="txt-imu" class="text-slate-500 text-[11px]">Triple-IMU Accel &amp; Gyro Cal</span>
+                        </label>
+                        <label class="flex items-center space-x-2.5 p-1.5 rounded hover:bg-slate-900 cursor-pointer">
+                            <input type="checkbox" id="chk-esc" disabled onchange="checkDiagnosticStatus()" class="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0">
+                            <span id="txt-esc" class="text-slate-500 text-[11px]">ESC Telemetry &amp; Rotor Spool</span>
+                        </label>
+                        <label class="flex items-center space-x-2.5 p-1.5 rounded hover:bg-slate-900 cursor-pointer">
+                            <input type="checkbox" id="chk-payload" disabled onchange="checkDiagnosticStatus()" class="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0">
+                            <span id="txt-payload" class="text-slate-500 text-[11px]">Mission Bay Payload Interlock</span>
+                        </label>
+                    </div>
+
+                    <!-- Flight Test Trigger Button -->
+                    <button id="btnLaunchTest" onclick="startFlightTest()" disabled class="w-full mt-4 py-2.5 px-3 rounded-lg font-mono font-bold text-xs uppercase tracking-wider transition flex items-center justify-center gap-2 bg-slate-800 text-slate-600 cursor-not-allowed">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Simulate Takeoff Run
+                    </button>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- FLIGHT TEST OVERLAY MODAL / ACTIVE TEST DASHBOARD -->
+        <div id="flightModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden items-center justify-center p-4">
+            <div class="bg-slate-950 border border-cyan-500/50 rounded-2xl max-w-2xl w-full p-6 space-y-5 hud-border shadow-2xl relative">
+                
+                <div class="flex items-center justify-between border-b border-cyan-950 pb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                        <h3 class="text-sm font-mono font-bold text-white uppercase tracking-wider">Flight Readiness Verification Mode</h3>
+                    </div>
+                    <button onclick="closeFlightModal()" class="text-slate-400 hover:text-white font-mono text-sm">&times; CLOSE</button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Gauge 1: Altitude -->
+                    <div class="p-3 rounded-lg bg-slate-900/80 border border-slate-800 text-center font-mono">
+                        <div class="text-[10px] text-slate-400 uppercase">Altitude (AGL)</div>
+                        <div id="simAltitude" class="text-2xl font-black text-cyan-400 my-1">0.0 m</div>
+                        <div class="text-[10px] text-slate-500">Ceiling: 120m AGL</div>
+                    </div>
+
+                    <!-- Gauge 2: Spool RPM -->
+                    <div class="p-3 rounded-lg bg-slate-900/80 border border-slate-800 text-center font-mono">
+                        <div class="text-[10px] text-slate-400 uppercase">Motor Speed</div>
+                        <div id="simRpm" class="text-2xl font-black text-amber-400 my-1">0 RPM</div>
+                        <div class="text-[10px] text-emerald-400">Hexa-Symmetric Sync</div>
+                    </div>
+
+                    <!-- Gauge 3: Battery Draw -->
+                    <div class="p-3 rounded-lg bg-slate-900/80 border border-slate-800 text-center font-mono">
+                        <div class="text-[10px] text-slate-400 uppercase">Current Draw</div>
+                        <div id="simAmps" class="text-2xl font-black text-emerald-400 my-1">0.0 A</div>
+                        <div class="text-[10px] text-slate-500">6S 22.2V Bus</div>
+                    </div>
+                </div>
+
+                <!-- Real-time Status Log Terminal -->
+                <div class="bg-black/90 p-3.5 rounded-lg border border-slate-900 font-mono text-[11px] space-y-1 h-32 overflow-y-auto" id="flightLogConsole">
+                    <div class="text-cyan-400">&gt; INITIALIZING BRUSHLESS ESC PROTOCOL...</div>
+                    <div class="text-slate-400">&gt; ARMING MOTORS 1 THROUGH 6...</div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-3 pt-2">
+                    <button onclick="triggerFlightSequence()" id="btnStartFlightRun" class="flex-1 py-2.5 px-4 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs uppercase font-mono tracking-wider transition">
+                        Engage Autonomous Takeoff
+                    </button>
+                    <a href="https://garrf.in/kalam-zero-lab/dronetravel.html" target="_blank" class="flex-1 py-2.5 px-4 rounded-lg bg-emerald-950 border border-emerald-600/50 hover:bg-emerald-900 text-emerald-300 font-bold text-xs uppercase font-mono tracking-wider text-center flex items-center justify-center gap-1.5 transition">
+                        <span>Deploy To Bharat Mission Lab</span>
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                    </a>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        /* -------------------------------------------------------------
+           DRONE PROFILES DATA (All 6 GARRF Configurations)
+        ------------------------------------------------------------- */
+        const droneProfiles = {
+            medical: {
+                id: 'medical',
+                title: '1. Medical Emergency Cold-Chain Drone',
+                badge: 'Life-Saving &bull; Cold-Chain',
+                badgeClass: 'bg-red-950/80 text-red-400 border-red-700/50',
+                desc: 'Rapid autonomous delivery of temperature-sensitive vaccines (2°C–8°C) and fresh blood units to remote primary healthcare centers and rural disaster zones.',
+                payloadName: 'Medical Cold-Chain Pod',
+                payloadSub: 'Peltier 2°C–8°C &bull; 1,450g',
+                payloadWeight: 1450, // grams
+                color: '#ef4444',
+                svgContent: `
+                    <rect x="-32" y="48" width="64" height="42" rx="5" fill="#450a0a" stroke="#ef4444" stroke-width="2.5"/>
+                    <rect x="-6" y="56" width="12" height="26" fill="#ef4444"/>
+                    <rect x="-13" y="63" width="26" height="12" fill="#ef4444"/>
+                    <text x="0" y="86" font-size="6" font-family="monospace" font-weight="bold" fill="#fecaca" text-anchor="middle">2°C-8°C POD</text>
+                `,
+                techInsight: 'Vaccine vials and whole blood are fragile biomaterials. The payload pod incorporates thermal insulation, active Peltier thermoelectric cooling, and silicone shock dampeners to negate vibration.'
+            },
+            heritage: {
+                id: 'heritage',
+                title: '2. Exploratory & Cultural Heritage Drone',
+                badge: 'Photogrammetry &bull; LiDAR',
+                badgeClass: 'bg-purple-950/80 text-purple-400 border-purple-700/50',
+                desc: 'High-resolution photogrammetry, point-cloud LiDAR scanning, and 3D architectural preservation of historical monuments and archaeological sites.',
+                payloadName: 'LiDAR & 4K Photogrammetry Bay',
+                payloadSub: 'Multi-Beam LiDAR &bull; 1,600g',
+                payloadWeight: 1600,
+                color: '#a855f7',
+                svgContent: `
+                    <rect x="-32" y="48" width="64" height="42" rx="5" fill="#3b0764" stroke="#a855f7" stroke-width="2.5"/>
+                    <circle cx="0" cy="65" r="12" fill="#1e1b4b" stroke="#c084fc" stroke-width="2"/>
+                    <circle cx="0" cy="65" r="4" fill="#a855f7"/>
+                    <text x="0" y="86" font-size="6" font-family="monospace" font-weight="bold" fill="#e9d5ff" text-anchor="middle">LiDAR 3D SCAN</text>
+                `,
+                techInsight: 'LiDAR pulses fire 300,000 laser shots per second to pierce forest canopies and map hidden ruins or archaeological structures with millimeter-level precision.'
+            },
+            agri: {
+                id: 'agri',
+                title: '3. Agricultural Land Survey & Crop Health Drone',
+                badge: 'Agritech &bull; Multispectral',
+                badgeClass: 'bg-emerald-950/80 text-emerald-400 border-emerald-700/50',
+                desc: 'Captures multispectral NDVI imagery to assess vegetative vitality, soil nitrogen indices, moisture deficiencies, and optimize bio-fertilizer spray runs.',
+                payloadName: 'NDVI Multispectral Sensor',
+                payloadSub: '5-Band Optical &bull; 1,150g',
+                payloadWeight: 1150,
+                color: '#10b981',
+                svgContent: `
+                    <rect x="-32" y="48" width="64" height="42" rx="5" fill="#022c22" stroke="#10b981" stroke-width="2.5"/>
+                    <circle cx="-14" cy="64" r="7" fill="#047857"/>
+                    <circle cx="0" cy="64" r="7" fill="#059669"/>
+                    <circle cx="14" cy="64" r="7" fill="#10b981"/>
+                    <text x="0" y="86" font-size="6" font-family="monospace" font-weight="bold" fill="#a7f3d0" text-anchor="middle">NDVI 5-BAND</text>
+                `,
+                techInsight: 'Healthy chlorophyll reflects near-infrared (NIR) and green light while absorbing red light. NDVI sensors compute mathematical ratios to locate crop disease days before visible to human eyes.'
+            },
+            police: {
+                id: 'police',
+                title: '4. Police Vigilance & Traffic Surveillance Drone',
+                badge: 'Vigilance &bull; Thermal IR',
+                badgeClass: 'bg-blue-950/80 text-blue-400 border-blue-700/50',
+                desc: 'Real-time day/night highway security, crowd density modeling, automated number plate recognition (ANPR), and perimeter incident surveillance.',
+                payloadName: 'Thermal 30x PTZ Gimbal',
+                payloadSub: 'Long-Wave IR &bull; 1,380g',
+                payloadWeight: 1380,
+                color: '#3b82f6',
+                svgContent: `
+                    <rect x="-32" y="48" width="64" height="42" rx="5" fill="#172554" stroke="#3b82f6" stroke-width="2.5"/>
+                    <circle cx="0" cy="66" r="13" fill="#1e3a8a" stroke="#60a5fa" stroke-width="2"/>
+                    <circle cx="0" cy="66" r="6" fill="#93c5fd"/>
+                    <text x="0" y="86" font-size="6" font-family="monospace" font-weight="bold" fill="#bfdbfe" text-anchor="middle">PTZ THERMAL</text>
+                `,
+                techInsight: 'Uncooled microbolometer cores sense heat differentials as minute as 0.05°C, providing clear vision through smoke, dense fog, and absolute darkness during search operations.'
+            },
+            airpost: {
+                id: 'airpost',
+                title: '5. Air-Post Rural Courier & Logistics Drone',
+                badge: 'Rural Logistics &bull; Cargo',
+                badgeClass: 'bg-amber-950/80 text-amber-400 border-amber-700/50',
+                desc: 'Automated point-to-point mail and small parcel deliveries connecting isolated villages, mountain tracts, and remote tribal communities without road access.',
+                payloadName: 'Secure Cargo Drop Pod',
+                payloadSub: 'Quick-Release Servo &bull; 1,750g',
+                payloadWeight: 1750,
+                color: '#f59e0b',
+                svgContent: `
+                    <rect x="-32" y="48" width="64" height="42" rx="5" fill="#451a03" stroke="#f59e0b" stroke-width="2.5"/>
+                    <line x1="-32" y1="65" x2="32" y2="65" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="3,3"/>
+                    <rect x="-8" y="54" width="16" height="10" fill="#f59e0b"/>
+                    <text x="0" y="86" font-size="6" font-family="monospace" font-weight="bold" fill="#fde68a" text-anchor="middle">AIR-POST BOX</text>
+                `,
+                techInsight: 'Equipped with a dual-solenoid winch release mechanism, allowing autonomous cargo delivery from a 5-meter hover altitude without touching the unpaved ground.'
+            },
+            relay: {
+                id: 'relay',
+                title: '6. High-Altitude Broadcast & Live Relay Drone',
+                badge: 'Communications &bull; Repeater',
+                badgeClass: 'bg-cyan-950/80 text-cyan-400 border-cyan-700/50',
+                desc: 'Tethered or high-endurance aerial communications transponder restoring GSM/Wi-Fi mesh and long-range UAV telemetry during flood relief and emergencies.',
+                payloadName: 'RF Dipole Transponder',
+                payloadSub: '5.8GHz Mesh &bull; 1,220g',
+                payloadWeight: 1220,
+                color: '#06b6d4',
+                svgContent: `
+                    <rect x="-32" y="48" width="64" height="42" rx="5" fill="#083344" stroke="#06b6d4" stroke-width="2.5"/>
+                    <line x1="-22" y1="48" x2="-22" y2="38" stroke="#22d3ee" stroke-width="3"/>
+                    <line x1="22" y1="48" x2="22" y2="38" stroke="#22d3ee" stroke-width="3"/>
+                    <circle cx="-22" cy="36" r="3" fill="#22d3ee"/>
+                    <circle cx="22" cy="36" r="3" fill="#22d3ee"/>
+                    <text x="0" y="86" font-size="6" font-family="monospace" font-weight="bold" fill="#cffafe" text-anchor="middle">MESH RELAY</text>
+                `,
+                techInsight: 'Acts as an airborne radio tower. At 100m AGL, line-of-sight propagation expands from 3 km at ground level to over 40 km, enabling seamless emergency relay.'
+            }
+        };
+
+        /* -------------------------------------------------------------
+           ASSEMBLY STATE & COMPONENT WEIGHTS (in grams)
+        ------------------------------------------------------------- */
+        const componentWeights = {
+            chassis: 950,
+            propulsion: 1320,
+            battery: 2100,
+            avionics: 280,
+            landinggear: 340
+        };
+
+        const assemblyState = {
+            chassis: false,
+            propulsion: false,
+            battery: false,
+            avionics: false,
+            payload: false,
+            landinggear: false
+        };
+
+        let currentProfileKey = 'medical';
+
+        /* -------------------------------------------------------------
+           TOGGLE COMPONENT INSTALLATION
+        ------------------------------------------------------------- */
+        function toggleComponent(key) {
+            // Can only attach other parts if chassis is mounted first (except when removing chassis)
+            if (key !== 'chassis' && !assemblyState.chassis && !assemblyState[key]) {
+                showHangarAlert('INSTALL CORE CHASSIS (PART 1) FIRST');
+                return;
+            }
+
+            assemblyState[key] = !assemblyState[key];
+            updateComponentUI(key);
+            updateHangarSvg();
+            calculateTelemetry();
+            updateDiagnosticEligibility();
+        }
+
+        function updateComponentUI(key) {
+            const isInstalled = assemblyState[key];
+            const card = document.getElementById(`card-${key}`);
+            const statusBadge = document.getElementById(`status-${key}`);
+
+            if (isInstalled) {
+                card.classList.add('border-cyan-500/70', 'bg-cyan-950/30');
+                card.classList.remove('border-slate-800');
+                statusBadge.textContent = 'INSTALLED';
+                statusBadge.className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800/50 font-bold';
+            } else {
+                card.classList.remove('border-cyan-500/70', 'bg-cyan-950/30');
+                card.classList.add('border-slate-800');
+                statusBadge.textContent = 'AWAITING';
+                statusBadge.className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400';
+            }
+
+            inspectPart(key);
+        }
+
+        /* -------------------------------------------------------------
+           SVG BLUEPRINT DISPLAY
+        ------------------------------------------------------------- */
+        function updateHangarSvg() {
+            for (let part in assemblyState) {
+                const svgElem = document.getElementById(`svg-${part}`);
+                if (svgElem) {
+                    if (assemblyState[part]) {
+                        svgElem.classList.remove('opacity-0', 'scale-90');
+                        svgElem.classList.add('opacity-100', 'scale-100');
+                    } else {
+                        svgElem.classList.remove('opacity-100', 'scale-100');
+                        svgElem.classList.add('opacity-0', 'scale-90');
+                    }
+                }
+            }
+
+            // Hide dashed slot circle if chassis is installed
+            const slotCenter = document.getElementById('slot-center');
+            if (slotCenter) {
+                slotCenter.style.opacity = assemblyState.chassis ? '0' : '0.6';
+            }
+        }
+
+        /* -------------------------------------------------------------
+           DYNAMIC PAYLOAD GRAPHIC REPLACEMENT
+        ------------------------------------------------------------- */
+        function updatePayloadGraphic() {
+            const profile = droneProfiles[currentProfileKey];
+            const payloadGraphic = document.getElementById('payload-graphic');
+            if (payloadGraphic) {
+                payloadGraphic.innerHTML = profile.svgContent;
+            }
+
+            document.getElementById('payloadLabelName').textContent = profile.payloadName;
+            document.getElementById('payloadLabelWeight').textContent = profile.payloadSub;
+            document.getElementById('missionTitle').textContent = profile.title;
+            document.getElementById('missionDesc').textContent = profile.desc;
+            document.getElementById('missionBadge').className = `text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${profile.badgeClass}`;
+            document.getElementById('missionBadge').innerHTML = profile.badge;
+            document.getElementById('missionPayloadWeight').textContent = `${profile.payloadWeight.toLocaleString()} g`;
+
+            calculateTelemetry();
+        }
+
+        /* -------------------------------------------------------------
+           REAL-TIME TELEMETRY CALCULATIONS
+        ------------------------------------------------------------- */
+        function calculateTelemetry() {
+            let totalWeight = 0;
+            let partsCount = 0;
+
+            for (let part in assemblyState) {
+                if (assemblyState[part]) {
+                    partsCount++;
+                    if (part === 'payload') {
+                        totalWeight += droneProfiles[currentProfileKey].payloadWeight;
+                    } else {
+                        totalWeight += componentWeights[part];
+                    }
+                }
+            }
+
+            // Update Parts Count & Progress
+            document.getElementById('installedCountBadge').textContent = `${partsCount} / 6 Installed`;
+            const pct = Math.round((partsCount / 6) * 100);
+            document.getElementById('progressPercentage').textContent = `${pct}%`;
+            document.getElementById('assemblyProgressBar').style.width = `${pct}%`;
+
+            // Weight & MTOW
+            const maxMtow = 7800; // grams
+            document.getElementById('telemetryAuw').textContent = `${totalWeight.toLocaleString()} g`;
+            const auwPct = Math.min(100, Math.round((totalWeight / maxMtow) * 100));
+            document.getElementById('auwBar').style.width = `${auwPct}%`;
+
+            // Center of Gravity
+            const cgElem = document.getElementById('telemetryCg');
+            if (assemblyState.chassis && assemblyState.battery && assemblyState.payload) {
+                cgElem.textContent = 'BALANCED (0.0mm)';
+                cgElem.className = 'text-xs font-bold text-emerald-400';
+            } else if (partsCount > 0) {
+                cgElem.textContent = 'OFFSET (+4.2mm)';
+                cgElem.className = 'text-xs font-bold text-amber-400';
+            } else {
+                cgElem.textContent = 'NO DATUM';
+                cgElem.className = 'text-xs font-bold text-slate-500';
+            }
+
+            // Hover Endurance (minutes) & Range Periphery
+            // Model: 6S 22Ah Battery = ~488 Wh. Approx 110W/kg in hover.
+            if (partsCount === 6) {
+                const weightKg = totalWeight / 1000;
+                const powerDrawWatts = weightKg * 115; // 115 W per kg hover
+                const batteryWh = 488; // 22.2V * 22Ah
+                const usableWh = batteryWh * 0.8; // 80% safe depth of discharge
+                const hoverMinutes = Math.round((usableWh / powerDrawWatts) * 60);
+                const rangeKm = Math.min(75, Math.round(hoverMinutes * 1.6)); // avg 55 km/h cruise
+
+                document.getElementById('telemetryHover').textContent = `${hoverMinutes} min`;
+                document.getElementById('telemetryRange').textContent = `${rangeKm} km`;
+                document.getElementById('telemetryTwr').textContent = (18000 / totalWeight).toFixed(1) + ' : 1'; // 18kg max thrust
+            } else {
+                document.getElementById('telemetryHover').textContent = '-- min';
+                document.getElementById('telemetryRange').textContent = '-- km';
+                document.getElementById('telemetryTwr').textContent = '--';
+            }
+
+            // Update Readiness Status Badge
+            const readinessTag = document.getElementById('readinessTag');
+            if (partsCount === 6) {
+                readinessTag.textContent = 'HARDWARE COMPLETE • RUN DIAGNOSTICS';
+                readinessTag.className = 'px-2 py-0.5 rounded bg-cyan-950/90 text-cyan-300 border border-cyan-600/70 font-bold';
+            } else {
+                readinessTag.textContent = 'UNARMED • ASSEMBLY INCOMPLETE';
+                readinessTag.className = 'px-2 py-0.5 rounded bg-amber-950/80 text-amber-400 border border-amber-800/60 font-bold';
+            }
+        }
+
+        /* -------------------------------------------------------------
+           INSPECTOR WINDOW TEXT
+        ------------------------------------------------------------- */
+        function inspectPart(key) {
+            const titleElem = document.getElementById('inspectorTitle');
+            const textElem = document.getElementById('inspectorText');
+
+            const insights = {
+                chassis: {
+                    title: '3K Carbon Fiber Twill Matrix',
+                    text: 'Woven carbon fiber distributes motor vibration frequencies evenly away from sensitive IMU gyroscopes, ensuring high torsional stiffness during sharp gust transitions.'
+                },
+                propulsion: {
+                    title: '6x 400KV BLDC Hexacopter Propulsion',
+                    text: 'High-torque brushless DC motors configured with 18-inch foldable carbon propellers. Hexa-geometry guarantees flight stability even if one motor fails.'
+                },
+                battery: {
+                    title: '6S 22.2V 22,000mAh High-Discharge LiPo',
+                    text: 'Provides over 488 Watt-hours of reserve power. Split dual-channel PDB provides a direct 22.2V rail to ESCs and an opto-isolated 5V/12V rail to onboard computers.'
+                },
+                avionics: {
+                    title: '32-Bit Triple-Redundant Autopilot + Dual GNSS',
+                    text: 'Runs internal voting algorithms across 3 separate accelerometers, barometers, and magnetometers. If one sensor drifts, the autopilot switches instantaneously.'
+                },
+                payload: {
+                    title: droneProfiles[currentProfileKey].payloadName,
+                    text: droneProfiles[currentProfileKey].techInsight
+                },
+                landinggear: {
+                    title: 'High-Clearance Carbon Skid Array',
+                    text: '28 cm ground clearance isolates expensive optical gimbals and cold-chain canisters from gravel, water, and debris during off-field emergency landings.'
+                }
+            };
+
+            if (insights[key]) {
+                titleElem.textContent = insights[key].title;
+                textElem.textContent = insights[key].text;
+            }
+        }
+
+        /* -------------------------------------------------------------
+           ASSEMBLY CONTROLS (Fast Build & Reset)
+        ------------------------------------------------------------- */
+        function assembleAll() {
+            for (let part in assemblyState) {
+                assemblyState[part] = true;
+                updateComponentUI(part);
+            }
+            updateHangarSvg();
+            calculateTelemetry();
+            updateDiagnosticEligibility();
+            showHangarAlert('ALL 6 MODULES DOCKED AND LOCKED');
+        }
+
+        function resetAssembly() {
+            for (let part in assemblyState) {
+                assemblyState[part] = false;
+                updateComponentUI(part);
+            }
+            updateHangarSvg();
+            calculateTelemetry();
+            updateDiagnosticEligibility();
+            
+            // Reset checklist checkboxes
+            ['chk-gps', 'chk-imu', 'chk-esc', 'chk-payload'].forEach(id => {
+                const el = document.getElementById(id);
+                el.checked = false;
+                el.disabled = true;
+            });
+            checkDiagnosticStatus();
+            showHangarAlert('CHASSIS STRIPPED TO BARE BENCH');
+        }
+
+        function showHangarAlert(msg) {
+            const el = document.getElementById('hangarAlertText');
+            el.textContent = `STATUS: ${msg}`;
+            el.classList.add('text-cyan-300');
+            setTimeout(() => {
+                el.textContent = 'STATUS: READY FOR MOUNTING';
+            }, 3500);
+        }
+
+        /* -------------------------------------------------------------
+           PRE-FLIGHT DIAGNOSTICS & ARMING CHECKLIST
+        ------------------------------------------------------------- */
+        function updateDiagnosticEligibility() {
+            const allAssembled = Object.values(assemblyState).every(v => v === true);
+            const checkboxes = ['chk-gps', 'chk-imu', 'chk-esc', 'chk-payload'];
+
+            checkboxes.forEach(id => {
+                const el = document.getElementById(id);
+                const txt = document.getElementById(id.replace('chk-', 'txt-'));
+                if (allAssembled) {
+                    el.disabled = false;
+                    txt.classList.remove('text-slate-500');
+                    txt.classList.add('text-slate-300');
+                } else {
+                    el.checked = false;
+                    el.disabled = true;
+                    txt.classList.add('text-slate-500');
+                    txt.classList.remove('text-slate-300', 'text-emerald-400');
+                }
+            });
+
+            checkDiagnosticStatus();
+        }
+
+        function checkDiagnosticStatus() {
+            const checks = ['chk-gps', 'chk-imu', 'chk-esc', 'chk-payload'];
+            let passedCount = 0;
+
+            checks.forEach(id => {
+                const el = document.getElementById(id);
+                const txt = document.getElementById(id.replace('chk-', 'txt-'));
+                if (el.checked) {
+                    passedCount++;
+                    txt.classList.add('text-emerald-400');
+                } else {
+                    txt.classList.remove('text-emerald-400');
+                }
+            });
+
+            document.getElementById('checklistCount').textContent = `${passedCount} / 4 PASSED`;
+
+            const btnLaunch = document.getElementById('btnLaunchTest');
+            if (passedCount === 4) {
+                btnLaunch.disabled = false;
+                btnLaunch.className = 'w-full mt-4 py-2.5 px-3 rounded-lg font-mono font-bold text-xs uppercase tracking-wider transition flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 shadow-lg shadow-cyan-500/20 cursor-pointer animate-pulse';
+            } else {
+                btnLaunch.disabled = true;
+                btnLaunch.className = 'w-full mt-4 py-2.5 px-3 rounded-lg font-mono font-bold text-xs uppercase tracking-wider transition flex items-center justify-center gap-2 bg-slate-800 text-slate-600 cursor-not-allowed';
+            }
+        }
+
+        /* -------------------------------------------------------------
+           FLIGHT TEST RUN MODAL & SEQUENCER
+        ------------------------------------------------------------- */
+        function startFlightTest() {
+            document.getElementById('flightModal').classList.remove('hidden');
+            document.getElementById('flightModal').classList.add('flex');
+            
+            // Spin propellers in SVG
+            for (let i = 1; i <= 6; i++) {
+                const blade = document.getElementById(`blade-${i}`);
+                if (blade) blade.classList.add('rotor-spin');
+            }
+        }
+
+        function closeFlightModal() {
+            document.getElementById('flightModal').classList.add('hidden');
+            document.getElementById('flightModal').classList.remove('flex');
+
+            for (let i = 1; i <= 6; i++) {
+                const blade = document.getElementById(`blade-${i}`);
+                if (blade) blade.classList.remove('rotor-spin');
+            }
+        }
+
+        function triggerFlightSequence() {
+            const btn = document.getElementById('btnStartFlightRun');
+            btn.disabled = true;
+            btn.textContent = 'TAKEOFF IN PROGRESS...';
+            btn.className = 'flex-1 py-2.5 px-4 rounded-lg bg-slate-800 text-cyan-400 font-bold text-xs uppercase font-mono tracking-wider cursor-wait';
+
+            const log = document.getElementById('flightLogConsole');
+            const altElem = document.getElementById('simAltitude');
+            const rpmElem = document.getElementById('simRpm');
+            const ampsElem = document.getElementById('simAmps');
+
+            function addLog(text, color = 'text-slate-300') {
+                const div = document.createElement('div');
+                div.className = color;
+                div.textContent = `> ${text}`;
+                log.appendChild(div);
+                log.scrollTop = log.scrollHeight;
+            }
+
+            let step = 0;
+            const flightInterval = setInterval(() => {
+                step++;
+                if (step === 1) {
+                    addLog('RAMPING MOTOR CONTROLLER TO 35% THROTTLE...', 'text-amber-400');
+                    rpmElem.textContent = '2,400 RPM';
+                    ampsElem.textContent = '14.2 A';
+                } else if (step === 2) {
+                    addLog('HOVER THRUST ATTAINED. LIFT-OFF DETECTED (0.8m AGL)', 'text-cyan-400');
+                    altElem.textContent = '0.8 m';
+                    rpmElem.textContent = '4,600 RPM';
+                    ampsElem.textContent = '38.5 A';
+                } else if (step === 3) {
+                    addLog('CLIMBING TO SAFE WAYPOINT CRUISE CEILING: 35.0m AGL', 'text-cyan-300');
+                    altElem.textContent = '35.0 m';
+                    rpmElem.textContent = '5,100 RPM';
+                    ampsElem.textContent = '46.8 A';
+                } else if (step === 4) {
+                    addLog(`PAYLOAD ACTIVE: ${droneProfiles[currentProfileKey].payloadName.toUpperCase()} LOCKED`, 'text-emerald-400');
+                } else if (step === 5) {
+                    addLog('ALL FLIGHT READINESS PARAMETERS VERIFIED! READY FOR BHARAT CORRIDOR NAVIGATION.', 'text-emerald-300 font-bold');
+                    clearInterval(flightInterval);
+                    btn.disabled = false;
+                    btn.textContent = 'TAKEOFF RUN COMPLETE (PASSED)';
+                    btn.className = 'flex-1 py-2.5 px-4 rounded-lg bg-emerald-500 text-slate-950 font-bold text-xs uppercase font-mono tracking-wider';
+                }
+            }, 1000);
+        }
+
+        /* -------------------------------------------------------------
+           INITIALIZATION & DROPDOWN EVENT LISTENER
+        ------------------------------------------------------------- */
+        document.getElementById('droneProfileSelect').addEventListener('change', function (e) {
+            currentProfileKey = e.target.value;
+            updatePayloadGraphic();
+            inspectPart('payload');
+        });
+
+        // Initialize state on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            updatePayloadGraphic();
+            calculateTelemetry();
+            inspectPart('chassis');
+        });
+    </script>
+</body>
+</html>
