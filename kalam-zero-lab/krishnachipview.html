@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GARRF KRISHNA Virtual Semiconductor Chip Design Lab</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@400;600;800;900&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            gold: '#FFD700',
+                            goldLight: '#FFF2A3',
+                            blue: '#00F0FF',
+                            deepBlue: '#050B14',
+                            cardBg: 'rgba(11, 22, 40, 0.85)',
+                            neonGreen: '#39FF14',
+                            purple: '#9D00FF'
+                        }
+                    },
+                    fontFamily: {
+                        orbitron: ['Orbitron', 'sans-serif'],
+                        sans: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body {
+            background-color: #030712;
+            color: #E2E8F0;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+
+        .glow-text-gold {
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.6), 0 0 20px rgba(255, 215, 0, 0.3);
+        }
+
+        .glow-text-blue {
+            text-shadow: 0 0 10px rgba(0, 240, 255, 0.7), 0 0 20px rgba(0, 240, 255, 0.4);
+        }
+
+        .glow-box-blue {
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.25), inset 0 0 15px rgba(0, 240, 255, 0.15);
+            border: 1px solid rgba(0, 240, 255, 0.4);
+        }
+
+        .glow-box-gold {
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.25), inset 0 0 15px rgba(255, 215, 0, 0.15);
+            border: 1px solid rgba(255, 215, 0, 0.4);
+        }
+
+        /* Circular Rotating Text Effect */
+        .rotating-text-svg {
+            animation: rotateClockwise 35s linear infinite;
+            transform-origin: center;
+        }
+
+        @keyframes rotateClockwise {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Circuit Pulse Animation */
+        @keyframes pulseLine {
+            0% { stroke-dashoffset: 100; opacity: 0.2; }
+            50% { opacity: 1; }
+            100% { stroke-dashoffset: 0; opacity: 0.2; }
+        }
+
+        .pulse-path {
+            stroke-dasharray: 20, 10;
+            animation: pulseLine 3s linear infinite;
+        }
+
+        /* 3D Chip Perspective Styles */
+        .chip-perspective-container {
+            perspective: 1000px;
+        }
+
+        .chip-view-3d {
+            transform: rotateX(55deg) rotateZ(-35deg);
+            transform-style: preserve-3d;
+            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .chip-view-iso {
+            transform: rotateX(40deg) rotateZ(-20deg);
+            transform-style: preserve-3d;
+            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .chip-view-2d {
+            transform: rotateX(0deg) rotateZ(0deg);
+            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #090d16;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #00F0FF;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #FFD700;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-brand-blue selection:text-black">
+
+    <!-- HEADER -->
+    <header class="bg-slate-950/90 border-b border-cyan-500/30 sticky top-0 z-40 backdrop-blur-md px-4 lg:px-8 py-3">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            
+            <!-- Left: Branding & Quote -->
+            <div class="flex items-center gap-3">
+                <img src="logo.jpeg" alt="GARRF Logo" class="h-12 w-12 rounded-lg border border-yellow-500/50 object-cover shadow-lg" onerror="this.src='https://placehold.co/100x100/0b1628/FFD700?text=GARRF+Logo'">
+                <div>
+                    <h1 class="font-orbitron font-bold text-lg md:text-xl tracking-wider text-yellow-400 flex items-center gap-2">
+                        Gopalkrishna Advanced Rural Research Foundation
+                    </h1>
+                    <p class="text-xs text-cyan-300 italic font-light">"Empowering Rural Innovation through High-Tech Semiconductor Research"</p>
+                </div>
+            </div>
+
+            <!-- Right: Links, India Flag & Actions -->
+            <div class="flex flex-wrap items-center gap-4 text-xs font-medium">
+                <nav class="flex items-center gap-3 bg-slate-900/80 px-3 py-1.5 rounded-full border border-slate-700">
+                    <a href="https://garrf.in/" target="_blank" class="hover:text-cyan-400 transition flex items-center gap-1">
+                        <i class="fa-solid fa-house text-yellow-400"></i> Home
+                    </a>
+                    <span class="text-slate-600">|</span>
+                    <a href="https://garrf.in/kalam-zero-lab/" target="_blank" class="hover:text-cyan-400 transition flex items-center gap-1">
+                        <i class="fa-solid fa-flask text-cyan-400"></i> Virtual Lab
+                    </a>
+                </nav>
+
+                <!-- India Flag SVG -->
+                <div class="flex items-center gap-1.5 bg-slate-900/80 px-2.5 py-1 rounded-md border border-slate-700/80" title="Proudly Designed in India">
+                    <svg class="w-6 h-4 rounded shadow-sm" viewBox="0 0 640 480">
+                        <path fill="#f93" d="0 0h640v160H0z"/>
+                        <path fill="#fff" d="0 160h640v160H0z"/>
+                        <path fill="#128807" d="0 320h640v160H0z"/>
+                        <circle cx="320" cy="240" r="60" fill="none" stroke="#008" stroke-width="6"/>
+                    </svg>
+                    <span class="text-[10px] text-slate-300 font-semibold tracking-wider">INDIA</span>
+                </div>
+
+                <!-- Help Button -->
+                <button onclick="toggleModal('helpModal')" class="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold px-3.5 py-1.5 rounded-md shadow-md shadow-cyan-500/20 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-circle-question text-sm"></i> HELP
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN LAB WORKSPACE -->
+    <main class="max-w-7xl mx-auto w-full px-4 py-6 flex-grow grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- LEFT COLUMN: VISUAL CHIP DISPLAY & CONTROLS (7 Cols) -->
+        <section class="lg:col-span-7 flex flex-col gap-4">
+            
+            <!-- Chip Visualization Card -->
+            <div class="bg-slate-900/80 rounded-2xl p-4 md:p-6 border border-cyan-500/30 glow-box-blue flex flex-col items-center justify-between relative overflow-hidden min-h-[460px]">
+                
+                <!-- Background Glowing Grid -->
+                <div class="absolute inset-0 bg-[radial-gradient(#00F0FF_1px,transparent_1px)] [background-size:16px_16px] opacity-10 pointer-events-none"></div>
+
+                <!-- Card Header with View Controls -->
+                <div class="w-full flex items-center justify-between z-10 mb-2">
+                    <div class="flex items-center gap-2">
+                        <span class="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                        <h2 class="font-orbitron text-cyan-400 text-sm md:text-base font-semibold">KRISHNA SILICON CORE</h2>
+                    </div>
+
+                    <!-- 2D / Iso / 3D Toggle Buttons -->
+                    <div class="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs font-orbitron">
+                        <button onclick="setChipView('2d')" id="btn-2d" class="px-2.5 py-1 rounded bg-cyan-500 text-slate-950 font-bold transition">2D</button>
+                        <button onclick="setChipView('iso')" id="btn-iso" class="px-2.5 py-1 rounded text-slate-400 hover:text-white transition">ISO</button>
+                        <button onclick="setChipView('3d')" id="btn-3d" class="px-2.5 py-1 rounded text-slate-400 hover:text-white transition">3D</button>
+                    </div>
+                </div>
+
+                <!-- 3D/Isometric Chip Rendering Canvas Container -->
+                <div class="chip-perspective-container w-full h-[360px] flex items-center justify-center my-auto">
+                    <div id="chipContainer" class="chip-view-2d relative w-[320px] h-[320px] md:w-[350px] md:h-[350px] flex items-center justify-center transition-transform duration-700">
+                        
+                        <!-- Canvas overlay for sparkling dynamic particles -->
+                        <canvas id="sparkleCanvas" class="absolute inset-0 z-20 pointer-events-none" width="350" height="350"></canvas>
+
+                        <!-- Micro-engraved Outer Rotating Circular Text -->
+                        <div class="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+                            <svg class="w-full h-full text-[9px] font-orbitron fill-yellow-400 tracking-widest opacity-80" viewBox="0 0 300 300">
+                                <path id="textCirclePath" d="M 150, 150 m -135, 0 a 135,135 0 1,1 270,0 a 135,135 0 1,1 -270,0" fill="none"/>
+                                <text class="rotating-text-svg">
+                                    <textPath href="#textCirclePath" startOffset="0%">
+                                        Gopalkrishna Advanced Rural Research Foundation • Gopalkrishna Advanced Rural Research Foundation • 
+                                    </textPath>
+                                </text>
+                            </svg>
+                        </div>
+
+                        <!-- Main Chip Package SVG -->
+                        <svg class="w-full h-full drop-shadow-[0_0_25px_rgba(0,240,255,0.4)]" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+                            <!-- Golden Pins Outer Rim -->
+                            <g id="goldPins" stroke="#FFD700" stroke-width="3" fill="none">
+                                <!-- Top & Bottom Pins -->
+                                <path d="M 60 20 L 60 50 M 80 20 L 80 50 M 100 20 L 100 50 M 120 20 L 120 50 M 140 20 L 140 50 M 160 20 L 160 50 M 180 20 L 180 50 M 200 20 L 200 50 M 220 20 L 220 50 M 240 20 L 240 50 M 260 20 L 260 50 M 280 20 L 280 50 M 300 20 L 300 50 M 320 20 L 320 50 M 340 20 L 340 50" />
+                                <path d="M 60 380 L 60 350 M 80 380 L 80 350 M 100 380 L 100 350 M 120 380 L 120 350 M 140 380 L 140 350 M 160 380 L 160 350 M 180 380 L 180 350 M 200 380 L 200 350 M 220 380 L 220 350 M 240 380 L 240 350 M 260 380 L 260 350 M 280 380 L 280 350 M 300 380 L 300 350 M 320 380 L 320 350 M 340 380 L 340 350" />
+                                <!-- Left & Right Pins -->
+                                <path d="M 20 60 L 50 60 M 20 80 L 50 80 M 20 100 L 50 100 M 20 120 L 50 120 M 20 140 L 50 140 M 20 160 L 50 160 M 20 180 L 50 180 M 20 200 L 50 200 M 20 220 L 50 220 M 20 240 L 50 240 M 20 260 L 50 260 M 20 280 L 50 280 M 20 300 L 50 300 M 20 320 L 50 320 M 20 340 L 50 340" />
+                                <path d="M 380 60 L 350 60 M 380 80 L 350 80 M 380 100 L 350 100 M 380 120 L 350 120 M 380 140 L 350 140 M 380 160 L 350 160 M 380 180 L 350 180 M 380 200 L 350 200 M 380 220 L 350 220 M 380 240 L 350 240 M 380 260 L 350 260 M 380 280 L 350 280 M 380 300 L 350 300 M 380 320 L 350 320 M 380 340 L 350 340" />
+                            </g>
+
+                            <!-- Outer Dark Ceramic Package Substrate -->
+                            <rect x="50" y="50" width="300" height="300" rx="16" fill="#0B132B" stroke="#FFD700" stroke-width="2"/>
+
+                            <!-- Inner Silicon Wafer Core Matrix -->
+                            <rect x="90" y="90" width="220" height="220" rx="10" fill="#030814" stroke="#00F0FF" stroke-width="2"/>
+
+                            <!-- Animated Dynamic Circuit Traces -->
+                            <g stroke="#00F0FF" stroke-width="1.5" fill="none" opacity="0.8">
+                                <path class="pulse-path" d="M 90 120 H 150 V 160 H 180" />
+                                <path class="pulse-path" d="M 310 120 H 250 V 160 H 220" />
+                                <path class="pulse-path" d="M 90 280 H 150 V 240 H 180" />
+                                <path class="pulse-path" d="M 310 280 H 250 V 240 H 220" />
+                                <!-- Core Corner Decoupling Lines -->
+                                <line x1="100" y1="100" x2="130" y2="130" stroke="#FFD700"/>
+                                <line x1="300" y1="100" x2="270" y2="130" stroke="#FFD700"/>
+                                <line x1="100" y1="300" x2="130" y2="270" stroke="#FFD700"/>
+                                <line x1="300" y1="300" x2="270" y2="270" stroke="#FFD700"/>
+                            </g>
+
+                            <!-- CENTRAL DIE WAFER AREA WITH KRISHNA ETCHED NAME -->
+                            <g id="krishnaDie">
+                                <rect x="135" y="135" width="130" height="130" rx="6" fill="#0A192F" stroke="#FFD700" stroke-width="2"/>
+                                
+                                <!-- Lord Krishna Feather Graphic Icon / Micro Core Iconography -->
+                                <g transform="translate(180, 142) scale(0.8)">
+                                    <!-- Peacock Feather Silhouette Art -->
+                                    <path d="M 25 5 Q 10 20 25 40 Q 40 20 25 5 Z" fill="none" stroke="#00F0FF" stroke-width="1.5"/>
+                                    <ellipse cx="25" cy="22" rx="7" ry="10" fill="#FFD700" opacity="0.8"/>
+                                    <circle cx="25" cy="22" r="3" fill="#9D00FF"/>
+                                </g>
+
+                                <!-- Prominent KRISHNA Name Etching -->
+                                <text x="200" y="215" font-family="'Orbitron', sans-serif" font-size="18" font-weight="900" fill="#FFD700" text-anchor="middle" letter-spacing="2" class="glow-text-gold">
+                                    KRISHNA
+                                </text>
+                                
+                                <text x="200" y="235" font-family="'Orbitron', sans-serif" font-size="8" font-weight="600" fill="#00F0FF" text-anchor="middle" letter-spacing="1">
+                                    RISC-V 64-BIT CORE
+                                </text>
+                                
+                                <!-- Decorative Core Micro Dots -->
+                                <circle cx="145" cy="145" r="2" fill="#00F0FF"/>
+                                <circle cx="255" cy="145" r="2" fill="#00F0FF"/>
+                                <circle cx="145" cy="255" r="2" fill="#00F0FF"/>
+                                <circle cx="255" cy="255" r="2" fill="#00F0FF"/>
+                            </g>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Footer Stats under Chip -->
+                <div class="w-full grid grid-cols-3 gap-2 text-center text-xs mt-2 border-t border-slate-800 pt-3 font-orbitron">
+                    <div class="bg-slate-950/60 p-2 rounded border border-slate-800">
+                        <span class="text-slate-400 block text-[10px]">PROCESS NODE</span>
+                        <span id="statNode" class="text-yellow-400 font-bold">7 nm FinFET</span>
+                    </div>
+                    <div class="bg-slate-950/60 p-2 rounded border border-slate-800">
+                        <span class="text-slate-400 block text-[10px]">CLOCK FREQ</span>
+                        <span id="statClock" class="text-cyan-400 font-bold">3.20 GHz</span>
+                    </div>
+                    <div class="bg-slate-950/60 p-2 rounded border border-slate-800">
+                        <span class="text-slate-400 block text-[10px]">DIE YIELD</span>
+                        <span id="statYield" class="text-emerald-400 font-bold">92.4 %</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIRTUAL TWIN MODAL TRIGGERS -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <button onclick="toggleModal('deviceTwinModal')" class="bg-slate-900/90 hover:bg-slate-800 border border-cyan-500/40 hover:border-cyan-400 p-3 rounded-xl transition flex flex-col items-center justify-center gap-1 group">
+                    <i class="fa-solid fa-microchip text-cyan-400 text-lg group-hover:scale-110 transition-transform"></i>
+                    <span class="font-orbitron text-xs text-slate-200 font-semibold">Device Twin</span>
+                    <span class="text-[10px] text-slate-400">Delay & Power</span>
+                </button>
+
+                <button onclick="toggleModal('waferTwinModal')" class="bg-slate-900/90 hover:bg-slate-800 border border-yellow-500/40 hover:border-yellow-400 p-3 rounded-xl transition flex flex-col items-center justify-center gap-1 group">
+                    <i class="fa-solid fa-circle-nodes text-yellow-400 text-lg group-hover:scale-110 transition-transform"></i>
+                    <span class="font-orbitron text-xs text-slate-200 font-semibold">Wafer Twin</span>
+                    <span class="text-[10px] text-slate-400">300mm Yield Map</span>
+                </button>
+
+                <button onclick="toggleModal('equipmentTwinModal')" class="bg-slate-900/90 hover:bg-slate-800 border border-purple-500/40 hover:border-purple-400 p-3 rounded-xl transition flex flex-col items-center justify-center gap-1 group">
+                    <i class="fa-solid fa-gear text-purple-400 text-lg group-hover:scale-110 transition-transform"></i>
+                    <span class="font-orbitron text-xs text-slate-200 font-semibold">Equipment Twin</span>
+                    <span class="text-[10px] text-slate-400">Plasma Chamber</span>
+                </button>
+
+                <button onclick="toggleModal('fabTwinModal')" class="bg-slate-900/90 hover:bg-slate-800 border border-emerald-500/40 hover:border-emerald-400 p-3 rounded-xl transition flex flex-col items-center justify-center gap-1 group">
+                    <i class="fa-solid fa-industry text-emerald-400 text-lg group-hover:scale-110 transition-transform"></i>
+                    <span class="font-orbitron text-xs text-slate-200 font-semibold">Fab Twin</span>
+                    <span class="text-[10px] text-slate-400">Factory OEE %</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- RIGHT COLUMN: PROCESS FLOW & SPA SIMULATOR (5 Cols) -->
+        <section class="lg:col-span-5 flex flex-col gap-4">
+            
+            <!-- Step Selection Tabs -->
+            <div class="bg-slate-900/80 p-3 rounded-2xl border border-slate-800 flex flex-col gap-2">
+                <div class="flex items-center justify-between px-1">
+                    <h3 class="font-orbitron text-xs text-yellow-400 font-bold uppercase tracking-wider">FABRICATION PROCESS STEPS</h3>
+                    <span class="text-[10px] text-slate-400">Select step to load parameters</span>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2 font-orbitron text-xs">
+                    <button onclick="selectProcessStep('design')" id="step-design" class="step-btn bg-cyan-500 text-slate-950 font-bold p-2 rounded-lg border border-cyan-400 transition text-left flex items-center gap-1.5">
+                        <span class="w-5 h-5 rounded-full bg-slate-950 text-cyan-400 flex items-center justify-center text-[10px]">1</span>
+                        <span>Design</span>
+                    </button>
+                    <button onclick="selectProcessStep('lithography')" id="step-lithography" class="step-btn bg-slate-950 text-slate-300 p-2 rounded-lg border border-slate-800 hover:border-slate-600 transition text-left flex items-center gap-1.5">
+                        <span class="w-5 h-5 rounded-full bg-slate-800 text-slate-300 flex items-center justify-center text-[10px]">2</span>
+                        <span>Litho</span>
+                    </button>
+                    <button onclick="selectProcessStep('deposition')" id="step-deposition" class="step-btn bg-slate-950 text-slate-300 p-2 rounded-lg border border-slate-800 hover:border-slate-600 transition text-left flex items-center gap-1.5">
+                        <span class="w-5 h-5 rounded-full bg-slate-800 text-slate-300 flex items-center justify-center text-[10px]">3</span>
+                        <span>Deposition</span>
+                    </button>
+                    <button onclick="selectProcessStep('etching')" id="step-etching" class="step-btn bg-slate-950 text-slate-300 p-2 rounded-lg border border-slate-800 hover:border-slate-600 transition text-left flex items-center gap-1.5">
+                        <span class="w-5 h-5 rounded-full bg-slate-800 text-slate-300 flex items-center justify-center text-[10px]">4</span>
+                        <span>Etching</span>
+                    </button>
+                    <button onclick="selectProcessStep('doping')" id="step-doping" class="step-btn bg-slate-950 text-slate-300 p-2 rounded-lg border border-slate-800 hover:border-slate-600 transition text-left flex items-center gap-1.5">
+                        <span class="w-5 h-5 rounded-full bg-slate-800 text-slate-300 flex items-center justify-center text-[10px]">5</span>
+                        <span>Doping</span>
+                    </button>
+                    <button onclick="selectProcessStep('metrology')" id="step-metrology" class="step-btn bg-slate-950 text-slate-300 p-2 rounded-lg border border-slate-800 hover:border-slate-600 transition text-left flex items-center gap-1.5">
+                        <span class="w-5 h-5 rounded-full bg-slate-800 text-slate-300 flex items-center justify-center text-[10px]">6</span>
+                        <span>Metrology</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Dynamic Interactive Controls Container -->
+            <div id="processControlsCard" class="bg-slate-900/80 rounded-2xl p-5 border border-cyan-500/30 flex flex-col gap-4 flex-grow">
+                <!-- Dynamically populated by JS selectProcessStep() -->
+            </div>
+
+            <!-- Observation Logs Container -->
+            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 font-mono text-xs flex flex-col gap-1">
+                <span class="text-slate-500 text-[10px] flex items-center gap-1">
+                    <i class="fa-solid fa-terminal text-cyan-400"></i> REAL-TIME METROLOGY LOGS
+                </span>
+                <p id="processLogText" class="text-emerald-400">
+                    > KRISHNA Chip Design architecture initialized. Select parameters to simulate.
+                </p>
+            </div>
+        </section>
+    </main>
+
+    <!-- KRISHNA AI CHATBOT WIDGET -->
+    <div class="fixed bottom-5 right-5 z-50">
+        <!-- Chat Launcher Button -->
+        <button onclick="toggleModal('chatModal')" class="bg-gradient-to-r from-yellow-500 to-amber-600 text-slate-950 p-3.5 rounded-full shadow-lg shadow-yellow-500/20 hover:scale-105 transition flex items-center gap-2 font-orbitron font-bold text-xs">
+            <i class="fa-solid fa-robot text-base"></i>
+            <span class="hidden md:inline">KRISHNA AI</span>
+        </button>
+    </div>
+
+    <!-- Chat Modal Window -->
+    <div id="chatModal" class="hidden fixed bottom-20 right-5 w-80 md:w-96 bg-slate-900 border border-yellow-500/40 rounded-2xl shadow-2xl z-50 flex flex-col overflow-hidden h-[420px]">
+        <div class="bg-slate-950 px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-robot text-yellow-400"></i>
+                <h4 class="font-orbitron text-xs text-yellow-400 font-bold">KRISHNA Semiconductor Assistant</h4>
+            </div>
+            <button onclick="toggleModal('chatModal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <div id="chatMessages" class="flex-grow p-3 overflow-y-auto flex flex-col gap-2 text-xs">
+            <div class="bg-slate-800/80 p-2.5 rounded-lg max-w-[85%] self-start border border-slate-700">
+                Hello! I am your GARRF Virtual Lab assistant. Ask me anything about KRISHNA chip design, lithography EUV wavelength, etching physics, or wafer yield math!
+            </div>
+        </div>
+
+        <div class="p-2 bg-slate-950 border-t border-slate-800 flex gap-2">
+            <input type="text" id="chatInput" onkeydown="if(event.key==='Enter') sendChatMessage()" placeholder="Type query (e.g. EUV, Yield, FinFET)..." class="flex-grow bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-yellow-400">
+            <button onclick="sendChatMessage()" class="bg-yellow-500 text-slate-950 font-bold px-3 py-1.5 rounded-lg hover:bg-yellow-400 transition text-xs"><i class="fa-solid fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="bg-slate-950 border-t border-slate-800 py-4 px-4 lg:px-8 mt-6">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-slate-400">
+            
+            <div class="text-center md:text-left">
+                <p class="font-orbitron font-semibold text-slate-200">
+                    KRISHNA - Virtual Semiconductor Chip Design Lab
+                </p>
+                <p class="text-[11px] text-slate-400 mt-0.5">
+                    Developed by <span class="text-yellow-400">Dr. Annamdas Venu Gopal Madhav</span> & <span class="text-cyan-400">Annamdas Shantanu Vasudev Krishna</span> | <a href="https://garrf.in/" target="_blank" class="underline hover:text-white">GARRF.in</a>
+                </p>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <!-- Direct link to chip.pdf -->
+                <a href="chip.pdf" download="KRISHNA_Chip_Documentation.pdf" class="bg-slate-900 hover:bg-slate-800 text-yellow-400 border border-yellow-500/40 px-3 py-1.5 rounded-md font-orbitron transition flex items-center gap-1.5 text-[11px]">
+                    <i class="fa-solid fa-file-pdf text-red-400"></i> Download Chip Manual (chip.pdf)
+                </a>
+
+                <!-- Global Visitor Counter -->
+                <div class="bg-slate-900 px-3 py-1.5 rounded-md border border-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-users text-cyan-400"></i>
+                    <span>Visitors: <strong id="visitorCountDisplay" class="text-white font-orbitron">00,124</strong></span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- MODALS SECTION -->
+    
+    <!-- 1. HELP MODAL -->
+    <div id="helpModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-cyan-500/50 rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden shadow-2xl">
+            <div class="bg-slate-950 px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+                <h3 class="font-orbitron text-lg text-yellow-400 font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-circle-info"></i> GARRF Virtual Lab Guide & Learning Outcomes
+                </h3>
+                <button onclick="toggleModal('helpModal')" class="text-slate-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div class="p-6 overflow-y-auto flex flex-col gap-4 text-xs leading-relaxed text-slate-300">
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                    <h4 class="font-orbitron text-cyan-400 font-semibold text-sm mb-1">Welcome to KRISHNA Virtual Chip Lab</h4>
+                    <p>This virtual lab simulates end-to-end VLSI design and semiconductor manufacturing physics developed for researchers and students across India.</p>
+                </div>
+
+                <h4 class="font-orbitron text-yellow-400 font-bold text-sm">Step-by-Step Learning Guide:</h4>
+                <ol class="list-decimal list-inside space-y-2 text-slate-300">
+                    <li><strong class="text-white">Design Phase:</strong> Select process nodes (from 28nm down to 3nm GAAFET) to observe transistor density scaling and gate delay dynamics on the central KRISHNA core.</li>
+                    <li><strong class="text-white">Lithography:</strong> Adjust Rayleigh formula parameters ($\text{CD} = k_1 \frac{\lambda}{\text{NA}}$) using EUV (13.5nm) vs DUV sources.</li>
+                    <li><strong class="text-white">Deposition & Etching:</strong> Plasma RIE anisotropy controls, aspect ratio calculation, and film thickness deposition.</li>
+                    <li><strong class="text-white">Doping & Metrology:</strong> Ion implantation dose/energy calculations and ellipsometry measurement logs.</li>
+                    <li><strong class="text-white">Virtual Twins:</strong> Explore the 4 interactive modals to inspect physical Equipment plasma, 300mm Wafer Die Maps, Device TDP Curves, and Fab OEE economics.</li>
+                </ol>
+
+                <div class="mt-2 bg-yellow-500/10 border border-yellow-500/30 p-3 rounded-lg flex items-center justify-between">
+                    <div>
+                        <span class="font-semibold text-yellow-400 block">Complete Fabrication Documentation</span>
+                        <span class="text-slate-400 text-[11px]">Download the complete technical schematic document chip.pdf</span>
+                    </div>
+                    <a href="chip.pdf" download="chip.pdf" class="bg-yellow-500 hover:bg-yellow-400 text-slate-950 font-bold px-3 py-1.5 rounded text-xs transition">
+                        Download PDF
+                    </a>
+                </div>
+            </div>
+
+            <div class="bg-slate-950 px-6 py-3 border-t border-slate-800 text-right">
+                <button onclick="toggleModal('helpModal')" class="bg-cyan-500 text-slate-950 font-bold px-4 py-1.5 rounded-lg hover:bg-cyan-400 transition text-xs">Close Guide</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. DEVICE TWIN MODAL -->
+    <div id="deviceTwinModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-cyan-500/50 rounded-2xl max-w-xl w-full p-6 flex flex-col gap-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="font-orbitron text-base text-cyan-400 font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-microchip"></i> Device Level Twin - Gate & Power Dynamics
+                </h3>
+                <button onclick="toggleModal('deviceTwinModal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-3 text-xs">
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                    <span class="text-slate-400 block mb-1">Gate Delay ($\tau$)</span>
+                    <span id="dtGateDelay" class="font-orbitron text-lg font-bold text-cyan-400">1.12 ps</span>
+                </div>
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                    <span class="text-slate-400 block mb-1">TDP Thermal Power</span>
+                    <span id="dtPower" class="font-orbitron text-lg font-bold text-yellow-400">18.5 W</span>
+                </div>
+            </div>
+
+            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                <span class="text-xs font-orbitron text-slate-300 block mb-2">Simulated Dynamic Power Curve ($P = C \cdot V^2 \cdot f$)</span>
+                <svg class="w-full h-32" viewBox="0 0 300 100">
+                    <polyline points="0,90 50,75 100,60 150,40 200,25 250,15 300,5" fill="none" stroke="#00F0FF" stroke-width="2"/>
+                    <circle cx="200" cy="25" r="4" fill="#FFD700"/>
+                </svg>
+            </div>
+
+            <button onclick="toggleModal('deviceTwinModal')" class="bg-slate-800 text-white font-bold py-2 rounded-lg text-xs hover:bg-slate-700 transition">Close</button>
+        </div>
+    </div>
+
+    <!-- 3. WAFER TWIN MODAL -->
+    <div id="waferTwinModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-yellow-500/50 rounded-2xl max-w-xl w-full p-6 flex flex-col gap-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="font-orbitron text-base text-yellow-400 font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-circle-nodes"></i> Wafer Level Twin - 300mm Die Map
+                </h3>
+                <button onclick="toggleModal('waferTwinModal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <!-- 300mm Wafer Die Grid Visualization -->
+            <div class="flex flex-col items-center justify-center gap-2">
+                <div class="w-48 h-48 rounded-full border-4 border-yellow-500/60 bg-slate-950 p-2 grid grid-cols-6 gap-1 relative overflow-hidden">
+                    <!-- Dynamic Die Matrix -->
+                    <script>
+                        // Dynamically filled in main script
+                    </script>
+                    <div class="col-span-6 flex items-center justify-center h-full text-[10px] text-slate-400 font-orbitron flex-wrap gap-1" id="waferDieGrid">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+                <p class="text-[11px] text-slate-400 italic">Murphy's Yield Model: $Y = \left(\frac{1 - e^{-D \cdot A}}{D \cdot A}\right)^2$</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 text-xs font-orbitron">
+                <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800 text-center">
+                    <span class="text-emerald-400 block">Passed Dies: 412</span>
+                </div>
+                <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800 text-center">
+                    <span class="text-rose-400 block">Defects: 34</span>
+                </div>
+            </div>
+
+            <button onclick="toggleModal('waferTwinModal')" class="bg-slate-800 text-white font-bold py-2 rounded-lg text-xs hover:bg-slate-700 transition">Close</button>
+        </div>
+    </div>
+
+    <!-- 4. EQUIPMENT TWIN MODAL -->
+    <div id="equipmentTwinModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-purple-500/50 rounded-2xl max-w-xl w-full p-6 flex flex-col gap-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="font-orbitron text-base text-purple-400 font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-gear"></i> Equipment Twin - RIE Plasma Chamber
+                </h3>
+                <button onclick="toggleModal('equipmentTwinModal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <!-- SVG Plasma Chamber Simulation -->
+            <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col items-center">
+                <svg class="w-64 h-36" viewBox="0 0 200 120">
+                    <rect x="20" y="10" width="160" height="100" rx="10" fill="#0b1329" stroke="#9D00FF" stroke-width="2"/>
+                    <!-- Plasma Glow -->
+                    <rect x="30" y="30" width="140" height="50" rx="6" fill="url(#plasmaGrad)" opacity="0.8"/>
+                    <defs>
+                        <linearGradient id="plasmaGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#9D00FF" stop-opacity="0.9"/>
+                            <stop offset="100%" stop-color="#00F0FF" stop-opacity="0.3"/>
+                        </linearGradient>
+                    </defs>
+                    <!-- Wafer Pedestal -->
+                    <rect x="60" y="80" width="80" height="15" fill="#334155"/>
+                    <rect x="70" y="76" width="60" height="4" fill="#FFD700"/>
+                </svg>
+                <div class="flex gap-4 text-[11px] text-slate-300 mt-2 font-mono">
+                    <span>Gas: CF4 / Ar</span>
+                    <span>RF Power: 450 W</span>
+                    <span>Pressure: 15 mTorr</span>
+                </div>
+            </div>
+
+            <button onclick="toggleModal('equipmentTwinModal')" class="bg-slate-800 text-white font-bold py-2 rounded-lg text-xs hover:bg-slate-700 transition">Close</button>
+        </div>
+    </div>
+
+    <!-- 5. FAB TWIN MODAL -->
+    <div id="fabTwinModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-emerald-500/50 rounded-2xl max-w-xl w-full p-6 flex flex-col gap-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="font-orbitron text-base text-emerald-400 font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-industry"></i> Fab Level Twin - Factory Logistics & OEE
+                </h3>
+                <button onclick="toggleModal('fabTwinModal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 text-xs font-orbitron">
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                    <span class="text-slate-400 block mb-1">Overall Equipment Efficiency</span>
+                    <span class="text-emerald-400 text-xl font-bold">88.5 %</span>
+                </div>
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                    <span class="text-slate-400 block mb-1">Cleanroom ISO Standard</span>
+                    <span class="text-cyan-400 text-xl font-bold">ISO Class 1</span>
+                </div>
+            </div>
+
+            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs">
+                <span class="font-orbitron text-yellow-400 font-semibold block mb-1">AMHS Automated Handling</span>
+                <p class="text-slate-400 text-[11px]">FOUP transfer speed: 2.4 m/s across overhead track matrix.</p>
+            </div>
+
+            <button onclick="toggleModal('fabTwinModal')" class="bg-slate-800 text-white font-bold py-2 rounded-lg text-xs hover:bg-slate-700 transition">Close</button>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT APP LOGIC -->
+    <script>
+        // --- 1. VISITOR COUNTER WITH LOCAL STORAGE ---
+        function initVisitorCounter() {
+            let count = localStorage.getItem('garrf_visitor_count');
+            if (!count) {
+                count = 1248;
+            } else {
+                count = parseInt(count) + 1;
+            }
+            localStorage.setItem('garrf_visitor_count', count);
+            document.getElementById('visitorCountDisplay').innerText = String(count).padStart(6, '0');
+        }
+
+        // --- 2. CHIP PERSPECTIVE TOGGLE ---
+        function setChipView(viewType) {
+            const container = document.getElementById('chipContainer');
+            const btn2d = document.getElementById('btn-2d');
+            const btnIso = document.getElementById('btn-iso');
+            const btn3d = document.getElementById('btn-3d');
+
+            // Reset buttons
+            [btn2d, btnIso, btn3d].forEach(btn => {
+                btn.className = "px-2.5 py-1 rounded text-slate-400 hover:text-white transition";
+            });
+
+            container.classList.remove('chip-view-2d', 'chip-view-iso', 'chip-view-3d');
+
+            if (viewType === '2d') {
+                container.classList.add('chip-view-2d');
+                btn2d.className = "px-2.5 py-1 rounded bg-cyan-500 text-slate-950 font-bold transition";
+            } else if (viewType === 'iso') {
+                container.classList.add('chip-view-iso');
+                btnIso.className = "px-2.5 py-1 rounded bg-yellow-500 text-slate-950 font-bold transition";
+            } else if (viewType === '3d') {
+                container.classList.add('chip-view-3d');
+                btn3d.className = "px-2.5 py-1 rounded bg-purple-500 text-white font-bold transition";
+            }
+        }
+
+        // --- 3. DYNAMIC CANVAS SPARKLING PARTICLES ---
+        function initSparkles() {
+            const canvas = document.getElementById('sparkleCanvas');
+            const ctx = canvas.getContext('2d');
+            const particles = [];
+            const particleCount = 25;
+
+            for (let i = 0; i < particleCount; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    radius: Math.random() * 1.5 + 0.5,
+                    color: Math.random() > 0.5 ? '#FFD700' : '#00F0FF',
+                    alpha: Math.random(),
+                    speed: Math.random() * 0.02 + 0.005
+                });
+            }
+
+            function animateSparkles() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                particles.forEach(p => {
+                    p.alpha += p.speed;
+                    if (p.alpha > 1 || p.alpha < 0) {
+                        p.speed = -p.speed;
+                    }
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = p.color;
+                    ctx.globalAlpha = Math.abs(p.alpha);
+                    ctx.fill();
+                });
+
+                requestAnimationFrame(animateSparkles);
+            }
+            animateSparkles();
+        }
+
+        // --- 4. PROCESS STEP SPA SWITCHER ---
+        const processData = {
+            design: {
+                title: "1. KRISHNA Chip Architecture & Node Scaling",
+                controls: `
+                    <div class="flex flex-col gap-3 text-xs">
+                        <div>
+                            <label class="text-slate-300 font-semibold mb-1 block">Select Process Node Structure:</label>
+                            <select id="nodeSelect" onchange="updateDesignData()" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-cyan-400 font-orbitron">
+                                <option value="7nm">7nm FinFET (KRISHNA Standard)</option>
+                                <option value="5nm">5nm EUV FinFET</option>
+                                <option value="3nm">3nm GAAFET (RibbonFET)</option>
+                                <option value="28nm">28nm Planar CMOS</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-slate-300 font-semibold mb-1 flex justify-between">
+                                <span>Target Clock Frequency:</span>
+                                <span id="freqVal" class="text-yellow-400 font-orbitron">3.20 GHz</span>
+                            </label>
+                            <input type="range" min="1000" max="4500" value="3200" step="100" class="w-full accent-yellow-400" oninput="document.getElementById('freqVal').innerText = (this.value/1000).toFixed(2)+' GHz'; updateDesignData();">
+                        </div>
+                    </div>
+                `
+            },
+            lithography: {
+                title: "2. Photolithography (EUV Rayleigh Model)",
+                controls: `
+                    <div class="flex flex-col gap-3 text-xs">
+                        <div>
+                            <label class="text-slate-300 font-semibold mb-1 block">Light Source Wavelength ($\lambda$):</label>
+                            <select id="lithoWave" onchange="updateLithoLog()" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-yellow-400 font-orbitron">
+                                <option value="13.5">13.5 nm Extreme UV (EUV)</option>
+                                <option value="193">193 nm Immersion ArF (DUV)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-slate-300 font-semibold mb-1 block">Numerical Aperture (NA): 1.33</label>
+                            <p class="text-slate-400 text-[11px]">Critical Dimension: $\text{CD} = k_1 \cdot \lambda / \text{NA}$</p>
+                        </div>
+                    </div>
+                `
+            },
+            deposition: {
+                title: "3. Thin Film Deposition (ALD / CVD)",
+                controls: `
+                    <div class="flex flex-col gap-3 text-xs">
+                        <div>
+                            <label class="text-slate-300 font-semibold mb-1 block">Deposition Technique:</label>
+                            <select onchange="updateLog('> ALD selected: High uniformity monolayer deposition active.')" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-cyan-400 font-orbitron">
+                                <option>Atomic Layer Deposition (ALD)</option>
+                                <option>Plasma Enhanced CVD (PECVD)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-slate-300 font-semibold mb-1 block">Target Film Thickness: 12 nm</label>
+                            <div class="w-full bg-slate-950 h-3 rounded-full overflow-hidden border border-slate-800">
+                                <div class="bg-cyan-400 h-full w-[65%]"></div>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            etching: {
+                title: "4. Plasma Reactive Ion Etching (RIE)",
+                controls: `
+                    <div class="flex flex-col gap-3 text-xs">
+                        <div>
+                            <label class="text-slate-300 font-semibold mb-1 block">Etch Chemistry Gas Ratio:</label>
+                            <select onchange="updateLog('> Anisotropy Factor adjusted. Vertical trench profile optimized.')" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-purple-400 font-orbitron">
+                                <option>CF4 / Ar / O2 (Anisotropic High aspect)</option>
+                                <option>Cl2 / HBr (Polysilicon Gate Etch)</option>
+                            </select>
+                        </div>
+                    </div>
+                `
+            },
+            doping: {
+                title: "5. Ion Implantation & Annealing",
+                controls: `
+                    <div class="flex flex-col gap-3 text-xs">
+                        <div>
+                            <label class="text-slate-300 font-semibold mb-1 block">Dopant Species:</label>
+                            <select onchange="updateLog('> Dopant species updated. Sheet resistance recalculating...')" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-emerald-400 font-orbitron">
+                                <option>Boron (P-Type)</option>
+                                <option>Phosphorus (N-Type)</option>
+                                <option>Arsenic (Heavy N+)</option>
+                            </select>
+                        </div>
+                    </div>
+                `
+            },
+            metrology: {
+                title: "6. Inline Inspection & CD-SEM Metrology",
+                controls: `
+                    <div class="flex flex-col gap-3 text-xs">
+                        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                            <span class="text-slate-400 block text-[10px]">CRITICAL DIMENSION UNIFORMITY</span>
+                            <span class="text-emerald-400 font-bold text-sm font-orbitron">3.12 nm ± 0.04 nm</span>
+                        </div>
+                        <p class="text-slate-400 text-[11px]">Optical Ellipsometry & SEM inspection verify zero pattern bridging.</p>
+                    </div>
+                `
+            }
+        };
+
+        function selectProcessStep(stepKey) {
+            // Highlight step buttons
+            document.querySelectorAll('.step-btn').forEach(btn => {
+                btn.className = "step-btn bg-slate-950 text-slate-300 p-2 rounded-lg border border-slate-800 hover:border-slate-600 transition text-left flex items-center gap-1.5";
+            });
+            const activeBtn = document.getElementById('step-' + stepKey);
+            if (activeBtn) {
+                activeBtn.className = "step-btn bg-cyan-500 text-slate-950 font-bold p-2 rounded-lg border border-cyan-400 transition text-left flex items-center gap-1.5";
+            }
+
+            // Populate Controls
+            const data = processData[stepKey];
+            const container = document.getElementById('processControlsCard');
+            container.innerHTML = `
+                <h3 class="font-orbitron text-sm text-yellow-400 font-bold border-b border-slate-800 pb-2">${data.title}</h3>
+                ${data.controls}
+            `;
+
+            updateLog(`> Initialized step: ${stepKey.toUpperCase()}`);
+        }
+
+        function updateDesignData() {
+            const node = document.getElementById('nodeSelect') ? document.getElementById('nodeSelect').value : '7nm';
+            document.getElementById('statNode').innerText = node;
+            updateLog(`> Process node scaled to ${node}. Gate density re-calculated.`);
+        }
+
+        function updateLithoLog() {
+            const wave = document.getElementById('lithoWave').value;
+            updateLog(`> Lithography wavelength set to ${wave}nm. Rayleigh resolution calculated.`);
+        }
+
+        function updateLog(msg) {
+            document.getElementById('processLogText').innerText = msg;
+        }
+
+        // --- 5. WAFER DIE MAP GENERATOR ---
+        function initWaferGrid() {
+            const container = document.getElementById('waferDieGrid');
+            if (!container) return;
+            container.innerHTML = '';
+            for (let i = 0; i < 36; i++) {
+                const isDefect = i === 7 || i === 19 || i === 28;
+                const die = document.createElement('div');
+                die.className = `w-5 h-5 rounded-sm border ${isDefect ? 'bg-rose-500/80 border-rose-400' : 'bg-emerald-500/80 border-emerald-400'}`;
+                container.appendChild(die);
+            }
+        }
+
+        // --- 6. MODAL TOGGLE UTILITY ---
+        function toggleModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.toggle('hidden');
+            }
+        }
+
+        // --- 7. CHATBOT ASSISTANT LOGIC ---
+        function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const messages = document.getElementById('chatMessages');
+            const text = input.value.trim();
+            if (!text) return;
+
+            // Render User Message
+            const userMsg = document.createElement('div');
+            userMsg.className = "bg-cyan-950/80 p-2.5 rounded-lg max-w-[85%] self-end border border-cyan-800 text-cyan-200";
+            userMsg.innerText = text;
+            messages.appendChild(userMsg);
+
+            input.value = '';
+            messages.scrollTop = messages.scrollHeight;
+
+            // Generate AI Response
+            setTimeout(() => {
+                const botMsg = document.createElement('div');
+                botMsg.className = "bg-slate-800/80 p-2.5 rounded-lg max-w-[85%] self-start border border-slate-700";
+                
+                const lower = text.toLowerCase();
+                if (lower.includes('euv') || lower.includes('wavelength')) {
+                    botMsg.innerText = "Extreme Ultraviolet (EUV) photolithography uses a 13.5nm wavelength with reflective mirrors in high vacuum to pattern <7nm semiconductor nodes like KRISHNA.";
+                } else if (lower.includes('yield') || lower.includes('wafer')) {
+                    botMsg.innerText = "Wafer yield relies on defect density (D) and chip area (A). Murphys model $Y = ((1 - e^{-DA})/DA)^2$ models passed dies on 300mm wafers.";
+                } else if (lower.includes('krishna') || lower.includes('chip')) {
+                    botMsg.innerText = "KRISHNA is GARRF's flagship high-tech virtual semiconductor core, featuring RISC-V 64-bit architecture with multi-stage fabrication simulation.";
+                } else {
+                    botMsg.innerText = "In semiconductor fab, precise control of lithography, plasma etching, and chemical vapor deposition guarantees peak yield for the KRISHNA processor core.";
+                }
+
+                messages.appendChild(botMsg);
+                messages.scrollTop = messages.scrollHeight;
+            }, 600);
+        }
+
+        // --- INIT ON LOAD ---
+        window.onload = function() {
+            initVisitorCounter();
+            initSparkles();
+            selectProcessStep('design');
+            initWaferGrid();
+        };
+    </script>
+</body>
+</html>
