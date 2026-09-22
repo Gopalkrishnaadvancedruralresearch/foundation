@@ -25,7 +25,7 @@
     .tele-bar { display: flex; gap: 14px; }
     .tele-item span { color: #94a3b8; }
 
-    /* 3D Stage Container (Leaves space for header and footer) */
+    /* 3D Stage Container */
     #stage-container {
       position: absolute; top: 50px; bottom: 28px; left: 0; right: 0;
       perspective: 1000px; overflow: hidden; background: #000;
@@ -57,13 +57,70 @@
     }
     .panel-header {
       padding: 10px 12px; background: #1e293b; border-radius: 7px 7px 0 0;
-      font-weight: bold; color: #ff9933; display: flex; justify-content: space-between;
+      font-weight: bold; color: #ff9933; display: flex; justify-content: space-between; align-items: center;
       border-bottom: 1px solid #334155;
     }
+    .panel-actions { display: flex; gap: 6px; }
+    .action-btn {
+      background: #334155; border: none; color: #f8fafc; width: 22px; height: 20px;
+      border-radius: 3px; cursor: pointer; font-size: 11px; display: flex;
+      align-items: center; justify-content: center; font-weight: bold;
+    }
+    .action-btn:hover { background: #475569; }
     .panel-body { padding: 12px; cursor: default; }
     .ctrl-group { margin-bottom: 8px; }
     .ctrl-group label { display: block; color: #94a3b8; margin-bottom: 3px; }
     input[type=range], select { width: 100%; background: #0f172a; color: white; border: 1px solid #475569; border-radius: 4px; padding: 5px; }
+
+    /* Floating Re-Open Buttons */
+    #reopenBtn {
+      position: absolute; top: 58px; left: 16px; z-index: 2999;
+      background: #0284c7; color: white; border: 1px solid #38bdf8;
+      border-radius: 6px; padding: 6px 12px; font-size: 12px; font-weight: bold;
+      cursor: pointer; display: none; box-shadow: 0 4px 14px rgba(0,0,0,0.6);
+    }
+    #reopenCamBtn {
+      position: absolute; bottom: 38px; right: 16px; z-index: 2799;
+      background: #0369a1; color: white; border: 1px solid #38bdf8;
+      border-radius: 6px; padding: 6px 12px; font-size: 12px; font-weight: bold;
+      cursor: pointer; display: none; box-shadow: 0 4px 14px rgba(0,0,0,0.6);
+    }
+
+    /* Aux Drone Camera Panel (Top/Front View) */
+    #droneCamPanel {
+      position: absolute; bottom: 38px; right: 16px; z-index: 2800;
+      width: 280px; height: 240px; background: rgba(15, 23, 42, 0.96);
+      border: 2px solid #38bdf8; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.85);
+      overflow: hidden; display: flex; flex-direction: column;
+    }
+    .cam-header {
+      background: #0369a1; color: white; font-size: 11px; font-weight: bold;
+      padding: 6px 8px; display: flex; justify-content: space-between; align-items: center;
+    }
+    .cam-controls-row {
+      display: flex; gap: 6px; align-items: center; padding: 4px 8px;
+      background: #0f172a; border-bottom: 1px solid #1e293b; font-size: 11px;
+    }
+    .cam-controls-row select {
+      flex: 1; padding: 3px; font-size: 10.5px; background: #1e293b; border: 1px solid #334155;
+    }
+    #camMapContainer { flex: 1; width: 100%; height: 100%; position: relative; overflow: hidden; }
+    #camMap { width: 100%; height: 100%; }
+
+    /* Front View Tilt Simulation */
+    .cam-front-tilt {
+      transform: rotateX(55deg) scale(1.4) translateY(-30px);
+      transform-origin: 50% 80%;
+      transition: transform 0.3s ease;
+    }
+
+    .cam-crosshair {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      width: 36px; height: 36px; border: 1.5px dashed #38bdf8; border-radius: 50%;
+      pointer-events: none; z-index: 1000;
+    }
+    .cam-crosshair::before { content: ""; position: absolute; top: 17px; left: -8px; right: -8px; height: 1px; background: #38bdf8; }
+    .cam-crosshair::after { content: ""; position: absolute; left: 17px; top: -8px; bottom: -8px; width: 1px; background: #38bdf8; }
 
     /* City Quick Jump Badges */
     .city-scroll { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 8px; }
@@ -106,7 +163,7 @@
       font-size: 10px; color: #38bdf8; font-family: monospace; font-weight: bold;
     }
 
-    /* Modals (3D Drone Preview & Feedback) */
+    /* Modals */
     .modal-overlay {
       position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px);
       z-index: 4000; display: none; align-items: center; justify-content: center; padding: 16px;
@@ -149,20 +206,44 @@
     </div>
   </div>
 
-  <!-- Permanent Copyright Footer -->
-  <footer>
-    <span>Developed &amp; Copyright &copy; <strong>Dr Annamdas Venu Gopal Madhav</strong> &amp; <strong>Annamdas Shantanu Vasudev Krishna</strong></span>
-  </footer>
+  <!-- Auxiliary Drone Camera Panel (Top / Front View) -->
+  <div id="droneCamPanel">
+    <div class="cam-header">
+      <span id="cam-header-title">📷 DRONE OPTICAL VIEW</span>
+      <div class="panel-actions">
+        <button class="action-btn" title="Minimize Cam" onclick="toggleMinimizeCam()">−</button>
+        <button class="action-btn" title="Close Cam (Flight continues)" onclick="closeCamPanel()">✕</button>
+      </div>
+    </div>
+    <div class="cam-controls-row" id="camControlRow">
+      <label style="color: #94a3b8; font-size: 10px;">Camera Mode:</label>
+      <select id="cam-perspective-select" onchange="changeCamPerspective()">
+        <option value="top">1. Top View (Nadir 90° - Ground Trees/Roofs)</option>
+        <option value="front">2. Front View (Drone Eyes - Towards Target)</option>
+      </select>
+    </div>
+    <div id="camMapContainer">
+      <div id="camMap"></div>
+      <div class="cam-crosshair"></div>
+    </div>
+  </div>
+
+  <!-- Floating Reopen Buttons -->
+  <button id="reopenBtn" onclick="reopenPanel()">⚙️ Mission Controls</button>
+  <button id="reopenCamBtn" onclick="reopenCamPanel()">📷 Drone Camera</button>
 
   <!-- Draggable Mission Control Panel -->
   <div id="controlPanel">
     <div class="panel-header" id="panelHeader">
       <span>🚁 GARRF Drone Mission Command</span>
-      <span style="font-size: 9px; color: #94a3b8;">(Click & Drag)</span>
+      <div class="panel-actions">
+        <button class="action-btn" title="Minimize Panel" onclick="toggleMinimizePanel()">−</button>
+        <button class="action-btn" title="Close Panel (Flight continues)" onclick="closePanel()">✕</button>
+      </div>
     </div>
-    <div class="panel-body">
+    <div class="panel-body" id="panelContent">
       
-      <!-- Crucial Safety Warning -->
+      <!-- Aviation Safety Warning -->
       <div class="banner banner-danger">
         ⚠️ STRICT AVIATION SAFETY NOTICE: DO NOT CARRY EXPLOSIVES OR HAZARDOUS MATERIALS.
       </div>
@@ -178,13 +259,13 @@
         <button class="city-btn" onclick="jumpTo(18.1067, 78.8521, 'Rural Farmland, Gajwel')">Gajwel Farms</button>
       </div>
 
-      <!-- Step-by-Step Instruction Prompt -->
+      <!-- Instruction Prompt -->
       <div id="infoBox" class="banner banner-info">
-        🔍 <strong>Student Guide:</strong> Zoom in/out (mouse wheel or pinch) to clearly view cities, village streets, and trees. Click your <strong>Takeoff Base (Point A)</strong> within India's official boundary.
+        🔍 <strong>Student Guide:</strong> Zoom in/out to view city labels, streets, and trees. Click your <strong>Takeoff Base (Point A)</strong> within India's official boundary.
       </div>
 
       <div id="alertBox" class="banner banner-alert">
-        ⚠️ <strong>Range Exceeded!</strong> Destination is farther than 75 km. The drone will discharge mid-air and crash. Pick a point inside the blue circle.
+        ⚠️ <strong>Range Exceeded!</strong> Destination is farther than 75 km. The drone will discharge mid-air. Pick a closer destination inside the blue circle.
       </div>
 
       <!-- Purpose of Travel Selection -->
@@ -243,6 +324,11 @@
     </div>
   </div>
 
+  <!-- Permanent Copyright Footer -->
+  <footer>
+    <span>Developed &amp; Copyright &copy; <strong>Dr Annamdas Venu Gopal Madhav</strong> &amp; <strong>Annamdas Shantanu Vasudev Krishna</strong></span>
+  </footer>
+
   <!-- Drone 3D Schematic Modal -->
   <div id="droneModal" class="modal-overlay">
     <div class="modal-card">
@@ -279,7 +365,7 @@
   <div id="feedbackModal" class="modal-overlay">
     <div class="modal-card">
       <h2 style="color: #34d399;">🎉 Flight Mission Accomplished!</h2>
-      <p>The <strong>GARRF-Multipurpose Drone</strong> has successfully completed its autonomous course and touched down safely at the target location.</p>
+      <p>The <strong>GARRF-Multipurpose Drone</strong> has completed its autonomous course and touched down safely at Point B.</p>
       
       <div style="background: #1e293b; padding: 12px; border-radius: 6px; margin-bottom: 14px;">
         <p style="margin: 0; font-weight: bold; color: #f8fafc;">Now that you have piloted this drone across Bharat:</p>
@@ -297,13 +383,17 @@
 
   <script>
     /* ============================================================
-       1. DRAGGABLE CONTROL DIALOGUE ENGINE
+       1. MISSION CONTROL PANEL (DRAG, MINIMIZE, CLOSE)
        ============================================================ */
     const panel = document.getElementById("controlPanel");
     const header = document.getElementById("panelHeader");
+    const panelContent = document.getElementById("panelContent");
+    const reopenBtn = document.getElementById("reopenBtn");
     let dragging = false, offset = [0, 0];
+    let isMinimized = false;
 
     header.onmousedown = (e) => {
+      if (e.target.tagName === 'BUTTON') return;
       dragging = true;
       offset = [panel.offsetLeft - e.clientX, panel.offsetTop - e.clientY];
     };
@@ -315,6 +405,7 @@
     };
 
     header.ontouchstart = (e) => {
+      if (e.target.tagName === 'BUTTON') return;
       dragging = true;
       const t = e.touches[0];
       offset = [panel.offsetLeft - t.clientX, panel.offsetTop - t.clientY];
@@ -327,20 +418,80 @@
       panel.style.top = (t.clientY + offset[1]) + "px";
     };
 
+    window.toggleMinimizePanel = function() {
+      isMinimized = !isMinimized;
+      panelContent.style.display = isMinimized ? "none" : "block";
+    };
+
+    window.closePanel = function() {
+      panel.style.display = "none";
+      reopenBtn.style.display = "block";
+    };
+
+    window.reopenPanel = function() {
+      panel.style.display = "block";
+      reopenBtn.style.display = "none";
+      panelContent.style.display = "block";
+      isMinimized = false;
+    };
+
     /* ============================================================
-       2. LEAFLET SATELLITE ENGINE & AUTHENTIC SURVEY OF INDIA BORDER
+       2. AUXILIARY DRONE CAMERA PANEL (CONTROLS & PERSPECTIVE)
+       ============================================================ */
+    const droneCamPanel = document.getElementById("droneCamPanel");
+    const reopenCamBtn = document.getElementById("reopenCamBtn");
+    const camControlRow = document.getElementById("camControlRow");
+    const camMapContainer = document.getElementById("camMapContainer");
+    const camMapEl = document.getElementById("camMap");
+    let isCamMinimized = false;
+    let currentCamMode = "top"; // 'top' or 'front'
+
+    window.toggleMinimizeCam = function() {
+      isCamMinimized = !isCamMinimized;
+      camControlRow.style.display = isCamMinimized ? "none" : "flex";
+      camMapContainer.style.display = isCamMinimized ? "none" : "block";
+      droneCamPanel.style.height = isCamMinimized ? "32px" : "240px";
+    };
+
+    window.closeCamPanel = function() {
+      droneCamPanel.style.display = "none";
+      reopenCamBtn.style.display = "block";
+    };
+
+    window.reopenCamPanel = function() {
+      droneCamPanel.style.display = "flex";
+      reopenCamBtn.style.display = "none";
+      camControlRow.style.display = "flex";
+      camMapContainer.style.display = "block";
+      droneCamPanel.style.height = "240px";
+      isCamMinimized = false;
+      setTimeout(() => camMap.invalidateSize(), 150);
+    };
+
+    window.changeCamPerspective = function() {
+      currentCamMode = document.getElementById("cam-perspective-select").value;
+      if (currentCamMode === "front") {
+        camMapEl.classList.add("cam-front-tilt");
+        document.getElementById("cam-header-title").innerText = "📷 FRONT VIEW (EYES TOWARDS TARGET)";
+      } else {
+        camMapEl.classList.remove("cam-front-tilt");
+        document.getElementById("cam-header-title").innerText = "📷 TOP VIEW (NADIR 90° ORTHO)";
+      }
+      updateAuxCamPosition();
+    };
+
+    /* ============================================================
+       3. MAPS INITIALIZATION & AUTHENTIC SoI BORDER
        ============================================================ */
     const mapEl = document.getElementById('map');
     const map = L.map('map', { zoomControl: false, maxZoom: 19 }).setView([22.5, 78.9], 5);
     L.control.zoom({ position: 'topright' }).addTo(map);
 
-    // High-Resolution World Satellite Photography
-    const satLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
       maxZoom: 19,
       attribution: 'Esri Satellite | GARRF Labs'
     }).addTo(map);
 
-    // City, Village & Road Labels Layer
     const labelsLayer = L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
       maxZoom: 19
     }).addTo(map);
@@ -350,27 +501,26 @@
       else map.removeLayer(labelsLayer);
     });
 
-    /* ============================================================
-       STRICT SURVEY OF INDIA (SoI) OFFICIAL BOUNDARY OVERLAY
-       ============================================================ */
-    const soiBorderUrl = 'https://raw.githubusercontent.com/datameet/maps/master/Country/india-composite.geojson';
+    // Secondary Drone Camera Map
+    const camMap = L.map('camMap', {
+      zoomControl: false, attributionControl: false,
+      dragging: false, scrollWheelZoom: false, doubleClickZoom: false
+    }).setView([22.5, 78.9], 18);
 
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 19
+    }).addTo(camMap);
+
+    // Strict Survey of India Boundary Overlay
+    const soiBorderUrl = 'https://raw.githubusercontent.com/datameet/maps/master/Country/india-composite.geojson';
     fetch(soiBorderUrl)
       .then(res => res.json())
       .then(geojsonData => {
         L.geoJSON(geojsonData, {
-          style: {
-            color: '#FF9933', // Official Saffron
-            weight: 3.5,
-            opacity: 1,
-            dashArray: '6, 6',
-            fillOpacity: 0.02,
-            fillColor: '#FF9933'
-          }
+          style: { color: '#FF9933', weight: 3.5, opacity: 1, dashArray: '6, 6', fillOpacity: 0.02, fillColor: '#FF9933' }
         }).addTo(map);
       })
       .catch(() => {
-        // High-Precision Fallback strictly aligning with Survey of India demarcation
         const officialSoIBorderCoords = [
           [37.05, 74.45], [37.35, 74.85], [37.10, 75.40], [36.30, 76.20], [35.80, 76.90],
           [35.50, 77.70], [35.40, 78.40], [35.30, 79.10], [34.70, 79.50], [33.80, 79.30],
@@ -388,14 +538,8 @@
           [25.80, 70.30], [27.20, 70.70], [28.40, 72.20], [29.90, 73.80], [31.50, 74.80],
           [32.40, 74.40], [33.20, 74.10], [34.50, 74.00], [35.50, 74.50], [37.05, 74.45]
         ];
-
         L.polygon(officialSoIBorderCoords, {
-          color: '#FF9933',
-          weight: 3.5,
-          opacity: 1,
-          dashArray: '6, 6',
-          fillOpacity: 0.02,
-          fillColor: '#FF9933'
+          color: '#FF9933', weight: 3.5, opacity: 1, dashArray: '6, 6', fillOpacity: 0.02, fillColor: '#FF9933'
         }).addTo(map);
       });
 
@@ -414,11 +558,12 @@
 
     window.jumpTo = function(lat, lng, name) {
       map.flyTo([lat, lng], 16, { duration: 1.5 });
+      camMap.setView([lat, lng], 18);
       document.getElementById('infoBox').innerHTML = `📍 Arrived at <strong>${name}</strong>. Zoom in/out to inspect terrain & structures, then click to set Takeoff Base (Point A).`;
     };
 
     /* ============================================================
-       3. PURPOSE OF TRAVEL & PAYLOAD SELECTION
+       4. PURPOSE OF TRAVEL & PAYLOAD SELECTION
        ============================================================ */
     const missionSelect = document.getElementById("mission-type");
     const payloadText = document.getElementById("active-payload");
@@ -441,11 +586,12 @@
     });
 
     /* ============================================================
-       4. 75 KM RANGE PERIPHERY & WAYPOINT SELECTION
+       5. 75 KM RANGE PERIPHERY & WAYPOINT SELECTION
        ============================================================ */
     let ptA = null, ptB = null;
     let markerA = null, markerB = null, droneMarker = null;
     let rangeCircle = null, flightLine = null;
+    let currentDroneLat = null, currentDroneLng = null;
     const MAX_RANGE_KM = 75.0;
 
     const infoBox = document.getElementById("infoBox");
@@ -463,9 +609,11 @@
     map.on('click', (e) => {
       if (!ptA) {
         ptA = e.latlng;
+        currentDroneLat = ptA.lat;
+        currentDroneLng = ptA.lng;
         markerA = L.circleMarker(ptA, { color: '#10b981', radius: 8, fillOpacity: 0.9 }).addTo(map).bindPopup("Point A: Takeoff Base").openPopup();
+        camMap.setView(ptA, 18);
 
-        // 75 km Range Periphery
         rangeCircle = L.circle(ptA, {
           radius: MAX_RANGE_KM * 1000,
           color: '#38bdf8', weight: 2, dashArray: '5, 5', fillOpacity: 0.12, fillColor: '#0ea5e9'
@@ -492,8 +640,22 @@
       }
     });
 
+    // Helper to update Auxiliary Camera Position based on mode
+    function updateAuxCamPosition() {
+      if (!currentDroneLat || !currentDroneLng) return;
+      if (currentCamMode === "top" || !ptB) {
+        // Look directly beneath the drone
+        camMap.setView([currentDroneLat, currentDroneLng], 18, { animate: false });
+      } else {
+        // Look ahead toward destination (Point B)
+        const lookAheadLat = currentDroneLat + (ptB.lat - currentDroneLat) * 0.25;
+        const lookAheadLng = currentDroneLng + (ptB.lng - currentDroneLng) * 0.25;
+        camMap.setView([lookAheadLat, lookAheadLng], 17, { animate: false });
+      }
+    }
+
     /* ============================================================
-       5. VERTICAL TAKEOFF, 3D CRUISE & DESCENT ENGINE
+       6. FLIGHT ENGINE & CONTINUOUS POSITION TRACKING
        ============================================================ */
     const sliderAlt = document.getElementById("slider-alt");
     const sliderTas = document.getElementById("slider-tas");
@@ -510,7 +672,6 @@
       const tas = parseFloat(sliderTas.value);
       document.getElementById('val-gs').innerText = `${tas} km/h`;
 
-      // Interactive Drone Marker (Clicking opens inspector)
       const droneIcon = L.divIcon({
         html: `<div title="Click to Inspect GARRF-Multipurpose Drone" onclick="openDroneInspector()" style="width:26px;height:26px;background:#0284c7;border:3px solid #FF9933;border-radius:50%;box-shadow:0 0 16px #38bdf8;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:bold;color:white;">UAV</div>`,
         iconSize: [26, 26], iconAnchor: [13, 13]
@@ -538,7 +699,7 @@
         }
       }, 50);
 
-      // PHASE 2: FORWARD CRUISE
+      // PHASE 2: CRUISE FLIGHT
       function startCruiseFlight() {
         document.getElementById('val-status').innerText = "CRUISING OVER TERRAIN";
         document.getElementById('val-status').style.color = "#FF9933";
@@ -552,10 +713,14 @@
           progress += stepKm;
           const ratio = Math.min(progress / totalDist, 1.0);
 
-          const curLat = ptA.lat + (ptB.lat - ptA.lat) * ratio;
-          const curLng = ptA.lng + (ptB.lng - ptA.lng) * ratio;
-          droneMarker.setLatLng([curLat, curLng]);
-          map.panTo([curLat, curLng], { animate: false });
+          currentDroneLat = ptA.lat + (ptB.lat - ptA.lat) * ratio;
+          currentDroneLng = ptA.lng + (ptB.lng - ptA.lng) * ratio;
+
+          droneMarker.setLatLng([currentDroneLat, currentDroneLng]);
+          map.panTo([currentDroneLat, currentDroneLng], { animate: false });
+
+          // Synchronize Aux Camera with selected perspective
+          updateAuxCamPosition();
 
           soc -= stepKm * drainPerKm;
           document.getElementById('val-soc').innerText = `${Math.max(0, soc).toFixed(1)} %`;
@@ -566,7 +731,7 @@
             document.getElementById('val-status').style.color = "#ef4444";
             document.getElementById('val-alt').innerText = "0 m";
             update3DTransform(0, 1.0, 0);
-            alert("CRITICAL WARNING: The drone depleted power mid-route! Emphasize to students why battery limits must be respected.");
+            alert("CRITICAL WARNING: The drone depleted power mid-route! Battery periphery must be respected.");
             return;
           }
 
@@ -595,6 +760,7 @@
             clearInterval(landingTimer);
             droneMarker.setLatLng(ptB);
             map.panTo(ptB);
+            camMap.setView(ptB, 18);
             document.getElementById('val-status').innerText = "TOUCHDOWN AT TARGET";
             document.getElementById('val-status').style.color = "#34d399";
             document.getElementById('val-alt').innerText = "0 m";
@@ -609,7 +775,7 @@
     });
 
     /* ============================================================
-       6. MODAL & INSPECTOR CONTROLS
+       7. MODAL & INSPECTOR CONTROLS
        ============================================================ */
     window.openDroneInspector = function() {
       document.getElementById('droneModal').style.display = 'flex';
