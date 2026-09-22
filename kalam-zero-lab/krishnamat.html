@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GARRF - Semiconductor Metrology & Characterization Virtual Lab</title>
+    <style>
+        :root {
+            --bg-dark: #050b14;
+            --panel-bg: #0c1829;
+            --accent-cyan: #00f0ff;
+            --accent-gold: #ffd700;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --border-glow: rgba(0, 240, 255, 0.3);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-dark); color: var(--text-main); display: flex; flex-direction: column; min-height: 100vh; }
+        
+        /* Top Navigation Header */
+        header { background: var(--panel-bg); border-bottom: 1px solid var(--border-glow); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; }
+        .brand { display: flex; align-items: center; gap: 15px; }
+        .brand img { height: 45px; border-radius: 4px; }
+        .brand-title h1 { font-size: 1.2rem; color: var(--accent-gold); letter-spacing: 1px; }
+        .brand-title p { font-size: 0.8rem; color: var(--text-muted); }
+        .nav-actions { display: flex; gap: 12px; align-items: center; }
+        .btn { background: rgba(0, 240, 255, 0.1); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); padding: 8px 16px; border-radius: 4px; cursor: pointer; transition: 0.3s; font-size: 0.85rem; }
+        .btn:hover { background: var(--accent-cyan); color: #000; box-shadow: 0 0 10px var(--accent-cyan); }
+        .btn-gold { border-color: var(--accent-gold); color: var(--accent-gold); }
+        .btn-gold:hover { background: var(--accent-gold); color: #000; box-shadow: 0 0 10px var(--accent-gold); }
+
+        /* Main Workspace Layout */
+        .main-container { display: grid; grid-template-columns: 320px 1fr 340px; gap: 15px; padding: 15px; flex: 1; }
+        .panel { background: var(--panel-bg); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 15px; display: flex; flex-direction: column; gap: 15px; }
+        
+        /* Interactive Instrument Visualizer */
+        .visualizer-container { position: relative; background: #02060e; border: 1px solid var(--border-glow); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; }
+        .mode-selector { display: flex; gap: 8px; margin-bottom: 15px; width: 100%; justify-content: center; }
+        .mode-tab { padding: 6px 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; color: var(--text-muted); cursor: pointer; font-size: 0.8rem; }
+        .mode-tab.active { background: var(--accent-cyan); color: #000; font-weight: bold; }
+
+        /* SVG Micro-Engraving Text Animation */
+        .engraved-text { font-size: 8px; fill: var(--accent-gold); letter-spacing: 2px; opacity: 0.6; text-transform: uppercase; }
+
+        /* Controls & Form Inputs */
+        .control-group { display: flex; flex-direction: column; gap: 6px; }
+        .control-group label { font-size: 0.8rem; color: var(--text-muted); display: flex; justify-content: space-between; }
+        input[type=range] { width: 100%; accent-color: var(--accent-cyan); }
+
+        /* Modals */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: var(--panel-bg); border: 1px solid var(--accent-gold); border-radius: 8px; width: 80%; max-width: 800px; max-height: 85vh; overflow-y: auto; padding: 25px; color: var(--text-main); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; margin-bottom: 15px; }
+        .close-btn { color: var(--accent-gold); font-size: 1.5rem; cursor: pointer; }
+
+        /* Footer */
+        footer { background: var(--panel-bg); border-top: 1px solid var(--border-glow); padding: 10px 24px; text-align: center; font-size: 0.75rem; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center; }
+        footer a { color: var(--accent-cyan); text-decoration: none; }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header>
+        <div class="brand">
+            <svg width="40" height="28" viewBox="0 0 60 40">
+                <rect width="60" height="13.3" fill="#FF9933"/>
+                <rect y="13.3" width="60" height="13.3" fill="#FFFFFF"/>
+                <rect y="26.6" width="60" height="13.3" fill="#128807"/>
+                <circle cx="30" cy="20" r="5" fill="none" stroke="#000080" stroke-width="1"/>
+            </svg>
+            <div class="brand-title">
+                <h1>GOPALKRISHNA ADVANCED RURAL RESEARCH FOUNDATION</h1>
+                <p>Semiconductor Metrology & Characterization Virtual Lab</p>
+            </div>
+        </div>
+        <div class="nav-actions">
+            <button class="btn btn-gold" onclick="openGuide()">📖 Help / Guide</button>
+            <span style="font-size:0.8rem; color:var(--text-muted)">Visitors: <strong id="visitorCount" style="color:var(--accent-gold)">1,284</strong></span>
+        </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <div class="main-container">
+        
+        <!-- Left Panel: Metrology Tool Selection & Parameters -->
+        <div class="panel">
+            <h3 style="color: var(--accent-gold); font-size: 0.95rem;">1. SELECT METROLOGY INSTRUMENT</h3>
+            <div class="mode-selector">
+                <button class="mode-tab active" onclick="setMode('sem')">CD-SEM</button>
+                <button class="mode-tab" onclick="setMode('afm')">AFM</button>
+                <button class="mode-tab" onclick="setMode('ellipso')">Ellipsometer</button>
+                <button class="mode-tab" onclick="setMode('fourprobe')">4-Point Probe</button>
+            </div>
+
+            <h3 style="color: var(--accent-cyan); font-size: 0.95rem; margin-top: 10px;">2. EXPERIMENTAL CONTROLS</h3>
+            
+            <div class="control-group">
+                <label>Beam Voltage / Energy: <span id="val1">5.0 kV</span></label>
+                <input type="range" id="param1" min="1" max="15" value="5" oninput="updateCalculations()">
+            </div>
+
+            <div class="control-group">
+                <label>Probe Current / Force: <span id="val2">20 pA</span></label>
+                <input type="range" id="param2" min="5" max="100" value="20" oninput="updateCalculations()">
+            </div>
+
+            <div class="control-group">
+                <label>Scan Angle / Resolution: <span id="val3">45°</span></label>
+                <input type="range" id="param3" min="10" max="80" value="45" oninput="updateCalculations()">
+            </div>
+
+            <div style="margin-top: 15px; padding: 10px; background: rgba(0,240,255,0.05); border-left: 3px solid var(--accent-cyan); font-size: 0.8rem;">
+                <strong>Live Metric Readout:</strong>
+                <div id="metricDisplay" style="margin-top: 5px; color: var(--accent-gold);">CD Linewidth: 3.42 nm</div>
+            </div>
+        </div>
+
+        <!-- Center Panel: Interactive Metrology Canvas -->
+        <div class="panel" style="padding: 10px;">
+            <div class="visualizer-container" id="canvasContainer">
+                <svg id="metrologySvg" width="100%" height="380" viewBox="0 0 500 380">
+                    <defs>
+                        <path id="textCircle" d="M 250, 250 m -120, 0 a 120,120 0 1,1 240,0 a 120,120 0 1,1 -240,0" />
+                    </defs>
+                    
+                    <!-- Background Grid -->
+                    <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                        <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(0, 240, 255, 0.05)" stroke-width="1"/>
+                    </pattern>
+                    <rect width="100%" height="100%" fill="url(#grid)" />
+
+                    <!-- Micro-Engraved Circular Branding -->
+                    <use href="#textCircle" fill="none"/>
+                    <text class="engraved-text">
+                        <textPath href="#textCircle">Gopalkrishna Advanced Rural Research Foundation • Micro-Metrology •</textPath>
+                    </text>
+
+                    <!-- Dynamic Instrument Graphics (SEM Beam/AFM/Probe) -->
+                    <g id="instrumentGraphics">
+                        <circle cx="250" cy="190" r="80" fill="none" stroke="var(--accent-cyan)" stroke-width="2" stroke-dasharray="4"/>
+                        <line x1="250" y1="20" x2="250" y2="180" stroke="var(--accent-gold)" stroke-width="3" id="beamLine"/>
+                        <rect x="210" y="180" width="80" height="20" fill="#00f0ff" opacity="0.3"/>
+                    </g>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Right Panel: Virtual Twins Telemetry -->
+        <div class="panel">
+            <h3 style="color: var(--accent-gold); font-size: 0.95rem;">VIRTUAL TWINS TELEMETRY</h3>
+            
+            <div style="font-size: 0.8rem; display: flex; flex-direction: column; gap: 8px;">
+                <div style="background: rgba(255,255,255,0.03); padding: 8px; border-radius: 4px;">
+                    <strong style="color: var(--accent-cyan);">Device Twin:</strong> Oxide Film = 1.85 nm, Surface Roughness ($R_a$) = 0.12 nm
+                </div>
+                <div style="background: rgba(255,255,255,0.03); padding: 8px; border-radius: 4px;">
+                    <strong style="color: var(--accent-cyan);">Wafer Defect Twin:</strong> Spatial Defect Density = 0.04 defects/cm²
+                </div>
+                <div style="background: rgba(255,255,255,0.03); padding: 8px; border-radius: 4px;">
+                    <strong style="color: var(--accent-cyan);">Equipment Optics Twin:</strong> Filament Current = 1.4A, Vacuum = 10⁻⁶ Torr
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Integrated Guide & Learning Manual Modal -->
+    <div class="modal" id="guideModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 style="color: var(--accent-gold);">📖 Metrology & Characterization Lab Guide</h2>
+                <span class="close-btn" onclick="closeGuide()">&times;</span>
+            </div>
+            
+            <h3 style="color: var(--accent-cyan); margin-bottom: 8px;">Student Learning Outcomes</h3>
+            <ul style="margin-left: 20px; font-size: 0.88rem; line-height: 1.6; margin-bottom: 15px;">
+                <li>Understand the physical principles behind <strong>CD-SEM</strong>, <strong>Atomic Force Microscopy (AFM)</strong>, <strong>Ellipsometry</strong>, and <strong>Four-Point Probing</strong>.</li>
+                <li>Analyze the mathematical relationship between probe excitation parameters and semiconductor measurement resolution.</li>
+                <li>Evaluate how non-destructive metrology directly impacts statistical process control (SPC) and wafer yields in modern fabs.</li>
+            </ul>
+
+            <h3 style="color: var(--accent-cyan); margin-bottom: 8px;">Core Theoretical Formulas</h3>
+            <div style="background: rgba(0,240,255,0.05); padding: 12px; border-radius: 4px; font-family: monospace; font-size: 0.85rem; margin-bottom: 15px;">
+                1. SEM De Broglie Wavelength: λ = h / √(2 m e V)<br>
+                2. AFM Cantilever Force: F = -k · Δz<br>
+                3. Ellipsometry Ratio: ρ = tan(Ψ) · e^(iΔ)<br>
+                4. Four-Point Sheet Resistance: R_s = (π / ln 2) · (V / I) ≈ 4.532 · (V / I)
+            </div>
+
+            <h3 style="color: var(--accent-cyan); margin-bottom: 8px;">Step-by-Step Instructions</h3>
+            <ol style="margin-left: 20px; font-size: 0.88rem; line-height: 1.6;">
+                <li>Select an instrument mode from the left panel (CD-SEM, AFM, Ellipsometer, 4-Point Probe).</li>
+                <li>Adjust beam voltage, probe force, and scan angles using the sliders.</li>
+                <li>Observe the dynamic SVG visualization and live metric readouts update in real time.</li>
+                <li>Cross-reference calculated values against the Virtual Twin telemetry outputs.</li>
+            </ol>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div>
+            Established by <a href="https://garrf.in/" target="_blank">Gopalkrishna Advanced Rural Research Foundation (GARRF)</a>
+        </div>
+        <div>
+            Credits: Dr. Annamdas Venu Gopal Madhav & Annamdas Shantanu Vasudev Krishna | <a href="https://garrf.in/kalam-zero-lab/" target="_blank">Kalam Zero Lab</a>
+        </div>
+    </footer>
+
+    <!-- Interactive JavaScript -->
+    <script>
+        // LocalStorage Visitor Counter
+        let count = localStorage.getItem('garrf_metrology_visitors') || 1284;
+        count = parseInt(count) + 1;
+        localStorage.setItem('garrf_metrology_visitors', count);
+        document.getElementById('visitorCount').innerText = count.toLocaleString();
+
+        let currentMode = 'sem';
+
+        function setMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.mode-tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+            updateCalculations();
+        }
+
+        function updateCalculations() {
+            let p1 = parseFloat(document.getElementById('param1').value);
+            let p2 = parseFloat(document.getElementById('param2').value);
+            let p3 = parseFloat(document.getElementById('param3').value);
+
+            let display = document.getElementById('metricDisplay');
+            let beamLine = document.getElementById('beamLine');
+
+            if (currentMode === 'sem') {
+                document.getElementById('val1').innerText = p1 + " kV";
+                document.getElementById('val2').innerText = p2 + " pA";
+                document.getElementById('val3').innerText = p3 + "°";
+                let cd = (3.42 / (p1 * 0.5)).toFixed(2);
+                display.innerText = "CD Linewidth: " + cd + " nm";
+                beamLine.setAttribute('stroke', '#ffd700');
+            } else if (currentMode === 'afm') {
+                document.getElementById('val1').innerText = p1 + " nN";
+                document.getElementById('val2').innerText = p2 + " kHz";
+                document.getElementById('val3').innerText = p3 + " nm";
+                let roughness = (0.12 * (p1 / 5)).toFixed(3);
+                display.innerText = "RMS Surface Roughness (Ra): " + roughness + " nm";
+                beamLine.setAttribute('stroke', '#00f0ff');
+            } else if (currentMode === 'ellipso') {
+                document.getElementById('val1').innerText = p1 + " mW";
+                document.getElementById('val2').innerText = p2 + " nm";
+                document.getElementById('val3').innerText = p3 + "°";
+                let thickness = (12.4 * Math.sin(p3 * Math.PI / 180)).toFixed(2);
+                display.innerText = "Oxide Film Thickness: " + thickness + " nm";
+                beamLine.setAttribute('stroke', '#ff00ff');
+            } else if (currentMode === 'fourprobe') {
+                document.getElementById('val1').innerText = p1 + " mA";
+                document.getElementById('val2').innerText = p2 + " mV";
+                document.getElementById('val3').innerText = p3 + " µm";
+                let sheetRes = (4.532 * (p2 / p1)).toFixed(2);
+                display.innerText = "Sheet Resistance (Rs): " + sheetRes + " Ω/sq";
+                beamLine.setAttribute('stroke', '#00ff66');
+            }
+        }
+
+        function openGuide() {
+            document.getElementById('guideModal').style.display = 'flex';
+        }
+
+        function closeGuide() {
+            document.getElementById('guideModal').style.display = 'none';
+        }
+
+        // Initialize default view
+        updateCalculations();
+    </script>
+</body>
+</html>
