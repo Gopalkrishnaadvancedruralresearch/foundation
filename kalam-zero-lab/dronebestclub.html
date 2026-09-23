@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D Drone Hangar & Flight Lab — GARRF</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <style>
+    body { margin: 0; overflow: hidden; background-color: #030712; user-select: none; }
+    #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+    }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.3); border-radius: 3px; }
+  </style>
+</head>
+<body class="text-slate-100 font-sans">
+
+  <!-- 3D Canvas -->
+  <div id="canvas-container"></div>
+
+  <!-- MODAL: STUDENT ONBOARDING DIALOGUE -->
+  <div id="student-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md px-4">
+    <div class="glass-panel border border-sky-500/40 rounded-2xl max-w-md w-full p-6 shadow-2xl text-center relative">
+      <div class="w-14 h-14 rounded-2xl bg-sky-500/10 border border-sky-400/30 text-sky-400 flex items-center justify-center text-2xl mx-auto mb-4">
+        <i class="fa-solid fa-id-card-clip"></i>
+      </div>
+      <h2 class="text-xl font-bold text-white mb-1">Join GARRF Flying DRONE Club</h2>
+      <p class="text-xs text-slate-300 mb-5 leading-relaxed">
+        Stand with the founders, customize your virtual avatar, and test 6 autonomous drone configurations across Bharat!
+      </p>
+      
+      <form onsubmit="handleStudentJoin(event)" class="flex flex-col gap-3">
+        <div class="text-left">
+          <label class="text-[11px] font-bold text-sky-400 uppercase tracking-wider block mb-1">Your First Name</label>
+          <input 
+            type="text" 
+            id="student-name-input" 
+            required
+            maxlength="16"
+            placeholder="e.g. Rahul / Ananya" 
+            class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-sky-400 focus:outline-none placeholder-slate-500"
+          />
+        </div>
+        <button 
+          type="submit" 
+          class="w-full py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-bold text-sm shadow-lg shadow-sky-500/25 transition-all mt-2"
+        >
+          Join Flight Deck & Stand with Founders &#8594;
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- TOP HEADER -->
+  <header class="absolute top-0 left-0 right-0 z-20 glass-panel border-b border-slate-800/80 px-4 sm:px-6 py-2.5 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <img 
+        src="logo.jpeg" 
+        alt="GARRF Logo" 
+        class="w-10 h-10 rounded-lg object-cover border border-slate-700 shadow-md"
+        onerror="this.onerror=null; this.src='https://dummyimage.com/80x80/0284c7/ffffff.png&text=GARRF';"
+      />
+      <div>
+        <h1 class="font-bold text-xs sm:text-sm md:text-base text-white tracking-wide leading-tight">
+          Gopalkrishna Advanced Rural Research Foundation
+        </h1>
+        <p class="text-[11px] text-sky-400 font-medium">
+          (Dr. APJ Abdul Kalam Research Zero Funding Initiative)
+        </p>
+      </div>
+    </div>
+
+    <!-- Right Controls, Member Tag & Flag -->
+    <div class="flex items-center gap-3">
+      <div id="member-badge" class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-[11px] font-semibold">
+        <i class="fa-solid fa-circle-check text-[10px]"></i>
+        <span id="member-badge-name">Cadet Member</span>
+      </div>
+
+      <button 
+        id="toggle-founders-btn" 
+        onclick="toggleFoundersMode()"
+        class="px-3 py-1.5 rounded-lg bg-sky-600/30 hover:bg-sky-500/40 border border-sky-400/40 text-sky-200 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm"
+        title="Toggle Team view & scale comparison"
+      >
+        <i class="fa-solid fa-user-group text-sky-300"></i>
+        <span>Founders & Cadet View (+)</span>
+      </button>
+
+      <div class="flex flex-col w-8 h-5 rounded overflow-hidden shadow border border-white/20" title="Bharat Flight Autonomy">
+        <div class="bg-[#FF9933] h-1/3"></div>
+        <div class="bg-white h-1/3 flex items-center justify-center relative">
+          <div class="w-1.5 h-1.5 rounded-full border border-[#000080]"></div>
+        </div>
+        <div class="bg-[#138808] h-1/3"></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- LEFT CONTROL HUD -->
+  <div class="absolute top-20 left-4 z-20 w-80 max-w-[calc(100vw-2rem)] glass-panel rounded-xl p-4 shadow-2xl flex flex-col gap-3 custom-scrollbar max-h-[calc(100vh-6.5rem)] overflow-y-auto">
+    
+    <div>
+      <label class="text-[11px] font-bold text-sky-400 tracking-wider uppercase block mb-1">Select Drone Variant</label>
+      <select 
+        id="drone-variant-select" 
+        onchange="onSelectDroneVariant(this.value)"
+        class="w-full bg-slate-900 border border-slate-700 text-white text-xs rounded-lg px-2.5 py-2 focus:ring-1 focus:ring-sky-400 focus:outline-none"
+      >
+        <option value="medical">1. Medical Emergency (Cold-Chain Pod)</option>
+        <option value="police">2. Police Vigilance (Thermal FLIR)</option>
+        <option value="agri">3. Precision Agri (NDVI Multispectral)</option>
+        <option value="heritage">4. Cultural Heritage (3D LiDAR)</option>
+        <option value="airpost">5. Air-Post Logistics (Courier Bay)</option>
+        <option value="relay">6. High-Altitude RF Relay (Dipoles)</option>
+      </select>
+    </div>
+
+    <!-- Real-time Variant Description & Badge -->
+    <div id="variant-card" class="bg-slate-900/60 p-3 rounded-lg border border-slate-800 text-xs">
+      <div class="flex items-center justify-between mb-1.5">
+        <span id="variant-badge" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-red-950 text-red-400 border border-red-800/60">
+          Medical Variant
+        </span>
+        <span id="variant-symbol" class="text-base font-extrabold text-red-400">✚</span>
+      </div>
+      <p id="variant-desc" class="text-slate-300 text-[11px] leading-relaxed">
+        Active 2°C–8°C thermoelectric cold pod with red cross emblem for rapid blood units and antivenom transit.
+      </p>
+    </div>
+
+    <!-- Flight Dynamics Controls -->
+    <div class="border-t border-slate-800/80 pt-2.5 flex flex-col gap-2">
+      <label class="text-[11px] font-bold text-slate-300 uppercase">Drone Hover & Flight</label>
+      <div class="grid grid-cols-2 gap-2">
+        <button 
+          id="btn-hover" 
+          onclick="toggleHover()" 
+          class="py-1.5 px-3 rounded-lg bg-emerald-600/80 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+        >
+          <i class="fa-solid fa-angles-up"></i> <span id="hover-text">Hover On</span>
+        </button>
+        <button 
+          id="btn-orbit" 
+          onclick="toggleOrbit()" 
+          class="py-1.5 px-3 rounded-lg bg-sky-600/80 hover:bg-sky-500 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+        >
+          <i class="fa-solid fa-arrows-spin"></i> <span id="orbit-text">Auto Orbit</span>
+        </button>
+      </div>
+
+      <!-- Exploded View Slider -->
+      <div class="mt-1">
+        <div class="flex justify-between text-[11px] text-slate-400 mb-1">
+          <span>Exploded View</span>
+          <span id="explode-val">0%</span>
+        </div>
+        <input 
+          type="range" 
+          id="explode-slider" 
+          min="0" 
+          max="100" 
+          value="0" 
+          oninput="onExplodeChange(this.value)" 
+          class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-400"
+        />
+      </div>
+    </div>
+
+    <!-- Multi-Lab Navigation -->
+    <div class="border-t border-slate-800/80 pt-2.5 flex flex-col gap-1.5 text-xs">
+      <span class="text-[10px] text-slate-400 font-bold uppercase">Multi-Lab Navigation</span>
+      <div class="grid grid-cols-3 gap-1.5 text-center text-[10px]">
+        <a href="droneassembly.html" class="p-1.5 bg-slate-800/70 hover:bg-slate-700/70 rounded border border-slate-700 text-sky-300">
+          Assemble
+        </a>
+        <a href="dronetravel.html" class="p-1.5 bg-slate-800/70 hover:bg-slate-700/70 rounded border border-slate-700 text-emerald-300">
+          Travel
+        </a>
+        <a href="dronehelp.html" class="p-1.5 bg-slate-800/70 hover:bg-slate-700/70 rounded border border-slate-700 text-amber-300">
+          Manual
+        </a>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT TELEMETRY OVERLAY -->
+  <div class="absolute top-20 right-4 z-20 glass-panel rounded-xl p-3.5 shadow-xl text-xs flex flex-col gap-2 w-56 pointer-events-none hidden sm:flex">
+    <div class="text-[11px] font-bold text-sky-400 uppercase tracking-wider flex items-center justify-between">
+      <span>Flight Deck</span>
+      <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+    </div>
+    <div class="flex justify-between text-slate-300 text-[11px]">
+      <span>Drone Altitude:</span>
+      <strong id="telemetry-alt" class="text-white">0.0 m (GND)</strong>
+    </div>
+    <div class="flex justify-between text-slate-300 text-[11px]">
+      <span>Rotor Speed:</span>
+      <strong id="telemetry-rpm" class="text-white">0 RPM</strong>
+    </div>
+    <div class="flex justify-between text-slate-300 text-[11px]">
+      <span>Deck Crew:</span>
+      <strong id="telemetry-founders" class="text-emerald-400">Dr. Venu, Shantanu & You</strong>
+    </div>
+    <div class="flex justify-between text-slate-300 text-[11px]">
+      <span>Scale Ref:</span>
+      <span class="text-sky-300">Proportional 1:1 Scale</span>
+    </div>
+  </div>
+
+  <!-- BOTTOM ATTRIBUTION FOOTER -->
+  <footer class="absolute bottom-2 left-0 right-0 z-20 text-center pointer-events-none text-xs text-slate-400 px-4">
+    <div class="inline-block glass-panel px-4 py-1.5 rounded-full text-[11px] border border-slate-700/60 shadow-lg">
+      Developed by <strong class="text-white">Dr. Annamdas Venu Gopal Madhav</strong> & <strong class="text-white">Annamdas Shantanu Vasudev Krishna</strong> • GARRF
+    </div>
+  </footer>
+
+  <script>
+    // --- 1. THREE.JS SCENE SETUP ---
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x050b14);
+    scene.fog = new THREE.FogExp2(0x050b14, 0.04);
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(0, 1.8, 4.5);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    container.appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.maxPolarAngle = Math.PI / 2 - 0.03;
+    controls.minDistance = 1.2;
+    controls.maxDistance = 9.0;
+    controls.target.set(0, 0.9, 0);
+
+    // --- 2. LIGHTING & ENVIRONMENT ---
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+    scene.add(ambientLight);
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    dirLight.position.set(5, 10, 5);
+    dirLight.castShadow = true;
+    scene.add(dirLight);
+
+    const cyanPointLight = new THREE.PointLight(0x38bdf8, 1.5, 8);
+    cyanPointLight.position.set(0, 2, 0);
+    scene.add(cyanPointLight);
+
+    // Floor Grid & Launch Pad
+    const gridHelper = new THREE.GridHelper(30, 30, 0x0284c7, 0x1e293b);
+    scene.add(gridHelper);
+
+    const padGeo = new THREE.CylinderGeometry(1.8, 1.8, 0.02, 48);
+    const padMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.8, metalness: 0.2 });
+    const launchPad = new THREE.Mesh(padGeo, padMat);
+    launchPad.receiveShadow = true;
+    scene.add(launchPad);
+
+    const ringGeo = new THREE.RingGeometry(1.55, 1.7, 48);
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide });
+    const padRing = new THREE.Mesh(ringGeo, ringMat);
+    padRing.rotation.x = -Math.PI / 2;
+    padRing.position.y = 0.012;
+    scene.add(padRing);
+
+    // --- 3. HUMAN FIGURES (FOUNDERS & STUDENT CADET) ---
+    const crewGroup = new THREE.Group();
+
+    function createHumanFigure(name, height, coatColor, skinTone, hairColor, xOffset, zOffset, isStudent = false) {
+      const person = new THREE.Group();
+      person.position.set(xOffset, 0, zOffset);
+
+      const headRadius = height * 0.065;
+      const legHeight = height * 0.46;
+      const torsoHeight = height * 0.34;
+      const torsoWidth = height * 0.19;
+
+      // Shoes
+      const shoeMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.8 });
+      [-torsoWidth * 0.35, torsoWidth * 0.35].forEach(lx => {
+        const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.06, 0.2), shoeMat);
+        shoe.position.set(lx, 0.03, 0.02);
+        shoe.castShadow = true;
+        person.add(shoe);
+      });
+
+      // Trousers
+      const pantsMat = new THREE.MeshStandardMaterial({ color: isStudent ? 0x334155 : 0x1e293b, roughness: 0.7 });
+      [-torsoWidth * 0.35, torsoWidth * 0.35].forEach(lx => {
+        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.058, legHeight), pantsMat);
+        leg.position.set(lx, legHeight / 2 + 0.05, 0);
+        leg.castShadow = true;
+        person.add(leg);
+      });
+
+      // Torso
+      const coatMat = new THREE.MeshStandardMaterial({ color: coatColor, roughness: 0.6 });
+      const torso = new THREE.Mesh(new THREE.BoxGeometry(torsoWidth, torsoHeight, 0.16), coatMat);
+      torso.position.set(0, legHeight + torsoHeight / 2 + 0.05, 0);
+      torso.castShadow = true;
+      person.add(torso);
+
+      // Shirt / Badge Area
+      const shirtMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+      const collar = new THREE.Mesh(new THREE.BoxGeometry(torsoWidth * 0.32, torsoHeight * 0.3, 0.02), shirtMat);
+      collar.position.set(0, legHeight + torsoHeight * 0.75 + 0.05, 0.08);
+      person.add(collar);
+
+      // Arms
+      [-torsoWidth * 0.6, torsoWidth * 0.6].forEach(ax => {
+        const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, torsoHeight * 0.9), coatMat);
+        arm.position.set(ax, legHeight + torsoHeight * 0.5 + 0.05, 0);
+        arm.castShadow = true;
+        person.add(arm);
+
+        const hand = new THREE.Mesh(new THREE.SphereGeometry(0.035, 12, 12), new THREE.MeshStandardMaterial({ color: skinTone }));
+        hand.position.set(ax, legHeight + 0.06, 0);
+        person.add(hand);
+      });
+
+      // Head & Hair
+      const head = new THREE.Mesh(new THREE.SphereGeometry(headRadius, 16, 16), new THREE.MeshStandardMaterial({ color: skinTone, roughness: 0.8 }));
+      head.position.set(0, height - headRadius, 0);
+      head.castShadow = true;
+      person.add(head);
+
+      const hair = new THREE.Mesh(new THREE.SphereGeometry(headRadius * 1.02, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2.2), new THREE.MeshStandardMaterial({ color: hairColor, roughness: 0.9 }));
+      hair.position.set(0, height - headRadius + 0.015, 0);
+      person.add(hair);
+
+      // Floating 3D Badge
+      const canvas = document.createElement('canvas');
+      canvas.width = 280;
+      canvas.height = 70;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = isStudent ? "rgba(6, 78, 59, 0.9)" : "rgba(15, 23, 42, 0.88)";
+      ctx.roundRect(4, 4, 272, 62, 14);
+      ctx.fill();
+      ctx.strokeStyle = isStudent ? "#34d399" : "#38bdf8";
+      ctx.lineWidth = 3;
+      ctx.roundRect(4, 4, 272, 62, 14);
+      ctx.stroke();
+      ctx.font = "bold 24px sans-serif";
+      ctx.fillStyle = "#ffffff";
+      ctx.textAlign = "center";
+      ctx.fillText(name, 140, 42);
+
+      const labelTex = new THREE.CanvasTexture(canvas);
+      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTex, transparent: true }));
+      sprite.scale.set(0.68, 0.17, 1);
+      sprite.position.set(0, height + 0.18, 0);
+      person.add(sprite);
+
+      return person;
+    }
+
+    // Founders (Permanent)
+    const drVenuGopal = createHumanFigure("Dr Venu Gopal", 1.70, 0x1e3a8a, 0xc68642, 0x1c1917, -0.75, -0.65);
+    const shantanu = createHumanFigure("Shantanu", 1.56, 0x0f766e, 0xd29b68, 0x09090b, 0.75, -0.65);
+    crewGroup.add(drVenuGopal);
+    crewGroup.add(shantanu);
+
+    let studentMesh = null;
+    scene.add(crewGroup);
+
+    // Modal Handler: Add Student
+    function handleStudentJoin(e) {
+      e.preventDefault();
+      const input = document.getElementById('student-name-input');
+      const studentName = input.value.trim();
+      if (!studentName) return;
+
+      // Remove previous student mesh if exists
+      if (studentMesh) {
+        crewGroup.remove(studentMesh);
+      }
+
+      // Create Student Avatar standing centrally between or beside the founders at (0, 0, -0.85)
+      studentMesh = createHumanFigure(studentName + " (Cadet)", 1.62, 0x7c3aed, 0xdfa373, 0x18181b, 0, -0.85, true);
+      crewGroup.add(studentMesh);
+
+      // Hide Modal
+      document.getElementById('student-modal').style.display = 'none';
+
+      // Update Header & Telemetry
+      const badge = document.getElementById('member-badge');
+      badge.classList.remove('hidden');
+      document.getElementById('member-badge-name').textContent = "Cadet: " + studentName;
+      document.getElementById('telemetry-founders').textContent = "Dr. Venu, Shantanu & " + studentName;
+
+      // Smooth camera reframing
+      camera.position.set(0, 1.8, 4.5);
+      controls.target.set(0, 0.9, 0);
+    }
+
+    // --- 4. SCALED GARRF DRONE ---
+    const droneRoot = new THREE.Group();
+    droneRoot.position.set(0, 0.18, 0.25);
+    scene.add(droneRoot);
+
+    const chassisGroup = new THREE.Group();
+    const motorsGroup = new THREE.Group();
+    const batteryGroup = new THREE.Group();
+    const autopilotGroup = new THREE.Group();
+    const skidsGroup = new THREE.Group();
+    const payloadGroup = new THREE.Group();
+    const rotorsArray = [];
+
+    droneRoot.add(chassisGroup);
+    droneRoot.add(motorsGroup);
+    droneRoot.add(batteryGroup);
+    droneRoot.add(autopilotGroup);
+    droneRoot.add(skidsGroup);
+    droneRoot.add(payloadGroup);
+
+    let currentAccentColor = 0xef4444;
+    let bodyMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4, metalness: 0.6 });
+    let accentMat = new THREE.MeshStandardMaterial({ color: currentAccentColor, roughness: 0.3, metalness: 0.7 });
+    const carbonMat = new THREE.MeshStandardMaterial({ color: 0x090d16, roughness: 0.7, metalness: 0.3 });
+    const rotorMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.8 });
+
+    // Chassis & 6 Arms
+    const centerPlate = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.025, 6), bodyMat);
+    centerPlate.castShadow = true;
+    chassisGroup.add(centerPlate);
+
+    const armRadius = 0.32;
+    for (let i = 0; i < 6; i++) {
+      const angle = (i * Math.PI) / 3;
+      const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, armRadius), carbonMat);
+      arm.rotation.z = Math.PI / 2;
+      arm.rotation.y = angle;
+      arm.position.set(Math.cos(angle) * (armRadius / 2), 0, Math.sin(angle) * (armRadius / 2));
+      chassisGroup.add(arm);
+
+      const motor = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.024, 0.035, 16), accentMat);
+      motor.position.set(Math.cos(angle) * armRadius, 0.02, Math.sin(angle) * armRadius);
+      motorsGroup.add(motor);
+
+      const propGroup = new THREE.Group();
+      propGroup.position.set(Math.cos(angle) * armRadius, 0.042, Math.sin(angle) * armRadius);
+      const blade = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.003, 0.02), rotorMat);
+      propGroup.add(blade);
+      motorsGroup.add(propGroup);
+      rotorsArray.push(propGroup);
+    }
+
+    // Landing Skids
+    const skid1 = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.32), carbonMat);
+    skid1.rotation.x = Math.PI / 2;
+    skid1.position.set(-0.14, -0.12, 0);
+    skidsGroup.add(skid1);
+    const skid2 = skid1.clone();
+    skid2.position.x = 0.14;
+    skidsGroup.add(skid2);
+
+    [[-0.14, 0.08], [-0.14, -0.08], [0.14, 0.08], [0.14, -0.08]].forEach(pos => {
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.13), carbonMat);
+      leg.position.set(pos[0], -0.06, pos[1]);
+      skidsGroup.add(leg);
+    });
+
+    // 6S Battery & Autopilot
+    const battery = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.045, 0.075), new THREE.MeshStandardMaterial({ color: 0xeab308, roughness: 0.5 }));
+    battery.position.set(0, 0.035, 0);
+    batteryGroup.add(battery);
+
+    const autopilot = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.02, 0.05), new THREE.MeshStandardMaterial({ color: 0xf97316 }));
+    autopilot.position.set(0, 0.07, 0);
+    autopilotGroup.add(autopilot);
+
+    const rtkMast = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.004, 0.12), carbonMat);
+    rtkMast.position.set(-0.06, 0.09, -0.06);
+    autopilotGroup.add(rtkMast);
+    const rtkPuck = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.01), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+    rtkPuck.position.set(-0.06, 0.15, -0.06);
+    autopilotGroup.add(rtkPuck);
+
+    // Payloads
+    function buildPayload(type) {
+      while (payloadGroup.children.length > 0) {
+        payloadGroup.remove(payloadGroup.children[0]);
+      }
+
+      const holder = new THREE.Group();
+      holder.position.set(0, -0.065, 0);
+
+      if (type === 'medical') {
+        currentAccentColor = 0xef4444;
+        const pod = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.065, 0.11, 24), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 }));
+        pod.rotation.z = Math.PI / 2;
+        holder.add(pod);
+
+        const crossMat = new THREE.MeshBasicMaterial({ color: 0xdc2626 });
+        holder.add(new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.015, 0.075), crossMat));
+        holder.add(new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.05, 0.075), crossMat));
+      } else if (type === 'police') {
+        currentAccentColor = 0x2563eb;
+        const gimbal = new THREE.Mesh(new THREE.SphereGeometry(0.05, 16, 16), new THREE.MeshStandardMaterial({ color: 0x1e293b }));
+        holder.add(gimbal);
+        const lens = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.02, 16), new THREE.MeshBasicMaterial({ color: 0x38bdf8 }));
+        lens.rotation.x = Math.PI / 2;
+        lens.position.set(0, 0, 0.045);
+        holder.add(lens);
+      } else if (type === 'agri') {
+        currentAccentColor = 0x16a34a;
+        const agriBox = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.06, 0.08), new THREE.MeshStandardMaterial({ color: 0x14532d }));
+        holder.add(agriBox);
+        for(let j = 0; j < 5; j++) {
+          const l = new THREE.Mesh(new THREE.CircleGeometry(0.01, 12), new THREE.MeshBasicMaterial({ color: 0x4ade80 }));
+          l.position.set((j % 3 - 1) * 0.025, -0.031, (Math.floor(j / 3) - 0.5) * 0.03);
+          l.rotation.x = Math.PI / 2;
+          holder.add(l);
+        }
+      } else if (type === 'heritage') {
+        currentAccentColor = 0xd97706;
+        const lidar = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.07, 24), new THREE.MeshStandardMaterial({ color: 0x451a03 }));
+        holder.add(lidar);
+        const scannerRing = new THREE.Mesh(new THREE.TorusGeometry(0.048, 0.005, 8, 24), new THREE.MeshBasicMaterial({ color: 0xfbbf24 }));
+        scannerRing.rotation.x = Math.PI / 2;
+        holder.add(scannerRing);
+      } else if (type === 'airpost') {
+        currentAccentColor = 0xf59e0b;
+        const cargo = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.08, 0.09), new THREE.MeshStandardMaterial({ color: 0xb45309 }));
+        holder.add(cargo);
+      } else if (type === 'relay') {
+        currentAccentColor = 0x06b6d4;
+        const radio = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.05, 0.06), new THREE.MeshStandardMaterial({ color: 0x164e63 }));
+        holder.add(radio);
+        [-0.04, 0.04].forEach(antX => {
+          const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.003, 0.003, 0.22), new THREE.MeshBasicMaterial({ color: 0x67e8f9 }));
+          ant.position.set(antX, -0.06, 0);
+          holder.add(ant);
+        });
+      }
+
+      accentMat.color.setHex(currentAccentColor);
+      payloadGroup.add(holder);
+    }
+
+    buildPayload('medical');
+
+    // --- 5. INTERACTION LOGIC & TELEMETRY ---
+    let isHovering = false;
+    let isAutoOrbiting = false;
+    let isCrewVisible = true;
+    let hoverTime = 0;
+    let explodeDistance = 0;
+
+    function onSelectDroneVariant(val) {
+      buildPayload(val);
+      const badge = document.getElementById('variant-badge');
+      const symbol = document.getElementById('variant-symbol');
+      const desc = document.getElementById('variant-desc');
+
+      const profiles = {
+        medical: { name: 'Medical Variant', sym: '✚', bClass: 'bg-red-950 text-red-400 border-red-800/60', desc: 'Active 2°C–8°C thermoelectric cold pod with red cross emblem for rapid blood units and antivenom transit.' },
+        police: { name: 'Police Variant', sym: '🛡️', bClass: 'bg-blue-950 text-blue-400 border-blue-800/60', desc: 'Dual optical 30x zoom and Long-Wave Infrared (FLIR) gimbal with blue law-enforcement beacons.' },
+        agri: { name: 'Agri Variant', sym: '🌱', bClass: 'bg-green-950 text-green-400 border-green-800/60', desc: '5-band multispectral optical array delivering normalized difference vegetation index (NDVI) crop scans.' },
+        heritage: { name: 'Heritage Variant', sym: '🏛️', bClass: 'bg-amber-950 text-amber-400 border-amber-800/60', desc: 'Rotational 3D LiDAR puck for photogrammetry and architectural reconstruction of heritage sites.' },
+        airpost: { name: 'Air-Post Variant', sym: '📦', bClass: 'bg-yellow-950 text-yellow-400 border-yellow-800/60', desc: 'Automated bottom-release payload cargo bay for last-mile remote postal courier transit.' },
+        relay: { name: 'RF Relay Variant', sym: '📡', bClass: 'bg-cyan-950 text-cyan-400 border-cyan-800/60', desc: 'High-gain omnidirectional dual-dipole antenna transponder restoring local emergency networks.' }
+      };
+
+      const p = profiles[val];
+      badge.textContent = p.name;
+      badge.className = `px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${p.bClass}`;
+      symbol.textContent = p.sym;
+      desc.textContent = p.desc;
+    }
+
+    function toggleHover() {
+      isHovering = !isHovering;
+      document.getElementById('btn-hover').classList.toggle('bg-rose-600', isHovering);
+      document.getElementById('btn-hover').classList.toggle('bg-emerald-600/80', !isHovering);
+      document.getElementById('hover-text').textContent = isHovering ? 'Land Drone' : 'Hover On';
+    }
+
+    function toggleOrbit() {
+      isAutoOrbiting = !isAutoOrbiting;
+      controls.autoRotate = isAutoOrbiting;
+      controls.autoRotateSpeed = 2.0;
+      document.getElementById('btn-orbit').classList.toggle('bg-amber-600', isAutoOrbiting);
+      document.getElementById('btn-orbit').classList.toggle('bg-sky-600/80', !isAutoOrbiting);
+      document.getElementById('orbit-text').textContent = isAutoOrbiting ? 'Stop Orbit' : 'Auto Orbit';
+    }
+
+    function toggleFoundersMode() {
+      isCrewVisible = !isCrewVisible;
+      crewGroup.visible = isCrewVisible;
+      
+      const btn = document.getElementById('toggle-founders-btn');
+      if (isCrewVisible) {
+        btn.classList.remove('bg-slate-700/60', 'text-slate-300');
+        btn.classList.add('bg-sky-600/30', 'text-sky-200');
+        btn.innerHTML = '<i class="fa-solid fa-user-group text-sky-300"></i><span>Founders & Cadet View (+)</span>';
+        camera.position.set(0, 1.8, 4.5);
+        controls.target.set(0, 0.9, 0);
+      } else {
+        btn.classList.add('bg-slate-700/60', 'text-slate-300');
+        btn.classList.remove('bg-sky-600/30', 'text-sky-200');
+        btn.innerHTML = '<i class="fa-solid fa-user text-slate-400"></i><span>Show Crew (+)</span>';
+        camera.position.set(0, 0.8, 1.8);
+        controls.target.set(0, 0.2, 0.25);
+      }
+    }
+
+    function onExplodeChange(val) {
+      explodeDistance = (val / 100) * 0.25;
+      document.getElementById('explode-val').textContent = val + '%';
+      motorsGroup.position.y = explodeDistance * 0.8;
+      autopilotGroup.position.y = explodeDistance * 1.5;
+      batteryGroup.position.y = explodeDistance * 1.0;
+      skidsGroup.position.y = -explodeDistance * 1.2;
+      payloadGroup.position.y = -explodeDistance * 1.8;
+    }
+
+    // --- 6. ANIMATION LOOP ---
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = clock.getDelta();
+
+      if (isHovering) {
+        hoverTime += delta * 3;
+        const targetY = 1.15 + Math.sin(hoverTime) * 0.04;
+        droneRoot.position.y += (targetY - droneRoot.position.y) * 0.08;
+        droneRoot.rotation.z = Math.sin(hoverTime * 0.8) * 0.03;
+        droneRoot.rotation.x = Math.cos(hoverTime * 0.7) * 0.02;
+
+        rotorsArray.forEach((rotor, idx) => {
+          rotor.rotation.y += (idx % 2 === 0 ? 0.45 : -0.45);
+        });
+
+        document.getElementById('telemetry-alt').textContent = (droneRoot.position.y).toFixed(2) + " m AGL";
+        document.getElementById('telemetry-rpm').textContent = "5,400 RPM";
+      } else {
+        droneRoot.position.y += (0.18 - droneRoot.position.y) * 0.1;
+        droneRoot.rotation.z *= 0.9;
+        droneRoot.rotation.x *= 0.9;
+
+        rotorsArray.forEach(rotor => {
+          rotor.rotation.y += 0.01;
+        });
+
+        document.getElementById('telemetry-alt').textContent = "0.0 m (GND)";
+        document.getElementById('telemetry-rpm').textContent = "0 RPM (Armed)";
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
