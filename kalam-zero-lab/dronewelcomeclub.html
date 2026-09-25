@@ -1,0 +1,1363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D Drone Hangar & Flight Lab — GARRF</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <style>
+    body { margin: 0; overflow: hidden; background-color: #030712; user-select: none; }
+    #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.90);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+    }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.3); border-radius: 3px; }
+  </style>
+</head>
+<body class="text-slate-100 font-sans">
+
+  <!-- 3D Canvas -->
+  <div id="canvas-container"></div>
+
+  <!-- MODAL 1: GATEKEEPER (NAME & INDIAN ATTIRE GENDER SELECTION) -->
+  <div id="name-gate-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 backdrop-blur-md px-4">
+    <div class="glass-panel border-2 border-sky-400/50 rounded-2xl max-w-md w-full p-6 sm:p-8 shadow-2xl text-center relative">
+      
+      <div class="w-14 h-14 rounded-2xl bg-sky-500/10 border border-sky-400/40 text-sky-400 flex items-center justify-center text-2xl mx-auto mb-3">
+        <i class="fa-solid fa-helicopter"></i>
+      </div>
+
+      <h2 class="text-base sm:text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-sky-400 via-teal-300 to-emerald-400 uppercase tracking-wide leading-snug">
+        WELCOME to Gopalkrishna Advanced Rural Research Foundation (GARRF) Drone Virtual Flight Club
+      </h2>
+      <p class="text-xs text-slate-300 mt-2 mb-5">
+        Enter your details to create your lifelike avatar standing on the flight deck with both founders.
+      </p>
+
+      <form onsubmit="handleNameSubmit(event)" class="flex flex-col gap-3">
+        <div class="text-left">
+          <label class="text-[11px] font-bold text-sky-400 uppercase tracking-wider block mb-1">Your First Name <span class="text-rose-400">*</span></label>
+          <input 
+            type="text" 
+            id="student-name-input" 
+            required
+            minlength="1"
+            maxlength="16"
+            placeholder="e.g. Ramesh / Lakshmi" 
+            class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-sky-400 focus:outline-none placeholder-slate-500 font-medium"
+            autofocus
+          />
+          <span id="name-error-msg" class="hidden text-[10px] text-rose-400 font-medium mt-1">⚠️ Please type at least 1 letter to continue.</span>
+        </div>
+
+        <div class="text-left mt-1">
+          <label class="text-[11px] font-bold text-sky-400 uppercase tracking-wider block mb-1.5">Avatar &amp; Traditional Attire:</label>
+          <div class="grid grid-cols-2 gap-3">
+            <label class="flex items-center gap-2.5 p-2.5 rounded-xl border border-slate-700 bg-slate-900/80 cursor-pointer hover:border-amber-400 transition">
+              <input type="radio" name="student-gender" value="male" checked class="text-amber-500 focus:ring-0">
+              <div class="text-xs">
+                <span class="font-bold text-white block">Male</span>
+                <span class="text-[10px] text-amber-300">Kurta &amp; Dhoti / Tilak</span>
+              </div>
+            </label>
+
+            <label class="flex items-center gap-2.5 p-2.5 rounded-xl border border-slate-700 bg-slate-900/80 cursor-pointer hover:border-rose-400 transition">
+              <input type="radio" name="student-gender" value="female" class="text-rose-500 focus:ring-0">
+              <div class="text-xs">
+                <span class="font-bold text-white block">Female</span>
+                <span class="text-[10px] text-rose-300">Saree &amp; Bindi / Kajal</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <button 
+          type="submit" 
+          class="w-full py-3 rounded-xl bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-400 hover:to-emerald-400 text-slate-950 font-black text-xs uppercase font-mono tracking-wider shadow-lg shadow-sky-500/20 transition-all mt-3 cursor-pointer"
+        >
+          Proceed to Flight Deck &#8594;
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 2: MISSION INSTRUCTIONS -->
+  <div id="mission-steps-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 backdrop-blur-sm px-4">
+    <div class="glass-panel border-2 border-emerald-400/60 rounded-2xl max-w-md w-full p-6 sm:p-7 shadow-2xl text-center relative">
+      
+      <div class="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-400/40 text-emerald-400 flex items-center justify-center text-xl mx-auto mb-2">
+        <i class="fa-solid fa-clipboard-check"></i>
+      </div>
+
+      <h3 class="text-base font-extrabold text-white">
+        Namaste, Cadet <span id="display-cadet-name" class="text-emerald-400"></span>!
+      </h3>
+      <p class="text-xs text-slate-300 mt-0.5 mb-4">
+        Your avatar is standing with both founders (Dr. Venu Gopal &amp; Shantanu). Follow these mission steps:
+      </p>
+
+      <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 text-left text-xs space-y-3 mb-5">
+        <div class="text-[11px] font-bold text-sky-400 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-800 pb-1.5">
+          <i class="fa-solid fa-list-check"></i> Flight Cadet Mission Steps:
+        </div>
+        <div class="flex items-center gap-2.5 text-slate-200">
+          <span class="w-5 h-5 rounded-full bg-sky-500/20 text-sky-400 border border-sky-400/40 flex items-center justify-center text-[11px] font-bold shrink-0">1</span>
+          <span><strong>Hover the Drone</strong> to observe kinetic balance &amp; RPM</span>
+        </div>
+        <div class="flex items-center gap-2.5 text-slate-200">
+          <span class="w-5 h-5 rounded-full bg-teal-500/20 text-teal-400 border border-teal-400/40 flex items-center justify-center text-[11px] font-bold shrink-0">2</span>
+          <span><strong>Orbit the Drone</strong> for a 360° view of global research roads</span>
+        </div>
+        <div class="flex items-center gap-2.5 text-slate-200">
+          <span class="w-5 h-5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-400/40 flex items-center justify-center text-[11px] font-bold shrink-0">3</span>
+          <span><strong>Take it in Hands</strong> to dock directly on your palm</span>
+        </div>
+        <div class="pt-2 text-[11px] text-emerald-400 font-semibold border-t border-slate-800">
+          ✨ Complete these steps, then go for Assembly &amp; Sovereign Travel!
+        </div>
+      </div>
+
+      <button 
+        onclick="closeMissionStepsModal()" 
+        class="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-sky-500 hover:from-emerald-400 hover:to-sky-400 text-slate-950 font-black text-xs uppercase font-mono tracking-wider shadow-lg shadow-emerald-500/25 transition cursor-pointer"
+      >
+        Got It, Let's Fly! &#8594;
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL 3: 2-MINUTE REPEATING ACTION DIALOGUE -->
+  <div id="interval-action-modal" class="fixed inset-0 z-40 hidden items-center justify-center bg-slate-950/75 backdrop-blur-sm px-4">
+    <div class="glass-panel border-2 border-cyan-400/60 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative text-center">
+      <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 text-2xl mx-auto mb-3">
+        <i class="fa-solid fa-screwdriver-wrench"></i>
+      </div>
+      <h3 class="text-base sm:text-lg font-black text-white uppercase tracking-wider">Ready to Build Your Drone?</h3>
+      <p class="text-xs text-slate-300 mt-1 mb-5 leading-relaxed">
+        You've explored the 3D hangar and its institutional paths! Step 1 is to assemble the 6 aerospace subsystems piece-by-piece. Once assembled, you can deploy your drone on sovereign travel across Bharat.
+      </p>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <a 
+          href="droneassembly.html" 
+          class="py-3 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-black text-xs uppercase font-mono tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/30 transition transform hover:scale-105"
+        >
+          <i class="fa-solid fa-screwdriver-wrench"></i> 1. Assemble First &#8594;
+        </a>
+        
+        <a 
+          href="javascript:void(0)" 
+          onclick="handleGatedTravelClick()"
+          class="py-3 px-4 rounded-xl bg-slate-900 border border-slate-700 hover:border-slate-600 text-slate-400 font-bold text-xs uppercase font-mono tracking-wider flex items-center justify-center gap-2 transition cursor-not-allowed"
+          title="Build your drone in the assembly lab first"
+        >
+          <i class="fa-solid fa-lock"></i> 2. Travel Later
+        </a>
+      </div>
+
+      <button 
+        onclick="closeIntervalModal()" 
+        class="mt-4 text-[11px] font-mono text-slate-400 hover:text-white uppercase tracking-wider underline cursor-pointer"
+      >
+        Keep Exploring 3D Hangar (Remind me in 2 mins)
+      </button>
+    </div>
+  </div>
+
+  <!-- TOP HEADER -->
+  <header class="absolute top-0 left-0 right-0 z-20 glass-panel border-b border-slate-800/80 px-4 sm:px-6 py-2.5 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <img 
+        src="logo.jpeg" 
+        alt="GARRF Logo" 
+        class="w-10 h-10 rounded-lg object-cover border border-slate-700 shadow-md"
+        onerror="this.onerror=null; this.src='https://dummyimage.com/80x80/0284c7/ffffff.png&text=GARRF';"
+      />
+      <div>
+        <h1 class="font-bold text-xs sm:text-sm md:text-base text-white tracking-wide leading-tight">
+          Gopalkrishna Advanced Rural Research Foundation
+        </h1>
+        <p class="text-[11px] text-sky-400 font-medium">
+          (Dr. APJ Abdul Kalam Research Zero Funding Initiative)
+        </p>
+      </div>
+    </div>
+
+    <!-- Right Controls -->
+    <div class="flex items-center gap-3">
+      <div class="hidden md:flex items-center gap-2 px-3 py-1 rounded-lg bg-slate-900/80 border border-sky-500/30 text-xs font-mono">
+        <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+        <span class="text-slate-400 text-[10px] uppercase">Worldwide Cadets:</span>
+        <strong id="global-counter-val" class="text-cyan-300 font-bold">Syncing...</strong>
+      </div>
+
+      <div id="member-badge" class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-[11px] font-semibold">
+        <i class="fa-solid fa-circle-check text-[10px]"></i>
+        <span id="member-badge-name">Cadet Member</span>
+      </div>
+
+      <button 
+        id="toggle-founders-btn" 
+        onclick="toggleFoundersMode()"
+        class="px-3 py-1.5 rounded-lg bg-sky-600/30 hover:bg-sky-500/40 border border-sky-400/40 text-sky-200 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm"
+        title="Toggle Team view & scale comparison"
+      >
+        <i class="fa-solid fa-user-group text-sky-300"></i>
+        <span>Founders &amp; Cadet View (+)</span>
+      </button>
+
+      <div class="flex flex-col w-8 h-5 rounded overflow-hidden shadow border border-white/20" title="Bharat Flight Autonomy">
+        <div class="bg-[#FF9933] h-1/3"></div>
+        <div class="bg-white h-1/3 flex items-center justify-center relative">
+          <div class="w-1.5 h-1.5 rounded-full border border-[#000080]"></div>
+        </div>
+        <div class="bg-[#138808] h-1/3"></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- LEFT CONTROL HUD -->
+  <div class="absolute top-20 left-4 z-20 w-80 max-w-[calc(100vw-2rem)] glass-panel rounded-xl p-4 shadow-2xl flex flex-col gap-3 custom-scrollbar max-h-[calc(100vh-6.5rem)] overflow-y-auto">
+    
+    <div>
+      <label class="text-[11px] font-bold text-sky-400 tracking-wider uppercase block mb-1">Select Drone Variant</label>
+      <select 
+        id="drone-variant-select" 
+        onchange="onSelectDroneVariant(this.value)"
+        class="w-full bg-slate-900 border border-slate-700 text-white text-xs rounded-lg px-2.5 py-2 focus:ring-1 focus:ring-sky-400 focus:outline-none"
+      >
+        <option value="medical">1. Medical Emergency (Cold-Chain Pod)</option>
+        <option value="police">2. Police Vigilance (Thermal FLIR)</option>
+        <option value="agri">3. Precision Agri (NDVI Multispectral)</option>
+        <option value="heritage">4. Cultural Heritage (3D LiDAR)</option>
+        <option value="airpost">5. Air-Post Logistics (Courier Bay)</option>
+        <option value="relay">6. High-Altitude RF Relay (Dipoles)</option>
+      </select>
+    </div>
+
+    <div id="variant-card" class="bg-slate-900/60 p-3 rounded-lg border border-slate-800 text-xs">
+      <div class="flex items-center justify-between mb-1.5">
+        <span id="variant-badge" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-red-950 text-red-400 border border-red-800/60">
+          Medical Variant
+        </span>
+        <span id="variant-symbol" class="text-base font-extrabold text-red-400">✚</span>
+      </div>
+      <p id="variant-desc" class="text-slate-300 text-[11px] leading-relaxed">
+        Active 2°C–8°C thermoelectric cold pod with red cross emblem for rapid blood units and antivenom transit.
+      </p>
+    </div>
+
+    <!-- Drone Interactions -->
+    <div class="border-t border-slate-800/80 pt-2.5 flex flex-col gap-2">
+      <label class="text-[11px] font-bold text-slate-300 uppercase">Drone Interactions</label>
+      
+      <div class="grid grid-cols-2 gap-2">
+        <button 
+          id="btn-hover" 
+          onclick="toggleHover()" 
+          class="py-1.5 px-3 rounded-lg bg-emerald-600/80 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+        >
+          <i class="fa-solid fa-angles-up"></i> <span id="hover-text">1. Hover On</span>
+        </button>
+        <button 
+          id="btn-orbit" 
+          onclick="toggleOrbit()" 
+          class="py-1.5 px-3 rounded-lg bg-sky-600/80 hover:bg-sky-500 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+        >
+          <i class="fa-solid fa-arrows-spin"></i> <span id="orbit-text">2. Auto Orbit</span>
+        </button>
+      </div>
+
+      <button 
+        id="btn-hand" 
+        onclick="toggleHandHold()" 
+        class="py-2 px-3 rounded-lg bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white text-xs font-bold font-mono uppercase tracking-wider flex items-center justify-center gap-2 shadow-md transition-all mt-1 cursor-pointer"
+      >
+        <i class="fa-solid fa-hand"></i> <span id="hand-text">3. Land Drone in Hand</span>
+      </button>
+
+      <div class="mt-1">
+        <div class="flex justify-between text-[11px] text-slate-400 mb-1">
+          <span>Exploded View</span>
+          <span id="explode-val">0%</span>
+        </div>
+        <input 
+          type="range" 
+          id="explode-slider" 
+          min="0" 
+          max="100" 
+          value="0" 
+          oninput="onExplodeChange(this.value)" 
+          class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-400"
+        />
+      </div>
+    </div>
+
+    <!-- Multi-Lab Progression Navigation -->
+    <div class="border-t border-slate-800/80 pt-2.5 flex flex-col gap-1.5 text-xs">
+      <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Multi-Lab Progression</span>
+      <div class="grid grid-cols-3 gap-1.5 text-center text-[10px]">
+        <a 
+          id="nav-assemble-link"
+          href="droneassembly.html" 
+          class="p-1.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 rounded border border-cyan-400/80 text-white font-black shadow-lg shadow-cyan-500/25 transition animate-pulse"
+          title="Step 1: Assemble your drone components first"
+        >
+          1. Assemble ★
+        </a>
+
+        <a 
+          id="nav-travel-link" 
+          href="javascript:void(0)" 
+          onclick="handleGatedTravelClick()" 
+          class="p-1.5 bg-slate-900 rounded border border-slate-800 text-slate-500 cursor-not-allowed transition"
+          title="Build your drone in Assemble first to unlock sovereign travel"
+        >
+          2. Travel (🔒)
+        </a>
+
+        <a 
+          href="dronehelp.html" 
+          class="p-1.5 bg-slate-800/70 hover:bg-slate-700/70 rounded border border-slate-700 text-amber-300 font-medium transition"
+        >
+          Manual
+        </a>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT TELEMETRY OVERLAY -->
+  <div class="absolute top-20 right-4 z-20 glass-panel rounded-xl p-3.5 shadow-xl text-xs flex flex-col gap-2 w-56 pointer-events-none hidden sm:flex">
+    <div class="text-[11px] font-bold text-sky-400 uppercase tracking-wider flex items-center justify-between">
+      <span>Flight Deck</span>
+      <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+    </div>
+    <div class="flex justify-between text-slate-300 text-[11px]">
+      <span>Drone State:</span>
+      <strong id="telemetry-state" class="text-emerald-400 font-mono">ON PAD</strong>
+    </div>
+    <div class="flex justify-between text-slate-300 text-[11px]">
+      <span>Altitude:</span>
+      <strong id="telemetry-alt" class="text-white">0.0 m (GND)</strong>
+    </div>
+    <div class="flex justify-between text-slate-300 text-[11px]">
+      <span>Rotor Speed:</span>
+      <strong id="telemetry-rpm" class="text-white">0 RPM</strong>
+    </div>
+    <div class="flex justify-between text-slate-300 text-[11px]">
+      <span>Hand-Docking:</span>
+      <strong id="telemetry-hand" class="text-amber-400">DISENGAGED</strong>
+    </div>
+  </div>
+
+  <!-- MOUSE NAVIGATION HINT BAR (Directly above footer) -->
+  <div class="absolute bottom-11 left-0 right-0 z-20 text-center pointer-events-none px-4">
+    <div class="inline-flex items-center gap-2.5 glass-panel px-4 py-1.5 rounded-full text-[11px] border border-cyan-500/40 text-slate-200 shadow-md">
+      <span class="text-cyan-400 font-bold flex items-center gap-1.5">
+        <i class="fa-solid fa-computer-mouse"></i> 3D View Controls:
+      </span>
+      <span>Left-Click + Drag for <strong class="text-sky-300">360° Orbit</strong></span>
+      <span class="text-slate-500">•</span>
+      <span>Right-Click + Drag to <strong class="text-teal-300">Pan</strong></span>
+      <span class="text-slate-500">•</span>
+      <span>Scroll to <strong class="text-emerald-300">Zoom In/Out</strong></span>
+    </div>
+  </div>
+
+  <!-- BOTTOM ATTRIBUTION FOOTER -->
+  <footer class="absolute bottom-2 left-0 right-0 z-20 text-center pointer-events-none text-xs text-slate-400 px-4">
+    <div class="inline-block glass-panel px-4 py-1.5 rounded-full text-[11px] border border-slate-700/60 shadow-lg">
+      Developed @Copyrght : <strong class="text-white">Dr. Venu Gopal Madhav Annamdas</strong> &amp; <strong class="text-white">Shantanu Vasudev Krishna</strong>, one of the Youngest CEO's of India
+    </div>
+  </footer>
+
+  <script>
+    // --- 1. GLOBAL REAL-TIME VISITORS COUNTER ---
+    const COUNTER_NAMESPACE = 'garrf.in';
+    const COUNTER_KEY = 'kalam-drone3d-visitors';
+    const BASE_OFFSET = 1240;
+
+    async function syncGlobalVisitorCounter() {
+      const displayElem = document.getElementById('global-counter-val');
+      try {
+        const response = await fetch(`https://abacus.jasoncameron.dev/hit/${COUNTER_NAMESPACE}/${COUNTER_KEY}`);
+        const data = await response.json();
+        if (data && typeof data.value === 'number') {
+          const liveTotal = BASE_OFFSET + data.value;
+          if (displayElem) displayElem.textContent = liveTotal.toLocaleString();
+        }
+      } catch (err) {
+        let cached = parseInt(localStorage.getItem('garrf_cached_visitors') || `${BASE_OFFSET}`, 10);
+        cached++;
+        localStorage.setItem('garrf_cached_visitors', cached);
+        if (displayElem) displayElem.textContent = cached.toLocaleString();
+      }
+    }
+
+    // --- 2. THREE.JS SCENE SETUP ---
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x050b14);
+    scene.fog = new THREE.FogExp2(0x050b14, 0.032);
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(0, 1.8, 4.5);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    container.appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.maxPolarAngle = Math.PI / 2 - 0.03;
+    controls.minDistance = 1.0;
+    controls.maxDistance = 11.0;
+    controls.target.set(0, 0.9, 0);
+
+    // Lighting
+    scene.add(new THREE.AmbientLight(0xffffff, 0.85));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    dirLight.position.set(5, 10, 5);
+    dirLight.castShadow = true;
+    scene.add(dirLight);
+
+    const cyanPointLight = new THREE.PointLight(0x38bdf8, 1.5, 8);
+    cyanPointLight.position.set(0, 2, 0);
+    scene.add(cyanPointLight);
+
+    // Main Launch Pad
+    scene.add(new THREE.GridHelper(32, 32, 0x0284c7, 0x1e293b));
+    const pad = new THREE.Mesh(new THREE.CylinderGeometry(1.8, 1.8, 0.02, 48), new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.8 }));
+    pad.receiveShadow = true;
+    scene.add(pad);
+
+    const padRing = new THREE.Mesh(new THREE.RingGeometry(1.55, 1.7, 48), new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide }));
+    padRing.rotation.x = -Math.PI / 2;
+    padRing.position.y = 0.012;
+    scene.add(padRing);
+
+    // --- 3. AFFILIATION BOARDS & RADIANT PATHWAYS ---
+    const affiliationsGroup = new THREE.Group();
+    scene.add(affiliationsGroup);
+
+    function createAffiliationBoard(instName, subText, angleRad, distance) {
+      const x = Math.sin(angleRad) * distance;
+      const z = Math.cos(angleRad) * distance;
+
+      const boardGroup = new THREE.Group();
+      boardGroup.position.set(x, 0, z);
+
+      const poleMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.8, roughness: 0.2 });
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.6, 12), poleMat);
+      pole.position.y = 0.8;
+      boardGroup.add(pole);
+
+      const canvas = document.createElement('canvas');
+      canvas.width = 380;
+      canvas.height = 160;
+      const ctx = canvas.getContext('2d');
+
+      const grad = ctx.createLinearGradient(0, 0, 380, 160);
+      grad.addColorStop(0, '#0f172a');
+      grad.addColorStop(1, '#0284c7');
+      ctx.fillStyle = grad;
+      ctx.roundRect(6, 6, 368, 148, 16);
+      ctx.fill();
+
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 6;
+      ctx.roundRect(6, 6, 368, 148, 16);
+      ctx.stroke();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 28px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(instName, 190, 68);
+
+      ctx.fillStyle = '#fef08a';
+      ctx.font = 'bold 18px monospace';
+      ctx.fillText(subText, 190, 108);
+
+      const signTex = new THREE.CanvasTexture(canvas);
+      const signMat = new THREE.MeshStandardMaterial({ map: signTex, roughness: 0.4 });
+      const signBoard = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.55, 0.04), signMat);
+      signBoard.position.y = 1.65;
+      boardGroup.add(signBoard);
+
+      const roadLength = distance * 0.75;
+      const roadMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 });
+      const road = new THREE.Mesh(new THREE.PlaneGeometry(0.45, roadLength), roadMat);
+      road.rotation.x = -Math.PI / 2;
+      road.rotation.z = angleRad;
+      road.position.set(Math.sin(angleRad) * (distance * 0.42), 0.005, Math.cos(angleRad) * (distance * 0.42));
+      affiliationsGroup.add(road);
+
+      const stripeMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+      const stripe = new THREE.Mesh(new THREE.PlaneGeometry(0.04, roadLength * 0.9), stripeMat);
+      stripe.rotation.x = -Math.PI / 2;
+      stripe.rotation.z = angleRad;
+      stripe.position.set(Math.sin(angleRad) * (distance * 0.42), 0.008, Math.cos(angleRad) * (distance * 0.42));
+      affiliationsGroup.add(stripe);
+
+      affiliationsGroup.add(boardGroup);
+    }
+
+    createAffiliationBoard("IISc Bangalore", "INDIA • RESEARCH ALUMNUS", -Math.PI * 0.72, 6.2);
+    createAffiliationBoard("NTU Singapore", "SINGAPORE • PH.D. ALUMNUS", -Math.PI * 0.35, 5.8);
+    createAffiliationBoard("Univ of Pittsburgh", "USA • POST-DOC FELLOW", Math.PI * 0.02, 6.6);
+    createAffiliationBoard("RIT USA", "NEW YORK • MICROMASTERS", Math.PI * 0.38, 5.9);
+    createAffiliationBoard("PMI Pennsylvania", "USA • CERTIFIED PMP®", Math.PI * 0.75, 6.3);
+
+    // --- 4. CAMPUS BACKGROUND BUILDINGS & TREES ---
+    const campusEnvironmentGroup = new THREE.Group();
+    scene.add(campusEnvironmentGroup);
+
+    function createCampusBuilding(width, height, depth, x, z, accentColor = 0x0284c7) {
+      const bGroup = new THREE.Group();
+      bGroup.position.set(x, height / 2, z);
+
+      const wallMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8, metalness: 0.2 });
+      const mainWall = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), wallMat);
+      bGroup.add(mainWall);
+
+      const trimMat = new THREE.MeshStandardMaterial({ color: accentColor, roughness: 0.4 });
+      const trim = new THREE.Mesh(new THREE.BoxGeometry(width * 1.01, 0.25, depth * 1.01), trimMat);
+      trim.position.y = height / 2 - 0.2;
+      bGroup.add(trim);
+
+      const glassMat = new THREE.MeshStandardMaterial({ 
+        color: 0x38bdf8, 
+        roughness: 0.1, 
+        metalness: 0.9, 
+        transparent: true, 
+        opacity: 0.85 
+      });
+
+      const rows = Math.floor(height / 1.2);
+      const cols = Math.floor(width / 1.4);
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const win = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.6, 0.05), glassMat);
+          win.position.set(
+            (c - cols / 2 + 0.5) * 1.3,
+            (r - rows / 2 + 0.5) * 1.1,
+            depth / 2 + 0.02
+          );
+          bGroup.add(win);
+        }
+      }
+
+      const solarMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.3, metalness: 0.8 });
+      const solarPanel = new THREE.Mesh(new THREE.BoxGeometry(width * 0.8, 0.08, depth * 0.7), solarMat);
+      solarPanel.position.set(0, height / 2 + 0.05, 0);
+      bGroup.add(solarPanel);
+
+      campusEnvironmentGroup.add(bGroup);
+    }
+
+    createCampusBuilding(9.0, 5.5, 3.5, 0, -9.2, 0x0284c7);
+    createCampusBuilding(6.5, 4.0, 3.0, 8.2, -8.2, 0x10b981);
+    createCampusBuilding(6.5, 4.0, 3.0, -8.2, -8.2, 0xf59e0b);
+
+    const dynamicTreesArray = [];
+
+    function createFoliageTree(x, z, scale = 1.0) {
+      const tree = new THREE.Group();
+      tree.position.set(x, 0, z);
+
+      const trunkMat = new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.9 });
+      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.12 * scale, 0.18 * scale, 2.2 * scale, 8), trunkMat);
+      trunk.position.y = (2.2 * scale) / 2;
+      tree.add(trunk);
+
+      const leafMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.8 });
+      const leafClusterPositions = [
+        [0, 2.2 * scale, 0, 0.9 * scale],
+        [0.4 * scale, 2.5 * scale, 0.3 * scale, 0.75 * scale],
+        [-0.4 * scale, 2.4 * scale, -0.2 * scale, 0.8 * scale],
+        [0, 2.9 * scale, 0, 0.65 * scale]
+      ];
+
+      leafClusterPositions.forEach(p => {
+        const cluster = new THREE.Mesh(new THREE.DodecahedronGeometry(p[3], 1), leafMat);
+        cluster.position.set(p[0], p[1], p[2]);
+        tree.add(cluster);
+      });
+
+      campusEnvironmentGroup.add(tree);
+      dynamicTreesArray.push(tree);
+    }
+
+    function createPalmTree(x, z, height = 4.2) {
+      const palm = new THREE.Group();
+      palm.position.set(x, 0, z);
+
+      const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5c3a21, roughness: 0.95 });
+      const segments = 7;
+      const segH = height / segments;
+      let currY = 0;
+
+      for (let s = 0; s < segments; s++) {
+        const seg = new THREE.Mesh(new THREE.CylinderGeometry(0.11 - s * 0.007, 0.13 - s * 0.007, segH, 7), trunkMat);
+        seg.position.set(Math.sin(s * 0.25) * 0.08, currY + segH / 2, 0);
+        palm.add(seg);
+        currY += segH;
+      }
+
+      const frondMat = new THREE.MeshStandardMaterial({ color: 0x166534, roughness: 0.7, side: THREE.DoubleSide });
+      for (let f = 0; f < 8; f++) {
+        const angle = (f * Math.PI) / 4;
+        const frond = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.02, 0.28), frondMat);
+        frond.position.set(Math.cos(angle) * 0.7, currY, Math.sin(angle) * 0.7);
+        frond.rotation.y = angle;
+        frond.rotation.z = 0.45;
+        palm.add(frond);
+      }
+
+      campusEnvironmentGroup.add(palm);
+      dynamicTreesArray.push(palm);
+    }
+
+    createFoliageTree(-2.8, -3.2, 1.1);
+    createFoliageTree(2.8, -3.2, 1.15);
+    createFoliageTree(-4.6, -4.5, 1.3);
+    createFoliageTree(4.6, -4.5, 1.25);
+    createPalmTree(-5.8, -3.5, 4.2);
+    createPalmTree(5.8, -3.5, 4.4);
+    createPalmTree(-3.5, -6.5, 4.8);
+    createPalmTree(3.5, -6.5, 4.6);
+
+    // --- 5. PROCEDURAL HIGH-RESOLUTION FACE TEXTURES ---
+    function createProceduralFaceTexture(type, skinHex) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = skinHex;
+      ctx.fillRect(0, 0, 512, 512);
+
+      const grad = ctx.createRadialGradient(256, 256, 60, 256, 256, 240);
+      grad.addColorStop(0, 'rgba(255, 255, 255, 0.08)');
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0.15)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 512, 512);
+
+      ctx.strokeStyle = '#18181b';
+      ctx.lineWidth = 14;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(140, 190);
+      ctx.quadraticCurveTo(190, 165, 230, 185);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(372, 190);
+      ctx.quadraticCurveTo(322, 165, 282, 185);
+      ctx.stroke();
+
+      ctx.fillStyle = '#ffffff';
+      [185, 327].forEach(eyeX => {
+        ctx.beginPath();
+        ctx.ellipse(eyeX, 225, 30, 18, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#27272a';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        ctx.fillStyle = '#3f2212';
+        ctx.beginPath();
+        ctx.arc(eyeX, 225, 14, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#09090b';
+        ctx.beginPath();
+        ctx.arc(eyeX, 225, 7, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(eyeX - 4, 221, 4, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      ctx.strokeStyle = 'rgba(70, 30, 10, 0.4)';
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.moveTo(256, 210);
+      ctx.lineTo(252, 290);
+      ctx.quadraticCurveTo(256, 305, 270, 295);
+      ctx.stroke();
+
+      ctx.fillStyle = 'rgba(60, 20, 10, 0.5)';
+      ctx.beginPath();
+      ctx.ellipse(244, 300, 6, 4, 0, 0, Math.PI * 2);
+      ctx.ellipse(268, 300, 6, 4, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = type === 'female' ? '#be123c' : '#a16207';
+      ctx.beginPath();
+      ctx.ellipse(256, 365, 38, 12, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = '#450a0a';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(218, 365);
+      ctx.quadraticCurveTo(256, 380, 294, 365);
+      ctx.stroke();
+
+      if (type === 'venu') {
+        ctx.fillStyle = '#1c1917';
+        ctx.beginPath();
+        ctx.moveTo(215, 345);
+        ctx.quadraticCurveTo(256, 330, 297, 345);
+        ctx.quadraticCurveTo(256, 365, 215, 345);
+        ctx.fill();
+
+        ctx.strokeStyle = '#0284c7';
+        ctx.lineWidth = 6;
+        ctx.strokeRect(145, 195, 80, 55);
+        ctx.strokeRect(287, 195, 80, 55);
+        ctx.beginPath();
+        ctx.moveTo(225, 220);
+        ctx.lineTo(287, 220);
+        ctx.stroke();
+      } 
+      else if (type === 'shantanu') {
+        ctx.strokeStyle = '#713f12';
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.arc(256, 350, 42, 0.15 * Math.PI, 0.85 * Math.PI, false);
+        ctx.stroke();
+      }
+      else if (type === 'male_cadet') {
+        ctx.fillStyle = '#dc2626';
+        ctx.fillRect(252, 110, 8, 45);
+        ctx.fillStyle = '#fef08a';
+        ctx.fillRect(244, 150, 24, 6);
+      }
+      else if (type === 'female') {
+        ctx.fillStyle = '#dc2626';
+        ctx.beginPath();
+        ctx.arc(256, 145, 14, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#09090b';
+        ctx.lineWidth = 4;
+        [185, 327].forEach(eyeX => {
+          ctx.beginPath();
+          ctx.arc(eyeX, 222, 32, Math.PI * 1.15, Math.PI * 1.85);
+          ctx.stroke();
+        });
+      }
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.needsUpdate = true;
+      return texture;
+    }
+
+    // --- 6. HUMAN FIGURES GENERATION ---
+    const crewGroup = new THREE.Group();
+    let studentRightArm = null;
+
+    function createIndianMaleAttire(name, height, xOffset, zOffset) {
+      const person = new THREE.Group();
+      person.position.set(xOffset, 0, zOffset);
+
+      const skinHex = '#c68642';
+      const headRadius = height * 0.065;
+      const legHeight = height * 0.46;
+      const torsoHeight = height * 0.34;
+      const torsoWidth = height * 0.19;
+
+      [-torsoWidth * 0.35, torsoWidth * 0.35].forEach(lx => {
+        const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.04, 0.18), new THREE.MeshStandardMaterial({ color: 0x78350f }));
+        shoe.position.set(lx, 0.02, 0.02);
+        person.add(shoe);
+        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.055, legHeight), new THREE.MeshStandardMaterial({ color: 0xf1f5f9 }));
+        leg.position.set(lx, legHeight / 2 + 0.04, 0);
+        person.add(leg);
+      });
+
+      const kurtaMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.8 });
+      const kurta = new THREE.Mesh(new THREE.BoxGeometry(torsoWidth * 1.08, torsoHeight * 1.15, 0.18), kurtaMat);
+      kurta.position.set(0, legHeight + torsoHeight * 0.45 + 0.04, 0);
+      person.add(kurta);
+
+      const kanduva = new THREE.Mesh(new THREE.BoxGeometry(0.08, torsoHeight * 1.3, 0.21), new THREE.MeshStandardMaterial({ color: 0xd97706 }));
+      kanduva.position.set(-torsoWidth * 0.38, legHeight + torsoHeight * 0.45 + 0.04, 0.01);
+      kanduva.rotation.z = -0.08;
+      person.add(kanduva);
+
+      const leftArm = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.042, torsoHeight * 0.9), kurtaMat);
+      leftArm.position.set(-torsoWidth * 0.62, legHeight + torsoHeight * 0.5 + 0.04, 0);
+      person.add(leftArm);
+      const leftHand = new THREE.Mesh(new THREE.SphereGeometry(0.035, 12, 12), new THREE.MeshStandardMaterial({ color: 0xc68642 }));
+      leftHand.position.set(-torsoWidth * 0.62, legHeight + 0.05, 0);
+      person.add(leftHand);
+
+      const rightArmGroup = new THREE.Group();
+      rightArmGroup.position.set(torsoWidth * 0.62, legHeight + torsoHeight * 0.85 + 0.04, 0);
+
+      const rightArmLimb = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.042, torsoHeight * 0.9), kurtaMat);
+      rightArmLimb.position.set(0, -torsoHeight * 0.45, 0);
+      rightArmGroup.add(rightArmLimb);
+
+      const rHand = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.02, 0.1), new THREE.MeshStandardMaterial({ color: 0xc68642 }));
+      rHand.position.set(0, -torsoHeight * 0.9, 0.02);
+      rightArmGroup.add(rHand);
+      person.add(rightArmGroup);
+      studentRightArm = rightArmGroup;
+
+      const faceTex = createProceduralFaceTexture('male_cadet', skinHex);
+      const headMat = new THREE.MeshStandardMaterial({ map: faceTex, roughness: 0.7 });
+      const head = new THREE.Mesh(new THREE.SphereGeometry(headRadius, 32, 32), headMat);
+      head.rotation.y = -Math.PI / 2;
+      head.position.set(0, height - headRadius, 0);
+      person.add(head);
+
+      const hair = new THREE.Mesh(new THREE.SphereGeometry(headRadius * 1.02, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2.2), new THREE.MeshStandardMaterial({ color: 0x18181b }));
+      hair.position.set(0, height - headRadius + 0.015, 0);
+      person.add(hair);
+
+      addCadetBadge(person, name, height, "#f59e0b", "rgba(69, 26, 3, 0.92)");
+      return person;
+    }
+
+    function createIndianFemaleAttire(name, height, xOffset, zOffset) {
+      const person = new THREE.Group();
+      person.position.set(xOffset, 0, zOffset);
+
+      const skinHex = '#d29b68';
+      const headRadius = height * 0.063;
+      const legHeight = height * 0.46;
+      const torsoHeight = height * 0.33;
+      const torsoWidth = height * 0.18;
+
+      [-torsoWidth * 0.32, torsoWidth * 0.32].forEach(lx => {
+        const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.03, 0.17), new THREE.MeshStandardMaterial({ color: 0x92400e }));
+        shoe.position.set(lx, 0.015, 0.02);
+        person.add(shoe);
+      });
+
+      const sareeMat = new THREE.MeshStandardMaterial({ color: 0xb91c1c, roughness: 0.65 });
+      const sareeSkirt = new THREE.Mesh(new THREE.CylinderGeometry(torsoWidth * 0.85, torsoWidth * 1.25, legHeight + 0.04, 24), sareeMat);
+      sareeSkirt.position.set(0, (legHeight + 0.04) / 2 + 0.01, 0);
+      person.add(sareeSkirt);
+
+      const zariMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.6, roughness: 0.3 });
+      const zariBottom = new THREE.Mesh(new THREE.CylinderGeometry(torsoWidth * 1.26, torsoWidth * 1.27, 0.04, 24), zariMat);
+      zariBottom.position.set(0, 0.04, 0);
+      person.add(zariBottom);
+
+      const blouseMat = new THREE.MeshStandardMaterial({ color: 0x047857, roughness: 0.6 });
+      const blouse = new THREE.Mesh(new THREE.BoxGeometry(torsoWidth, torsoHeight * 0.7, 0.16), blouseMat);
+      blouse.position.set(0, legHeight + torsoHeight * 0.6 + 0.02, 0);
+      person.add(blouse);
+
+      const midriff = new THREE.Mesh(new THREE.BoxGeometry(torsoWidth * 0.95, torsoHeight * 0.3, 0.15), new THREE.MeshStandardMaterial({ color: 0xd29b68 }));
+      midriff.position.set(0, legHeight + torsoHeight * 0.15 + 0.02, 0);
+      person.add(midriff);
+
+      const pallu = new THREE.Mesh(new THREE.BoxGeometry(0.12, torsoHeight * 1.2, 0.19), sareeMat);
+      pallu.position.set(-0.02, legHeight + torsoHeight * 0.55 + 0.02, 0.01);
+      pallu.rotation.z = -0.32;
+      person.add(pallu);
+
+      const leftArm = new THREE.Mesh(new THREE.CylinderGeometry(0.038, 0.035, torsoHeight * 0.88), blouseMat);
+      leftArm.position.set(-torsoWidth * 0.6, legHeight + torsoHeight * 0.5 + 0.02, 0);
+      person.add(leftArm);
+      const leftBangle = new THREE.Mesh(new THREE.TorusGeometry(0.04, 0.008, 8, 16), zariMat);
+      leftBangle.rotation.x = Math.PI / 2;
+      leftBangle.position.set(-torsoWidth * 0.6, legHeight + 0.12, 0);
+      person.add(leftBangle);
+
+      const leftHand = new THREE.Mesh(new THREE.SphereGeometry(0.032, 12, 12), new THREE.MeshStandardMaterial({ color: 0xd29b68 }));
+      leftHand.position.set(-torsoWidth * 0.6, legHeight + 0.05, 0);
+      person.add(leftHand);
+
+      const rightArmGroup = new THREE.Group();
+      rightArmGroup.position.set(torsoWidth * 0.6, legHeight + torsoHeight * 0.82 + 0.02, 0);
+
+      const rightArmLimb = new THREE.Mesh(new THREE.CylinderGeometry(0.038, 0.035, torsoHeight * 0.88), blouseMat);
+      rightArmLimb.position.set(0, -torsoHeight * 0.44, 0);
+      rightArmGroup.add(rightArmLimb);
+
+      const rightBangle = new THREE.Mesh(new THREE.TorusGeometry(0.04, 0.008, 8, 16), zariMat);
+      rightBangle.rotation.x = Math.PI / 2;
+      rightBangle.position.set(0, -torsoHeight * 0.78, 0);
+      rightArmGroup.add(rightBangle);
+
+      const rHand = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.02, 0.09), new THREE.MeshStandardMaterial({ color: 0xd29b68 }));
+      rHand.position.set(0, -torsoHeight * 0.88, 0.02);
+      rightArmGroup.add(rHand);
+      person.add(rightArmGroup);
+      studentRightArm = rightArmGroup;
+
+      const faceTex = createProceduralFaceTexture('female', skinHex);
+      const headMat = new THREE.MeshStandardMaterial({ map: faceTex, roughness: 0.65 });
+      const head = new THREE.Mesh(new THREE.SphereGeometry(headRadius, 32, 32), headMat);
+      head.rotation.y = -Math.PI / 2;
+      head.position.set(0, height - headRadius, 0);
+      person.add(head);
+
+      const hairMat = new THREE.MeshStandardMaterial({ color: 0x09090b });
+      const hair = new THREE.Mesh(new THREE.SphereGeometry(headRadius * 1.02, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2.2), hairMat);
+      hair.position.set(0, height - headRadius + 0.015, 0);
+      person.add(hair);
+
+      const hairBun = new THREE.Mesh(new THREE.SphereGeometry(0.042, 16, 16), hairMat);
+      hairBun.position.set(0, height - headRadius, -headRadius * 0.95);
+      person.add(hairBun);
+
+      const gajra = new THREE.Mesh(new THREE.TorusGeometry(0.045, 0.012, 8, 20), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+      gajra.position.set(0, height - headRadius, -headRadius * 0.95);
+      person.add(gajra);
+
+      addCadetBadge(person, name, height, "#f43f5e", "rgba(76, 5, 25, 0.92)");
+      return person;
+    }
+
+    function createFoundersFigure(name, height, coatColor, skinHex, faceType, xOffset, zOffset) {
+      const person = new THREE.Group();
+      person.position.set(xOffset, 0, zOffset);
+      const headRadius = height * 0.065;
+      const legHeight = height * 0.46;
+      const torsoHeight = height * 0.34;
+      const torsoWidth = height * 0.19;
+
+      [-torsoWidth * 0.35, torsoWidth * 0.35].forEach(lx => {
+        const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.06, 0.2), new THREE.MeshStandardMaterial({ color: 0x111827 }));
+        shoe.position.set(lx, 0.03, 0.02);
+        person.add(shoe);
+        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.058, legHeight), new THREE.MeshStandardMaterial({ color: 0x1e293b }));
+        leg.position.set(lx, legHeight / 2 + 0.05, 0);
+        person.add(leg);
+      });
+
+      const coatMat = new THREE.MeshStandardMaterial({ color: coatColor, roughness: 0.6 });
+      const torso = new THREE.Mesh(new THREE.BoxGeometry(torsoWidth, torsoHeight, 0.16), coatMat);
+      torso.position.set(0, legHeight + torsoHeight / 2 + 0.05, 0);
+      person.add(torso);
+
+      const collar = new THREE.Mesh(new THREE.BoxGeometry(torsoWidth * 0.32, torsoHeight * 0.3, 0.02), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+      collar.position.set(0, legHeight + torsoHeight * 0.75 + 0.05, 0.08);
+      person.add(collar);
+
+      [-torsoWidth * 0.6, torsoWidth * 0.6].forEach(ax => {
+        const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, torsoHeight * 0.9), coatMat);
+        arm.position.set(ax, legHeight + torsoHeight * 0.5 + 0.05, 0);
+        person.add(arm);
+        const hand = new THREE.Mesh(new THREE.SphereGeometry(0.035, 12, 12), new THREE.MeshStandardMaterial({ color: 0xc68642 }));
+        hand.position.set(ax, legHeight + 0.06, 0);
+        person.add(hand);
+      });
+
+      const faceTex = createProceduralFaceTexture(faceType, skinHex);
+      const headMat = new THREE.MeshStandardMaterial({ map: faceTex, roughness: 0.7 });
+      const head = new THREE.Mesh(new THREE.SphereGeometry(headRadius, 32, 32), headMat);
+      head.rotation.y = -Math.PI / 2;
+      head.position.set(0, height - headRadius, 0);
+      person.add(head);
+
+      const hair = new THREE.Mesh(new THREE.SphereGeometry(headRadius * 1.02, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2.2), new THREE.MeshStandardMaterial({ color: 0x18181b }));
+      hair.position.set(0, height - headRadius + 0.015, 0);
+      person.add(hair);
+
+      addCadetBadge(person, name, height, "#38bdf8", "rgba(15, 23, 42, 0.88)");
+      return person;
+    }
+
+    function addCadetBadge(person, name, height, borderColor, bgColor) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 300;
+      canvas.height = 70;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = bgColor;
+      ctx.roundRect(4, 4, 292, 62, 14);
+      ctx.fill();
+      ctx.strokeStyle = borderColor;
+      ctx.lineWidth = 3;
+      ctx.roundRect(4, 4, 292, 62, 14);
+      ctx.stroke();
+      ctx.font = "bold 22px sans-serif";
+      ctx.fillStyle = "#ffffff";
+      ctx.textAlign = "center";
+      ctx.fillText(name, 150, 42);
+
+      const labelTex = new THREE.CanvasTexture(canvas);
+      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTex, transparent: true }));
+      sprite.scale.set(0.7, 0.175, 1);
+      sprite.position.set(0, height + 0.18, 0);
+      person.add(sprite);
+    }
+
+    // Both Founders are Males
+    crewGroup.add(createFoundersFigure("Dr Venu Gopal", 1.70, 0x1e3a8a, '#c68642', 'venu', -0.75, -0.65));
+    crewGroup.add(createFoundersFigure("Shantanu (CEO)", 1.56, 0x0f766e, '#d29b68', 'shantanu', 0.75, -0.65));
+    let studentMesh = null;
+    scene.add(crewGroup);
+
+    // Gatekeeper Submit Handler (Forces input >= 1 letter)
+    function handleNameSubmit(e) {
+      e.preventDefault();
+      const input = document.getElementById('student-name-input');
+      const errorMsg = document.getElementById('name-error-msg');
+      const studentName = input.value.trim();
+
+      if (!studentName || studentName.length < 1) {
+        errorMsg.classList.remove('hidden');
+        input.focus();
+        return;
+      }
+      errorMsg.classList.add('hidden');
+
+      const selectedGender = document.querySelector('input[name="student-gender"]:checked').value;
+
+      if (studentMesh) crewGroup.remove(studentMesh);
+
+      if (selectedGender === 'female') {
+        studentMesh = createIndianFemaleAttire(studentName + " (Cadet)", 1.58, 0, -0.85);
+      } else {
+        studentMesh = createIndianMaleAttire(studentName + " (Cadet)", 1.64, 0, -0.85);
+      }
+      crewGroup.add(studentMesh);
+
+      document.getElementById('name-gate-modal').style.display = 'none';
+
+      document.getElementById('member-badge').classList.remove('hidden');
+      document.getElementById('member-badge-name').textContent = "Cadet: " + studentName;
+
+      document.getElementById('display-cadet-name').textContent = studentName;
+      document.getElementById('mission-steps-modal').classList.remove('hidden');
+      document.getElementById('mission-steps-modal').classList.add('flex');
+
+      camera.position.set(0, 1.8, 4.5);
+      controls.target.set(0, 0.9, 0);
+
+      startTwoMinuteReminderLoop();
+    }
+
+    function closeMissionStepsModal() {
+      document.getElementById('mission-steps-modal').classList.add('hidden');
+      document.getElementById('mission-steps-modal').classList.remove('flex');
+    }
+
+    // --- 7. SCALED GARRF DRONE ---
+    const droneRoot = new THREE.Group();
+    droneRoot.position.set(0, 0.18, 0.25);
+    scene.add(droneRoot);
+
+    const chassisGroup = new THREE.Group();
+    const motorsGroup = new THREE.Group();
+    const batteryGroup = new THREE.Group();
+    const autopilotGroup = new THREE.Group();
+    const skidsGroup = new THREE.Group();
+    const payloadGroup = new THREE.Group();
+    const rotorsArray = [];
+
+    droneRoot.add(chassisGroup);
+    droneRoot.add(motorsGroup);
+    droneRoot.add(batteryGroup);
+    droneRoot.add(autopilotGroup);
+    droneRoot.add(skidsGroup);
+    droneRoot.add(payloadGroup);
+
+    let currentAccentColor = 0xef4444;
+    const bodyMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4, metalness: 0.6 });
+    const accentMat = new THREE.MeshStandardMaterial({ color: currentAccentColor, roughness: 0.3, metalness: 0.7 });
+    const carbonMat = new THREE.MeshStandardMaterial({ color: 0x090d16, roughness: 0.7, metalness: 0.3 });
+    const rotorMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.8 });
+
+    chassisGroup.add(new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.025, 6), bodyMat));
+    const armRadius = 0.32;
+    for (let i = 0; i < 6; i++) {
+      const angle = (i * Math.PI) / 3;
+      const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, armRadius), carbonMat);
+      arm.rotation.z = Math.PI / 2;
+      arm.rotation.y = angle;
+      arm.position.set(Math.cos(angle) * (armRadius / 2), 0, Math.sin(angle) * (armRadius / 2));
+      chassisGroup.add(arm);
+
+      const motor = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.024, 0.035, 16), accentMat);
+      motor.position.set(Math.cos(angle) * armRadius, 0.02, Math.sin(angle) * armRadius);
+      motorsGroup.add(motor);
+
+      const propGroup = new THREE.Group();
+      propGroup.position.set(Math.cos(angle) * armRadius, 0.042, Math.sin(angle) * armRadius);
+      propGroup.add(new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.003, 0.02), rotorMat));
+      motorsGroup.add(propGroup);
+      rotorsArray.push(propGroup);
+    }
+
+    const skid1 = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.32), carbonMat);
+    skid1.rotation.x = Math.PI / 2;
+    skid1.position.set(-0.14, -0.12, 0);
+    skidsGroup.add(skid1);
+    const skid2 = skid1.clone();
+    skid2.position.x = 0.14;
+    skidsGroup.add(skid2);
+
+    [[-0.14, 0.08], [-0.14, -0.08], [0.14, 0.08], [0.14, -0.08]].forEach(pos => {
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.13), carbonMat);
+      leg.position.set(pos[0], -0.06, pos[1]);
+      skidsGroup.add(leg);
+    });
+
+    const battery = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.045, 0.075), new THREE.MeshStandardMaterial({ color: 0xeab308, roughness: 0.5 }));
+    battery.position.set(0, 0.035, 0);
+    batteryGroup.add(battery);
+
+    const autopilot = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.02, 0.05), new THREE.MeshStandardMaterial({ color: 0xf97316 }));
+    autopilot.position.set(0, 0.07, 0);
+    autopilotGroup.add(autopilot);
+
+    const rtkMast = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.004, 0.12), carbonMat);
+    rtkMast.position.set(-0.06, 0.09, -0.06);
+    autopilotGroup.add(rtkMast);
+    const rtkPuck = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.01), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+    rtkPuck.position.set(-0.06, 0.15, -0.06);
+    autopilotGroup.add(rtkPuck);
+
+    function buildPayload(type) {
+      while (payloadGroup.children.length > 0) payloadGroup.remove(payloadGroup.children[0]);
+      const holder = new THREE.Group();
+      holder.position.set(0, -0.065, 0);
+
+      if (type === 'medical') {
+        currentAccentColor = 0xef4444;
+        const pod = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.065, 0.11, 24), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+        pod.rotation.z = Math.PI / 2;
+        holder.add(pod);
+        const crossMat = new THREE.MeshBasicMaterial({ color: 0xdc2626 });
+        holder.add(new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.015, 0.075), crossMat));
+        holder.add(new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.05, 0.075), crossMat));
+      } else if (type === 'police') {
+        currentAccentColor = 0x2563eb;
+        holder.add(new THREE.Mesh(new THREE.SphereGeometry(0.05, 16, 16), new THREE.MeshStandardMaterial({ color: 0x1e293b })));
+      } else if (type === 'agri') {
+        currentAccentColor = 0x16a34a;
+        holder.add(new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.06, 0.08), new THREE.MeshStandardMaterial({ color: 0x14532d })));
+      } else if (type === 'heritage') {
+        currentAccentColor = 0xd97706;
+        holder.add(new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.07, 24), new THREE.MeshStandardMaterial({ color: 0x451a03 })));
+      } else if (type === 'airpost') {
+        currentAccentColor = 0xf59e0b;
+        holder.add(new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.08, 0.09), new THREE.MeshStandardMaterial({ color: 0xb45309 })));
+      } else if (type === 'relay') {
+        currentAccentColor = 0x06b6d4;
+        holder.add(new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.05, 0.06), new THREE.MeshStandardMaterial({ color: 0x164e63 })));
+      }
+      accentMat.color.setHex(currentAccentColor);
+      payloadGroup.add(holder);
+    }
+    buildPayload('medical');
+
+    // --- 8. PROGRESSION & GATED NAVIGATION LOGIC ---
+    let isHovering = false;
+    let isAutoOrbiting = false;
+    let isCrewVisible = true;
+    let isHandHeld = false;
+    let hoverTime = 0;
+    let reminderIntervalTimer = null;
+
+    function handleGatedTravelClick() {
+      alert("Cadet! Please complete '1. Assemble' to build and balance your drone hardware first. Once assembled, sovereign flight travel across Bharat will be unlocked!");
+    }
+
+    function toggleHover() {
+      isHandHeld = false;
+      isHovering = !isHovering;
+      
+      const btnHover = document.getElementById('btn-hover');
+      btnHover.classList.toggle('bg-rose-600', isHovering);
+      btnHover.classList.toggle('bg-emerald-600/80', !isHovering);
+      document.getElementById('hover-text').textContent = isHovering ? '1. Land Drone' : '1. Hover On';
+
+      document.getElementById('hand-text').textContent = '3. Land Drone in Hand';
+      document.getElementById('telemetry-hand').textContent = 'DISENGAGED';
+      document.getElementById('telemetry-hand').className = 'text-amber-400';
+    }
+
+    function toggleOrbit() {
+      isAutoOrbiting = !isAutoOrbiting;
+      controls.autoRotate = isAutoOrbiting;
+      controls.autoRotateSpeed = 2.0;
+      document.getElementById('btn-orbit').classList.toggle('bg-amber-600', isAutoOrbiting);
+      document.getElementById('btn-orbit').classList.toggle('bg-sky-600/80', !isAutoOrbiting);
+      document.getElementById('orbit-text').textContent = isAutoOrbiting ? '2. Stop Orbit' : '2. Auto Orbit';
+    }
+
+    function toggleHandHold() {
+      isHandHeld = !isHandHeld;
+      const handBtnText = document.getElementById('hand-text');
+      const handStatus = document.getElementById('telemetry-hand');
+
+      if (isHandHeld) {
+        isHovering = false;
+        handBtnText.textContent = "Release from Hand";
+        document.getElementById('hover-text').textContent = '1. Hover On';
+        document.getElementById('btn-hover').className = 'py-1.5 px-3 rounded-lg bg-emerald-600/80 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors';
+        
+        handStatus.textContent = "DOCKED IN HAND";
+        handStatus.className = "text-emerald-400 font-bold";
+      } else {
+        isHovering = true;
+        handBtnText.textContent = "3. Land Drone in Hand";
+        document.getElementById('hover-text').textContent = '1. Land Drone';
+        document.getElementById('btn-hover').className = 'py-1.5 px-3 rounded-lg bg-rose-600 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors';
+        
+        handStatus.textContent = "RELEASED / AIRBORNE";
+        handStatus.className = "text-cyan-400 font-bold";
+      }
+    }
+
+    function startTwoMinuteReminderLoop() {
+      if (reminderIntervalTimer) clearInterval(reminderIntervalTimer);
+      reminderIntervalTimer = setInterval(() => {
+        const modal = document.getElementById('interval-action-modal');
+        if (modal) {
+          modal.classList.remove('hidden');
+          modal.classList.add('flex');
+        }
+      }, 120000);
+    }
+
+    function closeIntervalModal() {
+      document.getElementById('interval-action-modal').classList.add('hidden');
+      document.getElementById('interval-action-modal').classList.remove('flex');
+    }
+
+    function toggleFoundersMode() {
+      isCrewVisible = !isCrewVisible;
+      crewGroup.visible = isCrewVisible;
+      const btn = document.getElementById('toggle-founders-btn');
+      if (isCrewVisible) {
+        btn.innerHTML = '<i class="fa-solid fa-user-group text-sky-300"></i><span>Founders &amp; Cadet View (+)</span>';
+        camera.position.set(0, 1.8, 4.5);
+        controls.target.set(0, 0.9, 0);
+      } else {
+        btn.innerHTML = '<i class="fa-solid fa-user text-slate-400"></i><span>Show Crew (+)</span>';
+        camera.position.set(0, 0.8, 1.8);
+        controls.target.set(0, 0.2, 0.25);
+      }
+    }
+
+    function onExplodeChange(val) {
+      const dist = (val / 100) * 0.25;
+      document.getElementById('explode-val').textContent = val + '%';
+      motorsGroup.position.y = dist * 0.8;
+      autopilotGroup.position.y = dist * 1.5;
+      batteryGroup.position.y = dist * 1.0;
+      skidsGroup.position.y = -dist * 1.2;
+      payloadGroup.position.y = -dist * 1.8;
+    }
+
+    function onSelectDroneVariant(val) {
+      buildPayload(val);
+      const profiles = {
+        medical: { name: 'Medical Variant', sym: '✚', bClass: 'bg-red-950 text-red-400 border-red-800/60', desc: 'Active 2°C–8°C thermoelectric cold pod with red cross emblem for rapid blood units and antivenom transit.' },
+        police: { name: 'Police Variant', sym: '🛡️', bClass: 'bg-blue-950 text-blue-400 border-blue-800/60', desc: 'Dual optical 30x zoom and Long-Wave Infrared (FLIR) gimbal with blue law-enforcement beacons.' },
+        agri: { name: 'Agri Variant', sym: '🌱', bClass: 'bg-green-950 text-green-400 border-green-800/60', desc: '5-band multispectral optical array delivering normalized difference vegetation index (NDVI) crop scans.' },
+        heritage: { name: 'Heritage Variant', sym: '🏛️', bClass: 'bg-amber-950 text-amber-400 border-amber-800/60', desc: 'Rotational 3D LiDAR puck for photogrammetry and architectural reconstruction of heritage sites.' },
+        airpost: { name: 'Air-Post Variant', sym: '📦', bClass: 'bg-yellow-950 text-yellow-400 border-yellow-800/60', desc: 'Automated bottom-release payload cargo bay for last-mile remote postal courier transit.' },
+        relay: { name: 'RF Relay Variant', sym: '📡', bClass: 'bg-cyan-950 text-cyan-400 border-cyan-800/60', desc: 'High-gain omnidirectional dual-dipole antenna transponder restoring local emergency networks.' }
+      };
+      const p = profiles[val];
+      document.getElementById('variant-badge').textContent = p.name;
+      document.getElementById('variant-badge').className = `px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${p.bClass}`;
+      document.getElementById('variant-symbol').textContent = p.sym;
+      document.getElementById('variant-desc').textContent = p.desc;
+    }
+
+    // --- 9. ANIMATION & KINEMATICS LOOP ---
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = clock.getDelta();
+      const elapsedTime = clock.getElapsedTime();
+
+      // Gentle wind breeze on campus trees
+      dynamicTreesArray.forEach((t, i) => {
+        t.rotation.z = Math.sin(elapsedTime * 1.2 + i) * 0.015;
+      });
+
+      // Cadet right arm elevation during hand-docking
+      if (studentRightArm) {
+        const targetRotX = isHandHeld ? -Math.PI / 2.3 : 0;
+        studentRightArm.rotation.x += (targetRotX - studentRightArm.rotation.x) * 0.08;
+      }
+
+      if (isHandHeld) {
+        const handTargetPos = new THREE.Vector3(0.18, 0.96, -0.42);
+        droneRoot.position.lerp(handTargetPos, 0.08);
+        droneRoot.rotation.x *= 0.85;
+        droneRoot.rotation.z *= 0.85;
+        droneRoot.rotation.y += (0 - droneRoot.rotation.y) * 0.08;
+
+        rotorsArray.forEach(rotor => { rotor.rotation.y += 0.015; });
+
+        document.getElementById('telemetry-state').textContent = "IN CADET HAND";
+        document.getElementById('telemetry-alt').textContent = "0.96 m (PALM)";
+        document.getElementById('telemetry-rpm').textContent = "0 RPM (Resting)";
+      } 
+      else if (isHovering) {
+        hoverTime += delta * 3;
+        const targetHoverPos = new THREE.Vector3(0, 1.20 + Math.sin(hoverTime) * 0.05, 0.25);
+        droneRoot.position.lerp(targetHoverPos, 0.06);
+        droneRoot.rotation.z = Math.sin(hoverTime * 0.8) * 0.03;
+        droneRoot.rotation.x = Math.cos(hoverTime * 0.7) * 0.02;
+
+        rotorsArray.forEach((rotor, idx) => {
+          rotor.rotation.y += (idx % 2 === 0 ? 0.45 : -0.45);
+        });
+
+        document.getElementById('telemetry-state').textContent = "AUTONOMOUS HOVER";
+        document.getElementById('telemetry-alt').textContent = (droneRoot.position.y).toFixed(2) + " m AGL";
+        document.getElementById('telemetry-rpm').textContent = "5,400 RPM";
+      } 
+      else {
+        const groundPos = new THREE.Vector3(0, 0.18, 0.25);
+        droneRoot.position.lerp(groundPos, 0.1);
+        droneRoot.rotation.x *= 0.9;
+        droneRoot.rotation.z *= 0.9;
+
+        rotorsArray.forEach(rotor => { rotor.rotation.y += 0.005; });
+
+        document.getElementById('telemetry-state').textContent = "ON PAD";
+        document.getElementById('telemetry-alt').textContent = "0.0 m (GND)";
+        document.getElementById('telemetry-rpm').textContent = "0 RPM (Armed)";
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      syncGlobalVisitorCounter();
+    });
+  </script>
+</body>
+</html>
