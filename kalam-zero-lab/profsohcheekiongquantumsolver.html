@@ -405,7 +405,6 @@
             const config = materialConfigs[matKey];
             document.getElementById('densityBadge').innerText = `~${config.density} kg/m³ (Stiffness: ${config.stiffness} GPa)`;
             
-            // STRICTLY HIDE MOISTURE CONTROL FOR METALS
             const moistureBox = document.getElementById('moistureControlBox');
             if (config.showMC) {
                 moistureBox.style.display = 'block';
@@ -433,10 +432,14 @@
                 let pztX = parseFloat(document.getElementById('pztXInput').value);
                 let pztY = parseFloat(document.getElementById('pztYInput').value);
                 
+                // Position PZT precisely relative to specimen dimensions
                 pztMesh.position.x = (pztX - (specLen / 2)) / 50;
                 pztMesh.position.z = (pztY - (specWidth / 2)) / 50;
                 pztMesh.position.y = (specThick / 20) * 0.22 + 0.04;
                 pztMesh.scale.set(pztSize / 20, 1, pztSize / 20);
+
+                // Re-initialize wave particles directly beneath/across the PZT sensor location
+                updateWaveParticlePositions(pztMesh.position.x, pztMesh.position.z, specLen / 50, specWidth / 50);
             }
         }
 
@@ -480,28 +483,51 @@
             pztMesh = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.08, 0.2), new THREE.MeshStandardMaterial({ color: 0xc0c0c0, metalness: 0.8 }));
             scene.add(pztMesh);
 
+            // Create initial wave particles centered around PZT default position (0,0)
             const particleGeometry = new THREE.BufferGeometry();
-            const positions = new Float32Array(400 * 3);
-            for(let i = 0; i < 400 * 3; i += 3) {
-                positions[i] = (Math.random() - 0.5) * 3.8;
-                positions[i+1] = 0.21;
-                positions[i+2] = (Math.random() - 0.5) * 1.8;
+            const positions = new Float32Array(500 * 3);
+            for(let i = 0; i < 500 * 3; i += 3) {
+                let angle = Math.random() * Math.PI * 2;
+                let r = Math.random() * 1.2;
+                positions[i] = Math.cos(angle) * r;
+                positions[i+1] = 0.22;
+                positions[i+2] = Math.sin(angle) * r;
             }
             particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            waveParticles = new THREE.Points(particleGeometry, new THREE.PointsMaterial({ color: 0x6366f1, size: 0.05 }));
+            waveParticles = new THREE.Points(particleGeometry, new THREE.PointsMaterial({ color: 0x6366f1, size: 0.06 }));
             scene.add(waveParticles);
 
             animate3D();
         }
 
+        function updateWaveParticlePositions(pztCenterX, pztCenterZ, scaleX, scaleZ) {
+            if (!waveParticles) return;
+            const positions = waveParticles.geometry.attributes.position.array;
+            for(let i = 0; i < positions.length; i += 3) {
+                let angle = Math.random() * Math.PI * 2;
+                let r = Math.random() * (Math.max(scaleX, scaleZ) * 0.9);
+                positions[i] = pztCenterX + Math.cos(angle) * r;
+                positions[i+1] = pztMesh.position.y + 0.01;
+                positions[i+2] = pztCenterZ + Math.sin(angle) * r;
+            }
+            waveParticles.geometry.attributes.position.needsUpdate = true;
+        }
+
         function animate3D() {
             requestAnimationFrame(animate3D);
-            if (simulationExecuted) {
-                waveAnimationTime += 0.06;
+            if (simulationExecuted && waveParticles && pztMesh) {
+                waveAnimationTime += 0.08;
                 const positions = waveParticles.geometry.attributes.position.array;
+                const pX = pztMesh.position.x;
+                const pZ = pztMesh.position.z;
+                const basePosY = pztMesh.position.y;
+
                 for(let i = 0; i < positions.length; i += 3) {
-                    const dist = Math.sqrt(positions[i]*positions[i] + positions[i+2]*positions[i+2]);
-                    positions[i+1] = 0.2 + Math.sin(dist * 6 - waveAnimationTime * 5) * 0.05 * (1 / (dist + 0.4));
+                    let dx = positions[i] - pX;
+                    let dz = positions[i+2] - pZ;
+                    let dist = Math.sqrt(dx*dx + dz*dz);
+                    // Radial wave propagation outward directly from PZT center
+                    positions[i+1] = basePosY + Math.sin(dist * 12 - waveAnimationTime * 6) * 0.04 * Math.exp(-dist * 1.5);
                 }
                 waveParticles.geometry.attributes.position.needsUpdate = true;
             }
@@ -524,14 +550,12 @@
             });
         }
 
-        // RIGIDLY COUPLED ELASTODYNAMIC 3D EMI MODEL
         function generateDynamicSweepData(matKey, len, width, thick, pztX, pztY, pztSize, mc, temp, fStart, fStop, steps, solverId, type) {
             let labels = [];
             let data = [];
             let stepSize = (fStop - fStart) / (steps - 1);
             
             const mat = materialConfigs[matKey];
-            
             let volume = (len * width * thick) * 1e-9;
             let mass = mat.density * volume;
             let stiffnessVal = mat.stiffness * 1e9;
@@ -541,7 +565,6 @@
             let coordinateShiftFactor = 1.0 + (Math.abs(modeShapeCoupling) * 0.8) + ((pztSize - 20) * 0.01);
             
             let thermalShift = (temp - 25) * 0.15;
-            // Metals strictly have 0 moisture shift contribution
             let moistureShift = mat.showMC ? (mc - 12) * 0.22 : 0;
             
             let activeResonanceFreq = (characteristicFreq * coordinateShiftFactor) + thermalShift + moistureShift;
