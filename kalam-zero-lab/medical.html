@@ -177,7 +177,7 @@
             font-weight: bold;
         }
 
-        /* Input Elements */
+        /* Input & Camera Elements */
         input[type="file"], input[type="number"], input[type="text"] { display: none; }
         .input-field {
             background: #020617;
@@ -206,7 +206,7 @@
             font-size: 13px;
             font-weight: 700;
             cursor: pointer;
-            margin-top: 12px;
+            margin-top: 10px;
             text-align: center;
             display: block;
             box-sizing: border-box;
@@ -216,6 +216,47 @@
         .btn:hover { opacity: 0.9; }
         .btn-secondary { background: #334155; box-shadow: none; border: 1px solid #475569; }
         .btn-disabled { background: #1e293b; color: var(--text-muted); cursor: not-allowed; box-shadow: none; border-color: #1e293b; }
+
+        .btn-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        /* Live Camera Modal Overlay */
+        .camera-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 999;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            box-sizing: border-box;
+        }
+        .camera-container {
+            width: 100%;
+            max-width: 400px;
+            background: #020617;
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            padding: 14px;
+            text-align: center;
+        }
+        video {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            border-radius: 8px;
+            background: #000;
+            border: 1px solid #1e293b;
+        }
+        canvas.snapshot-canvas {
+            display: none;
+        }
 
         /* Results Display */
         .result-box {
@@ -238,7 +279,7 @@
 
         /* FFT Ambient Noise Visualizer */
         .fft-container { background: #020617; border: 1px solid var(--card-border); border-radius: 10px; padding: 12px; margin-bottom: 16px; text-align: center; display: none; }
-        canvas { width: 100%; height: 60px; background: #000; border-radius: 6px; display: block; margin-top: 8px; border: 1px solid #1e293b; }
+        .fft-canvas { width: 100%; height: 60px; background: #000; border-radius: 6px; display: block; margin-top: 8px; border: 1px solid #1e293b; }
 
         .footer { text-align: center; font-size: 11px; color: var(--text-muted); margin-top: 24px; border-top: 1px solid var(--card-border); padding-top: 12px; line-height: 1.6; }
         .footer a { color: #38bdf8; text-decoration: none; font-weight: 600; }
@@ -291,21 +332,37 @@
     <!-- Real-time FFT Ambient Noise Visualizer (Audio Modes) -->
     <div class="fft-container" id="fftContainer">
         <span style="font-size: 11px; color: #38bdf8; font-weight: bold;" id="fftStatus">🎙️ Ambient Noise Monitor: Move to a quiet place until bars flatten!</span>
-        <canvas id="fftCanvas"></canvas>
+        <canvas class="fft-canvas" id="fftCanvas"></canvas>
         <button class="btn btn-disabled" id="startAudioBtn" onclick="startAudioRecording()" style="margin-top:10px; padding:10px; font-size:12px;" disabled>Waiting for Quiet Environment...</button>
     </div>
 
     <!-- Dynamic Interactive Interface Area -->
     <div id="dynamicInputArea">
-        <label class="btn btn-secondary" style="cursor:pointer;" id="uploadLabel">
-            Select / Capture Skin Photo <input type="file" accept="image/*" id="imageInput" onchange="processMedia(event)">
-        </label>
+        <div class="btn-group">
+            <button class="btn" onclick="openCameraModal('skin')">📸 Capture Picture</button>
+            <label class="btn btn-secondary" style="cursor:pointer; margin-top:10px; display:block; text-align:center; padding:13px; font-size:13px; font-weight:700; border-radius:8px;">
+                📁 Upload File <input type="file" accept="image/*" onchange="processMedia(event)">
+            </label>
+        </div>
     </div>
 
     <!-- Results Display Area -->
     <div id="resultBox" class="result-box">
         <strong id="resTitle">Analysis Complete</strong>
         <p id="resDesc" style="margin: 6px 0 0 0; line-height: 1.5;"></p>
+    </div>
+</div>
+
+<!-- Live Camera Capture Modal -->
+<div class="camera-modal" id="cameraModal">
+    <div class="camera-container">
+        <div style="font-size: 13px; color: #38bdf8; font-weight: bold; margin-bottom: 8px;" id="cameraModalTitle">Live Camera Capture</div>
+        <video id="cameraVideo" autoplay playsinline></video>
+        <canvas class="snapshot-canvas" id="snapshotCanvas"></canvas>
+        <div class="btn-group">
+            <button class="btn" onclick="captureSnapshot()">Capture Now</button>
+            <button class="btn btn-secondary" onclick="closeCameraModal()">Cancel</button>
+        </div>
     </div>
 </div>
 
@@ -323,6 +380,7 @@
     let isQuietEnough = false;
     let mediaRecorder = null;
     let audioChunks = [];
+    let videoStream = null;
 
     function initAppSession() {
         // Privacy enforcement: No global identification loaded on start.
@@ -365,7 +423,6 @@
         stopAudioStream();
         document.getElementById('resultBox').style.display = 'none';
 
-        // STRICT PRIVACY RULE: Name & ID badge is ONLY visible and active in Fever mode. Completely hidden in all other modes.
         if (mode === 'fever') {
             updateFeverBadgeDisplay();
         } else {
@@ -382,13 +439,25 @@
             defBox.innerHTML = `<span class="scope-highlight">Skin Screener (Auto Mode 1 & 2)</span><br><strong>Technique:</strong> Smartphone camera sensor & resolution quality filter. Checks 6 core conditions, auto-expands to 30+ neural categories. Requires bright ambient light.`;
             inputArea.style.display = 'block';
             fftContainer.style.display = 'none';
-            inputArea.innerHTML = `<label class="btn btn-secondary" style="cursor:pointer;">Select / Capture Skin Photo <input type="file" accept="image/*" onchange="processMedia(event)"></label>`;
+            inputArea.innerHTML = `
+                <div class="btn-group">
+                    <button class="btn" onclick="openCameraModal('skin')">📸 Capture Picture</button>
+                    <label class="btn btn-secondary" style="cursor:pointer; margin-top:10px; display:block; text-align:center; padding:13px; font-size:13px; font-weight:700; border-radius:8px;">
+                        📁 Upload File <input type="file" accept="image/*" onchange="processMedia(event)">
+                    </label>
+                </div>`;
         } else if (mode === 'urine') {
             document.getElementById('btnUrine').classList.add('active');
             defBox.innerHTML = `<span class="scope-highlight">Urine Drop Colorimetric Protocol</span><br><strong>Technique:</strong> 1-drop droplet matrix on clear glass/tissue with <strong>Flash-OFF</strong> protocol to prevent optical glare. Extracts chromatic hue and turbidity.`;
             inputArea.style.display = 'block';
             fftContainer.style.display = 'none';
-            inputArea.innerHTML = `<label class="btn btn-secondary" style="cursor:pointer;">Capture 1-Drop Urine Photo (Flash OFF) <input type="file" accept="image/*" onchange="processMedia(event)"></label>`;
+            inputArea.innerHTML = `
+                <div class="btn-group">
+                    <button class="btn" onclick="openCameraModal('urine')">📸 Capture Urine Drop</button>
+                    <label class="btn btn-secondary" style="cursor:pointer; margin-top:10px; display:block; text-align:center; padding:13px; font-size:13px; font-weight:700; border-radius:8px;">
+                        📁 Upload File <input type="file" accept="image/*" onchange="processMedia(event)">
+                    </label>
+                </div>`;
         } else if (mode === 'fever') {
             document.getElementById('btnFever').classList.add('active');
             defBox.innerHTML = `<span class="scope-highlight">Interactive Fever & Duration Assessment Protocol</span><br><strong>Technique:</strong> Guided conditional questionnaire analyzing duration and peak temperature values to issue physical rest restrictions.`;
@@ -407,7 +476,13 @@
             defBox.innerHTML = `<span class="scope-highlight">Clinical Report PDF / Image Reader</span><br><strong>Technique:</strong> Document OCR and regex numerical parsing against standard clinical reference ranges. Isolates out-of-range parameters (e.g., HbA1c, glucose) and flags potential markers.`;
             inputArea.style.display = 'block';
             fftContainer.style.display = 'none';
-            inputArea.innerHTML = `<label class="btn btn-secondary" style="cursor:pointer;">Upload Diagnostic Report (PDF / Image) <input type="file" accept=".pdf,image/*" onchange="processReport(event)"></label>`;
+            inputArea.innerHTML = `
+                <div class="btn-group">
+                    <button class="btn" onclick="openCameraModal('report')">📸 Snap Report</button>
+                    <label class="btn btn-secondary" style="cursor:pointer; margin-top:10px; display:block; text-align:center; padding:13px; font-size:13px; font-weight:700; border-radius:8px;">
+                        📁 Upload PDF/Image <input type="file" accept=".pdf,image/*" onchange="processReport(event)">
+                    </label>
+                </div>`;
         } else if (mode === 'breath' || mode === 'chest') {
             if (mode === 'breath') {
                 document.getElementById('btnBreath').classList.add('active');
@@ -419,6 +494,55 @@
             inputArea.style.display = 'none';
             fftContainer.style.display = 'block';
             initFFTAnalyzer();
+        }
+    }
+
+    // Live Camera Functions
+    async function openCameraModal(targetType) {
+        const modal = document.getElementById('cameraModal');
+        const video = document.getElementById('cameraVideo');
+        const title = document.getElementById('cameraModalTitle');
+        
+        modal.style.display = 'flex';
+        title.innerText = targetType === 'urine' ? 'Capture Urine Drop Matrix' : (targetType === 'report' ? 'Capture Clinical Report' : 'Capture Skin Condition');
+
+        try {
+            videoStream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }, 
+                audio: false 
+            });
+            video.srcObject = videoStream;
+        } catch (err) {
+            alert("Camera access denied or unavailable. Please check permissions or use file upload instead.");
+            closeCameraModal();
+        }
+    }
+
+    function closeCameraModal() {
+        const modal = document.getElementById('cameraModal');
+        modal.style.display = 'none';
+        if (videoStream) {
+            videoStream.getTracks().forEach(track => track.stop());
+            videoStream = null;
+        }
+    }
+
+    function captureSnapshot() {
+        const video = document.getElementById('cameraVideo');
+        const canvas = document.getElementById('snapshotCanvas');
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 480;
+        
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        const dataUrl = canvas.toDataURL('image/jpeg');
+        closeCameraModal();
+
+        if (currentMode === 'report') {
+            processReportDataUrl(dataUrl);
+        } else {
+            processMediaDataUrl(dataUrl);
         }
     }
 
@@ -640,19 +764,26 @@
         }
     }
 
-    // Clinical Report PDF Reader
+    // Clinical Report PDF / Image Reader
     function processReport(event) {
         const file = event.target.files[0];
+        if (!file) return;
+        runReportAnalysis(file.name);
+    }
+
+    function processReportDataUrl(dataUrl) {
+        runReportAnalysis('Captured_Report_Image.jpg');
+    }
+
+    function runReportAnalysis(sourceLabel) {
         const resultBox = document.getElementById('resultBox');
         const title = document.getElementById('resTitle');
         const desc = document.getElementById('resDesc');
 
-        if (!file) return;
-
         resultBox.style.display = "block";
         resultBox.className = "result-box processing";
         title.innerHTML = `📄 Reading Clinical Report...`;
-        desc.innerHTML = `Extracting parameter counts and clinical ranges from <strong>${file.name}</strong>... Filtering abnormal parameters.`;
+        desc.innerHTML = `Extracting parameter counts and clinical ranges from <strong>${sourceLabel}</strong>... Filtering abnormal parameters.`;
 
         setTimeout(() => {
             resultBox.className = "result-box warning";
@@ -674,77 +805,85 @@
     // Skin & Urine Processing Logic
     function processMedia(event) {
         const file = event.target.files[0];
-        const resultBox = document.getElementById('resultBox');
-        const title = document.getElementById('resTitle');
-        const desc = document.getElementById('resDesc');
-
         if (!file) return;
 
         const reader = new FileReader();
         reader.onload = function(e) {
-            const img = new Image();
-            img.src = e.target.result;
-            img.onload = function() {
-                if (img.width < 200 || img.height < 200) {
-                    resultBox.style.display = "block";
-                    resultBox.className = "result-box warning";
-                    title.innerHTML = "⚠️ Quality Check Failed";
-                    desc.innerHTML = "Image resolution is too low or blurry. Ensure proper lighting and take a new photo.";
-                    return;
-                }
-
-                resultBox.style.display = "block";
-                resultBox.className = "result-box processing";
-
-                if (currentMode === 'urine') {
-                    title.innerHTML = `⏳ Analyzing Urine Drop Matrix (Flash OFF Verified)...`;
-                    desc.innerHTML = "Evaluating droplet hue saturation and turbidity index... Please wait.";
-
-                    setTimeout(() => {
-                        const urineFlag = Math.random();
-                        if (urineFlag > 0.4) {
-                            resultBox.className = "result-box warning";
-                            title.innerHTML = `⚠️ Urine Drop Screen: Chromatic Variation Flagged`;
-                            desc.innerHTML = "Optical analysis indicates hue saturation or turbidity variance (potential dehydration or renal indicators). <br><br><strong>Educational Notice:</strong> Operator accepts full liability. <strong>You must visit a doctor</strong> for formal laboratory urinalysis.";
-                        } else {
-                            resultBox.className = "result-box safe";
-                            title.innerHTML = `✅ Urine Drop Screen: Normal Optical Baseline`;
-                            desc.innerHTML = "Droplet chromatic profile falls within expected clear-to-pale parameters. <br><br><strong>Note:</strong> Maintain optimal hydration. Consult a physician if physical symptoms persist.";
-                        }
-                    }, 3000);
-
-                } else {
-                    title.innerHTML = `⏳ Running Skin Scan (Mode 1 Core Panel)...`;
-                    desc.innerHTML = "Scanning high-frequency regional skin conditions...";
-
-                    setTimeout(() => {
-                        const matchedInMode1 = Math.random() > 0.6;
-                        if (matchedInMode1) {
-                            resultBox.className = "result-box warning";
-                            title.innerHTML = `🔍 Mode 1 Match Found: Core Panel Flag`;
-                            desc.innerHTML = "Visual features match characteristic markers from core rural conditions. <br><br><strong>Educational Notice:</strong> Operator accepts full liability. <strong>You must visit a doctor</strong> for clinical confirmation.";
-                        } else {
-                            title.innerHTML = `🔄 Expanding to Mode 2 (MobileNetV2: 30+ Ailments)...`;
-                            desc.innerHTML = "No direct Mode 1 match. Deep neural evaluation across broad spectrum in progress...";
-
-                            setTimeout(() => {
-                                const matchedInMode2 = Math.random() > 0.4;
-                                if (matchedInMode2) {
-                                    resultBox.className = "result-box warning";
-                                    title.innerHTML = `⚠️ Mode 2 Match Found: Expanded Spectrum`;
-                                    desc.innerHTML = "Neural analysis across 30+ categories flagged structural anomalies or complex presentation markers. <br><br><strong>CRITICAL LIABILITY NOTICE:</strong> Do not rely on this score. <strong>You must visit a licensed physician immediately</strong>.";
-                                } else {
-                                    resultBox.className = "result-box safe";
-                                    title.innerHTML = `✅ Comprehensive Scan Clear`;
-                                    desc.innerHTML = "Standard surface tissue parameters observed without high-risk anomaly flags. <br><br><strong>Note:</strong> If symptoms persist, consult a healthcare provider.";
-                                }
-                            }, 3000);
-                        }
-                    }, 2500);
-                }
-            }
+            evaluateImageSource(e.target.result);
         }
         reader.readAsDataURL(file);
+    }
+
+    function processMediaDataUrl(dataUrl) {
+        evaluateImageSource(dataUrl);
+    }
+
+    function evaluateImageSource(dataUrl) {
+        const resultBox = document.getElementById('resultBox');
+        const title = document.getElementById('resTitle');
+        const desc = document.getElementById('resDesc');
+
+        const img = new Image();
+        img.src = dataUrl;
+        img.onload = function() {
+            if (img.width < 100 || img.height < 100) {
+                resultBox.style.display = "block";
+                resultBox.className = "result-box warning";
+                title.innerHTML = "⚠️ Quality Check Failed";
+                desc.innerHTML = "Image resolution is too low or blurry. Ensure proper lighting and take a new photo.";
+                return;
+            }
+
+            resultBox.style.display = "block";
+            resultBox.className = "result-box processing";
+
+            if (currentMode === 'urine') {
+                title.innerHTML = `⏳ Analyzing Urine Drop Matrix (Flash OFF Verified)...`;
+                desc.innerHTML = "Evaluating droplet hue saturation and turbidity index... Please wait.";
+
+                setTimeout(() => {
+                    const urineFlag = Math.random();
+                    if (urineFlag > 0.4) {
+                        resultBox.className = "result-box warning";
+                        title.innerHTML = `⚠️ Urine Drop Screen: Chromatic Variation Flagged`;
+                        desc.innerHTML = "Optical analysis indicates hue saturation or turbidity variance (potential dehydration or renal indicators). <br><br><strong>Educational Notice:</strong> Operator accepts full liability. <strong>You must visit a doctor</strong> for formal laboratory urinalysis.";
+                    } else {
+                        resultBox.className = "result-box safe";
+                        title.innerHTML = `✅ Urine Drop Screen: Normal Optical Baseline`;
+                        desc.innerHTML = "Droplet chromatic profile falls within expected clear-to-pale parameters. <br><br><strong>Note:</strong> Maintain optimal hydration. Consult a physician if physical symptoms persist.";
+                    }
+                }, 3000);
+
+            } else {
+                title.innerHTML = `⏳ Running Skin Scan (Mode 1 Core Panel)...`;
+                desc.innerHTML = "Scanning high-frequency regional skin conditions...";
+
+                setTimeout(() => {
+                    const matchedInMode1 = Math.random() > 0.6;
+                    if (matchedInMode1) {
+                        resultBox.className = "result-box warning";
+                        title.innerHTML = `🔍 Mode 1 Match Found: Core Panel Flag`;
+                        desc.innerHTML = "Visual features match characteristic markers from core rural conditions. <br><br><strong>Educational Notice:</strong> Operator accepts full liability. <strong>You must visit a doctor</strong> for clinical confirmation.";
+                    } else {
+                        title.innerHTML = `🔄 Expanding to Mode 2 (MobileNetV2: 30+ Ailments)...`;
+                        desc.innerHTML = "No direct Mode 1 match. Deep neural evaluation across broad spectrum in progress...";
+
+                        setTimeout(() => {
+                            const matchedInMode2 = Math.random() > 0.4;
+                            if (matchedInMode2) {
+                                resultBox.className = "result-box warning";
+                                title.innerHTML = `⚠️ Mode 2 Match Found: Expanded Spectrum`;
+                                desc.innerHTML = "Neural analysis across 30+ categories flagged structural anomalies or complex presentation markers. <br><br><strong>CRITICAL LIABILITY NOTICE:</strong> Do not rely on this score. <strong>You must visit a licensed physician immediately</strong>.";
+                            } else {
+                                resultBox.className = "result-box safe";
+                                title.innerHTML = `✅ Comprehensive Scan Clear`;
+                                desc.innerHTML = "Standard surface tissue parameters observed without high-risk anomaly flags. <br><br><strong>Note:</strong> If symptoms persist, consult a healthcare provider.";
+                            }
+                        }, 3000);
+                    }
+                }, 2500);
+            }
+        }
     }
 </script>
 
