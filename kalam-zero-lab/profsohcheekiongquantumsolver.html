@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prof Soh Chee Kiong Quantum AI Solver: 3D Visualization & EMI Suite v4.5</title>
+    <title>Prof Soh Chee Kiong Quantum AI Solver: 3D Visualization & EMI Suite v5.0</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Chart.js -->
@@ -11,7 +11,7 @@
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Three.js for 3D PZT and Wave Visualization -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
     <!-- OrbitControls for Rotatable, Zoomable 3D Canvas -->
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <style>
@@ -109,6 +109,13 @@
                             </div>
                             <div>
                                 <div class="flex justify-between text-[11px] text-slate-400 mb-1">
+                                    <span>Width (30mm - 300mm)</span>
+                                    <span id="specWidthVal" class="text-indigo-400 font-bold">100 mm</span>
+                                </div>
+                                <input type="range" id="specWidthSlider" min="30" max="300" step="10" value="100" oninput="updateDimensions()" class="w-full accent-indigo-500 bg-slate-950 cursor-pointer">
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-[11px] text-slate-400 mb-1">
                                     <span>Thickness (5mm - 100mm)</span>
                                     <span id="specThickVal" class="text-indigo-400 font-bold">20 mm</span>
                                 </div>
@@ -117,20 +124,36 @@
                         </div>
 
                         <div class="p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-3">
-                            <div class="text-xs font-bold text-violet-300 uppercase">PZT Patch Dimensions (Mass-Loading)</div>
+                            <div class="text-xs font-bold text-violet-300 uppercase">PZT Patch Dimensions & Mass-Loading</div>
+                            
+                            <!-- WITH / WITHOUT PZT MASS TOGGLE -->
+                            <div class="flex items-center justify-between py-1 border-b border-slate-800 pb-2">
+                                <span class="text-xs font-semibold text-slate-300">Include PZT Mass Effect</span>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="pztMassToggle" checked class="sr-only peer">
+                                    <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-violet-600"></div>
+                                </label>
+                            </div>
+
                             <div>
                                 <div class="flex justify-between text-[11px] text-slate-400 mb-1">
-                                    <span>PZT Side Length (5mm - 50mm)</span>
+                                    <span>PZT Side Length/Width (5mm - 100mm)</span>
                                     <span id="pztSizeVal" class="text-violet-400 font-bold">10 mm</span>
                                 </div>
-                                <input type="range" id="pztSizeSlider" min="5" max="50" step="1" value="10" oninput="updateDimensions()" class="w-full accent-violet-500 bg-slate-950 cursor-pointer">
+                                <input type="range" id="pztSizeSlider" min="5" max="100" step="1" value="10" oninput="updateDimensions()" class="w-full accent-violet-500 bg-slate-950 cursor-pointer">
                             </div>
                             <div>
                                 <div class="flex justify-between text-[11px] text-slate-400 mb-1">
-                                    <span>PZT Thickness (0.1mm - 2.0mm)</span>
+                                    <span>PZT Thickness (0.1mm - 5.0mm)</span>
                                     <span id="pztThickVal" class="text-violet-400 font-bold">0.3 mm</span>
                                 </div>
-                                <input type="range" id="pztThickSlider" min="0.1" max="2.0" step="0.1" value="0.3" oninput="updateDimensions()" class="w-full accent-violet-500 bg-slate-950 cursor-pointer">
+                                <input type="range" id="pztThickSlider" min="0.1" max="5.0" step="0.1" value="0.3" oninput="updateDimensions()" class="w-full accent-violet-500 bg-slate-950 cursor-pointer">
+                            </div>
+                            
+                            <!-- REAL-TIME WARNING BANNER FOR PZT VS SPECIMEN -->
+                            <div id="dimensionWarning" class="hidden text-[11px] p-2 rounded-lg bg-rose-500/20 border border-rose-500/40 text-rose-300 flex items-center gap-1.5 font-medium">
+                                <i class="fa-solid fa-triangle-exclamation text-rose-400"></i>
+                                <span id="warningText">Warning: PZT dimensions exceed specimen boundaries!</span>
                             </div>
                         </div>
 
@@ -139,7 +162,7 @@
                                 <span>Moisture Content (MC) <span class="text-[10px] text-amber-400">(Non-metal only)</span></span>
                                 <span id="mcVal" class="text-indigo-400 font-bold">12.0 %</span>
                             </div>
-                            <input type="range" id="mcSlider" min="5" max="28" step="0.5" value="12" oninput="updateMoisture(this.value)" class="w-full accent-indigo-500 bg-slate-950 cursor-pointer">
+                            <input type="range" id="mcSlider" min="5" max="28" step="0.5" value="12" oninput="document.getElementById('mcVal').innerText=this.value+' %'" class="w-full accent-indigo-500 bg-slate-950 cursor-pointer">
                         </div>
 
                         <div>
@@ -147,7 +170,7 @@
                                 <span>Temperature ($\Delta T$)</span>
                                 <span id="tempVal" class="text-rose-400 font-bold">25.0 °C</span>
                             </div>
-                            <input type="range" id="tempSlider" min="-10" max="75" step="1" value="25" oninput="document.getElementById('tempVal').innerText=this.value+' °C'; executeSimulation();" class="w-full accent-rose-500 bg-slate-950 cursor-pointer">
+                            <input type="range" id="tempSlider" min="-10" max="75" step="1" value="25" oninput="document.getElementById('tempVal').innerText=this.value+' °C'" class="w-full accent-rose-500 bg-slate-950 cursor-pointer">
                         </div>
 
                         <div>
@@ -182,10 +205,10 @@
                             <span id="renderStatus" class="text-xs px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 font-mono">Pending Execution</span>
                         </div>
                         <div id="canvas3dContainer" class="w-full h-80 bg-slate-950 rounded-xl relative overflow-hidden border border-slate-800 flex items-center justify-center">
-                            <div id="canvasOverlay" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/80 z-10 text-center p-6 transition-opacity">
+                            <div id="canvasOverlay" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/90 z-10 text-center p-6 transition-opacity">
                                 <i class="fa-solid fa-cube text-4xl text-indigo-400 mb-3 animate-pulse"></i>
                                 <h4 class="text-sm font-bold text-white mb-1">3D Specimen Visualizer Ready</h4>
-                                <p class="text-xs text-slate-400 max-w-sm">Configure your material and click <span class="text-indigo-300 font-semibold">"Execute Simulation & 3D Wave Render"</span> to initiate the model.</p>
+                                <p class="text-xs text-slate-400 max-w-sm">Configure parameters and click <span class="text-indigo-300 font-semibold">"Execute Simulation & 3D Wave Render"</span> to start.</p>
                             </div>
                         </div>
                         <div class="flex justify-between items-center mt-2 text-[11px] text-slate-400 px-1">
@@ -203,7 +226,7 @@
                             <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
                                 <i class="fa-solid fa-wave-square text-indigo-400"></i> Conductance G(&omega;) [mS] <span id="labelWeightG" class="text-[10px] text-amber-400 font-normal"></span>
                             </h3>
-                            <span id="execStatusG" class="text-[10px] text-slate-500 font-mono">Awaiting Execution</span>
+                            <span id="execStatusG" class="text-[10px] text-amber-400 font-mono">Awaiting Execution</span>
                         </div>
                         <div class="h-56 relative"><canvas id="conductanceChart"></canvas></div>
                     </div>
@@ -213,7 +236,7 @@
                             <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
                                 <i class="fa-solid fa-bolt text-violet-400"></i> Corrected Susceptance B(&omega;) [mS] <span id="labelWeightB" class="text-[10px] text-amber-400 font-normal"></span>
                             </h3>
-                            <span id="execStatusB" class="text-[10px] text-slate-500 font-mono">Awaiting Execution</span>
+                            <span id="execStatusB" class="text-[10px] text-amber-400 font-mono">Awaiting Execution</span>
                         </div>
                         <div class="h-56 relative"><canvas id="susceptanceChart"></canvas></div>
                     </div>
@@ -290,6 +313,10 @@
                     <h3 class="font-bold text-white text-base mb-1">1. Material Specificity: Moisture vs. Metals</h3>
                     <p>Porosity-based materials (Bamboo, Timber, Concrete) absorb moisture, altering structural stiffness and mass density. Metals (Aluminum, Steel) are impermeable; moisture has zero impact on their internal stress waves.</p>
                 </div>
+                <div>
+                    <h3 class="font-bold text-white text-base mb-1">2. PZT Patch vs. Specimen Constraints</h3>
+                    <p>Students must ensure the PZT patch size does not exceed the structural dimensions of the host specimen to maintain physical validity.</p>
+                </div>
             </div>
         </div>
     </div>
@@ -300,7 +327,7 @@
             <button onclick="closeModal('featuresModal')" class="absolute top-5 right-5 text-slate-400 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
             <h2 class="text-xl font-bold text-emerald-300 mb-4 flex items-center gap-2"><i class="fa-solid fa-star"></i> Salient Features</h2>
             <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
-                <p>Features dynamic 3D substrate color updates matching specimen changes, realistic moisture-filtering for porous materials, and thermal-mass loading solutions.</p>
+                <p>Includes fully adjustable specimen dimensions (Length, Width & Thickness), strict dynamic boundary dimension checking that blocks execution if PZT dimensions exceed specimen size, and thick PZT support up to 5.0 mm.</p>
             </div>
         </div>
     </div>
@@ -340,7 +367,6 @@
             }
         }
 
-        // Material theme colors, densities, and moisture susceptibility
         const materialConfigs = {
             bamboo: { name: 'Moso Bamboo', density: '~650 kg/m³ (Lightweight)', colorG: '#f59e0b', colorB: '#fbbf24', woodColor: 0x8b5a2b, showMC: true },
             wood: { name: 'Timber / Pine Wood', density: '~500 kg/m³ (Lightweight)', colorG: '#d97706', colorB: '#f59e0b', woodColor: 0xa0522d, showMC: true },
@@ -352,37 +378,50 @@
         function updateMaterialTheme(matKey) {
             const config = materialConfigs[matKey];
             document.getElementById('densityBadge').innerText = config.density;
-            
-            // Show/Hide moisture control based on whether material absorbs moisture
             const mcBox = document.getElementById('moistureControlBox');
             mcBox.style.display = config.showMC ? 'block' : 'none';
 
             if(woodMesh) {
                 woodMesh.material.color.setHex(config.woodColor);
             }
-            executeSimulation();
-        }
-
-        function updateMoisture(val) {
-            document.getElementById('mcVal').innerText = val + ' %';
-            executeSimulation();
         }
 
         function updateDimensions() {
-            const specLen = document.getElementById('specLenSlider').value;
-            const specThick = document.getElementById('specThickSlider').value;
-            const pztSize = document.getElementById('pztSizeSlider').value;
-            const pztThick = document.getElementById('pztThickSlider').value;
+            const specLen = parseFloat(document.getElementById('specLenSlider').value);
+            const specWidth = parseFloat(document.getElementById('specWidthSlider').value);
+            const specThick = parseFloat(document.getElementById('specThickSlider').value);
+            const pztSize = parseFloat(document.getElementById('pztSizeSlider').value);
+            const pztThick = parseFloat(document.getElementById('pztThickSlider').value);
 
             document.getElementById('specLenVal').innerText = specLen + ' mm';
+            document.getElementById('specWidthVal').innerText = specWidth + ' mm';
             document.getElementById('specThickVal').innerText = specThick + ' mm';
             document.getElementById('pztSizeVal').innerText = pztSize + ' mm';
             document.getElementById('pztThickVal').innerText = pztThick + ' mm';
 
+            // Real-time boundary dimension checking against actual sliders
+            const warningBox = document.getElementById('dimensionWarning');
+            const warningText = document.getElementById('warningText');
+            
+            if (pztSize > specLen) {
+                warningBox.classList.remove('hidden');
+                warningText.innerText = "Warning: PZT patch length ("+pztSize+"mm) exceeds specimen length ("+specLen+"mm)!";
+            } else if (pztSize > specWidth) {
+                warningBox.classList.remove('hidden');
+                warningText.innerText = "Warning: PZT patch width ("+pztSize+"mm) exceeds specimen width ("+specWidth+"mm)!";
+            } else {
+                warningBox.classList.add('hidden');
+            }
+
             if(woodMesh && pztMesh) {
-                woodMesh.scale.set(specLen / 200, specThick / 20, 1);
-                pztMesh.scale.set(pztSize / 10, pztThick / 0.3, pztSize / 10);
-                pztMesh.position.y = (specThick / 20) * 0.2 + (pztThick / 0.3) * 0.04;
+                // Correct proportional scaling mapped to 3D world units (1 unit = 50mm)
+                woodMesh.scale.set(specLen / 50, specThick / 20, specWidth / 50);
+                pztMesh.scale.set(pztSize / 20, pztThick / 0.3, pztSize / 20);
+                
+                // Position PZT precisely centered on top of the specimen surface
+                const specimenTopY = (specThick / 20) * 0.2;
+                const pztHalfThick = (pztThick / 0.3) * 0.04;
+                pztMesh.position.y = specimenTopY + pztHalfThick;
             }
         }
 
@@ -409,7 +448,7 @@
             dirLight.position.set(5, 10, 7);
             scene.add(dirLight);
 
-            const woodGeo = new THREE.BoxGeometry(4, 0.4, 2);
+            const woodGeo = new THREE.BoxGeometry(1, 0.4, 1);
             const woodMat = new THREE.MeshStandardMaterial({ color: 0x8b5a2b, roughness: 0.6 });
             woodMesh = new THREE.Mesh(woodGeo, woodMat);
             scene.add(woodMesh);
@@ -417,7 +456,6 @@
             const pztGeo = new THREE.BoxGeometry(1, 0.08, 1);
             const pztMat = new THREE.MeshStandardMaterial({ color: 0xc0c0c0, metalness: 0.8, roughness: 0.2 });
             pztMesh = new THREE.Mesh(pztGeo, pztMat);
-            pztMesh.position.set(0, 0.24, 0);
             scene.add(pztMesh);
 
             const particleCount = 400;
@@ -442,14 +480,18 @@
                 waveAnimationTime += 0.06;
                 const freqFactor = parseFloat(document.getElementById('freqSlider').value) / 100;
                 const pztThick = parseFloat(document.getElementById('pztThickSlider').value);
-                pztMesh.position.y = (0.24 * (parseFloat(document.getElementById('specThickSlider').value)/20)) + Math.sin(waveAnimationTime * freqFactor * 3) * (0.02 * (pztThick/0.3));
+                const specThick = parseFloat(document.getElementById('specThickSlider').value);
+                
+                let specimenTopY = (specThick / 20) * 0.2;
+                let pztHalfThick = (pztThick / 0.3) * 0.04;
+                pztMesh.position.y = (specimenTopY + pztHalfThick) + Math.sin(waveAnimationTime * freqFactor * 3) * (0.02 * (pztThick/0.3));
 
                 const positions = waveParticles.geometry.attributes.position.array;
                 for(let i = 0; i < positions.length; i += 3) {
                     const x = positions[i];
                     const z = positions[i+2];
                     const dist = Math.sqrt(x*x + z*z);
-                    positions[i+1] = 0.21 + Math.sin(dist * 6 - waveAnimationTime * 5) * 0.05 * (1 / (dist + 0.4));
+                    positions[i+1] = specimenTopY + Math.sin(dist * 6 - waveAnimationTime * 5) * 0.05 * (1 / (dist + 0.4));
                 }
                 waveParticles.geometry.attributes.position.needsUpdate = true;
             }
@@ -468,7 +510,7 @@
                 data: {
                     labels: freqSteps,
                     datasets: [{
-                        data: Array(35).fill(0),
+                        data: Array(35).fill(null),
                         borderColor: '#6366f1',
                         backgroundColor: 'rgba(99, 102, 241, 0.1)',
                         borderWidth: 2, fill: true, tension: 0.4, pointRadius: 0
@@ -483,7 +525,7 @@
                 data: {
                     labels: freqSteps,
                     datasets: [{
-                        data: Array(35).fill(0),
+                        data: Array(35).fill(null),
                         borderColor: '#a855f7',
                         backgroundColor: 'rgba(168, 85, 247, 0.1)',
                         borderWidth: 2, fill: true, tension: 0.4, pointRadius: 0
@@ -493,26 +535,30 @@
             });
         }
 
-        function generateData(matKey, mc, temp, pztSize, pztThick, type) {
+        function generateData(matKey, mc, temp, pztSize, pztThick, specLen, specWidth, specThick, type) {
             let data = [];
+            let isHeavy = (matKey === 'steel' || matKey === 'concrete');
+            let includeMass = document.getElementById('pztMassToggle').checked;
+
             let weightFactor = 1.0;
             if (matKey === 'aluminum') weightFactor = 1.3;
             if (matKey === 'steel') weightFactor = 1.8;
             if (matKey === 'concrete') weightFactor = 0.85;
 
-            let massLoadingFactor = (pztSize / 10) * (pztThick / 0.3);
+            let geomStiffnessFactor = (200 / specLen) * (specThick / 20);
+            let relativeMassSensitivity = isHeavy ? 0.02 : 1.0; 
+            let massLoadingFactor = includeMass ? (1.0 + ((pztSize / 10) * (pztThick / 0.3) - 1.0) * relativeMassSensitivity) : 1.0;
+
             let tempShift = (temp - 25) * 0.02; 
-            
-            // Moisture shift applied ONLY if material is porous/organic (bamboo, wood, concrete)
             let moistureShift = materialConfigs[matKey].showMC ? (mc - 12) * 0.15 : 0; 
 
             for (let i = 0; i < 35; i++) {
                 let f = i + tempShift + moistureShift;
                 if (type === 'g') {
-                    let p = Math.exp(-Math.pow(f - (12 * weightFactor), 2)/5) * (3.0 * weightFactor / (massLoadingFactor * (1 + moistureShift*0.1))) + Math.exp(-Math.pow(f - (25 * weightFactor), 2)/6) * (2.2 * weightFactor);
+                    let p = Math.exp(-Math.pow(f - (12 * weightFactor * geomStiffnessFactor), 2)/5) * (3.0 * weightFactor / (massLoadingFactor * (1 + moistureShift*0.1))) + Math.exp(-Math.pow(f - (25 * weightFactor), 2)/6) * (2.2 * weightFactor);
                     data.push(parseFloat((0.3 + p).toFixed(3)));
                 } else {
-                    let capacitiveBaseline = (2.0 * weightFactor * massLoadingFactor) + (i * 0.15) + (moistureShift * 0.2);
+                    let capacitiveBaseline = (2.0 * weightFactor * massLoadingFactor * geomStiffnessFactor) + (i * 0.15) + (moistureShift * 0.2);
                     let ripple = Math.sin((f - 10) * 0.4) * (0.35 * weightFactor) * Math.exp(-Math.pow(f - 15, 2)/50);
                     data.push(parseFloat((capacitiveBaseline + ripple).toFixed(3)));
                 }
@@ -521,6 +567,16 @@
         }
 
         function executeSimulation() {
+            const specLen = parseFloat(document.getElementById('specLenSlider').value);
+            const specWidth = parseFloat(document.getElementById('specWidthSlider').value);
+            const pztSize = parseFloat(document.getElementById('pztSizeSlider').value);
+
+            // STRICT CONDITIONAL CHECK: Dynamically comparing against actual specimen length and width
+            if (pztSize > specLen || pztSize > specWidth) {
+                alert("❌ SIMULATION BLOCKED: PZT patch dimensions (" + pztSize + " mm) exceed the host specimen boundaries (Length: " + specLen + " mm, Width: " + specWidth + " mm). You cannot execute a simulation when the PZT patch is larger than or wider than the specimen.");
+                return;
+            }
+
             simulationExecuted = true;
             document.getElementById('canvasOverlay').style.opacity = '0';
             setTimeout(() => document.getElementById('canvasOverlay').style.display = 'none', 300);
@@ -529,8 +585,9 @@
             const config = materialConfigs[matKey];
             const mc = parseFloat(document.getElementById('mcSlider').value);
             const temp = parseFloat(document.getElementById('tempSlider').value);
-            const pztSize = parseFloat(document.getElementById('pztSizeSlider').value);
             const pztThick = parseFloat(document.getElementById('pztThickSlider').value);
+            const specThick = parseFloat(document.getElementById('specThickSlider').value);
+            const includeMass = document.getElementById('pztMassToggle').checked;
 
             if(woodMesh) {
                 woodMesh.material.color.setHex(config.woodColor);
@@ -538,22 +595,25 @@
 
             conductanceChart.data.datasets[0].borderColor = config.colorG;
             conductanceChart.data.datasets[0].backgroundColor = config.colorG + '22';
-            conductanceChart.data.datasets[0].data = generateData(matKey, mc, temp, pztSize, pztThick, 'g');
+            conductanceChart.data.datasets[0].data = generateData(matKey, mc, temp, pztSize, pztThick, specLen, specWidth, specThick, 'g');
             conductanceChart.update();
 
             susceptanceChart.data.datasets[0].borderColor = config.colorB;
             susceptanceChart.data.datasets[0].backgroundColor = config.colorB + '22';
-            susceptanceChart.data.datasets[0].data = generateData(matKey, mc, temp, pztSize, pztThick, 'b');
+            susceptanceChart.data.datasets[0].data = generateData(matKey, mc, temp, pztSize, pztThick, specLen, specWidth, specThick, 'b');
             susceptanceChart.update();
 
-            let labelSuffix = config.showMC ? `[${config.name} | MC: ${mc}% | T: ${temp}°C]` : `[${config.name} | T: ${temp}°C]`;
+            let massStatus = includeMass ? "PZT Mass: ON" : "PZT Mass: OFF";
+            let labelSuffix = config.showMC ? `[${config.name} | L:${specLen}mm, W:${specWidth}mm | ${massStatus} | MC:${mc}% | T:${temp}°C]` : `[${config.name} | L:${specLen}mm, W:${specWidth}mm | ${massStatus} | T:${temp}°C]`;
             document.getElementById('labelWeightG').innerText = labelSuffix;
             document.getElementById('labelWeightB').innerText = labelSuffix;
 
             document.getElementById('renderStatus').innerText = "3D Waves & Signatures Active";
             document.getElementById('renderStatus').className = "text-xs px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono";
             document.getElementById('execStatusG').innerText = "Executed Successfully";
+            document.getElementById('execStatusG').className = "text-[10px] text-emerald-400 font-mono";
             document.getElementById('execStatusB').innerText = "Executed Successfully";
+            document.getElementById('execStatusB').className = "text-[10px] text-emerald-400 font-mono";
         }
 
         window.onload = () => {
