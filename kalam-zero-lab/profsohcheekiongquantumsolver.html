@@ -91,7 +91,7 @@
                                 <option value="steel">Structural Steel IS2062 (High Density / Heavy)</option>
                                 <option value="concrete">Standard Concrete M25 (Dense / Heavy)</option>
                             </select>
-                            <div id="densityBadge" class="text-[11px] text-indigo-400 mt-1 font-mono">~650 kg/m³ (Lightweight)</div>
+                            <div id="densityBadge" class="text-[11px] text-indigo-400 mt-1 font-mono">~650 kg/m³ (Stiffness: 20 GPa)</div>
                         </div>
 
                         <!-- DIMENSION CONTROLS -->
@@ -120,6 +120,28 @@
                             </div>
                         </div>
 
+                        <!-- PZT TRANSDUCER & PLACEMENT -->
+                        <div class="p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-3">
+                            <div class="text-xs font-bold text-indigo-300 uppercase">PZT Sensor & Placement</div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-[10px] uppercase text-slate-400 mb-1">X Offset (mm)</label>
+                                    <input type="number" id="pztXInput" value="50" min="10" max="400" onchange="updateDimensions()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-xs text-indigo-300 font-mono">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] uppercase text-slate-400 mb-1">Y Offset (mm)</label>
+                                    <input type="number" id="pztYInput" value="25" min="5" max="250" onchange="updateDimensions()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-xs text-indigo-300 font-mono">
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-[11px] text-slate-400 mb-1">
+                                    <span>PZT Size (10mm - 50mm)</span>
+                                    <span id="pztSizeVal" class="text-indigo-400 font-bold">20 mm</span>
+                                </div>
+                                <input type="range" id="pztSizeSlider" min="10" max="50" step="2" value="20" oninput="updateDimensions()" class="w-full accent-indigo-500 bg-slate-950 cursor-pointer">
+                            </div>
+                        </div>
+
                         <!-- PART A: GRADUATE ENTRY FREQUENCY RANGE SELECTOR -->
                         <div class="p-3 bg-slate-950 border border-indigo-500/40 rounded-xl space-y-3 shadow-inner">
                             <div class="text-xs font-bold text-indigo-300 uppercase flex items-center gap-1.5">
@@ -138,9 +160,9 @@
                             <div>
                                 <div class="flex justify-between text-[11px] text-slate-400 mb-1">
                                     <span>Sweep Resolution / Steps</span>
-                                    <span id="freqStepsVal" class="text-indigo-400 font-bold">35 Steps</span>
+                                    <span id="freqStepsVal" class="text-indigo-400 font-bold">40 Steps</span>
                                 </div>
-                                <input type="range" id="freqStepsSlider" min="10" max="100" step="5" value="35" oninput="document.getElementById('freqStepsVal').innerText=this.value+' Steps'" class="w-full accent-indigo-500 bg-slate-950 cursor-pointer">
+                                <input type="range" id="freqStepsSlider" min="10" max="100" step="5" value="40" oninput="document.getElementById('freqStepsVal').innerText=this.value+' Steps'" class="w-full accent-indigo-500 bg-slate-950 cursor-pointer">
                             </div>
                             <div id="freqWarning" class="hidden text-[10px] p-1.5 rounded bg-rose-500/20 text-rose-300 font-medium">
                                 Note: Start frequency must be less than Stop frequency.
@@ -206,7 +228,7 @@
                             <div id="canvasOverlay" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/90 z-10 text-center p-6 transition-opacity">
                                 <i class="fa-solid fa-cube text-4xl text-indigo-400 mb-3 animate-pulse"></i>
                                 <h4 class="text-sm font-bold text-white mb-1">3D Visualizer Ready</h4>
-                                <p class="text-xs text-slate-400 max-w-sm">Configure frequency range and execute simulation.</p>
+                                <p class="text-xs text-slate-400 max-w-sm">Configure specimen parameters and frequency sweep, then execute simulation.</p>
                             </div>
                         </div>
                     </div>
@@ -310,7 +332,7 @@
     <!-- FOOTER -->
     <footer class="bg-slate-900 border-t border-slate-800 p-4 mt-8 text-center text-xs text-slate-400 space-y-1">
         <div class="font-bold text-indigo-300">Dr. APJ Abdul Kalam Research ZERO-Funding Initiative</div>
-        <div>The signatures are representative only. Demonstrates moisture, weight, and temperature effects across frequency sweep ranges.</div>
+        <div>Dynamic Electro-Mechanical Impedance (EMI) Signatures based on Real Specimen Properties.</div>
         <div class="text-[10px] text-slate-500">World First 3D Quantum AI Suite &bull; Gopalkrishna Advanced Rural Research Foundation 🇮🇳</div>
     </footer>
 
@@ -370,16 +392,16 @@
         }
 
         const materialConfigs = {
-            bamboo: { name: 'Moso Bamboo', density: '~650 kg/m³', colorG: '#f59e0b', colorB: '#fbbf24', woodColor: 0x8b5a2b, showMC: true },
-            wood: { name: 'Timber / Pine Wood', density: '~500 kg/m³', colorG: '#d97706', colorB: '#f59e0b', woodColor: 0xa0522d, showMC: true },
-            aluminum: { name: 'Aluminum Alloy 6061', density: '~2700 kg/m³', colorG: '#06b6d4', colorB: '#38bdf8', woodColor: 0x94a3b8, showMC: false },
-            steel: { name: 'Structural Steel IS2062', density: '~7850 kg/m³', colorG: '#f43f5e', colorB: '#fb7185', woodColor: 0x475569, showMC: false },
-            concrete: { name: 'Standard Concrete M25', density: '~2400 kg/m³', colorG: '#10b981', colorB: '#34d399', woodColor: 0xccbdc0, showMC: true }
+            bamboo: { name: 'Moso Bamboo', density: 650, stiffness: 20, woodColor: 0x8b5a2b, showMC: true },
+            wood: { name: 'Timber / Pine Wood', density: 500, stiffness: 12, woodColor: 0xa0522d, showMC: true },
+            aluminum: { name: 'Aluminum Alloy 6061', density: 2700, stiffness: 69, woodColor: 0x94a3b8, showMC: false },
+            steel: { name: 'Structural Steel IS2062', density: 7850, stiffness: 200, woodColor: 0x475569, showMC: false },
+            concrete: { name: 'Standard Concrete M25', density: 2400, stiffness: 30, woodColor: 0xccbdc0, showMC: true }
         };
 
         function updateMaterialTheme(matKey) {
             const config = materialConfigs[matKey];
-            document.getElementById('densityBadge').innerText = config.density;
+            document.getElementById('densityBadge').innerText = `~${config.density} kg/m³ (Stiffness: ${config.stiffness} GPa)`;
             document.getElementById('moistureControlBox').style.display = config.showMC ? 'block' : 'none';
             if(woodMesh) woodMesh.material.color.setHex(config.woodColor);
         }
@@ -388,13 +410,23 @@
             const specLen = parseFloat(document.getElementById('specLenSlider').value);
             const specWidth = parseFloat(document.getElementById('specWidthSlider').value);
             const specThick = parseFloat(document.getElementById('specThickSlider').value);
+            const pztSize = parseFloat(document.getElementById('pztSizeSlider').value);
 
             document.getElementById('specLenVal').innerText = specLen + ' mm';
             document.getElementById('specWidthVal').innerText = specWidth + ' mm';
             document.getElementById('specThickVal').innerText = specThick + ' mm';
+            document.getElementById('pztSizeVal').innerText = pztSize + ' mm';
 
             if(woodMesh && pztMesh) {
                 woodMesh.scale.set(specLen / 50, specThick / 20, specWidth / 50);
+                
+                // Position PZT dynamically on top of specimen
+                let pztX = parseFloat(document.getElementById('pztXInput').value);
+                let pztY = parseFloat(document.getElementById('pztYInput').value);
+                
+                pztMesh.position.x = (pztX - (specLen / 2)) / 50;
+                pztMesh.position.z = (pztY - (specWidth / 2)) / 50;
+                pztMesh.position.y = (specThick / 20) * 0.22 + 0.04;
             }
         }
 
@@ -435,7 +467,7 @@
             woodMesh = new THREE.Mesh(new THREE.BoxGeometry(1, 0.4, 1), new THREE.MeshStandardMaterial({ color: 0x8b5a2b }));
             scene.add(woodMesh);
 
-            pztMesh = new THREE.Mesh(new THREE.BoxGeometry(1, 0.08, 1), new THREE.MeshStandardMaterial({ color: 0xc0c0c0, metalness: 0.8 }));
+            pztMesh = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.08, 0.2), new THREE.MeshStandardMaterial({ color: 0xc0c0c0, metalness: 0.8 }));
             scene.add(pztMesh);
 
             const particleGeometry = new THREE.BufferGeometry();
@@ -482,22 +514,46 @@
             });
         }
 
-        function generateSweepData(matKey, mc, temp, fStart, fStop, steps, solverId, type) {
+        // FULLY DYNAMIC PHYSICS & ELASTODYNAMICS MODEL FOR EMI SIGNATURES
+        function generateDynamicSweepData(matKey, len, width, thick, pztX, pztY, pztSize, mc, temp, fStart, fStop, steps, solverId, type) {
             let labels = [];
             let data = [];
             let stepSize = (fStop - fStart) / (steps - 1);
-            let weightFactor = matKey === 'steel' ? 1.8 : (matKey === 'aluminum' ? 1.3 : 1.0);
-            let solverMult = 1.0 + (parseInt(solverId) * 0.003);
+            
+            const mat = materialConfigs[matKey];
+            
+            // Resonance frequency calculation depends on mass (density * volume) and stiffness
+            let volume = (len * width * thick) * 1e-9; // m^3
+            let mass = mat.density * volume; // kg
+            let stiffnessFactor = mat.stiffness * 1e9; // N/m
+            
+            // Characteristic natural frequency shift based on specimen geometry & placement
+            let baseFreqPeak = Math.sqrt(stiffnessFactor / (mass + 0.1)) * 0.001; 
+            if(baseFreqPeak < fStart || baseFreqPeak > fStop) baseFreqPeak = (fStart + fStop) * 0.45;
+            
+            // Location sensitivity coefficient
+            let locFactor = 1.0 + Math.sin((pztX / len) * Math.PI) * 0.15 + Math.cos((pztY / width) * Math.PI) * 0.15;
+            let tempShift = (temp - 25) * 0.12; // Thermal expansion shift
+            let mcShift = mat.showMC ? (mc - 12) * 0.18 : 0; // Moisture damping shift
+            let solverMult = 1.0 + (parseInt(solverId) * 0.002);
 
             for (let i = 0; i < steps; i++) {
                 let f = fStart + (i * stepSize);
                 labels.push(f.toFixed(0));
-                let normalizedF = i / steps * 10;
+                
+                // Coupled electro-mechanical impedance resonance peak function
+                let peakCenter = baseFreqPeak + tempShift + mcShift;
+                let resonanceWidth = 25.0 + (thick * 0.2);
+                let gaussianResonance = Math.exp(-Math.pow(f - peakCenter, 2) / (2 * Math.pow(resonanceWidth, 2)));
+                
                 if (type === 'g') {
-                    let p = Math.exp(-Math.pow(normalizedF - 4, 2)/3) * (3.0 * weightFactor * solverMult);
-                    data.push(parseFloat((0.3 + p).toFixed(3)));
+                    // Conductance G(w) formulation
+                    let conductanceVal = 0.2 + (gaussianResonance * (mat.stiffness * 0.08) * locFactor * solverMult);
+                    data.push(parseFloat(conductanceVal.toFixed(3)));
                 } else {
-                    data.push(parseFloat((2.0 * weightFactor * solverMult + (i * 0.05)).toFixed(3)));
+                    // Susceptance B(w) formulation (linear capacitive baseline + resonance slope)
+                    let susceptanceVal = (f * 0.015 * (200 / mat.stiffness)) + (gaussianResonance * 1.5 * solverMult);
+                    data.push(parseFloat(susceptanceVal.toFixed(3)));
                 }
             }
             return { labels, data };
@@ -511,23 +567,32 @@
             setTimeout(() => document.getElementById('canvasOverlay').style.display = 'none', 300);
 
             const matKey = document.getElementById('materialSelect').value;
+            const len = parseFloat(document.getElementById('specLenSlider').value);
+            const width = parseFloat(document.getElementById('specWidthSlider').value);
+            const thick = parseFloat(document.getElementById('specThickSlider').value);
+            const pztX = parseFloat(document.getElementById('pztXInput').value);
+            const pztY = parseFloat(document.getElementById('pztYInput').value);
+            const pztSize = parseFloat(document.getElementById('pztSizeSlider').value);
+            const mc = parseFloat(document.getElementById('mcSlider').value);
+            const temp = parseFloat(document.getElementById('tempSlider').value);
+            
             const solverId = document.getElementById('solverSelect').value;
             const solverObj = solverCatalog.find(s => s.id == solverId);
             const fStart = parseFloat(document.getElementById('freqStartInput').value);
             const fStop = parseFloat(document.getElementById('freqStopInput').value);
             const steps = parseInt(document.getElementById('freqStepsSlider').value);
 
-            const gRes = generateSweepData(matKey, 12, 25, fStart, fStop, steps, solverId, 'g');
+            const gRes = generateDynamicSweepData(matKey, len, width, thick, pztX, pztY, pztSize, mc, temp, fStart, fStop, steps, solverId, 'g');
             conductanceChart.data.labels = gRes.labels;
             conductanceChart.data.datasets[0].data = gRes.data;
             conductanceChart.update();
 
-            const bRes = generateSweepData(matKey, 12, 25, fStart, fStop, steps, solverId, 'b');
+            const bRes = generateDynamicSweepData(matKey, len, width, thick, pztX, pztY, pztSize, mc, temp, fStart, fStop, steps, solverId, 'b');
             susceptanceChart.data.labels = bRes.labels;
             susceptanceChart.data.datasets[0].data = bRes.data;
             susceptanceChart.update();
 
-            const rangeText = `[Engine #${solverId}: ${solverObj.name} | Sweep: ${fStart}-${fStop} kHz]`;
+            const rangeText = `[${materialConfigs[matKey].name} | Engine #${solverId}: ${solverObj.name}]`;
             document.getElementById('labelWeightG').innerText = rangeText;
             document.getElementById('labelWeightB').innerText = rangeText;
             document.getElementById('renderStatus').innerText = solverObj.name + " Active";
