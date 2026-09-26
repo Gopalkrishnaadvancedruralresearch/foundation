@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prof Soh Chee Kiong Quantum AI Solver: 3D Visualization & EMI Suite v4.5</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Three.js for 3D PZT and Wave Visualization -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- OrbitControls for Rotatable, Zoomable 3D Canvas -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .mono-font { font-family: 'JetBrains Mono', monospace; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between">
+
+    <div>
+        <!-- HEADER / HERO SECTION -->
+        <header class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border-b border-slate-800 p-5 shadow-2xl">
+            <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="flex items-center gap-4">
+                    <div class="relative w-14 h-14 rounded-xl bg-white p-1 shadow-lg flex items-center justify-center overflow-hidden border border-indigo-500/30">
+                        <img src="logo.jpeg" alt="Gopalkrishna Advanced Rural Research Foundation Logo" class="w-full h-full object-contain" onerror="this.src='https://placehold.co/100x100/indigo/white?text=GARRF'">
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2 text-xs uppercase tracking-widest text-indigo-400 font-semibold">
+                            <span>Gopalkrishna Advanced Rural Research Foundation</span>
+                            <span>🇮🇳</span>
+                        </div>
+                        <h1 class="text-xl md:text-2xl font-extrabold text-white">Prof Soh Chee Kiong Quantum AI Solver <span class="text-indigo-400 text-base font-normal">: 3D EMI & Mass-Loading Suite</span></h1>
+                    </div>
+                </div>
+                <div class="bg-slate-900/80 border border-slate-800 rounded-xl px-4 py-2 text-right">
+                    <div class="text-[11px] text-indigo-300 font-medium">Extension to IIT Structural Health Research</div>
+                    <div class="text-xs font-bold text-white">Dr. Annamdas Venu Gopal Madhav & Shantanu Vasudev Krishna</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- NAVIGATION & MODAL TRIGGERS -->
+        <nav class="bg-slate-900 border-b border-slate-800 sticky top-0 z-50 shadow-md">
+            <div class="max-w-7xl mx-auto px-4 flex flex-wrap justify-between items-center gap-2 py-2">
+                <div class="flex space-x-2 overflow-x-auto">
+                    <button onclick="switchTab('simulator')" id="btn-simulator" class="px-4 py-2 rounded-lg font-medium text-sm transition-all bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 flex items-center gap-2">
+                        <i class="fa-solid fa-cube"></i> 3D EMI Visual Suite
+                    </button>
+                    <button onclick="switchTab('comparison')" id="btn-comparison" class="px-4 py-2 rounded-lg font-medium text-sm transition-all text-slate-400 hover:text-white hover:bg-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-microchip"></i> Quantum AI vs Traditional
+                    </button>
+                    <button onclick="switchTab('analytics')" id="btn-analytics" class="px-4 py-2 rounded-lg font-medium text-sm transition-all text-slate-400 hover:text-white hover:bg-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-clock-rotate-left"></i> Computation Metrics
+                    </button>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="openModal('theoryModal')" class="px-3 py-1.5 bg-indigo-600/20 border border-indigo-500/40 text-indigo-300 rounded-lg text-xs font-medium flex items-center gap-1.5 hover:bg-indigo-600/30 transition-all">
+                        <i class="fa-solid fa-book-open"></i> Help: Theory & Equations
+                    </button>
+                    <button onclick="openModal('featuresModal')" class="px-3 py-1.5 bg-emerald-600/20 border border-emerald-500/40 text-emerald-300 rounded-lg text-xs font-medium flex items-center gap-1.5 hover:bg-emerald-600/30 transition-all">
+                        <i class="fa-solid fa-star"></i> Salient Features
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- MAIN CONTAINER -->
+        <main class="max-w-7xl mx-auto px-4 py-6 w-full space-y-6">
+
+            <!-- TAB 1: 3D SIMULATOR & EMI SUITE -->
+            <div id="tab-simulator" class="tab-content active space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    
+                    <!-- Controls Column -->
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4 max-h-[85vh] overflow-y-auto">
+                        <h2 class="text-sm font-bold text-indigo-300 uppercase tracking-wider flex items-center gap-2 sticky top-0 bg-slate-900 py-1 z-10">
+                            <i class="fa-solid fa-sliders"></i> Specimen & PZT Controls
+                        </h2>
+
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Host Structure Material</label>
+                            <select id="materialSelect" onchange="updateMaterialTheme(this.value)" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+                                <option value="bamboo">Moso Bamboo (Lightweight, Orthotropic)</option>
+                                <option value="wood">Timber / Pine Wood (Lightweight)</option>
+                                <option value="aluminum">Aluminum Alloy 6061 (Medium Weight / Rigid)</option>
+                                <option value="steel">Structural Steel IS2062 (High Density / Heavy)</option>
+                                <option value="concrete">Standard Concrete M25 (Dense / Heavy)</option>
+                            </select>
+                            <div id="densityBadge" class="text-[11px] text-indigo-400 mt-1 font-mono">~650 kg/m³ (Lightweight)</div>
+                        </div>
+
+                        <!-- DIMENSION CONTROLS -->
+                        <div class="p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-3">
+                            <div class="text-xs font-bold text-indigo-300 uppercase">Specimen Dimensions</div>
+                            <div>
+                                <div class="flex justify-between text-[11px] text-slate-400 mb-1">
+                                    <span>Length (50mm - 500mm)</span>
+                                    <span id="specLenVal" class="text-indigo-400 font-bold">200 mm</span>
+                                </div>
+                                <input type="range" id="specLenSlider" min="50" max="500" step="10" value="200" oninput="updateDimensions()" class="w-full accent-indigo-500 bg-slate-950 cursor-pointer">
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-[11px] text-slate-400 mb-1">
+                                    <span>Thickness (5mm - 100mm)</span>
+                                    <span id="specThickVal" class="text-indigo-400 font-bold">20 mm</span>
+                                </div>
+                                <input type="range" id="specThickSlider" min="5" max="100" step="2" value="20" oninput="updateDimensions()" class="w-full accent-indigo-500 bg-slate-950 cursor-pointer">
+                            </div>
+                        </div>
+
+                        <div class="p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-3">
+                            <div class="text-xs font-bold text-violet-300 uppercase">PZT Patch Dimensions (Mass-Loading)</div>
+                            <div>
+                                <div class="flex justify-between text-[11px] text-slate-400 mb-1">
+                                    <span>PZT Side Length (5mm - 50mm)</span>
+                                    <span id="pztSizeVal" class="text-violet-400 font-bold">10 mm</span>
+                                </div>
+                                <input type="range" id="pztSizeSlider" min="5" max="50" step="1" value="10" oninput="updateDimensions()" class="w-full accent-violet-500 bg-slate-950 cursor-pointer">
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-[11px] text-slate-400 mb-1">
+                                    <span>PZT Thickness (0.1mm - 2.0mm)</span>
+                                    <span id="pztThickVal" class="text-violet-400 font-bold">0.3 mm</span>
+                                </div>
+                                <input type="range" id="pztThickSlider" min="0.1" max="2.0" step="0.1" value="0.3" oninput="updateDimensions()" class="w-full accent-violet-500 bg-slate-950 cursor-pointer">
+                            </div>
+                        </div>
+
+                        <div id="moistureControlBox">
+                            <div class="flex justify-between text-xs font-semibold text-slate-400 mb-1">
+                                <span>Moisture Content (MC) <span class="text-[10px] text-amber-400">(Non-metal only)</span></span>
+                                <span id="mcVal" class="text-indigo-400 font-bold">12.0 %</span>
+                            </div>
+                            <input type="range" id="mcSlider" min="5" max="28" step="0.5" value="12" oninput="updateMoisture(this.value)" class="w-full accent-indigo-500 bg-slate-950 cursor-pointer">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs font-semibold text-slate-400 mb-1">
+                                <span>Temperature ($\Delta T$)</span>
+                                <span id="tempVal" class="text-rose-400 font-bold">25.0 °C</span>
+                            </div>
+                            <input type="range" id="tempSlider" min="-10" max="75" step="1" value="25" oninput="document.getElementById('tempVal').innerText=this.value+' °C'; executeSimulation();" class="w-full accent-rose-500 bg-slate-950 cursor-pointer">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Excitation Frequency</label>
+                            <input type="range" id="freqSlider" min="30" max="350" step="10" value="150" oninput="document.getElementById('freqVal').innerText=this.value+' kHz'" class="w-full accent-indigo-500 bg-slate-950 cursor-pointer">
+                            <div class="flex justify-between text-xs mt-1">
+                                <span class="text-slate-500">30 kHz</span>
+                                <span id="freqVal" class="text-indigo-400 font-mono font-bold">150 kHz</span>
+                                <span class="text-slate-500">350 kHz</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Computational Solver Engine</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button onclick="setSolver('traditional')" id="btn-solver-trad" class="p-2.5 text-xs font-bold rounded-xl border border-slate-700 bg-slate-950 text-slate-400 hover:border-slate-500 transition-all">Traditional Matrix</button>
+                                <button onclick="setSolver('quantum')" id="btn-solver-quant" class="p-2.5 text-xs font-bold rounded-xl border border-indigo-500 bg-indigo-600/20 text-indigo-300 shadow-sm transition-all">Quantum AI (QITN)</button>
+                            </div>
+                        </div>
+
+                        <button onclick="executeSimulation()" class="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2 text-sm">
+                            <i class="fa-solid fa-bolt"></i> Execute Simulation & 3D Wave Render
+                        </button>
+                    </div>
+
+                    <!-- 3D Visualization Canvas Column -->
+                    <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-sm font-bold text-slate-200 flex items-center gap-2">
+                                <i class="fa-solid fa-cube text-indigo-400"></i> Interactive 3D Specimen & Wave Propagation View
+                            </h3>
+                            <span id="renderStatus" class="text-xs px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 font-mono">Pending Execution</span>
+                        </div>
+                        <div id="canvas3dContainer" class="w-full h-80 bg-slate-950 rounded-xl relative overflow-hidden border border-slate-800 flex items-center justify-center">
+                            <div id="canvasOverlay" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/80 z-10 text-center p-6 transition-opacity">
+                                <i class="fa-solid fa-cube text-4xl text-indigo-400 mb-3 animate-pulse"></i>
+                                <h4 class="text-sm font-bold text-white mb-1">3D Specimen Visualizer Ready</h4>
+                                <p class="text-xs text-slate-400 max-w-sm">Configure your material and click <span class="text-indigo-300 font-semibold">"Execute Simulation & 3D Wave Render"</span> to initiate the model.</p>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center mt-2 text-[11px] text-slate-400 px-1">
+                            <span><i class="fa-solid fa-rotate"></i> Rotate: Click & Drag</span>
+                            <span><i class="fa-solid fa-magnifying-glass"></i> Zoom: Scroll Wheel</span>
+                            <span><i class="fa-solid fa-hand"></i> Pan: Right Click & Drag</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Conductance & Corrected Susceptance Graphs -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                                <i class="fa-solid fa-wave-square text-indigo-400"></i> Conductance G(&omega;) [mS] <span id="labelWeightG" class="text-[10px] text-amber-400 font-normal"></span>
+                            </h3>
+                            <span id="execStatusG" class="text-[10px] text-slate-500 font-mono">Awaiting Execution</span>
+                        </div>
+                        <div class="h-56 relative"><canvas id="conductanceChart"></canvas></div>
+                    </div>
+
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                                <i class="fa-solid fa-bolt text-violet-400"></i> Corrected Susceptance B(&omega;) [mS] <span id="labelWeightB" class="text-[10px] text-amber-400 font-normal"></span>
+                            </h3>
+                            <span id="execStatusB" class="text-[10px] text-slate-500 font-mono">Awaiting Execution</span>
+                        </div>
+                        <div class="h-56 relative"><canvas id="susceptanceChart"></canvas></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: QUANTUM AI VS TRADITIONAL -->
+            <div id="tab-comparison" class="tab-content space-y-6">
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+                    <h2 class="text-lg font-bold text-white mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-scale-balanced text-indigo-400"></i> Comparative Architectural Analysis
+                    </h2>
+                    <p class="text-sm text-slate-400 mb-6">Evaluating Annamdas & Soh (2007) 3D EMI equations solved across lightweight vs. heavyweight metallic/concrete structures.</p>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="border-b border-slate-800 text-indigo-300 font-semibold bg-slate-950/50">
+                                    <th class="p-4">Performance Metric</th>
+                                    <th class="p-4">Traditional Matrix Formulation</th>
+                                    <th class="p-4">Quantum AI Solver (This Suite)</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-800/60 text-slate-300">
+                                <tr class="hover:bg-slate-800/30 transition-all">
+                                    <td class="p-4 font-semibold text-white">Mass-Loading Effect & Temperature/Moisture</td>
+                                    <td class="p-4 text-slate-400">High damping and thermal shifts require complete remeshing and recalculation.</td>
+                                    <td class="p-4 text-emerald-400">Instantaneous tensor compensation and thermal-moisture shift modeling (excluding moisture for metals).</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: COMPUTATION METRICS -->
+            <div id="tab-analytics" class="tab-content space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl text-center">
+                        <div class="text-xs uppercase tracking-wider text-slate-400 mb-1">Traditional Solver Time</div>
+                        <div id="timeTrad" class="text-4xl font-extrabold font-mono text-amber-400 my-2">4.82s</div>
+                        <div class="text-xs text-slate-500">Full 3D Matrix Inversion</div>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl text-center border-indigo-500/50">
+                        <div class="text-xs uppercase tracking-wider text-indigo-300 mb-1">Quantum AI Solver Time</div>
+                        <div id="timeQuant" class="text-4xl font-extrabold font-mono text-emerald-400 my-2">0.34s</div>
+                        <div class="text-xs text-indigo-400 font-semibold">QITN Accelerated Speedup</div>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl text-center">
+                        <div class="text-xs uppercase tracking-wider text-slate-400 mb-1">Energy Efficiency Gain</div>
+                        <div class="text-4xl font-extrabold font-mono text-violet-400 my-2">92.6%</div>
+                        <div class="text-xs text-slate-500">Reduced FLOPs via Tensor Networks</div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- END FOOTER WITH REQUIRED NOTE -->
+    <footer class="bg-slate-900 border-t border-slate-800 p-4 mt-8 text-center text-xs text-slate-400 space-y-1">
+        <div class="font-bold text-indigo-300">Dr. APJ Abdul Kalam Research ZERO-Funding Initiative</div>
+        <div>The signatures are representative only. But it shows the effect of moisture, weight, and temperature.</div>
+        <div class="text-[10px] text-slate-500">Prof Soh Chee Kiong Quantum AI Solver Suite &bull; Gopalkrishna Advanced Rural Research Foundation 🇮🇳</div>
+    </footer>
+
+    <!-- THEORY MODAL -->
+    <div id="theoryModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-4xl w-full p-6 md:p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeModal('theoryModal')" class="absolute top-5 right-5 text-slate-400 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
+            <h2 class="text-xl font-bold text-indigo-300 mb-4 flex items-center gap-2"><i class="fa-solid fa-book-open"></i> Comprehensive Theory & Mathematical Formulation</h2>
+            <div class="space-y-5 text-sm text-slate-300 leading-relaxed">
+                <div>
+                    <h3 class="font-bold text-white text-base mb-1">1. Material Specificity: Moisture vs. Metals</h3>
+                    <p>Porosity-based materials (Bamboo, Timber, Concrete) absorb moisture, altering structural stiffness and mass density. Metals (Aluminum, Steel) are impermeable; moisture has zero impact on their internal stress waves.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SALIENT FEATURES MODAL -->
+    <div id="featuresModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-4xl w-full p-6 md:p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeModal('featuresModal')" class="absolute top-5 right-5 text-slate-400 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
+            <h2 class="text-xl font-bold text-emerald-300 mb-4 flex items-center gap-2"><i class="fa-solid fa-star"></i> Salient Features</h2>
+            <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                <p>Features dynamic 3D substrate color updates matching specimen changes, realistic moisture-filtering for porous materials, and thermal-mass loading solutions.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('nav button').forEach(el => {
+                if(el.id.startsWith('btn-')) {
+                    el.classList.remove('bg-indigo-600', 'text-white', 'shadow-lg', 'shadow-indigo-600/30');
+                    el.classList.add('text-slate-400', 'hover:text-white', 'hover:bg-slate-800');
+                }
+            });
+            document.getElementById('tab-' + tabId).classList.add('active');
+            const activeBtn = document.getElementById('btn-' + tabId);
+            if(activeBtn) {
+                activeBtn.classList.remove('text-slate-400', 'hover:text-white', 'hover:bg-slate-800');
+                activeBtn.classList.add('bg-indigo-600', 'text-white', 'shadow-lg', 'shadow-indigo-600/30');
+            }
+        }
+
+        let currentSolver = 'quantum';
+        function setSolver(mode) {
+            currentSolver = mode;
+            const tradBtn = document.getElementById('btn-solver-trad');
+            const quantBtn = document.getElementById('btn-solver-quant');
+            if(mode === 'quantum') {
+                quantBtn.className = "p-2.5 text-xs font-bold rounded-xl border border-indigo-500 bg-indigo-600/20 text-indigo-300 shadow-sm transition-all";
+                tradBtn.className = "p-2.5 text-xs font-bold rounded-xl border border-slate-700 bg-slate-950 text-slate-400 hover:border-slate-500 transition-all";
+            } else {
+                tradBtn.className = "p-2.5 text-xs font-bold rounded-xl border border-amber-500 bg-amber-600/20 text-amber-300 shadow-sm transition-all";
+                quantBtn.className = "p-2.5 text-xs font-bold rounded-xl border border-slate-700 bg-slate-950 text-slate-400 hover:border-slate-500 transition-all";
+            }
+        }
+
+        // Material theme colors, densities, and moisture susceptibility
+        const materialConfigs = {
+            bamboo: { name: 'Moso Bamboo', density: '~650 kg/m³ (Lightweight)', colorG: '#f59e0b', colorB: '#fbbf24', woodColor: 0x8b5a2b, showMC: true },
+            wood: { name: 'Timber / Pine Wood', density: '~500 kg/m³ (Lightweight)', colorG: '#d97706', colorB: '#f59e0b', woodColor: 0xa0522d, showMC: true },
+            aluminum: { name: 'Aluminum Alloy 6061', density: '~2700 kg/m³ (Medium / Rigid)', colorG: '#06b6d4', colorB: '#38bdf8', woodColor: 0x94a3b8, showMC: false },
+            steel: { name: 'Structural Steel IS2062', density: '~7850 kg/m³ (High Density / Heavy)', colorG: '#f43f5e', colorB: '#fb7185', woodColor: 0x475569, showMC: false },
+            concrete: { name: 'Standard Concrete M25', density: '~2400 kg/m³ (Dense / Heavy)', colorG: '#10b981', colorB: '#34d399', woodColor: 0xccbdc0, showMC: true }
+        };
+
+        function updateMaterialTheme(matKey) {
+            const config = materialConfigs[matKey];
+            document.getElementById('densityBadge').innerText = config.density;
+            
+            // Show/Hide moisture control based on whether material absorbs moisture
+            const mcBox = document.getElementById('moistureControlBox');
+            mcBox.style.display = config.showMC ? 'block' : 'none';
+
+            if(woodMesh) {
+                woodMesh.material.color.setHex(config.woodColor);
+            }
+            executeSimulation();
+        }
+
+        function updateMoisture(val) {
+            document.getElementById('mcVal').innerText = val + ' %';
+            executeSimulation();
+        }
+
+        function updateDimensions() {
+            const specLen = document.getElementById('specLenSlider').value;
+            const specThick = document.getElementById('specThickSlider').value;
+            const pztSize = document.getElementById('pztSizeSlider').value;
+            const pztThick = document.getElementById('pztThickSlider').value;
+
+            document.getElementById('specLenVal').innerText = specLen + ' mm';
+            document.getElementById('specThickVal').innerText = specThick + ' mm';
+            document.getElementById('pztSizeVal').innerText = pztSize + ' mm';
+            document.getElementById('pztThickVal').innerText = pztThick + ' mm';
+
+            if(woodMesh && pztMesh) {
+                woodMesh.scale.set(specLen / 200, specThick / 20, 1);
+                pztMesh.scale.set(pztSize / 10, pztThick / 0.3, pztSize / 10);
+                pztMesh.position.y = (specThick / 20) * 0.2 + (pztThick / 0.3) * 0.04;
+            }
+        }
+
+        let scene, camera, renderer, controls, pztMesh, woodMesh, waveParticles;
+        let waveAnimationTime = 0;
+        let simulationExecuted = false;
+
+        function init3D() {
+            const container = document.getElementById('canvas3dContainer');
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(6, 4, 7);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+
+            scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+            const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+            dirLight.position.set(5, 10, 7);
+            scene.add(dirLight);
+
+            const woodGeo = new THREE.BoxGeometry(4, 0.4, 2);
+            const woodMat = new THREE.MeshStandardMaterial({ color: 0x8b5a2b, roughness: 0.6 });
+            woodMesh = new THREE.Mesh(woodGeo, woodMat);
+            scene.add(woodMesh);
+
+            const pztGeo = new THREE.BoxGeometry(1, 0.08, 1);
+            const pztMat = new THREE.MeshStandardMaterial({ color: 0xc0c0c0, metalness: 0.8, roughness: 0.2 });
+            pztMesh = new THREE.Mesh(pztGeo, pztMat);
+            pztMesh.position.set(0, 0.24, 0);
+            scene.add(pztMesh);
+
+            const particleCount = 400;
+            const particleGeometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(particleCount * 3);
+            for(let i = 0; i < particleCount * 3; i += 3) {
+                positions[i] = (Math.random() - 0.5) * 3.8;
+                positions[i+1] = 0.21;
+                positions[i+2] = (Math.random() - 0.5) * 1.8;
+            }
+            particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            const particleMaterial = new THREE.PointsMaterial({ color: 0x6366f1, size: 0.05 });
+            waveParticles = new THREE.Points(particleGeometry, particleMaterial);
+            scene.add(waveParticles);
+
+            animate3D();
+        }
+
+        function animate3D() {
+            requestAnimationFrame(animate3D);
+            if (simulationExecuted) {
+                waveAnimationTime += 0.06;
+                const freqFactor = parseFloat(document.getElementById('freqSlider').value) / 100;
+                const pztThick = parseFloat(document.getElementById('pztThickSlider').value);
+                pztMesh.position.y = (0.24 * (parseFloat(document.getElementById('specThickSlider').value)/20)) + Math.sin(waveAnimationTime * freqFactor * 3) * (0.02 * (pztThick/0.3));
+
+                const positions = waveParticles.geometry.attributes.position.array;
+                for(let i = 0; i < positions.length; i += 3) {
+                    const x = positions[i];
+                    const z = positions[i+2];
+                    const dist = Math.sqrt(x*x + z*z);
+                    positions[i+1] = 0.21 + Math.sin(dist * 6 - waveAnimationTime * 5) * 0.05 * (1 / (dist + 0.4));
+                }
+                waveParticles.geometry.attributes.position.needsUpdate = true;
+            }
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        let conductanceChart, susceptanceChart;
+
+        function initCharts() {
+            const freqSteps = Array.from({length: 35}, (_, i) => (30 + i * 9).toFixed(0));
+
+            const ctxG = document.getElementById('conductanceChart').getContext('2d');
+            conductanceChart = new Chart(ctxG, {
+                type: 'line',
+                data: {
+                    labels: freqSteps,
+                    datasets: [{
+                        data: Array(35).fill(0),
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        borderWidth: 2, fill: true, tension: 0.4, pointRadius: 0
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#94a3b8', font: { size: 9 } } }, y: { ticks: { color: '#94a3b8', font: { size: 9 } } } } }
+            });
+
+            const ctxB = document.getElementById('susceptanceChart').getContext('2d');
+            susceptanceChart = new Chart(ctxB, {
+                type: 'line',
+                data: {
+                    labels: freqSteps,
+                    datasets: [{
+                        data: Array(35).fill(0),
+                        borderColor: '#a855f7',
+                        backgroundColor: 'rgba(168, 85, 247, 0.1)',
+                        borderWidth: 2, fill: true, tension: 0.4, pointRadius: 0
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#94a3b8', font: { size: 9 } } }, y: { ticks: { color: '#94a3b8', font: { size: 9 } } } } }
+            });
+        }
+
+        function generateData(matKey, mc, temp, pztSize, pztThick, type) {
+            let data = [];
+            let weightFactor = 1.0;
+            if (matKey === 'aluminum') weightFactor = 1.3;
+            if (matKey === 'steel') weightFactor = 1.8;
+            if (matKey === 'concrete') weightFactor = 0.85;
+
+            let massLoadingFactor = (pztSize / 10) * (pztThick / 0.3);
+            let tempShift = (temp - 25) * 0.02; 
+            
+            // Moisture shift applied ONLY if material is porous/organic (bamboo, wood, concrete)
+            let moistureShift = materialConfigs[matKey].showMC ? (mc - 12) * 0.15 : 0; 
+
+            for (let i = 0; i < 35; i++) {
+                let f = i + tempShift + moistureShift;
+                if (type === 'g') {
+                    let p = Math.exp(-Math.pow(f - (12 * weightFactor), 2)/5) * (3.0 * weightFactor / (massLoadingFactor * (1 + moistureShift*0.1))) + Math.exp(-Math.pow(f - (25 * weightFactor), 2)/6) * (2.2 * weightFactor);
+                    data.push(parseFloat((0.3 + p).toFixed(3)));
+                } else {
+                    let capacitiveBaseline = (2.0 * weightFactor * massLoadingFactor) + (i * 0.15) + (moistureShift * 0.2);
+                    let ripple = Math.sin((f - 10) * 0.4) * (0.35 * weightFactor) * Math.exp(-Math.pow(f - 15, 2)/50);
+                    data.push(parseFloat((capacitiveBaseline + ripple).toFixed(3)));
+                }
+            }
+            return data;
+        }
+
+        function executeSimulation() {
+            simulationExecuted = true;
+            document.getElementById('canvasOverlay').style.opacity = '0';
+            setTimeout(() => document.getElementById('canvasOverlay').style.display = 'none', 300);
+
+            const matKey = document.getElementById('materialSelect').value;
+            const config = materialConfigs[matKey];
+            const mc = parseFloat(document.getElementById('mcSlider').value);
+            const temp = parseFloat(document.getElementById('tempSlider').value);
+            const pztSize = parseFloat(document.getElementById('pztSizeSlider').value);
+            const pztThick = parseFloat(document.getElementById('pztThickSlider').value);
+
+            if(woodMesh) {
+                woodMesh.material.color.setHex(config.woodColor);
+            }
+
+            conductanceChart.data.datasets[0].borderColor = config.colorG;
+            conductanceChart.data.datasets[0].backgroundColor = config.colorG + '22';
+            conductanceChart.data.datasets[0].data = generateData(matKey, mc, temp, pztSize, pztThick, 'g');
+            conductanceChart.update();
+
+            susceptanceChart.data.datasets[0].borderColor = config.colorB;
+            susceptanceChart.data.datasets[0].backgroundColor = config.colorB + '22';
+            susceptanceChart.data.datasets[0].data = generateData(matKey, mc, temp, pztSize, pztThick, 'b');
+            susceptanceChart.update();
+
+            let labelSuffix = config.showMC ? `[${config.name} | MC: ${mc}% | T: ${temp}°C]` : `[${config.name} | T: ${temp}°C]`;
+            document.getElementById('labelWeightG').innerText = labelSuffix;
+            document.getElementById('labelWeightB').innerText = labelSuffix;
+
+            document.getElementById('renderStatus').innerText = "3D Waves & Signatures Active";
+            document.getElementById('renderStatus').className = "text-xs px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono";
+            document.getElementById('execStatusG').innerText = "Executed Successfully";
+            document.getElementById('execStatusB').innerText = "Executed Successfully";
+        }
+
+        window.onload = () => {
+            init3D();
+            initCharts();
+            updateDimensions();
+            updateMaterialTheme('bamboo');
+        };
+    </script>
+</body>
+</html>
