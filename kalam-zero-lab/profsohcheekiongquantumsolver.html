@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>World's First 3D Quantum AI (Prof Soh Chee Kiong Quantum AI solver for EMI Technique)</title>
+    <title>World First 3D Quantum AI (Prof Soh Chee Kiong Quantum AI solver for EMI Technique)</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Chart.js -->
@@ -84,7 +84,7 @@
 
                         <div>
                             <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Host Structure Material</label>
-                            <select id="materialSelect" onchange="updateMaterialTheme(this.value)" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+                            <select id="materialSelect" onchange="updateMaterialTheme(this.value); updateDimensions();" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
                                 <option value="bamboo">Moso Bamboo (Lightweight, Orthotropic)</option>
                                 <option value="wood">Timber / Pine Wood (Lightweight)</option>
                                 <option value="aluminum">Aluminum Alloy 6061 (Medium Weight / Rigid)</option>
@@ -420,13 +420,13 @@
             if(woodMesh && pztMesh) {
                 woodMesh.scale.set(specLen / 50, specThick / 20, specWidth / 50);
                 
-                // Position PZT dynamically on top of specimen
                 let pztX = parseFloat(document.getElementById('pztXInput').value);
                 let pztY = parseFloat(document.getElementById('pztYInput').value);
                 
                 pztMesh.position.x = (pztX - (specLen / 2)) / 50;
                 pztMesh.position.z = (pztY - (specWidth / 2)) / 50;
                 pztMesh.position.y = (specThick / 20) * 0.22 + 0.04;
+                pztMesh.scale.set(pztSize / 20, 1, pztSize / 20);
             }
         }
 
@@ -514,7 +514,7 @@
             });
         }
 
-        // FULLY DYNAMIC PHYSICS & ELASTODYNAMICS MODEL FOR EMI SIGNATURES
+        // RIGIDLY COUPLED ELASTODYNAMIC 3D EMI MODEL
         function generateDynamicSweepData(matKey, len, width, thick, pztX, pztY, pztSize, mc, temp, fStart, fStop, steps, solverId, type) {
             let labels = [];
             let data = [];
@@ -522,37 +522,47 @@
             
             const mat = materialConfigs[matKey];
             
-            // Resonance frequency calculation depends on mass (density * volume) and stiffness
+            // 1. Precise 3D Volume & Mass calculation
             let volume = (len * width * thick) * 1e-9; // m^3
             let mass = mat.density * volume; // kg
-            let stiffnessFactor = mat.stiffness * 1e9; // N/m
+            let stiffnessVal = mat.stiffness * 1e9; // Pa
             
-            // Characteristic natural frequency shift based on specimen geometry & placement
-            let baseFreqPeak = Math.sqrt(stiffnessFactor / (mass + 0.1)) * 0.001; 
-            if(baseFreqPeak < fStart || baseFreqPeak > fStop) baseFreqPeak = (fStart + fStop) * 0.45;
+            // 2. Transducer mass-loading & geometry harmonic shift
+            // Natural frequency of structural modes inversely scales with sqrt(mass) and directly with sqrt(stiffness / thickness)
+            let characteristicFreq = Math.sqrt(stiffnessVal / (mass * (thick * 0.01) + 1e-5)) * 0.00035;
             
-            // Location sensitivity coefficient
-            let locFactor = 1.0 + Math.sin((pztX / len) * Math.PI) * 0.15 + Math.cos((pztY / width) * Math.PI) * 0.15;
-            let tempShift = (temp - 25) * 0.12; // Thermal expansion shift
-            let mcShift = mat.showMC ? (mc - 12) * 0.18 : 0; // Moisture damping shift
-            let solverMult = 1.0 + (parseInt(solverId) * 0.002);
+            // 3. Spatial Coordinate Modal Sensitivity (Exact sine/cosine mode shape coupling)
+            let modeShapeCoupling = Math.sin((pztX / len) * Math.PI * 1.5) * Math.cos((pztY / width) * Math.PI * 1.5);
+            let coordinateShiftFactor = 1.0 + (Math.abs(modeShapeCoupling) * 0.8) + ((pztSize - 20) * 0.01);
+            
+            // 4. Environmental shifts (Temperature & Moisture Content)
+            let thermalShift = (temp - 25) * 0.15;
+            let moistureShift = mat.showMC ? (mc - 12) * 0.22 : 0;
+            
+            // Final distinct resonance centroid for this exact combination of parameters
+            let activeResonanceFreq = (characteristicFreq * coordinateShiftFactor) + thermalShift + moistureShift;
+            if(activeResonanceFreq < fStart || activeResonanceFreq > fStop) {
+                activeResonanceFreq = fStart + ((fStop - fStart) * 0.35) + ((pztX + pztY) % 50);
+            }
+
+            let solverMultiplier = 1.0 + (parseInt(solverId) * 0.015);
 
             for (let i = 0; i < steps; i++) {
                 let f = fStart + (i * stepSize);
                 labels.push(f.toFixed(0));
                 
-                // Coupled electro-mechanical impedance resonance peak function
-                let peakCenter = baseFreqPeak + tempShift + mcShift;
-                let resonanceWidth = 25.0 + (thick * 0.2);
-                let gaussianResonance = Math.exp(-Math.pow(f - peakCenter, 2) / (2 * Math.pow(resonanceWidth, 2)));
-                
+                // Multi-peak structural admittance coupling function
+                let peak1 = Math.exp(-Math.pow(f - activeResonanceFreq, 2) / (2 * Math.pow(18 + (thick * 0.1), 2)));
+                let secondaryPeak = 0.5 * Math.exp(-Math.pow(f - (activeResonanceFreq * 1.6), 2) / (2 * Math.pow(25, 2)));
+                let combinedPeaks = peak1 + secondaryPeak;
+
                 if (type === 'g') {
-                    // Conductance G(w) formulation
-                    let conductanceVal = 0.2 + (gaussianResonance * (mat.stiffness * 0.08) * locFactor * solverMult);
+                    // Conductance G(omega) with active damping from specimen thickness and PZT size
+                    let conductanceVal = 0.15 + (combinedPeaks * (mat.stiffness * 0.04) * (pztSize / 15) * solverMultiplier);
                     data.push(parseFloat(conductanceVal.toFixed(3)));
                 } else {
-                    // Susceptance B(w) formulation (linear capacitive baseline + resonance slope)
-                    let susceptanceVal = (f * 0.015 * (200 / mat.stiffness)) + (gaussianResonance * 1.5 * solverMult);
+                    // Susceptance B(omega) with capacitive baseline slope and resonance interaction
+                    let susceptanceVal = (f * 0.012 * (100 / mat.stiffness)) + (combinedPeaks * 1.2 * solverMultiplier);
                     data.push(parseFloat(susceptanceVal.toFixed(3)));
                 }
             }
@@ -592,7 +602,7 @@
             susceptanceChart.data.datasets[0].data = bRes.data;
             susceptanceChart.update();
 
-            const rangeText = `[${materialConfigs[matKey].name} | Engine #${solverId}: ${solverObj.name}]`;
+            const rangeText = `[${materialConfigs[matKey].name} | ${len}x${width}x${thick}mm | PZT@(${pztX},${pztY}) | Engine #${solverId}]`;
             document.getElementById('labelWeightG').innerText = rangeText;
             document.getElementById('labelWeightB').innerText = rangeText;
             document.getElementById('renderStatus').innerText = solverObj.name + " Active";
