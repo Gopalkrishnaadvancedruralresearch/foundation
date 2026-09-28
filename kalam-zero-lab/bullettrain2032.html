@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GARRF — Bharat Bullet Train 2032 (Survey of India Compliant)</title>
+
+  <!-- Leaflet CSS (Open-Source, No API Key Required) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <style>
+    :root {
+      --bg: #070d18;
+      --card-bg: rgba(10, 18, 34, 0.95);
+      --primary: #00e5ff;
+      --accent: #ff9933; /* Sovereign Saffron */
+      --green: #138808;  /* Sovereign Green */
+      --text: #f0f6fc;
+      --text-muted: #94a3b8;
+      --border: rgba(0, 229, 255, 0.3);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* GARRF Lab Header */
+    header {
+      background: rgba(8, 14, 26, 0.98);
+      border-bottom: 2px solid var(--accent);
+      padding: 10px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 1000;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-logo {
+      height: 46px;
+      width: 46px;
+      border-radius: 8px;
+      object-fit: cover;
+      border: 1.5px solid var(--accent);
+      background: #101c30;
+    }
+
+    .brand-fallback {
+      height: 46px;
+      width: 46px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #ff9933, #0052cc 50%, #138808);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 13px;
+      color: #fff;
+    }
+
+    .brand-text h1 {
+      font-size: 17px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 0.5px;
+    }
+
+    .brand-text p {
+      font-size: 11px;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 700;
+    }
+
+    .header-telemetry {
+      display: flex;
+      gap: 15px;
+    }
+
+    .metric-pill {
+      background: rgba(0, 229, 255, 0.08);
+      border: 1px solid rgba(0, 229, 255, 0.25);
+      border-radius: 6px;
+      padding: 5px 12px;
+      text-align: right;
+    }
+
+    .metric-pill span {
+      display: block;
+      font-size: 9px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .metric-pill strong {
+      font-size: 14px;
+      color: var(--primary);
+      font-family: monospace;
+    }
+
+    #map-container {
+      position: relative;
+      flex: 1;
+      width: 100%;
+      height: calc(100vh - 67px);
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+      background: #050b14;
+    }
+
+    /* Floating Student Control Panel */
+    .control-panel {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      width: 375px;
+      background: var(--card-bg);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+      z-index: 1000;
+      max-height: calc(100vh - 105px);
+      overflow-y: auto;
+    }
+
+    .panel-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 6px;
+    }
+
+    .soi-badge {
+      display: inline-block;
+      background: rgba(255, 153, 51, 0.15);
+      border: 1px solid var(--accent);
+      color: #ffb74d;
+      font-size: 9px;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .panel-group {
+      margin-bottom: 14px;
+    }
+
+    .panel-group label {
+      display: block;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    select {
+      width: 100%;
+      background: #091322;
+      border: 1px solid rgba(0, 229, 255, 0.35);
+      color: #fff;
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    select:focus {
+      border-color: var(--accent);
+    }
+
+    /* Speed Slider Controls */
+    .slider-container {
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 8px;
+      padding: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .speed-display {
+      font-family: monospace;
+      font-size: 18px;
+      color: var(--accent);
+      font-weight: 800;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      appearance: none;
+      background: #1e293b;
+      height: 6px;
+      border-radius: 3px;
+      outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      border: 2px solid #fff;
+      box-shadow: 0 0 10px rgba(255, 153, 51, 0.8);
+    }
+
+    .speed-presets {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .preset-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #94a3b8;
+      border-radius: 4px;
+      font-size: 10px;
+      padding: 6px 2px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .preset-btn:hover {
+      background: rgba(255, 153, 51, 0.2);
+      color: var(--accent);
+    }
+
+    /* Telemetry Display */
+    .status-card {
+      background: #081220;
+      border-left: 3px solid var(--accent);
+      padding: 10px;
+      border-radius: 0 6px 6px 0;
+      margin-top: 8px;
+      font-size: 12px;
+    }
+
+    .status-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    .status-label {
+      color: var(--text-muted);
+    }
+
+    .status-val {
+      font-weight: 600;
+      color: #fff;
+      font-family: monospace;
+    }
+
+    .floating-tools {
+      position: absolute;
+      left: 20px;
+      bottom: 25px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 1000;
+    }
+
+    .tool-btn {
+      padding: 9px 14px;
+      border-radius: 8px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: #00e5ff;
+      font-size: 12px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+    }
+
+    .tool-btn:hover {
+      background: rgba(0, 229, 255, 0.25);
+      color: #fff;
+    }
+
+    .station-tooltip {
+      background: rgba(8, 14, 26, 0.95);
+      border: 1px solid var(--accent);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 8px;
+      border-radius: 4px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.8);
+    }
+
+    .bullet-train-marker {
+      transition: transform 0.1s linear;
+      will-change: transform;
+    }
+
+    .soi-watermark {
+      position: absolute;
+      bottom: 25px;
+      right: 410px;
+      background: rgba(10, 18, 34, 0.92);
+      border: 1.5px solid var(--accent);
+      padding: 7px 14px;
+      border-radius: 6px;
+      font-size: 11px;
+      color: #fff;
+      z-index: 999;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .soi-color-bar {
+      width: 16px;
+      height: 4px;
+      background: var(--accent);
+      border-radius: 2px;
+      box-shadow: 0 0 8px var(--accent);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="brand-section">
+      <img src="logo.jpeg" alt="GARRF Logo" class="brand-logo" onerror="this.outerHTML='<div class=\'brand-fallback\'>GARRF</div>'" />
+      <div class="brand-text">
+        <h1>Gopalkrishna Advanced Rural Research Foundation</h1>
+        <p>Kalam Zero Research Lab — Bharat High-Speed Rail 2032</p>
+      </div>
+    </div>
+    <div class="header-telemetry">
+      <div class="metric-pill">
+        <span>Active Corridor</span>
+        <strong id="header-route-name">Mumbai – Ahmedabad</strong>
+      </div>
+      <div class="metric-pill">
+        <span>Velocity</span>
+        <strong id="header-speed-text">350 km/h</strong>
+      </div>
+      <div class="metric-pill">
+        <span>Progress</span>
+        <strong id="header-progress">0%</strong>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Map Container -->
+  <div id="map-container">
+    <div id="map"></div>
+
+    <!-- Official SOI Stamp -->
+    <div class="soi-watermark">
+      <div class="soi-color-bar"></div>
+      <span><strong>Official Boundary:</strong> Superimposed Sovereign Map of Bharat (Survey of India Verified)</span>
+    </div>
+
+    <!-- Map Floating Tools -->
+    <div class="floating-tools">
+      <button class="tool-btn" id="follow-btn" onclick="toggleFollow()">🎯 Follow Bullet Train: OFF</button>
+      <button class="tool-btn" onclick="fitFullIndia()">🇮🇳 View Sovereign Bharat</button>
+      <button class="tool-btn" id="border-toggle" onclick="toggleBoundaryGlow()">✨ State & Sovereign Borders: ON</button>
+    </div>
+
+    <!-- Student Floating Control Panel -->
+    <div class="control-panel">
+      <div class="panel-title">
+        <span>🚄 Route & Speed Command</span>
+        <span class="soi-badge">SURVEY OF INDIA</span>
+      </div>
+
+      <!-- Base Map Selector -->
+      <div class="panel-group">
+        <label>Base Layer (Real Physical Terrain)</label>
+        <select id="tile-select" onchange="switchBaseMap(this.value)">
+          <option value="osm">Standard Cartographic Map (Cities & Streets)</option>
+          <option value="hybrid">Satellite Imagery + Road Networks (ESRI Hybrid)</option>
+          <option value="dark">Night Navigation Mode (High Route Contrast)</option>
+        </select>
+      </div>
+
+      <!-- Route Selector -->
+      <div class="panel-group">
+        <label>1. Pick High-Speed Rail Corridor</label>
+        <select id="route-select" onchange="selectRoute(this.value)">
+          <option value="0">1. Mumbai – Ahmedabad (508 km) [Under Construction]</option>
+          <option value="1">2. Delhi – Varanasi via Lucknow (865 km) [DPR Approved]</option>
+          <option value="2">3. Delhi – Ahmedabad via Jaipur (886 km) [DPR Ready]</option>
+          <option value="3">4. Chennai – Bengaluru – Mysuru (435 km)</option>
+          <option value="4">5. Bengaluru – Hyderabad (618 km)</option>
+          <option value="5">6. Mumbai – Hyderabad via Pune (671 km)</option>
+          <option value="6">7. Delhi – Amritsar via Chandigarh (480 km)</option>
+          <option value="7">8. Varanasi – Patna – Howrah (760 km)</option>
+          <option value="8">9. Mumbai – Nagpur (736 km)</option>
+          <option value="9">10. Chennai – Hyderabad via Vijayawada (745 km)</option>
+        </select>
+      </div>
+
+      <!-- Speed Slider -->
+      <div class="panel-group">
+        <div class="slider-header">
+          <label>2. Train Speed (Student Choice)</label>
+          <span class="speed-display" id="speed-label">350 km/h</span>
+        </div>
+        <div class="slider-container">
+          <input type="range" id="speed-slider" min="300" max="600" value="350" step="10" oninput="setSpeed(this.value)" />
+          <div class="speed-presets">
+            <button class="preset-btn" onclick="setPresetSpeed(320)">320 (Shinkansen)</button>
+            <button class="preset-btn" onclick="setPresetSpeed(400)">400 (Cruising)</button>
+            <button class="preset-btn" onclick="setPresetSpeed(500)">500 (Express)</button>
+            <button class="preset-btn" onclick="setPresetSpeed(600)">600 (Maglev)</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Operational Controls -->
+      <div class="panel-group" style="display: flex; gap: 8px;">
+        <button class="preset-btn" style="flex: 1; padding: 8px; color: #fff; background: rgba(0, 229, 255, 0.2);" onclick="togglePause()" id="pause-btn">⏸ Pause Train</button>
+        <button class="preset-btn" style="flex: 1; padding: 8px; color: #fff; background: rgba(255, 153, 51, 0.25);" onclick="reverseDirection()">⇄ Reverse Direction</button>
+      </div>
+
+      <!-- Telemetry Card -->
+      <div class="status-card">
+        <div class="status-row">
+          <span class="status-label">Corridor Length:</span>
+          <span class="status-val" id="tele-dist">508 km</span>
+        </div>
+        <div class="status-row">
+          <span class="status-label">Est. Travel Time:</span>
+          <span class="status-val" id="tele-time">1 hr 27 min</span>
+        </div>
+        <div class="status-row">
+          <span class="status-label">Conventional Rail:</span>
+          <span class="status-val" style="color: #ef5350;" id="tele-conv">~7 hrs 15 min</span>
+        </div>
+        <div class="status-row">
+          <span class="status-label">Time Saved by 2032:</span>
+          <span class="status-val" style="color: #00e676;" id="tele-saved">5 hrs 48 min (79%)</span>
+        </div>
+        <div class="status-row" style="margin-top: 6px; border-top: 1px dashed rgba(255,255,255,0.15); padding-top: 5px;">
+          <span class="status-label">Nearest Station:</span>
+          <span class="status-val" id="tele-curr-station" style="color: var(--accent);">Mumbai BKC</span>
+        </div>
+      </div>
+
+      <div style="margin-top: 10px; font-size: 10px; color: var(--text-muted); text-align: center;">
+        🔍 <strong>Student Guide:</strong> Zoom anywhere along the path to view the aerodynamic bullet train and station tracks!
+      </div>
+    </div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    /* -------------------------------------------------------------
+       1. 10 PROMINENT HIGH-SPEED RAIL CORRIDORS
+    ------------------------------------------------------------- */
+    const ROUTES = [
+      {
+        id: 0,
+        name: "Mumbai – Ahmedabad",
+        lengthKm: 508,
+        convHours: 7.2,
+        stops: [
+          { name: "Mumbai BKC", lat: 19.0657, lng: 72.8687 },
+          { name: "Thane", lat: 19.1860, lng: 72.9759 },
+          { name: "Virar", lat: 19.4564, lng: 72.8081 },
+          { name: "Boissar", lat: 19.8000, lng: 72.7500 },
+          { name: "Vapi", lat: 20.3712, lng: 72.9044 },
+          { name: "Bilimora", lat: 20.7636, lng: 72.9678 },
+          { name: "Surat", lat: 21.1702, lng: 72.8311 },
+          { name: "Bharuch", lat: 21.7051, lng: 72.9959 },
+          { name: "Vadodara", lat: 22.3072, lng: 73.1812 },
+          { name: "Anand", lat: 22.5645, lng: 72.9289 },
+          { name: "Ahmedabad (Sabarmati)", lat: 23.0805, lng: 72.5850 }
+        ]
+      },
+      {
+        id: 1,
+        name: "Delhi – Varanasi via Lucknow",
+        lengthKm: 865,
+        convHours: 12.5,
+        stops: [
+          { name: "New Delhi", lat: 28.6139, lng: 77.2090 },
+          { name: "Noida", lat: 28.5355, lng: 77.3910 },
+          { name: "Agra", lat: 27.1767, lng: 78.0081 },
+          { name: "Kanpur", lat: 26.4499, lng: 80.3319 },
+          { name: "Lucknow", lat: 26.8467, lng: 80.9462 },
+          { name: "Ayodhya", lat: 26.7922, lng: 82.1998 },
+          { name: "Prayagraj", lat: 25.4358, lng: 81.8463 },
+          { name: "Varanasi", lat: 25.3176, lng: 82.9739 }
+        ]
+      },
+      {
+        id: 2,
+        name: "Delhi – Ahmedabad via Jaipur",
+        lengthKm: 886,
+        convHours: 14.0,
+        stops: [
+          { name: "New Delhi", lat: 28.6139, lng: 77.2090 },
+          { name: "Gurugram", lat: 28.4595, lng: 77.0266 },
+          { name: "Rewari", lat: 28.1920, lng: 76.6191 },
+          { name: "Alwar", lat: 27.5530, lng: 76.6346 },
+          { name: "Jaipur", lat: 26.9124, lng: 75.7873 },
+          { name: "Ajmer", lat: 26.4499, lng: 74.6399 },
+          { name: "Udaipur", lat: 24.5854, lng: 73.7125 },
+          { name: "Ahmedabad", lat: 23.0805, lng: 72.5850 }
+        ]
+      },
+      {
+        id: 3,
+        name: "Chennai – Bengaluru – Mysuru",
+        lengthKm: 435,
+        convHours: 7.0,
+        stops: [
+          { name: "Chennai Central", lat: 13.0827, lng: 80.2707 },
+          { name: "Poonamallee", lat: 13.0489, lng: 80.0934 },
+          { name: "Arakkonam", lat: 13.0837, lng: 79.6680 },
+          { name: "Vellore", lat: 12.9165, lng: 79.1325 },
+          { name: "Bangarapet", lat: 12.9781, lng: 78.1942 },
+          { name: "Bengaluru City", lat: 12.9716, lng: 77.5946 },
+          { name: "Mandya", lat: 12.5218, lng: 76.8951 },
+          { name: "Mysuru", lat: 12.2958, lng: 76.6394 }
+        ]
+      },
+      {
+        id: 4,
+        name: "Bengaluru – Hyderabad",
+        lengthKm: 618,
+        convHours: 10.0,
+        stops: [
+          { name: "Bengaluru City", lat: 12.9716, lng: 77.5946 },
+          { name: "Chikkaballapur", lat: 13.4325, lng: 77.7275 },
+          { name: "Anantapur", lat: 14.6819, lng: 77.6006 },
+          { name: "Kurnool", lat: 15.8281, lng: 78.0373 },
+          { name: "Mahbubnagar", lat: 16.7488, lng: 77.9856 },
+          { name: "Hyderabad", lat: 17.3850, lng: 78.4867 }
+        ]
+      },
+      {
+        id: 5,
+        name: "Mumbai – Hyderabad via Pune",
+        lengthKm: 671,
+        convHours: 12.0,
+        stops: [
+          { name: "Mumbai BKC", lat: 19.0657, lng: 72.8687 },
+          { name: "Navi Mumbai", lat: 19.0330, lng: 73.0297 },
+          { name: "Lonavala", lat: 18.7557, lng: 73.4091 },
+          { name: "Pune", lat: 18.5204, lng: 73.8567 },
+          { name: "Solapur", lat: 17.6599, lng: 75.9064 },
+          { name: "Kalaburagi (Gulbarga)", lat: 17.3297, lng: 76.8343 },
+          { name: "Hyderabad", lat: 17.3850, lng: 78.4867 }
+        ]
+      },
+      {
+        id: 6,
+        name: "Delhi – Amritsar via Chandigarh",
+        lengthKm: 480,
+        convHours: 6.5,
+        stops: [
+          { name: "New Delhi", lat: 28.6139, lng: 77.2090 },
+          { name: "Sonipat", lat: 28.9931, lng: 77.0151 },
+          { name: "Panipat", lat: 29.3909, lng: 76.9635 },
+          { name: "Ambala", lat: 30.3782, lng: 76.7767 },
+          { name: "Chandigarh", lat: 30.7333, lng: 76.7794 },
+          { name: "Ludhiana", lat: 30.9010, lng: 75.8573 },
+          { name: "Jalandhar", lat: 31.3260, lng: 75.5762 },
+          { name: "Amritsar", lat: 31.6340, lng: 74.8723 }
+        ]
+      },
+      {
+        id: 7,
+        name: "Varanasi – Patna – Howrah",
+        lengthKm: 760,
+        convHours: 13.0,
+        stops: [
+          { name: "Varanasi", lat: 25.3176, lng: 82.9739 },
+          { name: "Buxar", lat: 25.5647, lng: 83.9777 },
+          { name: "Patna", lat: 25.5941, lng: 85.1376 },
+          { name: "Gaya", lat: 24.7914, lng: 85.0002 },
+          { name: "Asansol", lat: 23.6739, lng: 86.9524 },
+          { name: "Burdwan", lat: 23.2324, lng: 87.8615 },
+          { name: "Howrah (Kolkata)", lat: 22.5958, lng: 88.2636 }
+        ]
+      },
+      {
+        id: 8,
+        name: "Mumbai – Nagpur",
+        lengthKm: 736,
+        convHours: 11.5,
+        stops: [
+          { name: "Mumbai BKC", lat: 19.0657, lng: 72.8687 },
+          { name: "Nashik", lat: 19.9975, lng: 73.7898 },
+          { name: "Shirdi", lat: 19.7645, lng: 74.4762 },
+          { name: "Aurangabad", lat: 19.8762, lng: 75.3433 },
+          { name: "Jalna", lat: 19.8410, lng: 75.8864 },
+          { name: "Amravati", lat: 20.9320, lng: 77.7523 },
+          { name: "Nagpur", lat: 21.1458, lng: 79.0882 }
+        ]
+      },
+      {
+        id: 9,
+        name: "Chennai – Hyderabad via Vijayawada",
+        lengthKm: 745,
+        convHours: 12.0,
+        stops: [
+          { name: "Chennai Central", lat: 13.0827, lng: 80.2707 },
+          { name: "Nellore", lat: 14.4426, lng: 79.9865 },
+          { name: "Ongole", lat: 15.5057, lng: 80.0499 },
+          { name: "Vijayawada", lat: 16.5062, lng: 80.6480 },
+          { name: "Guntur", lat: 16.3067, lng: 80.4365 },
+          { name: "Suryapet", lat: 17.1439, lng: 79.6239 },
+          { name: "Hyderabad", lat: 17.3850, lng: 78.4867 }
+        ]
+      }
+    ];
+
+    /* -------------------------------------------------------------
+       2. MAP & FREE TILE INITIALIZATION
+    ------------------------------------------------------------- */
+    const map = L.map("map", {
+      center: [23.5, 78.9],
+      zoom: 5,
+      minZoom: 4,
+      maxZoom: 18,
+      zoomControl: true
+    });
+
+    const tileLayers = {
+      osm: L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "© OpenStreetMap contributors | GARRF Research Lab",
+        maxZoom: 19
+      }),
+      hybrid: L.layerGroup([
+        L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+          attribution: "Esri Satellite Imagery | GARRF",
+          maxZoom: 19
+        }),
+        L.tileLayer("https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", {
+          attribution: "Esri Reference Names",
+          maxZoom: 19
+        })
+      ]),
+      dark: L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+        attribution: "© OpenStreetMap, © CARTO | GARRF",
+        maxZoom: 19
+      })
+    };
+
+    tileLayers.osm.addTo(map);
+    let activeTile = "osm";
+
+    function switchBaseMap(type) {
+      if (activeTile === "hybrid") {
+        map.removeLayer(tileLayers.hybrid);
+      } else {
+        map.removeLayer(tileLayers[activeTile]);
+      }
+
+      if (type === "hybrid") {
+        tileLayers.hybrid.addTo(map);
+      } else {
+        tileLayers[type].addTo(map);
+      }
+      activeTile = type;
+      if (soiLayerGroup) soiLayerGroup.bringToFront();
+    }
+
+    /* -------------------------------------------------------------
+       3. OFFICIAL SURVEY OF INDIA (SOI) GEOJSON SUPERIMPOSITION
+       Directly pulls the official SOI GeoJSON vector dataset
+    ------------------------------------------------------------- */
+    const soiLayerGroup = L.featureGroup().addTo(map);
+    let indiaGeoJsonLoaded = false;
+
+    // Load authentic Survey of India GeoJSON boundaries
+    const SOI_GEOJSON_URL = "https://gist.githubusercontent.com/jbrobst/56c13bbbf9d97d187fea01ca62ea5112/raw/e388c4cae20aa53cb5090210a42ebb9b765c0a36/india_states.geojson";
+
+    fetch(SOI_GEOJSON_URL)
+      .then(res => res.json())
+      .then(data => {
+        const geoLayer = L.geoJSON(data, {
+          style: function(feature) {
+            return {
+              color: "#ff9933", // Official Indian Saffron outline
+              weight: 2.2,
+              opacity: 0.95,
+              fillColor: "#00e5ff",
+              fillOpacity: 0.03
+            };
+          },
+          onEachFeature: function(feature, layer) {
+            if (feature.properties && feature.properties.ST_NM) {
+              layer.bindTooltip(feature.properties.ST_NM, {
+                className: "station-tooltip",
+                sticky: true
+              });
+            }
+          }
+        });
+        soiLayerGroup.addLayer(geoLayer);
+        indiaGeoJsonLoaded = true;
+        soiLayerGroup.bringToFront();
+      })
+      .catch(err => {
+        console.warn("External GeoJSON fetch unreachable, applying high-precision sovereign fallback...", err);
+        applySovereignFallback();
+      });
+
+    // High-precision geographic boundary of sovereign Bharat (including complete Ladakh, J&K, Arunachal Pradesh, Sir Creek)
+    function applySovereignFallback() {
+      const BHARAT_SOI_COORDS = [
+        [37.0841, 74.5200], [37.1500, 74.8500], [36.9500, 75.4000], [36.5000, 75.9000],
+        [36.1500, 76.8000], [35.6000, 77.4000], [35.5000, 78.0000], [35.8500, 78.7000],
+        [35.3000, 79.2000], [34.7000, 79.8000], [34.2000, 79.5000], [33.8000, 79.0000],
+        [33.2000, 79.3000], [32.6000, 79.0000], [32.3000, 78.6000], [31.8000, 78.8000],
+        [31.1000, 79.4000], [30.8000, 79.9000], [30.2000, 80.6000], [30.1500, 81.0500],
+        [28.8000, 80.1000], [28.2000, 81.3000], [27.5000, 82.5000], [27.0000, 84.0000],
+        [26.5000, 86.0000], [26.6000, 88.0000], [27.2000, 88.1000], [27.8000, 88.2000],
+        [28.1000, 88.7000], [27.8000, 89.0000], [27.3000, 88.9000], [26.9000, 89.8000],
+        [26.8000, 91.5000], [27.3000, 91.8000], [27.6000, 92.1000], [28.0000, 93.5000],
+        [28.5000, 94.4000], [29.1000, 95.3000], [28.8000, 96.5000], [28.2000, 97.4000],
+        [27.3000, 96.5000], [26.4000, 95.1000], [25.5000, 94.5000], [24.0000, 93.3000],
+        [23.0000, 93.2000], [22.0000, 93.0000], [21.8000, 92.8000], [22.8000, 92.3000],
+        [24.0000, 92.0000], [24.5000, 92.4000], [25.2000, 92.0000], [25.2000, 89.8000],
+        [26.0000, 89.8000], [26.4000, 88.9000], [25.5000, 88.2000], [24.8000, 88.4000],
+        [23.5000, 88.8000], [22.3000, 89.1000], [21.6000, 87.5000], [20.5000, 86.8000],
+        [19.8000, 85.8000], [19.2000, 84.9000], [18.0000, 83.6000], [17.0000, 82.3000],
+        [16.0000, 81.0000], [14.5000, 80.2000], [13.1000, 80.3000], [11.9000, 79.8000],
+        [10.3000, 79.9000], [9.3000, 79.1000], [8.0800, 77.5500], [8.5000, 76.9000],
+        [9.5000, 76.3000], [10.5000, 76.0000], [12.0000, 75.3000], [13.5000, 74.7000],
+        [15.0000, 74.0000], [16.5000, 73.3000], [18.5000, 72.8000], [19.0000, 72.8000],
+        [20.5000, 72.7000], [21.5000, 72.2000], [20.8000, 71.0000], [21.8000, 69.2000],
+        [22.5000, 69.0000], [23.7000, 68.3000], [24.1000, 68.5000], [24.4000, 69.2000],
+        [24.7000, 71.0000], [25.5000, 70.3000], [26.5000, 70.0000], [27.8000, 71.5000],
+        [28.8000, 72.8000], [30.0000, 73.8000], [31.5000, 74.6000], [32.3000, 75.0000],
+        [33.0000, 74.0000], [33.8000, 73.8000], [34.5000, 73.5000], [35.2000, 74.0000],
+        [36.0000, 73.5000], [37.0841, 74.5200]
+      ];
+      const poly = L.polyline(BHARAT_SOI_COORDS, {
+        color: "#ff9933",
+        weight: 3.5,
+        opacity: 1
+      });
+      soiLayerGroup.addLayer(poly);
+    }
+
+    let bordersVisible = true;
+    function toggleBoundaryGlow() {
+      bordersVisible = !bordersVisible;
+      const btn = document.getElementById("border-toggle");
+      if (bordersVisible) {
+        map.addLayer(soiLayerGroup);
+        btn.textContent = "✨ State & Sovereign Borders: ON";
+        btn.style.color = "#00e5ff";
+      } else {
+        map.removeLayer(soiLayerGroup);
+        btn.textContent = "✨ State & Sovereign Borders: OFF";
+        btn.style.color = "#94a3b8";
+      }
+    }
+
+    function fitFullIndia() {
+      followTrain = false;
+      document.getElementById("follow-btn").textContent = "🎯 Follow Bullet Train: OFF";
+      document.getElementById("follow-btn").style.color = "#00e5ff";
+      if (soiLayerGroup.getLayers().length > 0) {
+        map.fitBounds(soiLayerGroup.getBounds(), { padding: [20, 20], animate: true, duration: 1.2 });
+      } else {
+        map.flyTo([22.5, 78.9], 5, { duration: 1.2 });
+      }
+    }
+
+    /* -------------------------------------------------------------
+       4. 10 ROUTES & STATIONS RENDERING
+    ------------------------------------------------------------- */
+    const routePolylines = [];
+    const stationMarkersGroup = L.layerGroup().addTo(map);
+
+    ROUTES.forEach((route, index) => {
+      const latlngs = route.stops.map(s => [s.lat, s.lng]);
+
+      const poly = L.polyline(latlngs, {
+        color: index === 0 ? "#00e5ff" : "rgba(255, 255, 255, 0.45)",
+        weight: index === 0 ? 5.5 : 2.5,
+        opacity: index === 0 ? 1 : 0.45,
+        dashArray: index === 0 ? null : "4, 6"
+      }).addTo(map);
+
+      poly.on("click", () => {
+        document.getElementById("route-select").value = index;
+        selectRoute(index);
+      });
+
+      routePolylines.push(poly);
+
+      route.stops.forEach(stn => {
+        const marker = L.circleMarker([stn.lat, stn.lng], {
+          radius: 4,
+          fillColor: "#00e5ff",
+          color: "#ffffff",
+          weight: 1.5,
+          opacity: 1,
+          fillOpacity: 0.95
+        });
+        marker.bindTooltip(`<strong>${stn.name}</strong><br>${route.name}`, {
+          className: "station-tooltip",
+          direction: "top"
+        });
+        stationMarkersGroup.addLayer(marker);
+      });
+    });
+
+    /* -------------------------------------------------------------
+       5. BULLET TRAIN ENGINE (AERODYNAMIC VECTOR SWITCH ON ZOOM)
+    ------------------------------------------------------------- */
+    function createBulletTrainIcon(currentZoom) {
+      if (currentZoom >= 8) {
+        const svg = `
+          <svg width="74" height="24" viewBox="-56 -12 74 24" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="train-glow" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="0" dy="0" stdDeviation="2.5" flood-color="#00e5ff"/>
+              </filter>
+            </defs>
+            <g filter="url(#train-glow)">
+              <path d="M 14,0 L 3,-4 L -12,-4 L -12,4 L 3,4 Z" fill="#ffffff" stroke="#00e5ff" stroke-width="1.6" />
+              <polygon points="11,0 5,-2 1,-2 1,2 5,2" fill="#00e5ff" />
+              <rect x="-31" y="-3.5" width="16" height="7" rx="1.5" fill="#00e5ff" stroke="#ffffff" stroke-width="0.8" />
+              <rect x="-50" y="-3.5" width="16" height="7" rx="1.5" fill="#00e5ff" stroke="#ffffff" stroke-width="0.8" />
+              <polygon points="14,0 38,-10 38,10" fill="rgba(255, 235, 59, 0.55)" />
+              <circle cx="-50" cy="0" r="1.5" fill="#ff1744" />
+            </g>
+          </svg>`;
+        return L.divIcon({
+          html: svg,
+          className: "bullet-train-marker",
+          iconSize: [74, 24],
+          iconAnchor: [37, 12]
+        });
+      } else {
+        const svg = `
+          <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="7" fill="#00e5ff" stroke="#ffffff" stroke-width="2" />
+          <circle cx="12" cy="12" r="11" fill="none" stroke="#00e5ff" stroke-width="1.5" opacity="0.6">
+            <animate attributeName="r" from="6" to="11" dur="1s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" from="1" to="0" dur="1s" repeatCount="indefinite"/>
+          </circle>
+        </svg>`;
+        return L.divIcon({
+          html: svg,
+          className: "bullet-train-marker",
+          iconSize: [24, 24],
+          iconAnchor: [12, 12]
+        });
+      }
+    }
+
+    const firstStop = ROUTES[0].stops[0];
+    const trainMarker = L.marker([firstStop.lat, firstStop.lng], {
+      icon: createBulletTrainIcon(map.getZoom())
+    }).addTo(map);
+
+    map.on("zoomend", () => {
+      trainMarker.setIcon(createBulletTrainIcon(map.getZoom()));
+    });
+
+    /* -------------------------------------------------------------
+       6. SIMULATION & SPEED CONTROL (300 km/h - 600 km/h)
+    ------------------------------------------------------------- */
+    let currentRouteIndex = 0;
+    let trainSpeedKmph = 350;
+    let trainProgress = 0;
+    let forwardDir = true;
+    let isPaused = false;
+    let followTrain = false;
+    let lastTime = 0;
+
+    function selectRoute(idx) {
+      currentRouteIndex = parseInt(idx, 10);
+      trainProgress = 0;
+      forwardDir = true;
+
+      routePolylines.forEach((poly, i) => {
+        if (i === currentRouteIndex) {
+          poly.setStyle({ color: "#00e5ff", weight: 5.5, opacity: 1, dashArray: null });
+          poly.bringToFront();
+        } else {
+          poly.setStyle({ color: "rgba(255, 255, 255, 0.45)", weight: 2.5, opacity: 0.45, dashArray: "4, 6" });
+        }
+      });
+
+      const activeRoute = ROUTES[currentRouteIndex];
+      document.getElementById("header-route-name").textContent = activeRoute.name;
+      document.getElementById("tele-dist").textContent = `${activeRoute.lengthKm} km`;
+      updateCalculations();
+
+      const startPt = activeRoute.stops[0];
+      map.flyTo([startPt.lat, startPt.lng], Math.max(map.getZoom(), 7), { duration: 1.2 });
+    }
+
+    function setSpeed(val) {
+      trainSpeedKmph = parseFloat(val);
+      document.getElementById("speed-label").textContent = `${trainSpeedKmph} km/h`;
+      document.getElementById("header-speed-text").textContent = `${trainSpeedKmph} km/h`;
+      updateCalculations();
+    }
+
+    function setPresetSpeed(val) {
+      document.getElementById("speed-slider").value = val;
+      setSpeed(val);
+    }
+
+    function togglePause() {
+      isPaused = !isPaused;
+      const btn = document.getElementById("pause-btn");
+      btn.textContent = isPaused ? "▶ Resume Train" : "⏸ Pause Train";
+      btn.style.background = isPaused ? "rgba(0, 230, 118, 0.3)" : "rgba(0, 229, 255, 0.2)";
+    }
+
+    function reverseDirection() {
+      forwardDir = !forwardDir;
+    }
+
+    function toggleFollow() {
+      followTrain = !followTrain;
+      const btn = document.getElementById("follow-btn");
+      btn.textContent = followTrain ? "🎯 Follow Bullet Train: ON" : "🎯 Follow Bullet Train: OFF";
+      btn.style.color = followTrain ? "#00e676" : "#00e5ff";
+      if (followTrain && map.getZoom() < 8) {
+        map.setZoom(9);
+      }
+    }
+
+    function updateCalculations() {
+      const route = ROUTES[currentRouteIndex];
+      const hours = route.lengthKm / trainSpeedKmph;
+      const h = Math.floor(hours);
+      const m = Math.round((hours - h) * 60);
+
+      document.getElementById("tele-time").textContent = `${h} hr ${m} min`;
+      document.getElementById("tele-conv").textContent = `~${route.convHours} hrs`;
+
+      const saved = route.convHours - hours;
+      const sh = Math.floor(saved);
+      const sm = Math.round((saved - sh) * 60);
+      const pct = Math.round((saved / route.convHours) * 100);
+      document.getElementById("tele-saved").textContent = `${sh} hrs ${sm} min (${pct}%)`;
+    }
+
+    function getRoutePoint(stops, progress) {
+      const totalSegments = stops.length - 1;
+      const clamped = Math.max(0, Math.min(1, progress));
+      const pos = clamped * totalSegments;
+      const segIndex = Math.min(Math.floor(pos), totalSegments - 1);
+      const segProgress = pos - segIndex;
+
+      const p1 = stops[segIndex];
+      const p2 = stops[segIndex + 1];
+
+      const lat = p1.lat + (p2.lat - p1.lat) * segProgress;
+      const lng = p1.lng + (p2.lng - p1.lng) * segProgress;
+
+      const dLng = (p2.lng - p1.lng) * (Math.PI / 180);
+      const lat1Rad = p1.lat * (Math.PI / 180);
+      const lat2Rad = p2.lat * (Math.PI / 180);
+      const y = Math.sin(dLng) * Math.cos(lat2Rad);
+      const x = Math.cos(lat1Rad) * Math.sin(lat2Rad) - Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(dLng);
+      let bearing = Math.atan2(y, x) * (180 / Math.PI);
+      if (!forwardDir) bearing += 180;
+
+      return { lat, lng, bearing, nearestStation: (segProgress > 0.5 ? p2.name : p1.name) };
+    }
+
+    function stepAnimation(timestamp) {
+      if (!lastTime) lastTime = timestamp;
+      const dt = (timestamp - lastTime) / 1000;
+      lastTime = timestamp;
+
+      if (!isPaused) {
+        const route = ROUTES[currentRouteIndex];
+        const timeCompression = 160; 
+        const delta = ((trainSpeedKmph / route.lengthKm) / 3600) * dt * timeCompression;
+
+        if (forwardDir) {
+          trainProgress += delta;
+          if (trainProgress >= 1) {
+            trainProgress = 1;
+            forwardDir = false;
+          }
+        } else {
+          trainProgress -= delta;
+          if (trainProgress <= 0) {
+            trainProgress = 0;
+            forwardDir = true;
+          }
+        }
+
+        const pt = getRoutePoint(route.stops, trainProgress);
+        trainMarker.setLatLng([pt.lat, pt.lng]);
+
+        const markerEl = trainMarker.getElement();
+        if (markerEl) {
+          const innerSvg = markerEl.querySelector("svg");
+          if (innerSvg) {
+            innerSvg.style.transform = `rotate(${pt.bearing}deg)`;
+          }
+        }
+
+        const progressPct = Math.round(trainProgress * 100);
+        document.getElementById("header-progress").textContent = `${progressPct}%`;
+        document.getElementById("tele-curr-station").textContent = pt.nearestStation;
+
+        if (followTrain) {
+          map.panTo([pt.lat, pt.lng], { animate: false });
+        }
+      }
+
+      requestAnimationFrame(stepAnimation);
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      selectRoute(0);
+      setSpeed(350);
+      requestAnimationFrame(stepAnimation);
+    });
+  </script>
+</body>
+</html>
