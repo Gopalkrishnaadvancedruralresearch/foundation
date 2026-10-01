@@ -29,7 +29,7 @@
     }
 
     .container {
-      max-width: 1250px;
+      max-width: 1280px;
       margin: 0 auto;
       background: var(--card);
       padding: 2.2rem;
@@ -142,7 +142,7 @@
     /* Configuration Panel */
     .lab-grid {
       display: grid;
-      grid-template-columns: 340px 1fr;
+      grid-template-columns: 370px 1fr;
       gap: 1.5rem;
       margin-bottom: 1.5rem;
     }
@@ -164,7 +164,7 @@
     }
 
     .control-item {
-      margin-bottom: 0.9rem;
+      margin-bottom: 0.95rem;
     }
 
     .control-item label {
@@ -177,11 +177,17 @@
 
     .control-item select, .control-item input[type="range"] {
       width: 100%;
-      padding: 0.45rem;
+      padding: 0.5rem;
       border: 1px solid var(--border);
       border-radius: 5px;
       background: #ffffff;
       font-size: 0.88rem;
+    }
+
+    .highlight-select {
+      border: 1.5px solid var(--accent) !important;
+      background: #fffbeb !important;
+      font-weight: 600;
     }
 
     .range-val {
@@ -191,8 +197,8 @@
       float: right;
     }
 
-    /* PZT Specs Card */
-    .pzt-specs {
+    /* PZT & Crack Specs Card */
+    .specs-card {
       background: #ffffff;
       border: 1px solid #e2e8f0;
       border-radius: 6px;
@@ -202,7 +208,7 @@
       line-height: 1.45;
     }
 
-    .pzt-specs-title {
+    .specs-title {
       font-weight: 700;
       color: #b45309;
       margin-bottom: 0.3rem;
@@ -210,6 +216,20 @@
       font-size: 0.72rem;
       letter-spacing: 0.05em;
     }
+
+    /* Crack Table */
+    .crack-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.5rem;
+      font-size: 0.72rem;
+    }
+    .crack-table th, .crack-table td {
+      border: 1px solid #cbd5e1;
+      padding: 0.25rem 0.35rem;
+      text-align: center;
+    }
+    .crack-table th { background: #f1f5f9; color: var(--primary); font-weight: 700; }
 
     .btn-action {
       width: 100%;
@@ -236,7 +256,7 @@
 
     .btn-step {
       padding: 0.55rem 0.3rem;
-      font-size: 0.76rem;
+      font-size: 0.74rem;
       font-weight: 600;
       border-radius: 5px;
       border: 1px solid var(--border);
@@ -245,7 +265,7 @@
       transition: background 0.2s;
     }
     .btn-step:hover:not(:disabled) { background: #e2e8f0; }
-    .btn-step.active-step { border-color: var(--primary); font-weight: 700; color: #ffffff; }
+    .btn-step.active-step { font-weight: 700; color: #ffffff; }
 
     .btn-csv {
       background: #334155;
@@ -443,13 +463,26 @@
 
           <div class="control-item">
             <label for="bcSelect">Boundary Conditions</label>
-            <select id="bcSelect" onchange="updateLocationOptions()">
+            <select id="bcSelect" onchange="onBoundaryChange()">
+              <!-- Populated dynamically -->
             </select>
           </div>
 
+          <!-- Highlighted PZT Placement Dropdown -->
           <div class="control-item">
-            <label for="pztLocSelect">PZT Transducer Location</label>
-            <select id="pztLocSelect" onchange="refreshPlots()">
+            <label for="pztLocSelect">&#x1F4CD; PZT Transducer Location</label>
+            <select id="pztLocSelect" class="highlight-select" onchange="onPZTLocationChange()">
+              <!-- Populated dynamically based on 1D/2D/3D & Boundary Condition -->
+            </select>
+          </div>
+
+          <!-- Crack Location Selector -->
+          <div class="control-item">
+            <label for="crackLocSelect">&#x1F527; Crack Defect Location</label>
+            <select id="crackLocSelect" onchange="refreshPlots()">
+              <option value="NearPZT" selected>Near Sensor Zone (High Sensitivity: x = x_pzt + 25mm)</option>
+              <option value="MidSpan">Mid-Span Region (x = 0.50 L)</option>
+              <option value="FarZone">Far Boundary Region (x = 0.85 L)</option>
             </select>
           </div>
 
@@ -458,36 +491,59 @@
             <input type="range" id="lenRange" min="50" max="1000" step="10" value="300" oninput="onLengthInput(this.value)">
           </div>
 
-          <!-- PZT Properties Datasheet Card -->
-          <div class="pzt-specs">
-            <div class="pzt-specs-title">&bull; PZT-5H Technical Specifications</div>
+          <!-- PZT Specs Card -->
+          <div class="specs-card">
+            <div class="specs-title">&bull; PZT-5H Technical Specifications</div>
             Dimensions: 10 &times; 10 &times; <span id="pztThickText">0.3 (or 3.0)</span> mm<br>
             <i>d</i><sub>31</sub> = -274 &times; 10<sup>-12</sup> m/V, <i>d</i><sub>33</sub> = 593 &times; 10<sup>-12</sup> m/V<br>
             <i>Y</i><sub>11</sub><sup>E</sup> = 62 GPa, <i>Y</i><sub>33</sub><sup>E</sup> = 50 GPa, &rho; = 7750 kg/m³<br>
             &epsilon;<sub>33</sub><sup>T</sup> / &epsilon;<sub>0</sub> = 3400, Loss factor &eta; = 0.015
           </div>
 
-          <!-- Step 2: Lock Setup -->
+          <!-- Crack Dimensions Quantitative Card -->
+          <div class="specs-card">
+            <div class="specs-title">&bull; Crack Geometric Progression (Depth t = 5mm)</div>
+            <table class="crack-table">
+              <thead>
+                <tr>
+                  <th>State</th>
+                  <th>Length (a)</th>
+                  <th>Depth (d)</th>
+                  <th>Width</th>
+                  <th>&Delta;K Loss</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="color: #16a34a; font-weight:600;"><td>Pristine</td><td>0.0 mm</td><td>0.0 mm (0%)</td><td>0.0 mm</td><td>0.0 %</td></tr>
+                <tr style="color: #0284c7; font-weight:600;"><td>Crack 1</td><td>2.0 mm</td><td>0.5 mm (10%)</td><td>0.1 mm</td><td>4.0 %</td></tr>
+                <tr style="color: #ca8a04; font-weight:600;"><td>Crack 2</td><td>5.0 mm</td><td>1.5 mm (30%)</td><td>0.2 mm</td><td>10.0 %</td></tr>
+                <tr style="color: #ea580c; font-weight:600;"><td>Crack 3</td><td>10.0 mm</td><td>2.5 mm (50%)</td><td>0.4 mm</td><td>18.0 %</td></tr>
+                <tr style="color: #dc2626; font-weight:600;"><td>Crack 4</td><td>18.0 mm</td><td>4.0 mm (80%)</td><td>0.8 mm</td><td>30.0 %</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Lock Button -->
           <button id="lockBtn" class="btn-action btn-lock" onclick="toggleLockSetup()">
             &#x1F512; Lock Parameters &amp; Initialize Sensor
           </button>
 
-          <!-- Step 3: Progressive Damage Excitation Buttons -->
+          <!-- Progressive Damage Measurement Buttons -->
           <div style="margin-top: 1rem;">
             <div style="font-size: 0.82rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.3rem;">
-              2. Spectral Measurement Sequence
+              2. Spectral Measurement Sequence (Toggle Curves)
             </div>
             <div class="step-buttons">
               <button id="btnState0" class="btn-step active-step" onclick="toggleState(0)" style="border-left: 3px solid #16a34a; background: #16a34a; color:#fff;">1. Pristine Baseline</button>
-              <button id="btnState1" class="btn-step active-step" onclick="toggleState(1)" style="border-left: 3px solid #0284c7; background: #0284c7; color:#fff;">2. Crack State 1</button>
-              <button id="btnState2" class="btn-step active-step" onclick="toggleState(2)" style="border-left: 3px solid #eab308; background: #eab308; color:#fff;">3. Crack State 2</button>
-              <button id="btnState3" class="btn-step active-step" onclick="toggleState(3)" style="border-left: 3px solid #ea580c; background: #ea580c; color:#fff;">4. Crack State 3</button>
-              <button id="btnState4" class="btn-step active-step" onclick="toggleState(4)" style="border-left: 3px solid #dc2626; background: #dc2626; color:#fff;">5. Crack State 4</button>
+              <button id="btnState1" class="btn-step active-step" onclick="toggleState(1)" style="border-left: 3px solid #0284c7; background: #0284c7; color:#fff;">2. Crack 1 (d=0.5)</button>
+              <button id="btnState2" class="btn-step active-step" onclick="toggleState(2)" style="border-left: 3px solid #eab308; background: #eab308; color:#fff;">3. Crack 2 (d=1.5)</button>
+              <button id="btnState3" class="btn-step active-step" onclick="toggleState(3)" style="border-left: 3px solid #ea580c; background: #ea580c; color:#fff;">4. Crack 3 (d=2.5)</button>
+              <button id="btnState4" class="btn-step active-step" onclick="toggleState(4)" style="border-left: 3px solid #dc2626; background: #dc2626; color:#fff;">5. Crack 4 (d=4.0)</button>
               <button id="btnSweepAll" class="btn-step" onclick="sweepAllStates()" style="background: #f1f5f9; font-weight: 700;">&#x21BB; Refresh 5 States</button>
             </div>
           </div>
 
-          <!-- Step 4: CSV Export -->
+          <!-- CSV Export -->
           <button id="csvBtn" class="btn-action btn-csv" onclick="downloadCSV()">
             &#x1F4BE; Export Signatures to CSV
           </button>
@@ -498,10 +554,10 @@
           
           <div class="screen-card">
             <div class="screen-header">
-              <div class="screen-title">Screen 1: Specimen Support &amp; PZT Displacement Kinematics</div>
+              <div class="screen-title">Screen 1: Specimen Support, Sensor &amp; Dynamic Crack Propagation Kinematics</div>
               <div style="font-size: 0.8rem; color: #64748b;" id="kinematicStatus">Interactive Visual Mode &bull; Real-Time Dynamics</div>
             </div>
-            <canvas id="kinematicsCanvas" width="820" height="190"></canvas>
+            <canvas id="kinematicsCanvas" width="820" height="210"></canvas>
           </div>
 
           <div class="screen-card">
@@ -509,10 +565,10 @@
               <div class="screen-title">Screen 2: Real Conductance Spectrum G(&omega;) [10 kHz &ndash; 1 MHz]</div>
               <div class="screen-legend">
                 <div class="legend-item"><div class="legend-color" style="background: #16a34a;"></div> Pristine</div>
-                <div class="legend-item"><div class="legend-color" style="background: #0284c7;"></div> Crack 1</div>
-                <div class="legend-item"><div class="legend-color" style="background: #eab308;"></div> Crack 2</div>
-                <div class="legend-item"><div class="legend-color" style="background: #ea580c;"></div> Crack 3</div>
-                <div class="legend-item"><div class="legend-color" style="background: #dc2626;"></div> Crack 4</div>
+                <div class="legend-item"><div class="legend-color" style="background: #0284c7;"></div> Crack 1 (d=0.5mm)</div>
+                <div class="legend-item"><div class="legend-color" style="background: #eab308;"></div> Crack 2 (d=1.5mm)</div>
+                <div class="legend-item"><div class="legend-color" style="background: #ea580c;"></div> Crack 3 (d=2.5mm)</div>
+                <div class="legend-item"><div class="legend-color" style="background: #dc2626;"></div> Crack 4 (d=4.0mm)</div>
               </div>
             </div>
             <canvas id="conductanceCanvas" width="820" height="230"></canvas>
@@ -668,7 +724,7 @@
     <footer class="footer">
       <div class="footer-top">
         <span class="copyright">&copy; Copyright Dr Annamdas Venu Gopal Madhav and Shantanu Vasudev Krishna Annamdas. All Rights Reserved.</span>
-        <span>Document Ref: GARRF-EMI-SIM-2026-V4</span>
+        <span>Document Ref: GARRF-EMI-SIM-2026-V6</span>
       </div>
       <div>Gopalkrishna Advanced Rural Research Foundation (GARRF) &bull; Empowering Bharat Through Advanced Scientific Education &amp; Structural Integrity Analytics</div>
     </footer>
@@ -703,15 +759,15 @@
       delta: 0.015
     };
 
+    // Damage States with Explicit Geometric Parameters
     const damageStates = [
-      { name: "Pristine",   kFact: 1.00, dampFact: 1.0, color: "#16a34a" },
-      { name: "Crack 1",    kFact: 0.96, dampFact: 1.3, color: "#0284c7" },
-      { name: "Crack 2",    kFact: 0.90, dampFact: 1.8, color: "#eab308" },
-      { name: "Crack 3",    kFact: 0.82, dampFact: 2.5, color: "#ea580c" },
-      { name: "Crack 4",    kFact: 0.70, dampFact: 3.5, color: "#dc2626" }
+      { name: "Pristine",   len: "0.0 mm",  depth: "0.0 mm", ratio: "0%",  kFact: 1.00, dampFact: 1.0, color: "#16a34a", drawDepth: 0 },
+      { name: "Crack 1",    len: "2.0 mm",  depth: "0.5 mm", ratio: "10%", kFact: 0.96, dampFact: 1.3, color: "#0284c7", drawDepth: 4 },
+      { name: "Crack 2",    len: "5.0 mm",  depth: "1.5 mm", ratio: "30%", kFact: 0.90, dampFact: 1.8, color: "#eab308", drawDepth: 9 },
+      { name: "Crack 3",    len: "10.0 mm", depth: "2.5 mm", ratio: "50%", kFact: 0.82, dampFact: 2.5, color: "#ea580c", drawDepth: 15 },
+      { name: "Crack 4",    len: "18.0 mm", depth: "4.0 mm", ratio: "80%", kFact: 0.70, dampFact: 3.5, color: "#dc2626", drawDepth: 22 }
     ];
 
-    // All 5 states active by default for immediate visualization
     let activeStates = [true, true, true, true, true];
     let isSetupLocked = false;
     let animPhase = 0;
@@ -720,7 +776,16 @@
       const dim = document.getElementById('dimSelect').value;
       document.getElementById('pztThickText').innerText = (dim === '3D') ? "0.3 (or 3.0)" : "0.3";
       updateBoundaryConditions();
-      updateLocationOptions();
+      updatePZTLocations();
+      refreshPlots();
+    }
+
+    function onBoundaryChange() {
+      updatePZTLocations();
+      refreshPlots();
+    }
+
+    function onPZTLocationChange() {
       refreshPlots();
     }
 
@@ -746,25 +811,25 @@
 
       if (dim === "1D") {
         bcSel.innerHTML = `
-          <option value="CF">Cantilever Beam (Fixed - Free)</option>
+          <option value="CF" selected>Cantilever Beam (Fixed - Free)</option>
           <option value="SS">Simply Supported Beam (Pin - Pin)</option>
           <option value="FF">Free - Free Beam (Free - Free)</option>
         `;
       } else if (dim === "2D") {
         bcSel.innerHTML = `
-          <option value="CCCC">Fully Clamped Plate (All 4 Edges Fixed)</option>
+          <option value="CCCC" selected>Fully Clamped Plate (All 4 Edges Fixed)</option>
           <option value="CFFF">Cantilever Plate (1 Edge Fixed, 3 Free)</option>
           <option value="FFFF">Free - Free Plate (All Edges Free)</option>
         `;
       } else {
         bcSel.innerHTML = `
-          <option value="SolidBlock">Volumetric Solid Block (Surface Confinement)</option>
+          <option value="SolidBlock" selected>Volumetric Solid Block (Surface Confinement)</option>
           <option value="EmbeddedConcrete">Mass Concrete (6-Face Embedded Aggregate)</option>
         `;
       }
     }
 
-    function updateLocationOptions() {
+    function updatePZTLocations() {
       const dim = document.getElementById('dimSelect').value;
       const bc = document.getElementById('bcSelect').value;
       const locSel = document.getElementById('pztLocSelect');
@@ -813,6 +878,7 @@
         document.getElementById('matSelect').disabled = true;
         document.getElementById('bcSelect').disabled = true;
         document.getElementById('pztLocSelect').disabled = true;
+        document.getElementById('crackLocSelect').disabled = true;
         document.getElementById('lenRange').disabled = true;
         document.getElementById('kinematicStatus').innerText = "Parameters Frozen • Real-Time Dynamic Simulation";
       } else {
@@ -823,6 +889,7 @@
         document.getElementById('matSelect').disabled = false;
         document.getElementById('bcSelect').disabled = false;
         document.getElementById('pztLocSelect').disabled = false;
+        document.getElementById('crackLocSelect').disabled = false;
         document.getElementById('lenRange').disabled = false;
         document.getElementById('kinematicStatus').innerText = "Interactive Visual Mode • Real-Time Dynamics";
       }
@@ -854,7 +921,7 @@
       refreshPlots();
     }
 
-    function computeAdmittance(dim, matKey, lengthMm, locVal, dmg) {
+    function computeAdmittance(dim, matKey, lengthMm, pztLocVal, crackLocVal, dmg) {
       const mat = materials[matKey];
       const L = lengthMm / 1000;
       const numPoints = 600;
@@ -864,15 +931,34 @@
 
       const fBase = (3000 / L) * Math.sqrt(mat.E / 70e9 * (2700 / mat.rho));
       
-      let locWeight = 1.0;
+      // Mode participation factor
+      let pztWeight = 1.0;
       if (dim === "1D") {
-        const xRatio = parseFloat(locVal) || 0.5;
-        locWeight = Math.sin(Math.PI * xRatio) * 1.2 + 0.4;
+        const xRatio = parseFloat(pztLocVal) || 0.5;
+        if (document.getElementById('bcSelect').value === "CF") {
+          pztWeight = (1.0 - xRatio * 0.7);
+        } else {
+          pztWeight = Math.sin(Math.PI * xRatio) * 1.2 + 0.3;
+        }
+      } else if (dim === "2D") {
+        if (pztLocVal === "Center") pztWeight = 1.2;
+        else if (pztLocVal === "Edge") pztWeight = 0.9;
+        else pztWeight = 0.6;
       }
 
-      const f1 = (45e3 + fBase * 0.1) * Math.sqrt(dmg.kFact) * locWeight;
-      const f2 = (170e3 + fBase * 0.3) * Math.sqrt(dmg.kFact);
-      const f3 = 330e3 * Math.sqrt(dmg.kFact);
+      // Proximity sensing factor between crack and PZT
+      let crackSensitivity = 1.0;
+      if (crackLocVal === "NearPZT") crackSensitivity = 1.4;
+      else if (crackLocVal === "MidSpan") crackSensitivity = 1.0;
+      else crackSensitivity = 0.6;
+
+      // Effective stiffness reduction accounting for proximity
+      const effK = 1.0 - (1.0 - dmg.kFact) * crackSensitivity;
+      const effDamp = 1.0 + (dmg.dampFact - 1.0) * crackSensitivity;
+
+      const f1 = (45e3 + fBase * 0.1) * Math.sqrt(effK) * (0.8 + 0.2 * pztWeight);
+      const f2 = (170e3 + fBase * 0.3) * Math.sqrt(effK);
+      const f3 = 330e3 * Math.sqrt(effK);
       const fThick = 740e3 * Math.sqrt(pzt.Y33 / (pzt.rho * Math.pow(pzt.h * 2, 2))) / 1.05e6 * 740e3;
 
       for (let i = 0; i < numPoints; i++) {
@@ -885,25 +971,25 @@
         let baseB = omega * C0;
 
         const d1 = (omega - 2 * Math.PI * f1);
-        const w1 = 2 * Math.PI * 1800 * dmg.dampFact;
-        let resG = (4.5e-4 * w1 * w1) / (d1 * d1 + w1 * w1);
-        let resB = (4.5e-4 * d1 * w1) / (d1 * d1 + w1 * w1);
+        const w1 = 2 * Math.PI * 1800 * effDamp;
+        let resG = (4.5e-4 * w1 * w1 * pztWeight) / (d1 * d1 + w1 * w1);
+        let resB = (4.5e-4 * d1 * w1 * pztWeight) / (d1 * d1 + w1 * w1);
 
         if (dim === "2D" || dim === "3D") {
           const d2 = (omega - 2 * Math.PI * f2);
-          const w2 = 2 * Math.PI * 2600 * dmg.dampFact;
+          const w2 = 2 * Math.PI * 2600 * effDamp;
           resG += (5.5e-4 * w2 * w2) / (d2 * d2 + w2 * w2);
           resB += (5.5e-4 * d2 * w2) / (d2 * d2 + w2 * w2);
 
           const d3 = (omega - 2 * Math.PI * f3);
-          const w3 = 2 * Math.PI * 3400 * dmg.dampFact;
+          const w3 = 2 * Math.PI * 3400 * effDamp;
           resG += (3.5e-4 * w3 * w3) / (d3 * d3 + w3 * w3);
           resB += (3.5e-4 * d3 * w3) / (d3 * d3 + w3 * w3);
         }
 
         if (dim === "3D") {
           const d4 = (omega - 2 * Math.PI * fThick);
-          const isEmbedded = (locVal === "EmbeddedCenter");
+          const isEmbedded = (pztLocVal === "EmbeddedCenter");
           const w4 = 2 * Math.PI * 4200 * (isEmbedded ? 2.0 : 1.0);
           const amp = isEmbedded ? 8e-4 : 12e-4;
           resG += (amp * w4 * w4) / (d4 * d4 + w4 * w4);
@@ -921,14 +1007,15 @@
       const dim = document.getElementById('dimSelect').value;
       const mat = document.getElementById('matSelect').value;
       const len = document.getElementById('lenRange').value;
-      const loc = document.getElementById('pztLocSelect').value;
+      const pztLoc = document.getElementById('pztLocSelect').value;
+      const crackLoc = document.getElementById('crackLocSelect').value;
 
       const gSeries = [];
       const bSeries = [];
 
       damageStates.forEach((dmg, idx) => {
         if (activeStates[idx]) {
-          const res = computeAdmittance(dim, mat, len, loc, dmg);
+          const res = computeAdmittance(dim, mat, len, pztLoc, crackLoc, dmg);
           gSeries.push({ data: res.G, color: dmg.color, name: dmg.name });
           bSeries.push({ data: res.B, color: dmg.color, name: dmg.name });
         }
@@ -1027,14 +1114,24 @@
 
       const dim = document.getElementById('dimSelect').value;
       const bc = document.getElementById('bcSelect').value;
-      const loc = document.getElementById('pztLocSelect').value;
+      const pztLoc = document.getElementById('pztLocSelect').value;
+      const crackLoc = document.getElementById('crackLocSelect').value;
       const mat = document.getElementById('matSelect').value;
 
       animPhase += 0.08;
       const vib = Math.sin(animPhase) * 4;
 
+      // Determine highest active crack state to render dynamically
+      let maxDmg = damageStates[0];
+      for (let i = 4; i >= 0; i--) {
+        if (activeStates[i]) {
+          maxDmg = damageStates[i];
+          break;
+        }
+      }
+
       if (dim === "1D") {
-        const beamX = 80, beamY = 85, beamW = 660, beamH = 26;
+        const beamX = 80, beamY = 95, beamW = 660, beamH = 28;
         ctx.fillStyle = '#94a3b8';
         ctx.fillRect(beamX, beamY, beamW, beamH);
         ctx.strokeStyle = '#475569';
@@ -1043,14 +1140,15 @@
 
         if (bc === "CF") {
           ctx.fillStyle = '#1e293b';
-          ctx.fillRect(55, 50, 25, 95);
+          ctx.fillRect(55, 60, 25, 100);
         } else if (bc === "SS") {
           ctx.fillStyle = '#1e293b';
           drawTriangle(ctx, beamX, beamY + beamH, 16);
           drawTriangle(ctx, beamX + beamW, beamY + beamH, 16);
         }
 
-        const xRatio = parseFloat(loc) || 0.50;
+        // PZT Placement
+        const xRatio = parseFloat(pztLoc) || 0.50;
         const pztX = beamX + xRatio * (beamW - 40);
         const pztW = 40 + vib;
 
@@ -1059,25 +1157,50 @@
         ctx.strokeStyle = '#b45309';
         ctx.strokeRect(pztX - vib/2, beamY - 12, pztW, 12);
 
+        // Crack Notch Placement & Dynamic Depth Rendering
+        let crackX = pztX + 65;
+        if (crackLoc === "MidSpan") crackX = beamX + beamW * 0.50;
+        if (crackLoc === "FarZone") crackX = beamX + beamW * 0.85;
+
+        if (maxDmg.drawDepth > 0) {
+          ctx.fillStyle = '#dc2626';
+          ctx.strokeStyle = '#991b1b';
+          ctx.lineWidth = 2;
+          
+          // Draw V-notch crack with real depth
+          ctx.beginPath();
+          ctx.moveTo(crackX - 4, beamY);
+          ctx.lineTo(crackX, beamY + maxDmg.drawDepth);
+          ctx.lineTo(crackX + 4, beamY);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+
+          // Crack Annotation Callout
+          ctx.fillStyle = '#dc2626';
+          ctx.font = 'bold 10px sans-serif';
+          ctx.fillText(`Crack: d = ${maxDmg.depth} (${maxDmg.ratio})`, crackX - 35, beamY + maxDmg.drawDepth + 18);
+        }
+
         ctx.fillStyle = '#0f172a';
         ctx.font = '11px sans-serif';
         ctx.fillText(`1D Specimen: ${mat} Beam | Length: ${document.getElementById('lenRange').value} mm | BC: ${bc}`, beamX, 35);
         ctx.fillStyle = '#b45309';
-        ctx.fillText(`PZT-5H Transducer (x/L = ${xRatio})`, pztX - 25, beamY - 20);
+        ctx.fillText(`PZT-5H Transducer (x/L = ${xRatio})`, pztX - 30, beamY - 20);
 
       } else if (dim === "2D") {
         ctx.fillStyle = '#cbd5e1';
         ctx.beginPath();
-        ctx.moveTo(140, 140); ctx.lineTo(600, 140); ctx.lineTo(700, 60); ctx.lineTo(240, 60);
+        ctx.moveTo(140, 150); ctx.lineTo(600, 150); ctx.lineTo(700, 70); ctx.lineTo(240, 70);
         ctx.closePath();
         ctx.fill();
         ctx.strokeStyle = '#64748b';
         ctx.lineWidth = 2;
         ctx.stroke();
 
-        let px = 410, py = 100;
-        if (loc === "Edge") { px = 270; py = 120; }
-        if (loc === "Corner") { px = 190; py = 135; }
+        let px = 410, py = 110;
+        if (pztLoc === "Edge") { px = 270; py = 130; }
+        if (pztLoc === "Corner") { px = 190; py = 145; }
 
         ctx.fillStyle = '#f59e0b';
         ctx.beginPath();
@@ -1088,45 +1211,71 @@
         ctx.strokeStyle = '#b45309';
         ctx.stroke();
 
-        ctx.fillStyle = '#0f172a';
-        ctx.font = '11px sans-serif';
-        ctx.fillText(`2D Specimen: ${mat} Plate | BC: ${bc} | Location: ${loc}`, 140, 35);
-      } else {
-        ctx.fillStyle = '#94a3b8';
-        ctx.fillRect(260, 75, 300, 85);
-        ctx.strokeRect(260, 75, 300, 85);
-
-        ctx.fillStyle = '#cbd5e1';
-        ctx.beginPath();
-        ctx.moveTo(260, 75); ctx.lineTo(330, 35); ctx.lineTo(630, 35); ctx.lineTo(560, 75);
-        ctx.closePath(); ctx.fill(); ctx.stroke();
-
-        ctx.fillStyle = '#64748b';
-        ctx.beginPath();
-        ctx.moveTo(560, 75); ctx.lineTo(630, 35); ctx.lineTo(630, 120); ctx.lineTo(560, 160);
-        ctx.closePath(); ctx.fill(); ctx.stroke();
-
-        if (loc === "EmbeddedCenter") {
-          ctx.strokeStyle = '#f59e0b';
-          ctx.setLineDash([4, 4]);
-          ctx.strokeRect(380 - vib/2, 95 - vib/2, 45 + vib, 35 + vib);
-          ctx.fillStyle = 'rgba(245, 158, 11, 0.4)';
-          ctx.fillRect(380 - vib/2, 95 - vib/2, 45 + vib, 35 + vib);
-          ctx.setLineDash([]);
-          ctx.fillStyle = '#b45309';
-          ctx.fillText('Embedded Smart Aggregate (Triaxial Confinement)', 290, 150);
-        } else {
-          ctx.fillStyle = '#f59e0b';
-          ctx.fillRect(390, 60 - vib/2, 45, 15 + vib/2);
-          ctx.strokeStyle = '#b45309';
-          ctx.strokeRect(390, 60 - vib/2, 45, 15 + vib/2);
-          ctx.fillStyle = '#b45309';
-          ctx.fillText('PZT-5H Surface Block (d33 Thickness Dilatation)', 330, 50);
+        // 2D Crack Line
+        if (maxDmg.drawDepth > 0) {
+          ctx.strokeStyle = '#dc2626';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(px + 45, py - 5);
+          ctx.lineTo(px + 45 + maxDmg.drawDepth * 0.8, py + 15 + maxDmg.drawDepth * 0.8);
+          ctx.stroke();
+          ctx.fillStyle = '#dc2626';
+          ctx.font = 'bold 10px sans-serif';
+          ctx.fillText(`Crack: a = ${maxDmg.len}, d = ${maxDmg.depth}`, px + 55, py + 30);
         }
 
         ctx.fillStyle = '#0f172a';
         ctx.font = '11px sans-serif';
-        ctx.fillText(`3D Volumetric Specimen: ${mat} | Configuration: ${loc}`, 180, 25);
+        ctx.fillText(`2D Specimen: ${mat} Plate | BC: ${bc} | Location: ${pztLoc}`, 140, 35);
+      } else {
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillRect(260, 85, 300, 95);
+        ctx.strokeRect(260, 85, 300, 95);
+
+        ctx.fillStyle = '#cbd5e1';
+        ctx.beginPath();
+        ctx.moveTo(260, 85); ctx.lineTo(330, 45); ctx.lineTo(630, 45); ctx.lineTo(560, 85);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+
+        ctx.fillStyle = '#64748b';
+        ctx.beginPath();
+        ctx.moveTo(560, 85); ctx.lineTo(630, 45); ctx.lineTo(630, 140); ctx.lineTo(560, 180);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+
+        if (pztLoc === "EmbeddedCenter") {
+          ctx.strokeStyle = '#f59e0b';
+          ctx.setLineDash([4, 4]);
+          ctx.strokeRect(380 - vib/2, 105 - vib/2, 45 + vib, 35 + vib);
+          ctx.fillStyle = 'rgba(245, 158, 11, 0.4)';
+          ctx.fillRect(380 - vib/2, 105 - vib/2, 45 + vib, 35 + vib);
+          ctx.setLineDash([]);
+          ctx.fillStyle = '#b45309';
+          ctx.fillText('Embedded Smart Aggregate (Triaxial Confinement)', 290, 160);
+        } else {
+          ctx.fillStyle = '#f59e0b';
+          ctx.fillRect(390, 70 - vib/2, 45, 15 + vib/2);
+          ctx.strokeStyle = '#b45309';
+          ctx.strokeRect(390, 70 - vib/2, 45, 15 + vib/2);
+          ctx.fillStyle = '#b45309';
+          ctx.fillText('PZT-5H Surface Block (d33 Thickness Dilatation)', 330, 60);
+        }
+
+        // 3D Volumetric Internal / Surface Crack
+        if (maxDmg.drawDepth > 0) {
+          ctx.strokeStyle = '#dc2626';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(480, 85);
+          ctx.lineTo(480, 85 + maxDmg.drawDepth * 1.2);
+          ctx.stroke();
+          ctx.fillStyle = '#dc2626';
+          ctx.font = 'bold 10px sans-serif';
+          ctx.fillText(`Crack: d = ${maxDmg.depth} (${maxDmg.ratio})`, 490, 110);
+        }
+
+        ctx.fillStyle = '#0f172a';
+        ctx.font = '11px sans-serif';
+        ctx.fillText(`3D Volumetric Specimen: ${mat} | Configuration: ${pztLoc}`, 180, 25);
       }
 
       requestAnimationFrame(drawKinematics);
@@ -1145,15 +1294,19 @@
       const dim = document.getElementById('dimSelect').value;
       const mat = document.getElementById('matSelect').value;
       const len = document.getElementById('lenRange').value;
-      const loc = document.getElementById('pztLocSelect').value;
+      const pztLoc = document.getElementById('pztLocSelect').value;
+      const crackLoc = document.getElementById('crackLocSelect').value;
 
-      let csv = "Frequency_kHz";
+      let csv = "# Gopalkrishna Advanced Rural Research Foundation (GARRF) - EMI Laboratory Data Export\n";
+      csv += `# Formulation: ${dim}, Material: ${mat}, Length: ${len} mm, PZT Location: ${pztLoc}, Crack Location: ${crackLoc}\n`;
+      csv += "# Crack Dimensions Progression: State 1(d=0.5mm), State 2(d=1.5mm), State 3(d=2.5mm), State 4(d=4.0mm)\n";
+      csv += "Frequency_kHz";
       damageStates.forEach(d => {
         csv += `,G_${d.name.replace(/\s+/g, '')}_mS,B_${d.name.replace(/\s+/g, '')}_mS`;
       });
       csv += "\n";
 
-      const results = damageStates.map(d => computeAdmittance(dim, mat, len, loc, d));
+      const results = damageStates.map(d => computeAdmittance(dim, mat, len, pztLoc, crackLoc, d));
       const numPts = results[0].freqs.length;
 
       for (let i = 0; i < numPts; i++) {
@@ -1176,7 +1329,7 @@
 
     window.onload = function() {
       updateBoundaryConditions();
-      updateLocationOptions();
+      updatePZTLocations();
       refreshPlots();
       drawKinematics();
     };
