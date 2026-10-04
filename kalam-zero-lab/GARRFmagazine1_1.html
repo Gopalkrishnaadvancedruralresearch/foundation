@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GARRF Interactive PPT • Issue 1 (Compact Page & Ultrawide Section Zoom)</title>
+  <title>GARRF Interactive PPT • Issue 1</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -109,6 +109,8 @@
     }
     .btn:hover:not(:disabled) { background: #334460; border-color: var(--cyan); color: var(--cyan); }
     .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .btn-print { background: #1e40af; border-color: #3b82f6; color: #fff; }
+    .btn-print:hover:not(:disabled) { background: #2563eb; border-color: #60a5fa; color: #fff; }
     .btn-gold { background: rgba(245, 158, 11, 0.15); border-color: var(--gold); color: var(--gold-glow); text-decoration: none; }
     .btn-gold:hover { background: var(--gold); color: #000; }
 
@@ -125,9 +127,9 @@
       box-sizing: border-box;
     }
 
-    /* LEFT PANEL: Compact 1:3 width for Full A4 Overview */
+    /* LEFT PANEL: Compact 340px for Full Page Preview */
     .slide-panel {
-      flex: 0 0 340px; /* Locked width so full page fits comfortably */
+      flex: 0 0 340px;
       height: 100%;
       background: var(--panel-bg);
       border: 1px solid var(--border-line);
@@ -181,7 +183,7 @@
       display: block;
     }
 
-    /* 5 Horizontal Bands Overlay */
+    /* 5 Clean Unlabeled Horizontal Bands */
     .horizontal-overlay {
       position: absolute;
       top: 0;
@@ -198,11 +200,7 @@
       border-bottom: 1px dashed rgba(56, 189, 248, 0.28);
       cursor: pointer;
       position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: flex-start;
-      padding-left: 6px;
-      transition: all 0.15s ease;
+      transition: background 0.15s ease, border-color 0.15s ease;
     }
     .band-zone:last-child { border-bottom: none; }
 
@@ -211,20 +209,9 @@
       border: 1.5px solid var(--gold);
     }
 
-    .band-tag {
-      background: rgba(0, 0, 0, 0.88);
-      border: 1px solid var(--gold);
-      color: var(--gold-glow);
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.6rem;
-      padding: 1px 6px;
-      border-radius: 3px;
-      pointer-events: none;
-    }
-
-    /* RIGHT PANEL: Expanded 3:1 width for Ultra-Large Magnified View */
+    /* RIGHT PANEL: Ultrawide Magnified View */
     .zoom-panel {
-      flex: 1; /* Takes all remaining wide screen space */
+      flex: 1;
       height: 100%;
       background: var(--panel-bg);
       border: 1px solid var(--border-line);
@@ -262,23 +249,8 @@
     canvas {
       width: 100%;
       height: 100%;
-      object-fit: contain; /* Crisp full-width enlarged fit */
+      object-fit: contain;
       display: block;
-    }
-
-    .enlarged-band-badge {
-      position: absolute;
-      bottom: 12px;
-      left: 12px;
-      background: rgba(5, 9, 15, 0.94);
-      border: 1px solid var(--gold);
-      color: var(--gold-glow);
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.78rem;
-      font-weight: 700;
-      padding: 6px 14px;
-      border-radius: 6px;
-      z-index: 15;
     }
 
     .crosshair-h, .crosshair-v {
@@ -303,6 +275,46 @@
       flex-shrink: 0;
     }
     footer strong { color: var(--text-white); }
+
+    /* ---------------- PRINT ENGINE CONTAINER ---------------- */
+    #printContainer {
+      display: none;
+    }
+
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 0;
+      }
+      body {
+        background: #fff !important;
+        color: #000 !important;
+      }
+      header, .toolbar, .workspace, footer {
+        display: none !important;
+      }
+      #printContainer {
+        display: block !important;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      .print-page {
+        width: 100vw;
+        height: 100vh;
+        page-break-after: always;
+        break-after: page;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+      }
+      .print-page img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+    }
   </style>
 </head>
 <body>
@@ -334,40 +346,41 @@
     <div class="btn-group">
       <button class="btn" id="btnPrev">◀ Previous</button>
       <button class="btn" id="btnNext">Next ▶</button>
+      <button class="btn btn-print" id="btnPrintAll">🖨 Print All Pages</button>
       <a href="https://garrf.in/ai_assistants/emi/" target="_blank" class="btn btn-gold">⚡ Arjun AI</a>
     </div>
   </div>
 
-  <!-- WORKSPACE: COMPACT PAGE PREVIEW (LEFT) + ULTRAWIDE ENLARGED VIEW (RIGHT) -->
+  <!-- WORKSPACE -->
   <main class="workspace">
-    <!-- LEFT PANEL: FULL A4 PAGE FIT -->
+    <!-- LEFT PANEL: FULL-PAGE VIEW (340px) -->
     <section class="slide-panel">
       <div class="panel-header">
-        <span>A4 PAGE OVERVIEW</span>
-        <span style="color: var(--gold-glow);">SELECT BAND</span>
+        <span>PAGE OVERVIEW</span>
+        <span style="color: var(--gold-glow);">SELECT DIVISION</span>
       </div>
 
       <div class="slide-stage">
         <div class="slide-frame" id="slideFrame">
           <img class="main-slide-img" id="mainSlide" alt="Lecture Slide">
 
-          <!-- 5 Horizontal Reading Bands -->
+          <!-- 5 Clean Invisible Reading Bands -->
           <div class="horizontal-overlay">
-            <div class="band-zone active-band" data-band="0"><span class="band-tag">1: Header & Key Theory</span></div>
-            <div class="band-zone" data-band="1"><span class="band-tag">2: Upper Continuum Arch</span></div>
-            <div class="band-zone" data-band="2"><span class="band-tag">3: Core Mechanics & Math</span></div>
-            <div class="band-zone" data-band="3"><span class="band-tag">4: Transducer & Sensor Grid</span></div>
-            <div class="band-zone" data-band="4"><span class="band-tag">5: Footer & Academic Meta</span></div>
+            <div class="band-zone active-band" data-band="0"></div>
+            <div class="band-zone" data-band="1"></div>
+            <div class="band-zone" data-band="2"></div>
+            <div class="band-zone" data-band="3"></div>
+            <div class="band-zone" data-band="4"></div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- RIGHT PANEL: ULTRAWIDE HIGH-RESOLUTION SECTION INSPECTOR -->
+    <!-- RIGHT PANEL: ULTRAWIDE HIGH-RES SECTION INSPECTOR -->
     <section class="zoom-panel">
       <div class="panel-header">
-        <span style="color: var(--gold-glow);">EXPANDED HIGH-RESOLUTION INSPECTOR</span>
-        <span id="inspectionFocusText" style="color: var(--cyan);">FOCUSED: BAND 1</span>
+        <span style="color: var(--gold-glow);">HIGH-RESOLUTION INSPECTION VIEW</span>
+        <span id="inspectionFocusText" style="color: var(--cyan);">MAGNIFIED FOCUS</span>
       </div>
 
       <div class="zoom-stage-single">
@@ -375,11 +388,13 @@
           <canvas id="zoomCanvas"></canvas>
           <div class="crosshair-h"></div>
           <div class="crosshair-v"></div>
-          <div class="enlarged-band-badge" id="zoomBadge">BAND 1 [ENLARGED SECTION]</div>
         </div>
       </div>
     </section>
   </main>
+
+  <!-- PRINT CONTAINER (Built on demand for 1-click printing) -->
+  <div id="printContainer"></div>
 
   <!-- FOOTER -->
   <footer>
@@ -429,18 +444,10 @@
     const slideTitle = document.getElementById('slideTitle');
     const btnPrev = document.getElementById('btnPrev');
     const btnNext = document.getElementById('btnNext');
-    const inspectionFocusText = document.getElementById('inspectionFocusText');
+    const btnPrintAll = document.getElementById('btnPrintAll');
     const zoomCanvas = document.getElementById('zoomCanvas');
-    const zoomBadge = document.getElementById('zoomBadge');
     const bandZones = document.querySelectorAll('.band-zone');
-
-    const bandLabels = [
-      "BAND 1: HEADER & KEY FORMULATION",
-      "BAND 2: UPPER CONTINUUM ARCHITECTURE",
-      "BAND 3: CORE MECHANICS & MATHEMATICS",
-      "BAND 4: TRANSDUCER & SENSOR GRID",
-      "BAND 5: FOOTER & ACADEMIC META"
-    ];
+    const printContainer = document.getElementById('printContainer');
 
     function renderEnlargedBand(img, bandIndex) {
       if (!img || !img.naturalWidth || !img.naturalHeight) return;
@@ -456,9 +463,6 @@
       const ctx = zoomCanvas.getContext('2d');
       ctx.clearRect(0, 0, zoomCanvas.width, zoomCanvas.height);
       ctx.drawImage(img, 0, sourceY, fullW, bandHeight, 0, 0, zoomCanvas.width, zoomCanvas.height);
-
-      zoomBadge.textContent = `${bandLabels[bandIndex]} [ENLARGED]`;
-      inspectionFocusText.textContent = `FOCUSED: ${bandLabels[bandIndex]}`;
 
       bandZones.forEach((z, idx) => {
         if (idx === bandIndex) z.classList.add('active-band');
@@ -530,6 +534,42 @@
       zone.addEventListener('mouseenter', setBand);
       zone.addEventListener('click', setBand);
     });
+
+    /* ---------------- 1-CLICK PRINT ALL PAGES ENGINE ---------------- */
+    btnPrintAll.onclick = function() {
+      printContainer.innerHTML = '';
+      const loadPromises = [];
+
+      for (let i = 0; i < totalSlides; i++) {
+        const pageDiv = document.createElement('div');
+        pageDiv.className = 'print-page';
+
+        const img = document.createElement('img');
+        const p = new Promise(resolve => {
+          img.onload = resolve;
+          img.onerror = () => {
+            img.src = `magazine/${i}.jpg`;
+            img.onload = resolve;
+            img.onerror = resolve;
+          };
+        });
+        img.src = `magazine/${i}.png`;
+
+        pageDiv.appendChild(img);
+        printContainer.appendChild(pageDiv);
+        loadPromises.push(p);
+      }
+
+      const origText = btnPrintAll.textContent;
+      btnPrintAll.textContent = '⏳ Preparing Print...';
+      btnPrintAll.disabled = true;
+
+      Promise.all(loadPromises).then(() => {
+        btnPrintAll.textContent = origText;
+        btnPrintAll.disabled = false;
+        window.print();
+      });
+    };
 
     window.addEventListener('DOMContentLoaded', () => loadSlide(0));
   </script>
