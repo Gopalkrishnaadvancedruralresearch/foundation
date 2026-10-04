@@ -3,19 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GARRF Technical Magazine 1 • Issue 1 (In-Browser Python Execution)</title>
+  <title>GARRF Technical Magazine 1 • Issue 1 (Research Monograph Series)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-  
-  <!-- In-Browser Python WebAssembly Engine (Pyodide) -->
-  <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
-
   <style>
     :root {
       --bg-abyss: #020712;
       --card-bg: #061328;
-      --card-in: #0b1c38;
       --border-color: #1e3b68;
       --gold: #f59e0b;
       --gold-glow: #fbbf24;
@@ -108,6 +103,12 @@
       margin-top: 1px;
     }
 
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
     .flags-box {
       display: flex;
       align-items: center;
@@ -126,11 +127,11 @@
       display: inline-block;
       overflow: hidden;
       border: 0.5px solid #cbd5e1;
-      position: relative;
     }
 
     .flag-in {
       background: linear-gradient(#ff9933 33.3%, #ffffff 33.3%, #ffffff 66.6%, #128807 66.6%);
+      position: relative;
     }
     .flag-in::after {
       content: "";
@@ -146,6 +147,7 @@
 
     .flag-sg {
       background: linear-gradient(#dc2626 50%, #ffffff 50%);
+      position: relative;
     }
     .flag-sg::after {
       content: "★";
@@ -170,27 +172,10 @@
 
     .nav-counter {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.88rem;
+      font-size: 0.9rem;
       color: var(--gold-glow);
       font-weight: 700;
     }
-
-    .engine-status {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.75rem;
-      color: var(--cyan);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--gold);
-    }
-    .status-dot.ready { background: var(--green); }
 
     .btn-group {
       display: flex;
@@ -198,7 +183,7 @@
     }
 
     .btn {
-      background: var(--card-in);
+      background: #0b1c38;
       color: var(--text-white);
       border: 1px solid var(--border-color);
       padding: 7px 14px;
@@ -236,7 +221,7 @@
       align-items: center;
       justify-content: center;
       position: relative;
-      padding: 20px 70px;
+      padding: 24px 70px;
       perspective: 2400px;
       overflow: hidden;
     }
@@ -278,6 +263,8 @@
       width: min(92vw, 1100px);
       height: min(78vh, 780px);
       background: transparent;
+      transform-style: preserve-3d;
+      transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
       display: flex;
       box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
     }
@@ -291,33 +278,37 @@
       overflow: hidden;
       display: flex;
       flex-direction: column;
+      box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.6);
     }
 
     .page-sheet.left-page {
       border-radius: 12px 0 0 12px;
       border-right: 2px solid #0b1a30;
-      box-shadow: inset -15px 0 30px rgba(0, 0, 0, 0.5);
+      box-shadow: inset -15px 0 30px rgba(0, 0, 0, 0.5), -10px 10px 30px rgba(0,0,0,0.5);
     }
 
     .page-sheet.right-page {
       border-radius: 0 12px 12px 0;
       border-left: 2px solid #030814;
-      box-shadow: inset 15px 0 30px rgba(0, 0, 0, 0.5);
+      box-shadow: inset 15px 0 30px rgba(0, 0, 0, 0.5), 10px 10px 30px rgba(0,0,0,0.5);
     }
 
     .book.single-mode {
       width: min(50vw, 550px);
     }
-    .book.single-mode .page-sheet.left-page { display: none; }
-    .book.single-mode .page-sheet.right-page { width: 100%; border-radius: 12px; }
+    .book.single-mode .page-sheet.left-page {
+      display: none;
+    }
+    .book.single-mode .page-sheet.right-page {
+      width: 100%;
+      border-radius: 12px;
+    }
 
     .page-content {
       width: 100%;
       height: 100%;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
       position: relative;
       background: #020712;
     }
@@ -330,28 +321,21 @@
       display: block;
     }
 
-    /* Loader Animation inside Page */
-    .exec-loader {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-      color: var(--cyan);
-      font-size: 0.8rem;
-      font-family: 'JetBrains Mono', monospace;
+    .spine-crease {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 40px;
+      pointer-events: none;
+      z-index: 10;
     }
-
-    .spinner {
-      width: 36px;
-      height: 36px;
-      border: 3px solid rgba(56, 189, 248, 0.2);
-      border-top-color: var(--gold-glow);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+    .left-page .spine-crease {
+      right: 0;
+      background: linear-gradient(to right, transparent, rgba(0,0,0,0.6));
     }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+    .right-page .spine-crease {
+      left: 0;
+      background: linear-gradient(to left, transparent, rgba(0,0,0,0.6));
     }
 
     /* Drawer */
@@ -368,13 +352,16 @@
       gap: 12px;
       z-index: 90;
       backdrop-filter: blur(10px);
+      box-shadow: 0 -10px 30px rgba(0,0,0,0.6);
     }
 
-    .drawer.active { display: flex; }
+    .drawer.active {
+      display: flex;
+    }
 
     .thumb-card {
       flex: 0 0 110px;
-      height: 60px;
+      height: 155px;
       background: #081427;
       border: 1px solid var(--border-color);
       border-radius: 6px;
@@ -382,25 +369,29 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: space-between;
       padding: 6px;
       transition: all 0.2s ease;
     }
 
     .thumb-card:hover, .thumb-card.selected {
       border-color: var(--gold-glow);
-      background: #0c234b;
+      transform: translateY(-4px);
+      box-shadow: 0 4px 12px rgba(251, 191, 36, 0.35);
     }
 
     .thumb-card span {
-      font-size: 0.72rem;
+      font-size: 0.68rem;
       font-weight: 700;
-      color: var(--gold-glow);
+      color: var(--cyan);
     }
 
-    .thumb-card small {
-      font-size: 0.62rem;
-      color: var(--cyan);
+    .thumb-card img {
+      width: 100%;
+      height: 120px;
+      object-fit: contain;
+      background: #020712;
+      border-radius: 3px;
     }
 
     /* ---------------- FOOTER BAR ---------------- */
@@ -418,8 +409,22 @@
       gap: 12px;
     }
 
-    .footer-credits strong { color: var(--text-white); }
-    .footer-right { display: flex; align-items: center; gap: 16px; }
+    .footer-credits {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .footer-credits strong {
+      color: var(--text-white);
+      font-weight: 700;
+    }
+
+    .footer-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
 
     .linkedin-link {
       display: inline-flex;
@@ -432,12 +437,29 @@
       text-decoration: none;
       font-weight: 700;
       font-size: 0.75rem;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 6px rgba(10, 102, 194, 0.4);
+    }
+
+    .linkedin-link:hover {
+      background: #004182;
+      box-shadow: 0 4px 12px rgba(10, 102, 194, 0.6);
+      transform: translateY(-1px);
     }
 
     .arjun-link {
       color: var(--gold-glow);
       text-decoration: none;
       font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      border-bottom: 1px dotted var(--gold);
+    }
+
+    .arjun-link:hover {
+      color: #fff;
+      border-bottom-style: solid;
     }
 
     @media (max-width: 900px) {
@@ -445,7 +467,8 @@
       .book { width: 100%; height: 70vh; }
       .page-sheet.left-page { display: none; }
       .page-sheet.right-page { width: 100%; border-radius: 10px; }
-      header { flex-direction: column; gap: 8px; }
+      .header-titles h1 { font-size: 0.95rem; }
+      .header-titles h2 { font-size: 0.78rem; }
       footer { flex-direction: column; align-items: flex-start; }
     }
   </style>
@@ -475,18 +498,14 @@
 
   <!-- ================= CONTROL TOOLBAR ================= -->
   <div class="toolbar">
-    <div class="nav-counter" id="pageIndicator">INITIALIZING IN-BROWSER PYTHON RUNTIME...</div>
-    <div class="engine-status">
-      <div class="status-dot" id="statusDot"></div>
-      <span id="engineStatusText">Loading Pyodide WASM...</span>
-    </div>
+    <div class="nav-counter" id="pageIndicator">PLATE 1 OF 25 (COVER)</div>
     <div class="btn-group">
-      <button class="btn" id="btnToggleDrawer">📚 Page Index</button>
-      <button class="btn" id="btnFirst">⏮ Cover</button>
-      <button class="btn" id="btnPrev">◀ Prev</button>
-      <button class="btn" id="btnNext">Next ▶</button>
-      <button class="btn" id="btnLast">Finale ⏭</button>
-      <a href="https://garrf.in/ai_assistants/emi/" target="_blank" class="btn btn-gold">⚡ Ask Arjun AI</a>
+      <button class="btn" id="btnToggleDrawer" title="View All Pages">📚 Directory Grid</button>
+      <button class="btn" id="btnFirst" title="First Page">⏮ Cover</button>
+      <button class="btn" id="btnPrev" title="Previous Page">◀ Prev</button>
+      <button class="btn" id="btnNext" title="Next Page">Next ▶</button>
+      <button class="btn" id="btnLast" title="Last Page">Finale ⏭</button>
+      <a href="https://garrf.in/ai_assistants/emi/" target="_blank" class="btn btn-gold" title="ARJUN AI Assistant">⚡ Ask Arjun AI</a>
     </div>
   </div>
 
@@ -496,20 +515,28 @@
     <button class="arrow-btn arrow-right" id="arrowRight" aria-label="Next Page">›</button>
 
     <div class="book single-mode" id="bookStage">
-      <!-- Left Page -->
+      <!-- Left Page (Double-spread mode) -->
       <div class="page-sheet left-page" id="leftSheet">
-        <div class="page-content" id="leftContent"></div>
+        <div class="spine-crease"></div>
+        <div class="page-content">
+          <img class="page-image" id="leftImg" src="" alt="Left Page">
+        </div>
       </div>
 
-      <!-- Right Page -->
+      <!-- Right Page (Primary / Cover) -->
       <div class="page-sheet right-page" id="rightSheet">
-        <div class="page-content" id="rightContent"></div>
+        <div class="spine-crease"></div>
+        <div class="page-content">
+          <img class="page-image" id="rightImg" src="" alt="Right Page">
+        </div>
       </div>
     </div>
   </main>
 
-  <!-- ================= QUICK-JUMP DRAWER ================= -->
-  <div class="drawer" id="thumbDrawer"></div>
+  <!-- ================= THUMBNAIL QUICK-JUMP DRAWER ================= -->
+  <div class="drawer" id="thumbDrawer">
+    <!-- Generated dynamically via JS -->
+  </div>
 
   <!-- ================= FOOTER BAR ================= -->
   <footer>
@@ -527,165 +554,118 @@
     </div>
   </footer>
 
-  <!-- ================= IN-BROWSER PYTHON RUNTIME ENGINE ================= -->
+  <!-- ================= JAVASCRIPT ENGINE ================= -->
   <script>
-    const totalPages = 25; // page0.py to page24.py
-    let pyodideInstance = null;
-    let pyodideReady = false;
-    let currentIndex = 0; // 0 = page0.py (Cover)
-    const renderedCache = {}; // Cache executed plates: index -> base64 data URL
+    // -------------------------------------------------------------
+    // 25-Plate Catalog: Pointing directly to magazine/0 to magazine/24
+    // -------------------------------------------------------------
+    const titles = [
+      "SingBha-EMCD & Quantum AI Cover",
+      "Table of Contents & Monograph Directory",
+      "GARRF Committee Tree & Kalam Manifesto",
+      "1D Beam & 2D Plate Analytical Elastodynamics",
+      "3D Continuum Tensors & Shear-Lag Mechanics",
+      "Quantitative Damage Metrology (RMSD, MAPD, CCD)",
+      "Frontier Quantum AI Inversion (PI-QNN Circuits)",
+      "Experimental Quantum Decoupling Benchmarks",
+      "SingBha EMCD Dual-Domain Transduction Dynamics",
+      "Six Scientific Pillars of SingBha-EMCD (Part I)",
+      "Six Scientific Pillars of SingBha-EMCD (Part II)",
+      "Master 8D Technical Benchmark Matrix",
+      "Surface Micro-Crack Mechanics & Singularities",
+      "Waveform Propagation Dynamics (Lamb Waves)",
+      "Applied Engineering Structures Matrix",
+      "Experimental Testing Protocol & Hardware Guide",
+      "Analytical Benchmarking & Multi-Physics FEA",
+      "AI Ingestion Architecture & ARJUN Bridging",
+      "Pedagogical Deep-Dive: Why EMCD Wins Over EMI",
+      "Benchmark Matrix & National Economic Impact",
+      "Multi-Domain Asset Knowledge Graph (MAKG)",
+      "ARJUN 4-Agent Autonomous Reasoning Architecture",
+      "Real-World Field Deployments (Bharat & Singapore)",
+      "Standardization Roadmap & Dr. Kalam Charter",
+      "The Living Frontiers Compendium & AI Directory"
+    ];
+
+    const monographPlates = [];
+    for (let i = 0; i < 25; i++) {
+      monographPlates.push({
+        index: i,
+        label: i === 0 ? "Cover" : `Page ${i}`,
+        title: titles[i] || `Plate ${i}`,
+        src: `magazine/${i}.png`,
+        altSrc: `magazine/${i}.jpg`,
+        fallback: `https://placehold.co/800x1131/020712/f59e0b?text=magazine/${i}.png`
+      });
+    }
+
+    let currentIndex = 0; // 0 = Cover (magazine/0)
 
     const bookStage = document.getElementById('bookStage');
-    const leftContent = document.getElementById('leftContent');
-    const rightContent = document.getElementById('rightContent');
+    const leftSheet = document.getElementById('leftSheet');
+    const rightSheet = document.getElementById('rightSheet');
+    const leftImg = document.getElementById('leftImg');
+    const rightImg = document.getElementById('rightImg');
     const pageIndicator = document.getElementById('pageIndicator');
-    const statusDot = document.getElementById('statusDot');
-    const engineStatusText = document.getElementById('engineStatusText');
     const thumbDrawer = document.getElementById('thumbDrawer');
 
-    // Build Thumbnail Drawer (page0.py to page24.py)
-    for (let i = 0; i < totalPages; i++) {
+    // Smart image fallback handler: tries .png -> .jpg -> placeholder
+    function setSafeImage(imgElement, plate) {
+      imgElement.src = plate.src;
+      imgElement.alt = plate.title;
+      imgElement.onerror = function() {
+        if (plate.altSrc && this.src.indexOf(plate.altSrc) === -1) {
+          this.src = plate.altSrc;
+        } else {
+          this.src = plate.fallback;
+        }
+      };
+    }
+
+    // Build Thumbnail Drawer
+    monographPlates.forEach(plate => {
       const card = document.createElement('div');
       card.className = 'thumb-card';
-      card.id = `thumb-${i}`;
-      card.onclick = () => jumpTo(i);
+      card.id = `thumb-${plate.index}`;
+      card.onclick = () => jumpTo(plate.index);
 
       const label = document.createElement('span');
-      label.textContent = i === 0 ? "Cover" : `Page ${i}`;
-      const small = document.createElement('small');
-      small.textContent = `page${i}.py`;
+      label.textContent = plate.label;
+
+      const img = document.createElement('img');
+      setSafeImage(img, plate);
 
       card.appendChild(label);
-      card.appendChild(small);
+      card.appendChild(img);
       thumbDrawer.appendChild(card);
-    }
+    });
 
-    // 1. Initialize Pyodide WebAssembly with Matplotlib & NumPy
-    async function initPyodideEngine() {
-      try {
-        engineStatusText.textContent = "Booting WebAssembly Python...";
-        pyodideInstance = await loadPyodide();
-        engineStatusText.textContent = "Loading NumPy, Matplotlib & Pillow...";
-        await pyodideInstance.loadPackage(["numpy", "matplotlib", "pillow"]);
-
-        // Setup headless matplotlib capture harness
-        await pyodideInstance.runPythonAsync(`
-import io, base64
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-
-def get_current_fig_base64():
-    buf = io.BytesIO()
-    plt.savefig(buf, format='png', dpi=200, bbox_inches='tight')
-    plt.close('all')
-    buf.seek(0)
-    return base64.b64encode(buf.read()).decode('utf-8')
-        `);
-
-        pyodideReady = true;
-        statusDot.classList.add('ready');
-        engineStatusText.textContent = "Python WASM Runtime Ready";
-        render();
-      } catch (err) {
-        console.error(err);
-        engineStatusText.textContent = "WASM Load Error (Check network)";
-      }
-    }
-
-    // 2. Fetch raw page{i}.py file and execute inside browser
-    async function executePythonPage(index) {
-      if (renderedCache[index]) {
-        return renderedCache[index];
-      }
-
-      const scriptPath = `magazine/page${index}.py`;
-
-      try {
-        // Fetch raw script file directly
-        const res = await fetch(scriptPath);
-        if (!res.ok) {
-          throw new Error(`Failed to load ${scriptPath} (HTTP ${res.status})`);
-        }
-        let pyCode = await res.text();
-
-        // Inject interceptor so plt.savefig / files.download redirects to our buffer
-        const executionWrapper = `
-import sys
-# Neutralize colab specific calls
-class ColabMock:
-    def download(self, *args, **kwargs): pass
-sys.modules['google.colab'] = type('Colab', (), {'files': ColabMock()})()
-
-# Execute target script
-${pyCode}
-
-# Capture buffer
-__mag_result_b64__ = get_current_fig_base64()
-__mag_result_b64__
-        `;
-
-        const b64 = await pyodideInstance.runPythonAsync(executionWrapper);
-        const dataUrl = `data:image/png;base64,${b64}`;
-        renderedCache[index] = dataUrl;
-        return dataUrl;
-      } catch (err) {
-        console.error(`Execution failed for ${scriptPath}:`, err);
-        return null;
-      }
-    }
-
-    // 3. Render Views
-    async function render() {
-      if (!pyodideReady) return;
-
+    // Render Page State
+    function render() {
       const isMobile = window.innerWidth <= 900;
 
       if (currentIndex === 0 || isMobile) {
         bookStage.className = 'book single-mode';
-        leftContent.innerHTML = "";
-        showLoading(rightContent, currentIndex);
-
-        pageIndicator.textContent = `EXECUTING: page${currentIndex}.py (PLATE ${currentIndex + 1} OF 25)`;
-
-        const dataUrl = await executePythonPage(currentIndex);
-        if (dataUrl) {
-          rightContent.innerHTML = `<img class="page-image" src="${dataUrl}" alt="page${currentIndex}.py">`;
-          pageIndicator.textContent = `PLATE ${currentIndex + 1} OF 25 • page${currentIndex}.py [ACTIVE]`;
-        } else {
-          showError(rightContent, currentIndex);
-        }
+        const p = monographPlates[currentIndex];
+        setSafeImage(rightImg, p);
+        pageIndicator.textContent = `PLATE ${currentIndex + 1} OF 25 • ${p.label.toUpperCase()}: ${p.title}`;
       } else {
         bookStage.className = 'book';
-        const leftIdx = currentIndex - 1;
-        const rightIdx = currentIndex;
+        const leftPlate = monographPlates[currentIndex - 1];
+        const rightPlate = monographPlates[currentIndex];
 
-        showLoading(leftContent, leftIdx);
-        showLoading(rightContent, rightIdx);
+        setSafeImage(leftImg, leftPlate);
 
-        pageIndicator.textContent = `EXECUTING: page${leftIdx}.py & page${rightIdx}.py...`;
-
-        const [leftUrl, rightUrl] = await Promise.all([
-          executePythonPage(leftIdx),
-          executePythonPage(rightIdx)
-        ]);
-
-        if (leftUrl) {
-          leftContent.innerHTML = `<img class="page-image" src="${leftUrl}" alt="page${leftIdx}.py">`;
+        if (rightPlate) {
+          setSafeImage(rightImg, rightPlate);
+          pageIndicator.textContent = `SPREAD: ${leftPlate.label} & ${rightPlate.label} (PLATES ${currentIndex} & ${currentIndex + 1} OF 25)`;
         } else {
-          showError(leftContent, leftIdx);
+          rightImg.src = "";
+          pageIndicator.textContent = `PLATE ${currentIndex} OF 25 • ${leftPlate.label}`;
         }
-
-        if (rightUrl) {
-          rightContent.innerHTML = `<img class="page-image" src="${rightUrl}" alt="page${rightIdx}.py">`;
-        } else {
-          showError(rightContent, rightIdx);
-        }
-
-        pageIndicator.textContent = `SPREAD: page${leftIdx}.py & page${rightIdx}.py (PLATES ${currentIndex} & ${currentIndex + 1} OF 25)`;
       }
 
-      // Update active thumbnail in drawer
+      // Highlight active drawer thumbnail
       document.querySelectorAll('.thumb-card').forEach(c => c.classList.remove('selected'));
       const activeCard = document.getElementById(`thumb-${currentIndex}`);
       if (activeCard) {
@@ -694,36 +674,18 @@ __mag_result_b64__
       }
     }
 
-    function showLoading(container, idx) {
-      container.innerHTML = `
-        <div class="exec-loader">
-          <div class="spinner"></div>
-          <div>Running page${idx}.py in WebAssembly...</div>
-        </div>
-      `;
-    }
-
-    function showError(container, idx) {
-      container.innerHTML = `
-        <div style="padding: 24px; text-align: center; color: #ef4444; font-size: 0.8rem; font-family: 'JetBrains Mono', monospace;">
-          ⚠️ Could not execute magazine/page${idx}.py<br>
-          <span style="color: #94a3b8; font-size: 0.7rem; margin-top: 8px; display: block;">
-            Ensure you run a local web server (e.g. 'python -m http.server') so the browser can read the .py file.
-          </span>
-        </div>
-      `;
-    }
-
-    // Navigation Controls
     function nextPage() {
       const isMobile = window.innerWidth <= 900;
       if (currentIndex === 0) {
         currentIndex = 1;
       } else if (isMobile) {
-        if (currentIndex < totalPages - 1) currentIndex++;
+        if (currentIndex < monographPlates.length - 1) currentIndex++;
       } else {
-        if (currentIndex + 2 <= totalPages) currentIndex += 2;
-        else if (currentIndex + 1 < totalPages) currentIndex += 1;
+        if (currentIndex + 2 <= monographPlates.length) {
+          currentIndex += 2;
+        } else if (currentIndex + 1 < monographPlates.length) {
+          currentIndex += 1;
+        }
       }
       render();
     }
@@ -733,8 +695,9 @@ __mag_result_b64__
       if (isMobile) {
         if (currentIndex > 0) currentIndex--;
       } else {
-        if (currentIndex === 1) currentIndex = 0;
-        else if (currentIndex > 1) {
+        if (currentIndex === 1) {
+          currentIndex = 0;
+        } else if (currentIndex > 1) {
           currentIndex -= 2;
           if (currentIndex < 0) currentIndex = 0;
         }
@@ -747,38 +710,51 @@ __mag_result_b64__
       render();
     }
 
-    // Gestures & Keyboards
-    let touchStartX = 0, touchEndX = 0;
+    // Touch Swipe Support
+    let touchStartX = 0;
+    let touchEndX = 0;
+
     document.getElementById('viewport').addEventListener('touchstart', e => {
       touchStartX = e.changedTouches[0].screenX;
     }, false);
+
     document.getElementById('viewport').addEventListener('touchend', e => {
       touchEndX = e.changedTouches[0].screenX;
-      if (touchEndX - touchStartX < -40) nextPage();
-      if (touchEndX - touchStartX > 40) prevPage();
+      handleSwipe();
     }, false);
 
+    function handleSwipe() {
+      const delta = touchEndX - touchStartX;
+      if (Math.abs(delta) > 40) {
+        if (delta < 0) nextPage();
+        else prevPage();
+      }
+    }
+
+    // Keyboard Arrow Keys
     window.addEventListener('keydown', e => {
       if (e.key === 'ArrowRight' || e.key === ' ') nextPage();
       if (e.key === 'ArrowLeft') prevPage();
       if (e.key === 'Home') jumpTo(0);
-      if (e.key === 'End') jumpTo(totalPages - 1);
+      if (e.key === 'End') jumpTo(monographPlates.length - 1);
     });
 
+    // Control Buttons
     document.getElementById('arrowRight').onclick = nextPage;
     document.getElementById('arrowLeft').onclick = prevPage;
     document.getElementById('btnNext').onclick = nextPage;
     document.getElementById('btnPrev').onclick = prevPage;
     document.getElementById('btnFirst').onclick = () => jumpTo(0);
-    document.getElementById('btnLast').onclick = () => jumpTo(totalPages - 1);
+    document.getElementById('btnLast').onclick = () => jumpTo(monographPlates.length - 1);
+
     document.getElementById('btnToggleDrawer').onclick = () => {
       thumbDrawer.classList.toggle('active');
     };
 
     window.addEventListener('resize', render);
 
-    // Boot Pyodide
-    initPyodideEngine();
+    // Initial Load
+    render();
   </script>
 </body>
 </html>
