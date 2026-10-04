@@ -1,0 +1,1709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>17-DOF Biped Humanoid 3D Assembly & Kinematics Workbench</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Three.js & OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            mech: {
+              950: '#06090f',
+              900: '#0b111e',
+              850: '#0f172a',
+              800: '#17223b',
+              700: '#233354',
+              600: '#334155',
+            },
+            cyanGlow: '#00f0ff',
+            amberWarn: '#ffb020',
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'Fira Code', 'monospace']
+          }
+        }
+      }
+    };
+  </script>
+  
+  <style>
+    /* Custom Scrollbar for dense engineering manifest panels */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: #06090f; }
+    ::-webkit-scrollbar-thumb { background: #233354; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #00f0ff; }
+    
+    .glass-ui {
+      background: rgba(11, 17, 30, 0.85);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(35, 51, 84, 0.7);
+    }
+    
+    .glass-card {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(51, 65, 85, 0.5);
+    }
+    
+    /* Subtle pulse animation for active joint highlight */
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.1); opacity: 0.4; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+    .pulse-glow { animation: pulse-ring 2.5s infinite ease-in-out; }
+  </style>
+</head>
+<body class="bg-mech-950 text-slate-100 font-sans h-screen w-screen overflow-hidden flex flex-col select-none">
+
+  <!-- Top Navigation Bar -->
+  <header class="h-14 border-b border-mech-700 bg-mech-900/90 backdrop-blur-md px-4 flex items-center justify-between z-30 shrink-0">
+    <div class="flex items-center space-x-3">
+      <div class="h-9 w-9 rounded-xl bg-gradient-to-tr from-cyan-600 via-cyanGlow to-blue-600 p-[1px] flex items-center justify-center shadow-lg shadow-cyan-500/20">
+        <div class="h-full w-full bg-mech-950 rounded-[11px] flex items-center justify-center">
+          <i data-lucide="cpu" class="w-5 h-5 text-cyanGlow"></i>
+        </div>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-black tracking-wider text-slate-100 uppercase font-mono">17-DOF Humanoid</span>
+          <span class="text-[10px] px-2 py-0.2 rounded-full bg-cyan-500/10 text-cyanGlow font-mono border border-cyan-500/30 font-semibold">Virtual Build Lab</span>
+        </div>
+        <p class="text-[11px] text-slate-400">Step-by-Step Educational Assembly & Kinematics Studio</p>
+      </div>
+    </div>
+
+    <!-- Mode Selector Tabs -->
+    <div class="flex items-center bg-mech-950 p-1 rounded-xl border border-mech-700/80 shadow-inner">
+      <button id="mode-btn-assembly" onclick="setMode('assembly')" class="px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 bg-cyanGlow text-mech-950 font-bold shadow-md shadow-cyan-500/20">
+        <i data-lucide="wrench" class="w-3.5 h-3.5"></i> Step-by-Step Assembly
+      </button>
+      <button id="mode-btn-inspector" onclick="setMode('inspector')" class="px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 text-slate-400 hover:text-slate-200">
+        <i data-lucide="layers" class="w-3.5 h-3.5"></i> Dual-Axis Inspector
+      </button>
+      <button id="mode-btn-kinematics" onclick="setMode('kinematics')" class="px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 text-slate-400 hover:text-slate-200">
+        <i data-lucide="activity" class="w-3.5 h-3.5"></i> Kinematic Posing Lab
+      </button>
+    </div>
+
+    <!-- Quick Tools / Global Controls -->
+    <div class="flex items-center space-x-2">
+      <button onclick="toggleExplodedView()" id="btn-explode" class="px-3 py-1.5 rounded-lg bg-mech-850 hover:bg-mech-700 text-xs text-slate-300 flex items-center gap-1.5 transition border border-mech-700" title="Explode active parts outward">
+        <i data-lucide="maximize-2" class="w-3.5 h-3.5 text-amberWarn"></i>
+        <span id="txt-explode">Explode Parts</span>
+      </button>
+      <button onclick="resetCamera()" class="p-2 rounded-lg bg-mech-850 hover:bg-mech-700 text-slate-300 border border-mech-700" title="Reset Camera View">
+        <i data-lucide="focus" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <div class="flex-1 flex overflow-hidden relative">
+
+    <!-- 3D Viewport on the Left / Center -->
+    <main class="relative flex-1 h-full bg-mech-950 overflow-hidden flex flex-col">
+      <!-- Three.js Canvas Container -->
+      <div id="canvas-container" class="w-full h-full relative cursor-grab active:cursor-grabbing"></div>
+
+      <!-- Viewport Floating HUD Badges -->
+      <div class="absolute top-4 left-4 pointer-events-none flex flex-col space-y-2 z-10">
+        <!-- Status Pill -->
+        <div class="glass-ui p-2.5 rounded-xl border border-mech-700 shadow-xl pointer-events-auto flex items-center gap-3">
+          <div class="w-2.5 h-2.5 rounded-full bg-cyanGlow animate-pulse"></div>
+          <div class="text-xs">
+            <span class="text-slate-400 font-mono">Current Assembly:</span>
+            <span id="hud-step-title" class="font-bold text-slate-200 font-mono ml-1">Step 0: Pre-Build Zeroing</span>
+          </div>
+          <div class="h-3 w-px bg-mech-700"></div>
+          <div class="text-xs">
+            <span class="text-slate-400 font-mono">Completed:</span>
+            <span id="hud-progress-pct" class="font-bold text-cyanGlow font-mono ml-1">0%</span>
+          </div>
+        </div>
+
+        <!-- Camera Angles HUD -->
+        <div class="glass-ui p-1 rounded-xl pointer-events-auto flex items-center space-x-1 border border-mech-700">
+          <button onclick="setCameraAngle('front')" class="px-2.5 py-1 rounded text-[11px] font-mono hover:bg-mech-800 text-slate-300">Front</button>
+          <button onclick="setCameraAngle('focus')" class="px-2.5 py-1 rounded text-[11px] font-mono hover:bg-mech-800 text-cyanGlow font-bold">Focus Joint</button>
+          <button onclick="setCameraAngle('side')" class="px-2.5 py-1 rounded text-[11px] font-mono hover:bg-mech-800 text-slate-300">Side</button>
+          <button onclick="setCameraAngle('iso')" class="px-2.5 py-1 rounded text-[11px] font-mono hover:bg-mech-800 text-slate-300">Isometric</button>
+        </div>
+      </div>
+
+      <!-- Quick Interaction Tip Overlay -->
+      <div class="absolute bottom-4 left-4 pointer-events-none text-[11px] text-slate-400 font-mono glass-ui px-3 py-1.5 rounded-lg border border-mech-700">
+        <span class="text-cyanGlow font-semibold">Left Click:</span> Orbit | <span class="text-cyanGlow font-semibold">Right Click:</span> Pan | <span class="text-cyanGlow font-semibold">Scroll:</span> Zoom
+      </div>
+
+      <!-- Floating Step Scrubbing Bar (Assembly Mode only) -->
+      <div id="assembly-floating-bar" class="absolute bottom-4 left-1/2 -translate-x-1/2 glass-ui px-4 py-2.5 rounded-2xl border border-mech-700 shadow-2xl flex items-center gap-3 z-10 w-[90%] max-w-xl">
+        <button onclick="prevStep()" id="btn-prev-step" class="px-3 py-1.5 rounded-xl bg-mech-850 hover:bg-mech-700 text-xs font-mono font-medium text-slate-200 border border-mech-700 transition flex items-center gap-1">
+          <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i> Prev
+        </button>
+        
+        <input id="step-range-slider" type="range" min="0" max="17" value="0" oninput="goToStep(parseInt(this.value))" class="flex-1 accent-cyanGlow h-2 bg-mech-800 rounded-lg cursor-pointer">
+        
+        <button onclick="nextStep()" id="btn-next-step" class="px-3 py-1.5 rounded-xl bg-cyanGlow hover:bg-cyan-300 text-xs font-mono font-bold text-mech-950 transition flex items-center gap-1 shadow-md shadow-cyan-500/20">
+          Next <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+        </button>
+
+        <button onclick="toggleAutoPlay()" id="btn-autoplay" class="px-3 py-1.5 rounded-xl bg-mech-800 hover:bg-mech-700 text-xs font-mono font-medium text-amberWarn border border-mech-700 transition flex items-center gap-1" title="Watch build step by step like YouTube">
+          <i data-lucide="play" class="w-3 h-3"></i> <span id="autoplay-text">Auto</span>
+        </button>
+      </div>
+
+      <!-- Kinematic Floating Preset Poses Bar (Hidden unless Kinematics Mode) -->
+      <div id="kinematics-floating-bar" class="hidden absolute bottom-4 left-1/2 -translate-x-1/2 glass-ui px-4 py-2 rounded-2xl border border-mech-700 shadow-2xl flex items-center gap-2 z-10">
+        <span class="text-xs font-mono text-slate-400 font-semibold px-2 uppercase tracking-wide">Test Gait Poses:</span>
+        <button onclick="applyGaitPreset('stand')" class="px-3 py-1.5 rounded-xl bg-mech-850 hover:bg-mech-700 text-xs font-mono text-slate-200 border border-mech-700">Stand T-Pose</button>
+        <button onclick="applyGaitPreset('crouch')" class="px-3 py-1.5 rounded-xl bg-mech-850 hover:bg-mech-700 text-xs font-mono text-slate-200 border border-mech-700">Ready Crouch</button>
+        <button onclick="applyGaitPreset('walk')" class="px-3 py-1.5 rounded-xl bg-mech-850 hover:bg-mech-700 text-xs font-mono text-cyanGlow border border-cyan-500/40">Step Forward</button>
+        <button onclick="applyGaitPreset('wave')" class="px-3 py-1.5 rounded-xl bg-mech-850 hover:bg-mech-700 text-xs font-mono text-slate-200 border border-mech-700">Wave Arm</button>
+        <button onclick="applyGaitPreset('bow')" class="px-3 py-1.5 rounded-xl bg-mech-850 hover:bg-mech-700 text-xs font-mono text-slate-200 border border-mech-700">Bow Respect</button>
+      </div>
+    </main>
+
+    <!-- RIGHT SIDEBAR: Step Instructions / Bill of Materials / Joint Inspector -->
+    <aside class="w-[490px] h-full bg-mech-900 border-l border-mech-700 flex flex-col overflow-hidden shrink-0 z-20 shadow-2xl">
+
+      <!-- MODE 1: STEP-BY-STEP ASSEMBLY TUTORIAL -->
+      <div id="panel-assembly-guide" class="flex-1 flex flex-col overflow-hidden">
+        
+        <!-- Header with current step counter -->
+        <div class="p-4 border-b border-mech-700 bg-mech-850 flex items-center justify-between">
+          <div>
+            <div class="flex items-center gap-2">
+              <span id="step-badge" class="px-2 py-0.5 rounded bg-cyan-500/20 text-cyanGlow font-mono text-xs font-bold border border-cyan-500/40">STEP 0 of 17</span>
+              <span id="step-anatomy-tag" class="text-xs font-semibold text-slate-300">Preparation & Setup</span>
+            </div>
+            <h2 id="step-main-title" class="text-sm font-bold text-slate-100 mt-1">Electrical Zero-Calibration (90° Neutral)</h2>
+          </div>
+          <button onclick="snapAndAssembleCurrentStep()" class="px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/40 text-xs font-mono font-bold flex items-center gap-1.5 transition">
+            <i data-lucide="check-check" class="w-3.5 h-3.5"></i> Snap Joint
+          </button>
+        </div>
+
+        <!-- Scrollable step instructions, exploded view callouts, and safety warnings -->
+        <div class="flex-1 overflow-y-auto p-4 space-y-4">
+
+          <!-- 3D Part Exploded Breakdown Card -->
+          <div class="bg-mech-950 p-3.5 rounded-xl border border-mech-700 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-300 font-mono flex items-center gap-1.5">
+                <i data-lucide="box" class="w-4 h-4 text-cyanGlow"></i> Bill of Materials for this Step
+              </span>
+              <span id="bom-joint-name" class="text-[10px] bg-mech-800 text-slate-300 px-2 py-0.5 rounded font-mono">Joint ID: 0</span>
+            </div>
+            <div id="bom-list-container" class="space-y-1.5 text-xs">
+              <!-- Dynamically populated via updateStepUI() -->
+            </div>
+          </div>
+
+          <!-- YouTube-style step visual walkthrough & instructions -->
+          <div class="bg-mech-850/80 p-4 rounded-xl border border-mech-700 space-y-3">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-200 font-mono flex items-center gap-2">
+              <i data-lucide="compass" class="w-4 h-4 text-cyanGlow"></i> Step Mechanical Instructions
+            </h3>
+            <div id="step-instruction-body" class="text-xs text-slate-300 leading-relaxed space-y-2">
+              <!-- Dynamic instructions injected here -->
+            </div>
+          </div>
+
+          <!-- Pro-Tip / Pitfall Warning Box -->
+          <div id="step-pro-tip-box" class="bg-amber-950/30 border border-amber-500/40 p-3.5 rounded-xl text-xs space-y-1.5">
+            <div class="flex items-center gap-1.5 text-amberWarn font-bold">
+              <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+              <span id="step-protip-title">Bench Warning: Verify Motor Zero First!</span>
+            </div>
+            <p id="step-protip-desc" class="text-slate-300 text-[11px] leading-relaxed">
+              Before screwing the aluminum horn to the splined shaft, supply 1500µs PWM (90°). If assembled at 0° or 180°, the limb will strike hard mechanical limits and strip internal reduction gears upon boot!
+            </p>
+          </div>
+
+          <!-- Dual-Axis Mechanical Callout (Crucial Insight) -->
+          <div class="bg-mech-950 p-3.5 rounded-xl border border-cyan-500/30 space-y-2">
+            <div class="flex items-center justify-between text-xs font-mono font-bold text-cyanGlow">
+              <span class="flex items-center gap-1.5">
+                <i data-lucide="help-circle" class="w-4 h-4"></i> "Why Two Sides on Each Motor?"
+              </span>
+              <button onclick="setMode('inspector')" class="text-[10px] text-cyanGlow underline hover:text-white">Inspect 3D Motor</button>
+            </div>
+            <p class="text-[11px] text-slate-300 leading-relaxed">
+              Standard humanoid U-brackets sandwich the servo: <strong>Side A</strong> is the active 25T splined horn driven by the motor, while <strong>Side B</strong> is an idle chrome flanged ball bearing. This gives true dual-axis structural rigidity without paying for industrial twin-shaft actuators!
+            </p>
+          </div>
+
+        </div>
+
+        <!-- Step Navigation Footer -->
+        <div class="p-3 border-t border-mech-700 bg-mech-950/80 flex items-center justify-between">
+          <button onclick="prevStep()" class="px-3.5 py-1.5 rounded-lg bg-mech-800 hover:bg-mech-700 text-xs text-slate-300 flex items-center gap-1 transition">
+            <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Previous Joint
+          </button>
+          <span id="step-summary-count" class="text-xs font-mono text-slate-400">Step 0 / 17</span>
+          <button onclick="nextStep()" class="px-3.5 py-1.5 rounded-lg bg-cyanGlow hover:bg-cyan-300 text-mech-950 font-bold text-xs flex items-center gap-1 transition shadow-md shadow-cyan-500/20">
+            Next Joint <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- MODE 2: DUAL-AXIS EXPLODED ANATOMY INSPECTOR -->
+      <div id="panel-dual-axis-inspector" class="flex-1 flex flex-col overflow-hidden hidden">
+        <div class="p-4 border-b border-mech-700 bg-mech-850">
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded bg-cyan-500/20 text-cyanGlow font-mono text-xs font-bold border border-cyan-500/40">ANATOMY LAB</span>
+          </div>
+          <h2 class="text-sm font-bold text-slate-100 mt-1">Dual-Shaft Servo & U-Bracket Architecture</h2>
+          <p class="text-xs text-slate-400 mt-0.5">Demystifying how standard single-shaft servos become double-supported joints</p>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-4 space-y-4">
+          <!-- 2D High-Contrast Diagram -->
+          <div class="bg-mech-950 p-4 rounded-xl border border-cyan-500/40 flex flex-col items-center">
+            <div class="text-[11px] font-mono text-slate-400 mb-2 w-full flex justify-between">
+              <span>EXPLODED CROSS-SECTION VIEW</span>
+              <span class="text-cyanGlow font-bold">Standard U-Bracket Clamp</span>
+            </div>
+            
+            <svg viewBox="0 0 460 210" class="w-full h-auto text-slate-200">
+              <!-- Outer U-Bracket with chamfers -->
+              <path d="M 50,40 L 50,160 L 410,160 L 410,40" fill="none" stroke="#64748b" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+              <text x="230" y="188" fill="#94a3b8" font-size="12" text-anchor="middle" font-family="monospace" font-weight="bold">BLACK ANODIZED ALUMINUM U-BRACKET</text>
+
+              <!-- SIDE 1: Active Drive Horn (Left) -->
+              <rect x="58" y="70" width="22" height="60" fill="#0284c7" rx="3" stroke="#38bdf8" stroke-width="2"/>
+              <circle cx="69" cy="100" r="14" fill="#38bdf8" stroke="#0284c7" stroke-width="3"/>
+              <line x1="20" y1="100" x2="56" y2="100" stroke="#38bdf8" stroke-width="3" marker-end="url(#arrow)"/>
+              <text x="69" y="32" fill="#38bdf8" font-size="11" font-weight="bold" text-anchor="middle">ACTIVE SIDE 1</text>
+              <text x="69" y="47" fill="#94a3b8" font-size="9" text-anchor="middle">25T Splined Horn</text>
+
+              <!-- SERVO HOUSING BODY (Center) -->
+              <rect x="120" y="60" width="220" height="80" fill="#0f172a" stroke="#22d3ee" stroke-width="2" rx="6"/>
+              <!-- Motor Top gear turret -->
+              <rect x="140" y="72" width="45" height="56" fill="#1e293b" rx="4"/>
+              <circle cx="162" cy="100" r="14" fill="#fbbf24" stroke="#d97706" stroke-width="2"/>
+              <text x="230" y="102" fill="#f8fafc" font-size="14" font-weight="bold" text-anchor="middle" font-family="monospace">MG996R / RDS3218</text>
+              <text x="230" y="122" fill="#94a3b8" font-size="10" text-anchor="middle">Metal Gear High-Torque Servo</text>
+
+              <!-- SIDE 2: Passive Flanged Bearing (Right) -->
+              <rect x="382" y="80" width="20" height="40" fill="#f43f5e" rx="2" stroke="#fda4af" stroke-width="2"/>
+              <circle cx="392" cy="100" r="10" fill="#cbd5e1" stroke="#475569" stroke-width="3"/>
+              <line x1="340" y1="100" x2="435" y2="100" stroke="#f43f5e" stroke-width="3" stroke-dasharray="3,3"/>
+              <text x="392" y="32" fill="#f43f5e" font-size="11" font-weight="bold" text-anchor="middle">PASSIVE SIDE 2</text>
+              <text x="392" y="47" fill="#94a3b8" font-size="9" text-anchor="middle">Flanged Bearing Pin</text>
+            </svg>
+          </div>
+
+          <!-- Deep-dive technical explanations -->
+          <div class="space-y-3 text-xs leading-relaxed text-slate-300">
+            <div class="bg-mech-850 p-3 rounded-lg border border-mech-700">
+              <h4 class="font-bold text-cyanGlow flex items-center gap-1.5 mb-1">
+                <i data-lucide="zap" class="w-4 h-4"></i> Why Can't We Use One Side Like RC Cars?
+              </h4>
+              <p>
+                In an RC car, a servo only steers lightweight steering rods. In a 40cm humanoid robot weighing 1.8 kg, when the robot balances on one leg, <strong>18 Newton-meters of dynamic cantilever torque</strong> attempts to snap the output spline sideways!
+              </p>
+            </div>
+
+            <div class="bg-mech-850 p-3 rounded-lg border border-mech-700">
+              <h4 class="font-bold text-amberWarn flex items-center gap-1.5 mb-1">
+                <i data-lucide="shield" class="w-4 h-4"></i> The Flanged Bearing Solution
+              </h4>
+              <p>
+                By inserting an M3 flanged radial ball bearing on the rear face and tightening a pivot screw into the dummy rear locator hole, the aluminum bracket forms a closed structural box beam. The gear shaft only bears rotational torque, while the bearing absorbs all radial shear forces!
+              </p>
+            </div>
+          </div>
+
+          <!-- Interactive Exploded Slider for Motor -->
+          <div class="bg-mech-950 p-4 rounded-xl border border-mech-700 space-y-2">
+            <div class="flex items-center justify-between text-xs font-mono">
+              <span class="text-slate-300">Explode Sandwich Distance:</span>
+              <span id="val-explode-distance" class="text-cyanGlow font-bold">0.0 mm (Snapped)</span>
+            </div>
+            <input type="range" id="inspector-explode-slider" min="0" max="60" value="0" oninput="setExplodeDistance(this.value)" class="w-full accent-cyanGlow h-2 bg-mech-800 rounded cursor-pointer">
+            <div class="flex justify-between text-[10px] text-slate-400 font-mono">
+              <span>0mm (Fully Assembled)</span>
+              <span>30mm (Expanded)</span>
+              <span>60mm (Fully Exploded)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODE 3: KINEMATIC POSING & SERVO GAIT LAB -->
+      <div id="panel-kinematics-sliders" class="flex-1 flex flex-col overflow-hidden hidden">
+        <div class="p-4 border-b border-mech-700 bg-mech-850 flex items-center justify-between">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-mono text-xs font-bold border border-emerald-500/40">17-DOF KINEMATICS</span>
+            </div>
+            <h2 class="text-sm font-bold text-slate-100 mt-1">Live Gait & Servo Angle Controller</h2>
+          </div>
+          <button onclick="resetJointsToNeutral()" class="px-2.5 py-1 rounded bg-mech-700 hover:bg-mech-600 text-xs text-slate-300 font-mono transition">
+            Reset 90°
+          </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-4 space-y-4">
+          <!-- Live PWM & Current Meter -->
+          <div class="grid grid-cols-2 gap-2 bg-mech-950 p-3 rounded-xl border border-mech-700 text-xs font-mono">
+            <div class="bg-mech-900 p-2.5 rounded-lg border border-mech-800">
+              <span class="text-slate-400 text-[10px] block">ESTIMATED CURRENT:</span>
+              <span id="meter-current" class="text-amberWarn text-base font-bold">1.45 A</span>
+              <span class="text-[9px] text-slate-400 block mt-0.5">Holding standing torque</span>
+            </div>
+            <div class="bg-mech-900 p-2.5 rounded-lg border border-mech-800">
+              <span class="text-slate-400 text-[10px] block">BATTERY VOLTAGE:</span>
+              <span class="text-emerald-400 text-base font-bold">7.4 V LiPo</span>
+              <span class="text-[9px] text-slate-400 block mt-0.5">Step-down to 6.0V UBEC</span>
+            </div>
+          </div>
+
+          <!-- Dynamic Servo Sliders List -->
+          <div id="sliders-container" class="space-y-3">
+            <!-- Dynamically generated 17 joint sliders grouped logically -->
+          </div>
+        </div>
+      </div>
+
+    </aside>
+
+  </div>
+
+  <script>
+    // =========================================================================
+    // 17-DOF HUMAN ROBOT ASSEMBLY & KINEMATICS ENGINE
+    // =========================================================================
+
+    // Complete Step-by-Step Build Curriculum (Steps 0 to 17)
+    const ASSEMBLY_STEPS = [
+      {
+        step: 0,
+        jointId: -1,
+        anatomy: "Preparation & Setup",
+        title: "Electrical 90° Neutral Calibration",
+        focus: [0, 8, 0],
+        camPos: [0, 10, 20],
+        bom: [
+          { name: "17x High-Torque 180° Servos (MG996R or RDS3218)", qty: 17 },
+          { name: "16/24-Ch PCA9685 PWM Controller & Arduino", qty: 1 },
+          { name: "6.0V 10A UBEC or Bench Power Supply", qty: 1 },
+          { name: "Paper Labels / Marker Tape (IDs 0 to 16)", qty: 1 }
+        ],
+        instructions: [
+          "Connect each servo to your PWM board and power up with a regulated 6.0V supply.",
+          "Transmit a standard 1500 µs (90.0°) pulse to each channel so internal gear trains lock to center.",
+          "Affix label tags (0 through 16) matching our wiring manifest before any screws touch metal brackets."
+        ],
+        proTip: "Never assemble servos blindly right out of the box! If a motor is resting at 0° and assembled, commanding 90° will force the joint against its mechanical bracket stops and shear the internal brass gears."
+      },
+      // --- LOWER BODY: LEFT LEG (Steps 1 to 5) ---
+      {
+        step: 1,
+        jointId: 0, // Left Ankle Roll
+        anatomy: "Left Foot / Ankle",
+        title: "Attach Left Ankle Roll Servo to Footplate",
+        focus: [2.2, 0.4, 0],
+        camPos: [3.5, 2.5, 4.5],
+        bom: [
+          { name: "Anodized Black Aluminum Footplate (Left)", qty: 1 },
+          { name: "MG996R 180° Metal Gear Servo", qty: 1 },
+          { name: "M3 x 8mm Black Hex Head Screws", qty: 4 },
+          { name: "M3 Locking Hex Nuts", qty: 4 }
+        ],
+        instructions: [
+          "Place the left footplate flat on your workbench with the rounded toe pointing forward.",
+          "Drop the Ankle Roll servo into the pre-cut rectangular cutout with its splined brass shaft facing toward the heel.",
+          "Secure using four M3x8mm screws and locknuts from underneath the footplate."
+        ],
+        proTip: "Apply a small dab of blue threadlocker (Loctite 242) onto each nut to ensure humanoid ground vibration does not loosen them during walking."
+      },
+      {
+        step: 2,
+        jointId: 1, // Left Ankle Pitch
+        anatomy: "Left Ankle",
+        title: "Mount Ankle Pitch Servo & Multifunction Cross-Bracket",
+        focus: [2.2, 1.8, 0],
+        camPos: [4.0, 3.5, 3.5],
+        bom: [
+          { name: "Multifunctional 2-Axis Crossover Servo Bracket", qty: 1 },
+          { name: "Round 25T CNC Aluminum Servo Horn", qty: 1 },
+          { name: "M3 x 6mm Horn Center Retaining Screw", qty: 1 },
+          { name: "Flanged Chrome Ball Bearing (8x3mm)", qty: 1 },
+          { name: "M3 x 8mm Rear Bearing Pivot Screw", qty: 1 }
+        ],
+        instructions: [
+          "Press the 25T round aluminum horn onto the centered Ankle Roll shaft.",
+          "Fasten the multifunctional bracket onto this horn using 4 small M3 screws.",
+          "Slide the Ankle Pitch servo into this bracket oriented horizontally to govern forward/backward ankle flexion."
+        ],
+        proTip: "Notice how the bracket holds both servos at 90° to one another. This forms a true 2-axis gimbal joint identical to a human ankle!"
+      },
+      {
+        step: 3,
+        jointId: 2, // Left Shin / Lower Calf
+        anatomy: "Left Shin",
+        title: "Fasten Long Aluminum U-Bracket (Shin Strut)",
+        focus: [2.2, 3.8, 0],
+        camPos: [4.5, 5.0, 4.0],
+        bom: [
+          { name: "Long Aluminum U-Bracket (Calf/Shin)", qty: 1 },
+          { name: "25T Round Servo Horn", qty: 1 },
+          { name: "Flanged Ball Bearing (Rear Pivot)", qty: 1 },
+          { name: "M3 x 6mm Flat Head Screws", qty: 4 }
+        ],
+        instructions: [
+          "Slide the long U-bracket over the Ankle Pitch servo body.",
+          "Push the flanged ball bearing into the rear bracket hole first, aligning it with the servo's rear pin.",
+          "Fasten the front horn to the bracket using four M3 screws."
+        ],
+        proTip: "Always insert the rear bearing BEFORE tightening the front horn screws! This ensures the U-bracket remains parallel and does not bind."
+      },
+      {
+        step: 4,
+        jointId: 3, // Left Knee Pitch
+        anatomy: "Left Knee Joint",
+        title: "Install High-Torque Left Knee Pitch Servo",
+        focus: [2.2, 6.2, 0],
+        camPos: [4.5, 7.5, 3.8],
+        bom: [
+          { name: "High-Torque Metal Gear Servo (≥20 kg·cm Recommended)", qty: 1 },
+          { name: "Long Aluminum U-Bracket (Thigh)", qty: 1 },
+          { name: "Round 25T Metal Horn", qty: 1 },
+          { name: "Flanged Ball Bearing + M3 Pivot Screw", qty: 1 }
+        ],
+        instructions: [
+          "Mount the Knee Pitch servo inside the top of the shin bracket.",
+          "Attach the Thigh U-bracket across the knee output horn and rear bearing.",
+          "Check that the knee bends smoothly backward over a 0° to 150° motion arc without dragging wires."
+        ],
+        proTip: "The knee experiences the highest load in the robot (up to 20 kg·cm when crouching). Ensure all 4 horn screws are torqued down firmly."
+      },
+      {
+        step: 5,
+        jointId: 4, // Left Hip Pitch & Roll
+        anatomy: "Left Hip Gimbal",
+        title: "Assemble 2-DOF Left Hip Gimbal Joint",
+        focus: [2.0, 9.2, 0],
+        camPos: [4.5, 10.5, 4.0],
+        bom: [
+          { name: "2x Standard Servos (Hip Pitch & Hip Roll)", qty: 2 },
+          { name: "Multifunction Bracket & Short U-Bracket", qty: 2 },
+          { name: "2x Round 25T Metal Horns", qty: 2 },
+          { name: "M3 Flanged Ball Bearings & Pivot Pins", qty: 2 }
+        ],
+        instructions: [
+          "Assemble the Hip Pitch servo at the top of the thigh strut.",
+          "Connect its horn perpendicularly to the Hip Roll servo casing using the cross bracket.",
+          "This gives the left leg full independent forward kick (pitch) and outward splay (roll)."
+        ],
+        proTip: "Route the knee and ankle servo wires up through the center of the thigh bracket, leaving an expansion loop for full knee bend."
+      },
+
+      // --- LOWER BODY: RIGHT LEG (Steps 6 to 10) ---
+      {
+        step: 6,
+        jointId: 5, // Right Ankle Roll
+        anatomy: "Right Foot / Ankle",
+        title: "Attach Right Ankle Roll Servo to Footplate",
+        focus: [-2.2, 0.4, 0],
+        camPos: [-3.5, 2.5, 4.5],
+        bom: [
+          { name: "Anodized Black Aluminum Footplate (Right)", qty: 1 },
+          { name: "MG996R 180° Metal Gear Servo", qty: 1 },
+          { name: "M3 x 8mm Hex Screws & Locknuts", qty: 4 }
+        ],
+        instructions: [
+          "Position the right footplate mirrored to the left one.",
+          "Seat the servo with its splined brass gear toward the heel.",
+          "Fasten securely through the four bottom mounting holes."
+        ],
+        proTip: "Check that both feet are identical mirror images so the robot stands flat without rocking."
+      },
+      {
+        step: 7,
+        jointId: 6, // Right Ankle Pitch
+        anatomy: "Right Ankle",
+        title: "Mount Right Ankle Pitch Servo & Cross-Bracket",
+        focus: [-2.2, 1.8, 0],
+        camPos: [-4.0, 3.5, 3.5],
+        bom: [
+          { name: "Multifunctional 2-Axis Crossover Servo Bracket", qty: 1 },
+          { name: "Round 25T Aluminum Servo Horn", qty: 1 },
+          { name: "Flanged Chrome Ball Bearing & Pin", qty: 1 }
+        ],
+        instructions: [
+          "Press the 25T metal horn onto the centered Ankle Roll shaft.",
+          "Secure the cross bracket and slide in the Right Ankle Pitch servo.",
+          "Verify the horn is aligned perpendicular to the footplate at 90°."
+        ],
+        proTip: "Ensure the rear bearing rotates freely with zero axial play."
+      },
+      {
+        step: 8,
+        jointId: 7, // Right Shin
+        anatomy: "Right Shin",
+        title: "Attach Right Long U-Bracket (Shin Strut)",
+        focus: [-2.2, 3.8, 0],
+        camPos: [-4.5, 5.0, 4.0],
+        bom: [
+          { name: "Long Aluminum U-Bracket (Right Calf)", qty: 1 },
+          { name: "25T Metal Servo Horn", qty: 1 },
+          { name: "Flanged Ball Bearing + M3 Screws", qty: 5 }
+        ],
+        instructions: [
+          "Sandwich the Ankle Pitch motor inside the lower shin U-bracket.",
+          "Fasten the rear flanged bearing pin, then secure the 4 horn screws on the front."
+        ],
+        proTip: "Tighten the 4 horn screws in an 'X' diagonal pattern to distribute tension evenly across the horn disc."
+      },
+      {
+        step: 9,
+        jointId: 8, // Right Knee Pitch
+        anatomy: "Right Knee Joint",
+        title: "Install High-Torque Right Knee Pitch Servo",
+        focus: [-2.2, 6.2, 0],
+        camPos: [-4.5, 7.5, 3.8],
+        bom: [
+          { name: "High-Torque Metal Gear Servo (≥20 kg·cm)", qty: 1 },
+          { name: "Long Aluminum U-Bracket (Thigh)", qty: 1 },
+          { name: "Round 25T Metal Horn & Bearing Set", qty: 1 }
+        ],
+        instructions: [
+          "Install the knee servo into the top of the shin bracket.",
+          "Connect the thigh strut across the output horn and rear bearing pivot.",
+          "Check manual swing to confirm zero mechanical binding."
+        ],
+        proTip: "Both knees must bend in the exact same direction (backward toward the heel)."
+      },
+      {
+        step: 10,
+        jointId: 9, // Right Hip Gimbal
+        anatomy: "Right Hip Gimbal",
+        title: "Assemble 2-DOF Right Hip Gimbal Joint",
+        focus: [-2.0, 9.2, 0],
+        camPos: [-4.5, 10.5, 4.0],
+        bom: [
+          { name: "2x Standard Servos (Hip Pitch & Hip Roll)", qty: 2 },
+          { name: "Multifunction Bracket & Short U-Bracket", qty: 2 },
+          { name: "2x 25T Horns + Bearings", qty: 2 }
+        ],
+        instructions: [
+          "Mount the Right Hip Pitch servo to the upper thigh strut.",
+          "Couple it with the Hip Roll servo using the cross bracket.",
+          "Confirm symmetric alignment with the left hip."
+        ],
+        proTip: "Make sure servo wire leads face toward the robot's interior spine so they don't snag on exterior obstacles."
+      },
+
+      // --- TORSO & PELVIS (Steps 11 & 12) ---
+      {
+        step: 11,
+        jointId: 10, // Pelvis Frame
+        anatomy: "Pelvis Base",
+        title: "Connect Both Legs to Main Pelvis Baseplate",
+        focus: [0, 10.5, 0],
+        camPos: [0, 11.5, 7.0],
+        bom: [
+          { name: "Heavy-Duty Anodized Pelvis Center Plate", qty: 1 },
+          { name: "M3 x 8mm Black Hex Screws", qty: 8 },
+          { name: "M3 Flanged Locknuts", qty: 8 }
+        ],
+        instructions: [
+          "Position the left and right hip roll servo brackets against the pelvis plate.",
+          "Align mounting slots to maintain a balanced stance width (approximately 85–90mm between feet).",
+          "Torque all 8 screws firmly. The robot can now stand freely on both feet!"
+        ],
+        proTip: "Place the robot on a flat table. Both footplates should touch the ground evenly with zero tilt."
+      },
+      {
+        step: 12,
+        jointId: 11, // Torso Trunk
+        anatomy: "Torso & Spine",
+        title: "Erect Chest Trunk & Controller Bay",
+        focus: [0, 13.0, 0],
+        camPos: [0, 13.5, 7.5],
+        bom: [
+          { name: "Main Upper Torso / Chest Aluminum Cage", qty: 1 },
+          { name: "PCA9685 Standoff Spacers & Screws", qty: 4 },
+          { name: "M3 x 6mm Button Head Screws", qty: 6 }
+        ],
+        instructions: [
+          "Bolt the upper chest aluminum cage onto the pelvis center plate.",
+          "This central box houses your PCA9685 driver board, Arduino/ESP32, and UBEC power distribution."
+        ],
+        proTip: "Install nylon standoffs inside the chest cage now before the shoulder brackets restrict hand access."
+      },
+
+      // --- UPPER BODY: ARMS (Steps 13 to 16) ---
+      {
+        step: 13,
+        jointId: 12, // Left Shoulder
+        anatomy: "Left Shoulder",
+        title: "Mount Left Shoulder Pitch & Roll Servos",
+        focus: [3.2, 14.5, 0],
+        camPos: [5.5, 15.5, 4.5],
+        bom: [
+          { name: "2x Standard Servos (Pitch & Roll)", qty: 2 },
+          { name: "L-Shaped Shoulder Bracket & Short U-Bracket", qty: 2 },
+          { name: "25T Metal Horns & Bearings", qty: 2 }
+        ],
+        instructions: [
+          "Attach the Shoulder Pitch servo to the upper-left corner of the chest cage.",
+          "Mate its horn to the Shoulder Roll servo to grant 2-axis arm articulation."
+        ],
+        proTip: "Ensure the arm can swing fully overhead (180°) without pinching cables entering the chest."
+      },
+      {
+        step: 14,
+        jointId: 13, // Left Forearm
+        anatomy: "Left Elbow & Forearm",
+        title: "Assemble Left Elbow Pitch & Forearm Link",
+        focus: [4.2, 12.0, 0],
+        camPos: [6.0, 12.5, 4.0],
+        bom: [
+          { name: "1x Standard Servo (Elbow Pitch)", qty: 1 },
+          { name: "Aluminum Forearm Hand Strut", qty: 1 },
+          { name: "25T Metal Horn & Rear Bearing", qty: 1 }
+        ],
+        instructions: [
+          "Connect the elbow servo to the upper arm strut.",
+          "Bolt the forearm hand plate to the elbow horn disc."
+        ],
+        proTip: "Check that the elbow flexes inward toward the chest naturally."
+      },
+      {
+        step: 15,
+        jointId: 14, // Right Shoulder
+        anatomy: "Right Shoulder",
+        title: "Mount Right Shoulder Pitch & Roll Servos",
+        focus: [-3.2, 14.5, 0],
+        camPos: [-5.5, 15.5, 4.5],
+        bom: [
+          { name: "2x Standard Servos (Pitch & Roll)", qty: 2 },
+          { name: "L-Bracket & Short U-Bracket", qty: 2 },
+          { name: "25T Metal Horns & Bearings", qty: 2 }
+        ],
+        instructions: [
+          "Mirror the left shoulder assembly onto the upper-right chest corner.",
+          "Verify symmetric arm posture at 90° calibration."
+        ],
+        proTip: "Label shoulder cables 'L-SH-P', 'L-SH-R', 'R-SH-P', 'R-SH-R' for easy hookup."
+      },
+      {
+        step: 16,
+        jointId: 15, // Right Forearm
+        anatomy: "Right Elbow & Forearm",
+        title: "Assemble Right Elbow Pitch & Forearm Link",
+        focus: [-4.2, 12.0, 0],
+        camPos: [-6.0, 12.5, 4.0],
+        bom: [
+          { name: "1x Standard Servo (Elbow Pitch)", qty: 1 },
+          { name: "Aluminum Forearm Hand Strut", qty: 1 },
+          { name: "25T Metal Horn & Bearing Set", qty: 1 }
+        ],
+        instructions: [
+          "Fasten the elbow servo and forearm strut for the right arm.",
+          "Verify equal arm lengths between left and right sides."
+        ],
+        proTip: "Forearms act as counterweights during walking to maintain center of mass balance."
+      },
+
+      // --- HEAD & COMPLETION (Step 17) ---
+      {
+        step: 17,
+        jointId: 16, // Head Pan
+        anatomy: "Head & Neck",
+        title: "Install Neck Pan Servo & Final Inspection",
+        focus: [0, 16.5, 0],
+        camPos: [0, 18.0, 5.0],
+        bom: [
+          { name: "1x Micro / Standard Servo (Neck Pan Yaw)", qty: 1 },
+          { name: "Head / Ultrasonic Sensor Bracket", qty: 1 },
+          { name: "M3 Mounting Hardware", qty: 4 }
+        ],
+        instructions: [
+          "Mount the Neck Yaw servo on top of the chest spine.",
+          "Attach the robot head / sensor visor onto its centered horn.",
+          "Congratulations! Your 17-DOF humanoid skeleton is 100% mechanically assembled!"
+        ],
+        proTip: "Bundle all servo cables neatly inside spiral wrap down both thighs to prevent joints snagging during dynamic walking."
+      }
+    ];
+
+    // Joint Definitions for Kinematics Lab
+    const KINEMATIC_JOINTS = [
+      { id: 0, name: "Head Yaw (Pan)", group: "head", min: 0, max: 180, default: 90, val: 90 },
+      { id: 1, name: "L Shoulder Pitch", group: "arm_l", min: 0, max: 180, default: 90, val: 90 },
+      { id: 2, name: "L Shoulder Roll", group: "arm_l", min: 0, max: 180, default: 90, val: 90 },
+      { id: 3, name: "L Elbow Pitch", group: "arm_l", min: 0, max: 180, default: 90, val: 90 },
+      { id: 4, name: "R Shoulder Pitch", group: "arm_r", min: 0, max: 180, default: 90, val: 90 },
+      { id: 5, name: "R Shoulder Roll", group: "arm_r", min: 0, max: 180, default: 90, val: 90 },
+      { id: 6, name: "R Elbow Pitch", group: "arm_r", min: 0, max: 180, default: 90, val: 90 },
+      { id: 7, name: "L Hip Roll", group: "leg_l", min: 0, max: 180, default: 90, val: 90 },
+      { id: 8, name: "L Hip Pitch", group: "leg_l", min: 0, max: 180, default: 90, val: 90 },
+      { id: 9, name: "L Knee Pitch", group: "leg_l", min: 0, max: 180, default: 90, val: 90 },
+      { id: 10, name: "L Ankle Pitch", group: "leg_l", min: 0, max: 180, default: 90, val: 90 },
+      { id: 11, name: "L Ankle Roll", group: "leg_l", min: 0, max: 180, default: 90, val: 90 },
+      { id: 12, name: "R Hip Roll", group: "leg_r", min: 0, max: 180, default: 90, val: 90 },
+      { id: 13, name: "R Hip Pitch", group: "leg_r", min: 0, max: 180, default: 90, val: 90 },
+      { id: 14, name: "R Knee Pitch", group: "leg_r", min: 0, max: 180, default: 90, val: 90 },
+      { id: 15, name: "R Ankle Pitch", group: "leg_r", min: 0, max: 180, default: 90, val: 90 },
+      { id: 16, name: "R Ankle Roll", group: "leg_r", min: 0, max: 180, default: 90, val: 90 }
+    ];
+
+    // Global State
+    let currentMode = 'assembly'; // 'assembly', 'inspector', 'kinematics'
+    let currentStep = 0;
+    let isExploded = false;
+    let autoPlayInterval = null;
+    let explodeFactor = 0; // 0 to 1
+
+    // Three.js Core Objects
+    let scene, camera, renderer, controls;
+    let robotRoot;
+    let singleServoInspectorGroup;
+    let stepAssemblyMeshes = []; // Meshes corresponding to each step 0 to 17
+    let jointPivotNodes = [];    // Transforms for kinematic rotation
+
+    // Materials Library
+    let materials = {};
+
+    function initThree() {
+      const container = document.getElementById('canvas-container');
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+
+      // 1. Scene
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x06090f);
+      scene.fog = new THREE.FogExp2(0x06090f, 0.012);
+
+      // 2. Camera
+      camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+      camera.position.set(0, 12, 26);
+
+      // 3. Renderer
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      container.appendChild(renderer.domElement);
+
+      // 4. Orbit Controls
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.target.set(0, 8.5, 0);
+      controls.maxPolarAngle = Math.PI / 2 + 0.05;
+
+      // 5. Lighting
+      const hemiLight = new THREE.HemisphereLight(0xffffff, 0x17223b, 0.7);
+      scene.add(hemiLight);
+
+      const mainLight = new THREE.DirectionalLight(0xe2f1ff, 1.2);
+      mainLight.position.set(15, 30, 20);
+      mainLight.castShadow = true;
+      mainLight.shadow.mapSize.width = 2048;
+      mainLight.shadow.mapSize.height = 2048;
+      mainLight.shadow.bias = -0.0005;
+      scene.add(mainLight);
+
+      const cyanRim = new THREE.DirectionalLight(0x00f0ff, 0.6);
+      cyanRim.position.set(-20, 10, -15);
+      scene.add(cyanRim);
+
+      const bottomFill = new THREE.DirectionalLight(0x334155, 0.4);
+      bottomFill.position.set(0, -10, 10);
+      scene.add(bottomFill);
+
+      // 6. Workbench Pedestal Grid
+      const grid = new THREE.GridHelper(30, 30, 0x00f0ff, 0x17223b);
+      grid.position.y = 0;
+      scene.add(grid);
+
+      const pedestalGeo = new THREE.CylinderGeometry(11, 11, 0.25, 48);
+      const pedestalMat = new THREE.MeshStandardMaterial({
+        color: 0x090f1d,
+        roughness: 0.85,
+        metalness: 0.3
+      });
+      const pedestal = new THREE.Mesh(pedestalGeo, pedestalMat);
+      pedestal.position.y = -0.125;
+      pedestal.receiveShadow = true;
+      scene.add(pedestal);
+
+      // 7. Initialize Shared Materials
+      initMaterials();
+
+      // 8. Build 3D Models
+      buildHumanoidSkeleton();
+      buildSingleServoInspector();
+
+      // 9. Resize Listener
+      window.addEventListener('resize', onWindowResize);
+
+      // 10. Start Animation Loop
+      animate();
+    }
+
+    function initMaterials() {
+      materials.blackAlu = new THREE.MeshStandardMaterial({
+        color: 0x181e29,
+        metalness: 0.85,
+        roughness: 0.32
+      });
+
+      materials.chamferEdge = new THREE.MeshStandardMaterial({
+        color: 0x334155,
+        metalness: 0.9,
+        roughness: 0.25
+      });
+
+      materials.servoBody = new THREE.MeshStandardMaterial({
+        color: 0x0b0f17,
+        metalness: 0.3,
+        roughness: 0.6
+      });
+
+      materials.brassSpline = new THREE.MeshStandardMaterial({
+        color: 0xf59e0b,
+        metalness: 0.9,
+        roughness: 0.2
+      });
+
+      materials.blueHorn = new THREE.MeshStandardMaterial({
+        color: 0x0284c7,
+        metalness: 0.8,
+        roughness: 0.2
+      });
+
+      materials.chromeBearing = new THREE.MeshStandardMaterial({
+        color: 0xf43f5e, // Highlighted pink/red for clear educational distinction
+        metalness: 0.95,
+        roughness: 0.1
+      });
+
+      materials.steelScrew = new THREE.MeshStandardMaterial({
+        color: 0x94a3b8,
+        metalness: 0.9,
+        roughness: 0.15
+      });
+
+      materials.wireRibbon = new THREE.MeshStandardMaterial({
+        color: 0x3b82f6,
+        roughness: 0.8
+      });
+
+      materials.ghost = new THREE.MeshBasicMaterial({
+        color: 0x00f0ff,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.15
+      });
+    }
+
+    // Helper: Creates high-fidelity realistic MG996R servo model
+    function createServoMotorModel(showCables = true) {
+      const servoGroup = new THREE.Group();
+
+      // Black main casing (40 x 20 x 36 mm equivalent scale)
+      const caseGeo = new THREE.BoxGeometry(1.2, 2.2, 1.8);
+      const caseMesh = new THREE.Mesh(caseGeo, materials.servoBody);
+      caseMesh.castShadow = true;
+      servoGroup.add(caseMesh);
+
+      // Decal Label stripe on side
+      const decalGeo = new THREE.PlaneGeometry(0.8, 1.4);
+      const decalMat = new THREE.MeshBasicMaterial({ color: 0x1e293b, side: THREE.DoubleSide });
+      const decal = new THREE.Mesh(decalGeo, decalMat);
+      decal.position.set(0.61, 0, 0);
+      decal.rotation.y = Math.PI / 2;
+      servoGroup.add(decal);
+
+      // Top gear turret
+      const turretGeo = new THREE.CylinderGeometry(0.5, 0.5, 0.4, 20);
+      const turret = new THREE.Mesh(turretGeo, materials.servoBody);
+      turret.position.set(0, 1.2, 0.4);
+      servoGroup.add(turret);
+
+      // Brass 25T Spline (Side 1 Output)
+      const splineGeo = new THREE.CylinderGeometry(0.28, 0.28, 0.35, 18);
+      const spline = new THREE.Mesh(splineGeo, materials.brassSpline);
+      spline.position.set(0, 1.45, 0.4);
+      servoGroup.add(spline);
+
+      // Front 25T Round Horn (Blue Anodized CNC Horn with holes)
+      const hornGroup = new THREE.Group();
+      hornGroup.name = "hornGroup";
+      const hornDiscGeo = new THREE.CylinderGeometry(0.58, 0.58, 0.12, 24);
+      const hornDisc = new THREE.Mesh(hornDiscGeo, materials.blueHorn);
+      hornGroup.add(hornDisc);
+
+      // Horn Center Screw
+      const screwGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.05, 12);
+      const screw = new THREE.Mesh(screwGeo, materials.steelScrew);
+      screw.position.y = 0.08;
+      hornGroup.add(screw);
+
+      hornGroup.position.set(0, 1.62, 0.4);
+      servoGroup.add(hornGroup);
+
+      // Rear Bearing Dummy Pivot Point (Side 2 - The secret second axis)
+      const bearingGroup = new THREE.Group();
+      bearingGroup.name = "bearingGroup";
+      const bearingRingGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.15, 20);
+      const bearingRing = new THREE.Mesh(bearingRingGeo, materials.chromeBearing);
+      bearingGroup.add(bearingRing);
+
+      const bearingPinGeo = new THREE.CylinderGeometry(0.15, 0.15, 0.25, 12);
+      const bearingPin = new THREE.Mesh(bearingPinGeo, materials.steelScrew);
+      bearingGroup.add(bearingPin);
+
+      bearingGroup.position.set(0, -1.2, 0.4); // Exactly opposite output axis!
+      servoGroup.add(bearingGroup);
+
+      // Servo 3-wire ribbon cable (Brown/Red/Yellow)
+      if (showCables) {
+        const cableGeo = new THREE.CylinderGeometry(0.08, 0.08, 1.5, 8);
+        const cable = new THREE.Mesh(cableGeo, materials.wireRibbon);
+        cable.position.set(0, -1.2, -0.6);
+        cable.rotation.x = Math.PI / 4;
+        servoGroup.add(cable);
+      }
+
+      return servoGroup;
+    }
+
+    // Helper: Creates standard black anodized aluminum U-bracket
+    function createUBracket(length = 2.6, width = 1.6) {
+      const bracketGroup = new THREE.Group();
+      bracketGroup.name = "bracketGroup";
+
+      // U-channel backbone
+      const backGeo = new THREE.BoxGeometry(width, 0.2, length);
+      const back = new THREE.Mesh(backGeo, materials.blackAlu);
+      back.castShadow = true;
+      bracketGroup.add(back);
+
+      // Left wing with punched center hole
+      const wingGeo = new THREE.BoxGeometry(width, length * 0.8, 0.2);
+      const leftWing = new THREE.Mesh(wingGeo, materials.blackAlu);
+      leftWing.position.set(0, length * 0.4, -length * 0.5 + 0.1);
+      leftWing.castShadow = true;
+      bracketGroup.add(leftWing);
+
+      // Right wing
+      const rightWing = new THREE.Mesh(wingGeo, materials.blackAlu);
+      rightWing.position.set(0, length * 0.4, length * 0.5 - 0.1);
+      rightWing.castShadow = true;
+      bracketGroup.add(rightWing);
+
+      return bracketGroup;
+    }
+
+    function buildHumanoidSkeleton() {
+      robotRoot = new THREE.Group();
+      robotRoot.position.set(0, 0, 0);
+      scene.add(robotRoot);
+
+      // Initialize step assembly tracking array
+      stepAssemblyMeshes = [];
+
+      // STEP 0: Calibration Platform (always present or ghosted)
+      const step0Group = new THREE.Group();
+      robotRoot.add(step0Group);
+      stepAssemblyMeshes[0] = step0Group;
+
+      // STEP 1: Left Footplate & Ankle Roll Servo
+      const step1Group = new THREE.Group();
+      const lFoot = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.25, 4.4), materials.blackAlu);
+      lFoot.position.set(2.2, 0.125, 0.4);
+      lFoot.receiveShadow = true;
+      step1Group.add(lFoot);
+      const lAnkleRollServo = createServoMotorModel();
+      lAnkleRollServo.position.set(2.2, 0.9, 0);
+      lAnkleRollServo.rotation.z = Math.PI;
+      step1Group.add(lAnkleRollServo);
+      robotRoot.add(step1Group);
+      stepAssemblyMeshes[1] = step1Group;
+
+      // STEP 2: Left Ankle Pitch & Cross Bracket
+      const step2Group = new THREE.Group();
+      const lAnklePivot = new THREE.Group();
+      lAnklePivot.position.set(2.2, 1.8, 0);
+      step2Group.add(lAnklePivot);
+      jointPivotNodes[10] = lAnklePivot; // Left Ankle Pitch
+
+      const lAnkleCross = createUBracket(2.2, 1.8);
+      lAnklePivot.add(lAnkleCross);
+      const lAnklePitchServo = createServoMotorModel();
+      lAnklePitchServo.position.set(0, 0.6, 0);
+      lAnklePitchServo.rotation.y = Math.PI / 2;
+      lAnklePivot.add(lAnklePitchServo);
+      robotRoot.add(step2Group);
+      stepAssemblyMeshes[2] = step2Group;
+
+      // STEP 3: Left Shin / Lower Calf Strut
+      const step3Group = new THREE.Group();
+      const lShinStrut = createUBracket(3.2, 1.6);
+      lShinStrut.position.set(2.2, 3.4, 0);
+      step3Group.add(lShinStrut);
+      robotRoot.add(step3Group);
+      stepAssemblyMeshes[3] = step3Group;
+
+      // STEP 4: Left Knee Pitch Servo & Thigh Strut
+      const step4Group = new THREE.Group();
+      const lKneePivot = new THREE.Group();
+      lKneePivot.position.set(2.2, 5.6, 0);
+      step4Group.add(lKneePivot);
+      jointPivotNodes[9] = lKneePivot; // Left Knee
+
+      const lKneeServo = createServoMotorModel();
+      lKneeServo.position.set(0, 0, 0);
+      lKneePivot.add(lKneeServo);
+
+      const lThighStrut = createUBracket(3.2, 1.6);
+      lThighStrut.position.set(0, 1.8, 0);
+      lKneePivot.add(lThighStrut);
+      robotRoot.add(step4Group);
+      stepAssemblyMeshes[4] = step4Group;
+
+      // STEP 5: Left Hip Pitch & Roll Gimbal
+      const step5Group = new THREE.Group();
+      const lHipPivot = new THREE.Group();
+      lHipPivot.position.set(2.2, 8.8, 0);
+      step5Group.add(lHipPivot);
+      jointPivotNodes[8] = lHipPivot; // Left Hip Pitch
+
+      const lHipPitchServo = createServoMotorModel();
+      lHipPitchServo.position.set(0, 0, 0);
+      lHipPivot.add(lHipPitchServo);
+
+      const lHipRollServo = createServoMotorModel();
+      lHipRollServo.position.set(0, 1.6, 0);
+      lHipRollServo.rotation.x = Math.PI / 2;
+      lHipPivot.add(lHipRollServo);
+      robotRoot.add(step5Group);
+      stepAssemblyMeshes[5] = step5Group;
+
+      // --- RIGHT LEG (Steps 6 to 10) ---
+      // STEP 6: Right Footplate & Roll Servo
+      const step6Group = new THREE.Group();
+      const rFoot = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.25, 4.4), materials.blackAlu);
+      rFoot.position.set(-2.2, 0.125, 0.4);
+      rFoot.receiveShadow = true;
+      step6Group.add(rFoot);
+      const rAnkleRollServo = createServoMotorModel();
+      rAnkleRollServo.position.set(-2.2, 0.9, 0);
+      rAnkleRollServo.rotation.z = Math.PI;
+      step6Group.add(rAnkleRollServo);
+      robotRoot.add(step6Group);
+      stepAssemblyMeshes[6] = step6Group;
+
+      // STEP 7: Right Ankle Pitch & Cross Bracket
+      const step7Group = new THREE.Group();
+      const rAnklePivot = new THREE.Group();
+      rAnklePivot.position.set(-2.2, 1.8, 0);
+      step7Group.add(rAnklePivot);
+      jointPivotNodes[15] = rAnklePivot; // Right Ankle Pitch
+
+      const rAnkleCross = createUBracket(2.2, 1.8);
+      rAnklePivot.add(rAnkleCross);
+      const rAnklePitchServo = createServoMotorModel();
+      rAnklePitchServo.position.set(0, 0.6, 0);
+      rAnklePitchServo.rotation.y = -Math.PI / 2;
+      rAnklePivot.add(rAnklePitchServo);
+      robotRoot.add(step7Group);
+      stepAssemblyMeshes[7] = step7Group;
+
+      // STEP 8: Right Shin Strut
+      const step8Group = new THREE.Group();
+      const rShinStrut = createUBracket(3.2, 1.6);
+      rShinStrut.position.set(-2.2, 3.4, 0);
+      step8Group.add(rShinStrut);
+      robotRoot.add(step8Group);
+      stepAssemblyMeshes[8] = step8Group;
+
+      // STEP 9: Right Knee Pitch Servo
+      const step9Group = new THREE.Group();
+      const rKneePivot = new THREE.Group();
+      rKneePivot.position.set(-2.2, 5.6, 0);
+      step9Group.add(rKneePivot);
+      jointPivotNodes[14] = rKneePivot; // Right Knee
+
+      const rKneeServo = createServoMotorModel();
+      rKneeServo.position.set(0, 0, 0);
+      rKneePivot.add(rKneeServo);
+
+      const rThighStrut = createUBracket(3.2, 1.6);
+      rThighStrut.position.set(0, 1.8, 0);
+      rKneePivot.add(rThighStrut);
+      robotRoot.add(step9Group);
+      stepAssemblyMeshes[9] = step9Group;
+
+      // STEP 10: Right Hip Gimbal
+      const step10Group = new THREE.Group();
+      const rHipPivot = new THREE.Group();
+      rHipPivot.position.set(-2.2, 8.8, 0);
+      step10Group.add(rHipPivot);
+      jointPivotNodes[13] = rHipPivot; // Right Hip Pitch
+
+      const rHipPitchServo = createServoMotorModel();
+      rHipPitchServo.position.set(0, 0, 0);
+      rHipPivot.add(rHipPitchServo);
+
+      const rHipRollServo = createServoMotorModel();
+      rHipRollServo.position.set(0, 1.6, 0);
+      rHipRollServo.rotation.x = Math.PI / 2;
+      rHipPivot.add(rHipRollServo);
+      robotRoot.add(step10Group);
+      stepAssemblyMeshes[10] = step10Group;
+
+      // STEP 11: Pelvis Baseplate
+      const step11Group = new THREE.Group();
+      const pelvisMesh = new THREE.Mesh(new THREE.BoxGeometry(6.4, 0.4, 2.6), materials.blackAlu);
+      pelvisMesh.position.set(0, 10.6, 0);
+      step11Group.add(pelvisMesh);
+      robotRoot.add(step11Group);
+      stepAssemblyMeshes[11] = step11Group;
+
+      // STEP 12: Chest Trunk Cage
+      const step12Group = new THREE.Group();
+      const chestMesh = new THREE.Mesh(new THREE.BoxGeometry(4.6, 4.2, 2.8), materials.blackAlu);
+      chestMesh.position.set(0, 13.0, 0);
+      step12Group.add(chestMesh);
+
+      // Embedded mock PCA9685 driver board with green PCB
+      const pcbMat = new THREE.MeshStandardMaterial({ color: 0x059669, roughness: 0.4 });
+      const pcb = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.6, 0.1), pcbMat);
+      pcb.position.set(0, 13.0, 1.45);
+      step12Group.add(pcb);
+      robotRoot.add(step12Group);
+      stepAssemblyMeshes[12] = step12Group;
+
+      // STEP 13: Left Shoulder
+      const step13Group = new THREE.Group();
+      const lShPivot = new THREE.Group();
+      lShPivot.position.set(2.8, 14.6, 0);
+      step13Group.add(lShPivot);
+      jointPivotNodes[1] = lShPivot; // Left Shoulder Pitch
+
+      const lShPitchServo = createServoMotorModel();
+      lShPivot.add(lShPitchServo);
+      robotRoot.add(step13Group);
+      stepAssemblyMeshes[13] = step13Group;
+
+      // STEP 14: Left Forearm & Hand
+      const step14Group = new THREE.Group();
+      const lElbowPivot = new THREE.Group();
+      lElbowPivot.position.set(4.2, 13.2, 0);
+      step14Group.add(lElbowPivot);
+      jointPivotNodes[3] = lElbowPivot; // Left Elbow
+
+      const lElbowServo = createServoMotorModel();
+      lElbowPivot.add(lElbowServo);
+      const lHand = new THREE.Mesh(new THREE.BoxGeometry(0.8, 2.4, 0.4), materials.chamferEdge);
+      lHand.position.set(0, -1.8, 0);
+      lElbowPivot.add(lHand);
+      robotRoot.add(step14Group);
+      stepAssemblyMeshes[14] = step14Group;
+
+      // STEP 15: Right Shoulder
+      const step15Group = new THREE.Group();
+      const rShPivot = new THREE.Group();
+      rShPivot.position.set(-2.8, 14.6, 0);
+      step15Group.add(rShPivot);
+      jointPivotNodes[4] = rShPivot; // Right Shoulder Pitch
+
+      const rShPitchServo = createServoMotorModel();
+      rShPivot.add(rShPitchServo);
+      robotRoot.add(step15Group);
+      stepAssemblyMeshes[15] = step15Group;
+
+      // STEP 16: Right Forearm & Hand
+      const step16Group = new THREE.Group();
+      const rElbowPivot = new THREE.Group();
+      rElbowPivot.position.set(-4.2, 13.2, 0);
+      step16Group.add(rElbowPivot);
+      jointPivotNodes[6] = rElbowPivot; // Right Elbow
+
+      const rElbowServo = createServoMotorModel();
+      rElbowPivot.add(rElbowServo);
+      const rHand = new THREE.Mesh(new THREE.BoxGeometry(0.8, 2.4, 0.4), materials.chamferEdge);
+      rHand.position.set(0, -1.8, 0);
+      rElbowPivot.add(rHand);
+      robotRoot.add(step16Group);
+      stepAssemblyMeshes[16] = step16Group;
+
+      // STEP 17: Head Pan Servo & Sensor Visor
+      const step17Group = new THREE.Group();
+      const headPivot = new THREE.Group();
+      headPivot.position.set(0, 15.6, 0);
+      step17Group.add(headPivot);
+      jointPivotNodes[0] = headPivot; // Head Yaw
+
+      const neckServo = createServoMotorModel(false);
+      neckServo.scale.set(0.7, 0.7, 0.7);
+      headPivot.add(neckServo);
+
+      const headVisor = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.4, 1.6), materials.chamferEdge);
+      headVisor.position.set(0, 1.2, 0);
+      headPivot.add(headVisor);
+
+      // Cyan Glowing Eye Visor Strip
+      const eyeMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
+      const eyes = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.28, 0.2), eyeMat);
+      eyes.position.set(0, 1.25, 0.85);
+      headPivot.add(eyes);
+
+      robotRoot.add(step17Group);
+      stepAssemblyMeshes[17] = step17Group;
+
+      // Initial visual sync for Step 0
+      applyStepVisibility(0);
+    }
+
+    // Dedicated Single-Servo Dual-Axis Exploded Inspector Model
+    function buildSingleServoInspector() {
+      singleServoInspectorGroup = new THREE.Group();
+      singleServoInspectorGroup.position.set(0, 8.5, 0);
+      singleServoInspectorGroup.visible = false;
+      scene.add(singleServoInspectorGroup);
+
+      // Center Servo Body
+      const servoBody = createServoMotorModel(true);
+      servoBody.scale.set(2.2, 2.2, 2.2);
+      singleServoInspectorGroup.add(servoBody);
+
+      // Surrounding Large U-Bracket
+      const uBracket = createUBracket(6.8, 4.2);
+      uBracket.scale.set(1.5, 1.5, 1.5);
+      uBracket.rotation.x = Math.PI / 2;
+      uBracket.name = "inspectorBracket";
+      singleServoInspectorGroup.add(uBracket);
+
+      // Exploded annotations rings in 3D
+      const ringMatSide1 = new THREE.MeshBasicMaterial({ color: 0x0284c7, wireframe: true });
+      const ringSide1 = new THREE.Mesh(new THREE.TorusGeometry(1.6, 0.05, 16, 32), ringMatSide1);
+      ringSide1.position.set(0, 4.2, 0.88);
+      singleServoInspectorGroup.add(ringSide1);
+
+      const ringMatSide2 = new THREE.MeshBasicMaterial({ color: 0xf43f5e, wireframe: true });
+      const ringSide2 = new THREE.Mesh(new THREE.TorusGeometry(1.4, 0.05, 16, 32), ringMatSide2);
+      ringSide2.position.set(0, -3.2, 0.88);
+      singleServoInspectorGroup.add(ringSide2);
+    }
+
+    // Sets visibility according to current assembly step
+    function applyStepVisibility(stepIndex) {
+      for (let i = 0; i <= 17; i++) {
+        if (!stepAssemblyMeshes[i]) continue;
+        if (i <= stepIndex) {
+          stepAssemblyMeshes[i].visible = true;
+          // Highlight current step with high opacity, prior steps normal
+          stepAssemblyMeshes[i].traverse(child => {
+            if (child.isMesh && child.material !== materials.ghost) {
+              child.material.transparent = false;
+              child.material.opacity = 1.0;
+            }
+          });
+        } else {
+          // Beyond current step: hide or ghost
+          stepAssemblyMeshes[i].visible = false;
+        }
+      }
+    }
+
+    // Smooth cinematic camera flight to target
+    function animateCameraTo(targetLook, targetPos, duration = 800) {
+      const startPos = camera.position.clone();
+      const startTarget = controls.target.clone();
+      const endPos = new THREE.Vector3(...targetPos);
+      const endTarget = new THREE.Vector3(...targetLook);
+
+      const startTime = performance.now();
+
+      function tween(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1.0);
+        // Smooth easeOutCubic curve
+        const ease = 1 - Math.pow(1 - progress, 3);
+
+        camera.position.lerpVectors(startPos, endPos, ease);
+        controls.target.lerpVectors(startTarget, endTarget, ease);
+        controls.update();
+
+        if (progress < 1.0) {
+          requestAnimationFrame(tween);
+        }
+      }
+      requestAnimationFrame(tween);
+    }
+
+    function goToStep(stepIndex) {
+      if (stepIndex < 0) stepIndex = 0;
+      if (stepIndex > 17) stepIndex = 17;
+      currentStep = stepIndex;
+
+      const data = ASSEMBLY_STEPS[currentStep];
+
+      // Update Slider & HUD
+      document.getElementById('step-range-slider').value = currentStep;
+      document.getElementById('step-badge').textContent = `STEP ${currentStep} of 17`;
+      document.getElementById('hud-step-title').textContent = `Step ${currentStep}: ${data.title}`;
+      document.getElementById('step-summary-count').textContent = `Step ${currentStep} / 17`;
+      
+      const pct = Math.round((currentStep / 17) * 100);
+      document.getElementById('hud-progress-pct').textContent = `${pct}%`;
+
+      // Update Step Card Content
+      document.getElementById('step-anatomy-tag').textContent = data.anatomy;
+      document.getElementById('step-main-title').textContent = data.title;
+      document.getElementById('bom-joint-name').textContent = data.jointId >= 0 ? `Joint ID: ${data.jointId}` : 'Workbench';
+
+      // Update BOM List
+      const bomContainer = document.getElementById('bom-list-container');
+      bomContainer.innerHTML = '';
+      data.bom.forEach(item => {
+        const row = document.createElement('div');
+        row.className = "flex items-center justify-between p-1.5 rounded bg-mech-900 border border-mech-800";
+        row.innerHTML = `
+          <span class="text-slate-300">${item.name}</span>
+          <span class="px-2 py-0.5 rounded bg-cyan-500/10 text-cyanGlow font-mono font-bold">x${item.qty}</span>
+        `;
+        bomContainer.appendChild(row);
+      });
+
+      // Update Step Instructions
+      const instContainer = document.getElementById('step-instruction-body');
+      instContainer.innerHTML = '';
+      data.instructions.forEach((txt, idx) => {
+        const p = document.createElement('div');
+        p.className = "flex items-start gap-2";
+        p.innerHTML = `
+          <span class="w-5 h-5 rounded-full bg-mech-800 text-cyanGlow font-mono font-bold flex items-center justify-center shrink-0 text-[10px] border border-mech-700">${idx + 1}</span>
+          <span>${txt}</span>
+        `;
+        instContainer.appendChild(p);
+      });
+
+      // Update Pro-Tip Callout
+      document.getElementById('step-protip-desc').textContent = data.proTip;
+
+      // Update 3D Model Visibility
+      applyStepVisibility(currentStep);
+
+      // Smooth Camera Fly-In
+      animateCameraTo(data.focus, data.camPos, 900);
+      lucide.createIcons();
+    }
+
+    function nextStep() {
+      if (currentStep < 17) goToStep(currentStep + 1);
+    }
+
+    function prevStep() {
+      if (currentStep > 0) goToStep(currentStep - 1);
+    }
+
+    function snapAndAssembleCurrentStep() {
+      // Visual feedback: brief flash & trigger next step
+      const stepMesh = stepAssemblyMeshes[currentStep];
+      if (stepMesh) {
+        stepMesh.position.y += 0.4;
+        setTimeout(() => {
+          stepMesh.position.y -= 0.4;
+          nextStep();
+        }, 180);
+      }
+    }
+
+    function toggleAutoPlay() {
+      if (autoPlayInterval) {
+        clearInterval(autoPlayInterval);
+        autoPlayInterval = null;
+        document.getElementById('autoplay-text').textContent = 'Auto';
+        document.getElementById('btn-autoplay').classList.remove('bg-amberWarn', 'text-mech-950');
+      } else {
+        document.getElementById('autoplay-text').textContent = 'Stop';
+        document.getElementById('btn-autoplay').classList.add('bg-amberWarn', 'text-mech-950');
+        autoPlayInterval = setInterval(() => {
+          if (currentStep < 17) {
+            nextStep();
+          } else {
+            goToStep(0);
+          }
+        }, 3200);
+      }
+    }
+
+    function setMode(mode) {
+      currentMode = mode;
+
+      const btnAssembly = document.getElementById('mode-btn-assembly');
+      const btnInspector = document.getElementById('mode-btn-inspector');
+      const btnKinematics = document.getElementById('mode-btn-kinematics');
+
+      const panelAssembly = document.getElementById('panel-assembly-guide');
+      const panelInspector = document.getElementById('panel-dual-axis-inspector');
+      const panelKinematics = document.getElementById('panel-kinematics-sliders');
+
+      const floatAssembly = document.getElementById('assembly-floating-bar');
+      const floatKinematics = document.getElementById('kinematics-floating-bar');
+
+      // Reset Active classes
+      [btnAssembly, btnInspector, btnKinematics].forEach(b => {
+        b.className = "px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 text-slate-400 hover:text-slate-200";
+      });
+      [panelAssembly, panelInspector, panelKinematics].forEach(p => p.classList.add('hidden'));
+
+      if (mode === 'assembly') {
+        btnAssembly.className = "px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 bg-cyanGlow text-mech-950 font-bold shadow-md shadow-cyan-500/20";
+        panelAssembly.classList.remove('hidden');
+        floatAssembly.classList.remove('hidden');
+        floatKinematics.classList.add('hidden');
+        robotRoot.visible = true;
+        singleServoInspectorGroup.visible = false;
+        goToStep(currentStep);
+      } else if (mode === 'inspector') {
+        btnInspector.className = "px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 bg-cyanGlow text-mech-950 font-bold shadow-md shadow-cyan-500/20";
+        panelInspector.classList.remove('hidden');
+        floatAssembly.classList.add('hidden');
+        floatKinematics.classList.add('hidden');
+        robotRoot.visible = false;
+        singleServoInspectorGroup.visible = true;
+        animateCameraTo([0, 8.5, 0], [0, 8.5, 12], 800);
+      } else if (mode === 'kinematics') {
+        btnKinematics.className = "px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 bg-cyanGlow text-mech-950 font-bold shadow-md shadow-cyan-500/20";
+        panelKinematics.classList.remove('hidden');
+        floatAssembly.classList.add('hidden');
+        floatKinematics.classList.remove('hidden');
+        robotRoot.visible = true;
+        singleServoInspectorGroup.visible = false;
+        // Make full robot visible for posing
+        applyStepVisibility(17);
+        animateCameraTo([0, 8.5, 0], [0, 11, 24], 800);
+        buildKinematicSlidersUI();
+      }
+    }
+
+    function toggleExplodedView() {
+      isExploded = !isExploded;
+      document.getElementById('txt-explode').textContent = isExploded ? "Collapse" : "Explode Parts";
+      
+      const targetFactor = isExploded ? 1.0 : 0.0;
+      const startFactor = explodeFactor;
+      const startTime = performance.now();
+
+      function stepExplode(now) {
+        const progress = Math.min((now - startTime) / 500, 1.0);
+        explodeFactor = THREE.MathUtils.lerp(startFactor, targetFactor, progress);
+        applyExplodePositions(explodeFactor);
+
+        if (progress < 1.0) {
+          requestAnimationFrame(stepExplode);
+        }
+      }
+      requestAnimationFrame(stepExplode);
+    }
+
+    function applyExplodePositions(factor) {
+      if (currentMode === 'inspector') {
+        setExplodeDistance(factor * 50);
+        return;
+      }
+      // Explode the active step's parts slightly outward
+      const curGroup = stepAssemblyMeshes[currentStep];
+      if (!curGroup) return;
+
+      curGroup.traverse(child => {
+        if (child.name === "bracketGroup") {
+          child.position.z = factor * 1.2;
+        } else if (child.name === "hornGroup") {
+          child.position.y = 1.62 + factor * 1.5;
+        } else if (child.name === "bearingGroup") {
+          child.position.y = -1.2 - factor * 1.5;
+        }
+      });
+    }
+
+    function setExplodeDistance(distVal) {
+      const val = parseFloat(distVal);
+      document.getElementById('val-explode-distance').textContent = `${val.toFixed(1)} mm`;
+      const bracket = singleServoInspectorGroup.getObjectByName("inspectorBracket");
+      if (bracket) {
+        bracket.position.z = (val / 60) * 4.5;
+      }
+    }
+
+    function setCameraAngle(type) {
+      const data = ASSEMBLY_STEPS[currentStep];
+      const target = data.focus;
+      switch (type) {
+        case 'front':
+          animateCameraTo(target, [target[0], target[1], target[2] + 16], 700);
+          break;
+        case 'side':
+          animateCameraTo(target, [target[0] + 16, target[1], target[2]], 700);
+          break;
+        case 'focus':
+          animateCameraTo(data.focus, data.camPos, 700);
+          break;
+        case 'iso':
+          animateCameraTo(target, [target[0] + 12, target[1] + 14, target[2] + 14], 700);
+          break;
+      }
+    }
+
+    function resetCamera() {
+      animateCameraTo([0, 8.5, 0], [0, 12, 26], 800);
+    }
+
+    function buildKinematicSlidersUI() {
+      const container = document.getElementById('sliders-container');
+      if (container.children.length > 0) return; // Already built
+
+      KINEMATIC_JOINTS.forEach(joint => {
+        const card = document.createElement('div');
+        card.className = "bg-mech-950 p-3 rounded-xl border border-mech-800 space-y-1.5";
+        card.innerHTML = `
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-slate-200 font-medium">${joint.name}</span>
+            <span id="slider-val-${joint.id}" class="font-mono text-cyanGlow font-bold">${joint.val}°</span>
+          </div>
+          <input type="range" min="${joint.min}" max="${joint.max}" value="${joint.val}" oninput="onKinematicSliderChange(${joint.id}, this.value)" class="w-full accent-cyanGlow h-1.5 bg-mech-800 rounded cursor-pointer">
+          <div class="flex justify-between text-[9px] text-slate-400 font-mono">
+            <span>0°</span>
+            <span>90°</span>
+            <span>180°</span>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function onKinematicSliderChange(jointId, angleVal) {
+      const angle = parseInt(angleVal, 10);
+      const joint = KINEMATIC_JOINTS.find(j => j.id === jointId);
+      if (joint) joint.val = angle;
+
+      const label = document.getElementById(`slider-val-${jointId}`);
+      if (label) label.textContent = `${angle}°`;
+
+      applyJointKinematics(jointId, angle);
+      updatePowerEstimation();
+    }
+
+    function applyJointKinematics(jointId, angle) {
+      const pivot = jointPivotNodes[jointId];
+      if (!pivot) return;
+
+      const rad = (angle - 90) * (Math.PI / 180);
+
+      // Rotate appropriate axis depending on anatomy
+      if (jointId === 0) {
+        pivot.rotation.y = rad; // Head pan
+      } else if (jointId === 1 || jointId === 4) {
+        pivot.rotation.x = rad; // Shoulder pitch
+      } else if (jointId === 3 || jointId === 6) {
+        pivot.rotation.x = rad; // Elbow pitch
+      } else if (jointId === 9 || jointId === 14) {
+        pivot.rotation.x = -rad; // Knee pitch
+      } else if (jointId === 8 || jointId === 13) {
+        pivot.rotation.x = rad; // Hip pitch
+      } else if (jointId === 10 || jointId === 15) {
+        pivot.rotation.x = rad; // Ankle pitch
+      }
+    }
+
+    function resetJointsToNeutral() {
+      KINEMATIC_JOINTS.forEach(j => {
+        j.val = 90;
+        const sliderVal = document.getElementById(`slider-val-${j.id}`);
+        if (sliderVal) sliderVal.textContent = '90°';
+        applyJointKinematics(j.id, 90);
+      });
+      updatePowerEstimation();
+    }
+
+    const GAIT_PRESETS = {
+      stand: [90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90],
+      crouch: [90, 110, 90, 120, 110, 90, 120, 90, 130, 145, 105, 90, 90, 130, 145, 105, 90],
+      walk: [85, 70, 90, 105, 115, 90, 75, 92, 115, 120, 85, 90, 88, 70, 75, 95, 90],
+      wave: [110, 90, 90, 90, 175, 135, 145, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90],
+      bow: [90, 70, 90, 90, 70, 90, 90, 90, 135, 100, 75, 90, 90, 135, 100, 75, 90]
+    };
+
+    function applyGaitPreset(presetKey) {
+      const angles = GAIT_PRESETS[presetKey];
+      if (!angles) return;
+
+      angles.forEach((val, idx) => {
+        KINEMATIC_JOINTS[idx].val = val;
+        const label = document.getElementById(`slider-val-${idx}`);
+        if (label) label.textContent = `${val}°`;
+        applyJointKinematics(idx, val);
+      });
+      updatePowerEstimation();
+    }
+
+    function updatePowerEstimation() {
+      // Calculate dynamic current estimate based on knee and hip deflection from 90°
+      let loadAmps = 1.1; // Base idle
+      KINEMATIC_JOINTS.forEach(j => {
+        const deflection = Math.abs(j.val - 90);
+        if (j.id === 9 || j.id === 14) { // Knee load
+          loadAmps += (deflection / 90) * 1.8;
+        } else if (j.id === 8 || j.id === 13) { // Hip load
+          loadAmps += (deflection / 90) * 1.2;
+        } else {
+          loadAmps += (deflection / 90) * 0.15;
+        }
+      });
+      document.getElementById('meter-current').textContent = `${loadAmps.toFixed(2)} A`;
+    }
+
+    function onWindowResize() {
+      const container = document.getElementById('canvas-container');
+      if (!container || !renderer || !camera) return;
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      renderer.setSize(width, height);
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      if (controls) controls.update();
+      if (renderer && scene && camera) {
+        renderer.render(scene, camera);
+      }
+    }
+
+    // Initialize workbench when window loads
+    window.onload = function () {
+      initThree();
+      goToStep(0);
+      lucide.createIcons();
+    };
+  </script>
+</body>
+</html>
