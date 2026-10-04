@@ -192,6 +192,7 @@
       position: absolute;
       top: 0;
       left: 0;
+      transform-origin: 0 0;
       image-rendering: -webkit-optimize-contrast; 
     }
 
@@ -246,7 +247,7 @@
   <div class="toolbar">
     <div class="nav-counter" id="slideStatus">
       <span class="badge-slide">SLIDE 1 / 25</span>
-      <span id="slideTitle">Cover: SingBha-EMCD 3D Continuum</span>
+      <span id="slideTitle">Cover: SingBha-EMCD 3D Continuum Dynamics</span>
     </div>
 
     <div class="btn-group">
@@ -319,7 +320,7 @@
       <span>Dr. Kalam Zero Funding Initiative • Section 8 Non-Profit Research Foundation</span>
     </div>
     <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--gold-glow);">
-      EMI-PRESENTATION-CONSOLE v1.1
+      EMI-PRESENTATION-CONSOLE v1.1 • [cite: 1]
     </div>
   </footer>
 
@@ -332,10 +333,10 @@
       "GARRF Committee Tree & Kalam Manifesto",
       "1D Beam & 2D Plate Analytical Elastodynamics",
       "3D Continuum Tensors & Shear-Lag Mechanics",
-      "Damage Metrology (RMSD, MAPD, CCD)",
+      "Quantitative Damage Metrology (RMSD, MAPD, CCD)",
       "Frontier Quantum AI Inversion (PI-QNN Circuits)",
       "Experimental Quantum Decoupling Benchmarks",
-      "EMCD Dual-Domain Transduction Dynamics",
+      "SingBha-EMCD Dual-Domain Transduction Dynamics",
       "Six Scientific Pillars of SingBha-EMCD (Part I)",
       "Six Scientific Pillars of SingBha-EMCD (Part II)",
       "Master 8D Technical Benchmark Matrix",
@@ -349,9 +350,9 @@
       "Benchmark Matrix & National Economic Impact",
       "Multi-Domain Asset Knowledge Graph (MAKG)",
       "ARJUN 4-Agent Autonomous Reasoning Architecture",
-      "Field Deployments (Bharat & Singapore)",
+      "Real-World Field Deployments (Bharat & Singapore)",
       "Standardization Roadmap & Dr. Kalam Charter",
-      "Living Frontiers Compendium & AI Directory"
+      "The Living Frontiers Compendium & AI Directory"
     ];
 
     let currentSlide = 0; // magazine/0.png (Cover)
@@ -378,62 +379,92 @@
     const btnPrev = document.getElementById('btnPrev');
     const btnNext = document.getElementById('btnNext');
 
+    // Coordinates [X%, Y%] for centering each quarter within its box
+    const quarterOffsets = [
+      [25, 25], // Q1: Upper Left
+      [75, 25], // Q2: Upper Right
+      [25, 75], // Q3: Lower Left
+      [75, 75]  // Q4: Lower Right
+    ];
+
     // -----------------------------------------------------------------
-    // CENTRALIZED SLIDE NAVIGATION ENGINE
+    // CENTRALIZED SLIDE NAVIGATION & VIEWER ENGINE
     // -----------------------------------------------------------------
+    
+    // Core function to set correct slide paths. PNG is tried first, 
+    // then JPG. Crucially, it waits for images to load before syncing.
     function setSafeImagePath(slideIndex) {
       const pngPath = `magazine/${slideIndex}.png`;
       const jpgPath = `magazine/${slideIndex}.jpg`;
 
-      mainSlide.src = pngPath;
-      
-      mainSlide.onerror = function() {
-        if (this.src.indexOf('.png') !== -1) {
-          this.src = jpgPath;
-          updateZoomImages(jpgPath);
-        }
-      };
-      
-      // Update all mag layers to the new slide
-      updateZoomImages(pngPath);
-    }
-    
-    function updateZoomImages(path) {
-      zoomLayers.forEach(layer => layer.src = path);
+      // Define promises for the main slide and all zoom layers
+      const imageLoadPromises = [];
+
+      // Main slide load promise
+      imageLoadPromises.push(new Promise((resolve, reject) => {
+        mainSlide.src = pngPath;
+        mainSlide.onload = resolve;
+        mainSlide.onerror = () => {
+          if (mainSlide.src.indexOf('.png') !== -1) {
+            mainSlide.src = jpgPath;
+          } else {
+            reject(); // Critical failure if JPG fails too
+          }
+        };
+      }));
+
+      // Update and create promises for all zoom layers
+      zoomLayers.forEach((layer, index) => {
+        imageLoadPromises.push(new Promise((resolve) => {
+          layer.src = pngPath;
+          layer.onload = resolve;
+          layer.onerror = () => {
+            if (layer.src.indexOf('.png') !== -1) {
+              layer.src = jpgPath;
+            }
+          };
+        }));
+      });
+
+      // CRITICAL: Force synchronization only after ALL images have finished loading
+      Promise.all(imageLoadPromises).then(() => {
+        forceInitializeViewerAlignment();
+      }).catch(err => {
+        // Fallback for missing plates (mostly for development)
+        inspectorStatus.textContent = `FAILED TO LOAD PLATE ${slideIndex}. Check paths.`;
+        inspectorStatus.style.color = 'var(--text-white)';
+      });
     }
 
     function renderSlide() {
-      // 1. Update Images
+      // 1. Force the image update sequence (waits for load)
       setSafeImagePath(currentSlide);
 
-      // 2. Update Toolbar state
+      // 2. Update Toolbar labels
       slideStatusBadge.textContent = `SLIDE ${currentSlide + 1} / 25`;
       slideTitleLabel.textContent = slideTitles[currentSlide] || `Plate ${currentSlide}`;
       
-      // 3. Update Inspection view context
+      // 3. Update Inspection view labels
       const focusText = currentSlide === 0 ? "FOCUS: COVER PLATE" : `FOCUS: PAGE ${currentSlide}`;
       inspectorStatus.textContent = focusText;
       plateLabelFocus.textContent = currentSlide === 0 ? "Cover Plate" : `Page ${currentSlide}`;
       
-      // Reset hotspot interaction
+      // Reset interaction hotspots
       resetHotspots();
 
       // 4. Update Navigation Button States
       btnPrev.disabled = (currentSlide === 0);
       btnNext.disabled = (currentSlide === 24);
-      
-      // Force immediate re-alignment of magnified views
-      forceInitializeViewerAlignment();
     }
 
     function nextSlide() { if (currentSlide < 24) { currentSlide++; renderSlide(); } }
     function prevSlide() { if (currentSlide > 0) { currentSlide--; renderSlide(); } }
 
-    // Navigation Button Bindings
+    // Toolbar Navigation Binding
     btnNext.onclick = nextSlide;
     btnPrev.onclick = prevSlide;
 
-    // KEYBOARD NAVIGATION (Arrow keys & Spacebar)
+    // KEYBOARD SHORTCUTS
     window.addEventListener('keydown', e => {
       if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
       if (e.key === 'ArrowLeft') prevSlide();
@@ -444,15 +475,11 @@
     // -----------------------------------------------------------------
     // 4-QUARTER VIEWPORT SYNCHRONIZATION BEAM
     // -----------------------------------------------------------------
-    // Coordinates [X%, Y%] for centering each quarter within its box
-    const quarterOffsets = [
-      [25, 25], // Q1: Upper Left
-      [75, 25], // Q2: Upper Right
-      [25, 75], // Q3: Lower Left
-      [75, 75]  // Q4: Lower Right
-    ];
-
+    
+    // CRITICAL INIT FIX: The parameters of the magnified images (width/height/offsets)
+    // are calculated and locked only after setSafeImagePath confirms images have loaded.
     function forceInitializeViewerAlignment() {
+      // Synchronize each of the 4 boxes on the right to their quarter coordinates.
       for (let i = 1; i <= 4; i++) {
         updateMagnifiedBox(i, quarterOffsets[i-1][0] / 100, quarterOffsets[i-1][1] / 100);
       }
@@ -467,14 +494,15 @@
       const stageW = box.clientWidth;
       const stageH = box.clientHeight;
       
-      // Calculate magnified dimensions
+      // Define the true size of the magnified image block within its container.
       const magW = stageW * zoomPower;
       const magH = stageH * zoomPower;
 
       layerImg.style.width = `${magW}px`;
       layerImg.style.height = `${magH}px`;
 
-      // Set scale and translate so cursor focus is locked dead-center on the crosshairs
+      // Set scale and translate so the chosen coordinate (normX, normY)
+      // is locked dead-center within the magnified box.
       const offsetX = -(normX * magW - stageW / 2);
       const offsetY = -(normY * magH - stageH / 2);
 
@@ -493,15 +521,20 @@
     hotspots.forEach(hotspot => {
       const qNum = parseInt(hotspot.getAttribute('data-quarter'));
       
+      // On hover, highlight the corresponding mag box on the right.
       hotspot.addEventListener('mouseenter', () => {
-        // Dim other mag boxes, highlight current one
         resetHotspots();
         magBoxes[qNum - 1].classList.add('active');
         
-        // Update header readout
         const qNames = ["UPPER-LEFT", "UPPER-RIGHT", "LOWER-LEFT", "LOWER-RIGHT"];
         inspectorStatus.textContent = `BEAM FOCUS ACTIVE: QUARTER ${qNum} (${qNames[qNum-1]})`;
         inspectorStatus.style.color = 'var(--cyan)';
+      });
+
+      // On click, navigate to that quarter (or keep it selected)
+      hotspot.addEventListener('click', () => {
+        resetHotspots();
+        magBoxes[qNum - 1].classList.add('active');
       });
 
       hotspot.addEventListener('mouseleave', () => {
@@ -509,12 +542,11 @@
       });
     });
 
-    // Handle initialization synchronization
+    // Final global synchronization bindings
     window.addEventListener('resize', forceInitializeViewerAlignment);
-    mainSlide.addEventListener('load', forceInitializeViewerAlignment);
-    window.addEventListener('load', forceInitializeViewerAlignment);
+    window.addEventListener('load', forceInitializeViewerAlignment); // Ensures WASM or other slow-loading assets don't block layout
 
-    // Initial boot
+    // Initial console boot
     renderSlide();
   </script>
 </body>
