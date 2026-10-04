@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GARRF Interactive PPT • Issue 1 (4-Quarter Interactive Lab & PPT)</title>
+  <title>GARRF Interactive PPT • Issue 1 (4-Quarter Inspection Viewer)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -57,7 +57,7 @@
     .flag-in { background: linear-gradient(#ff9933 33.3%, #ffffff 33.3%, #ffffff 66.6%, #128807 66.6%); }
     .flag-sg { background: linear-gradient(#dc2626 50%, #ffffff 50%); }
 
-    /* ---------------- MAIN NAVIGATION TOOLBAR ---------------- */
+    /* ---------------- NAVIGATION TOOLBAR ---------------- */
     .toolbar {
       display: flex;
       align-items: center;
@@ -89,7 +89,7 @@
       position: relative;
     }
 
-    /* Left Panel: A4 Lecture Slide with Interaction Hotspots */
+    /* Left Panel: Presentation Slide (Interaction Source) */
     .slide-panel {
       flex: 1;
       height: 100%;
@@ -178,7 +178,7 @@
       align-items: center;
       justify-content: center;
       position: relative;
-      opacity: 0.2; /* Dimm other quarters by default */
+      opacity: 0.2; /* Dim other quarters by default */
       transition: all 0.25s ease;
     }
     
@@ -188,15 +188,18 @@
       box-shadow: 0 0 15px rgba(251, 191, 36, 0.3);
     }
 
+    /* CRITICAL FIX: Base layers must have dimensions and visibility. */
     .magnified-img-layer {
       position: absolute;
       top: 0;
       left: 0;
+      display: block; /* Ensures visibility */
+      opacity: 1; /* Ensures visibility */
       transform-origin: 0 0;
       image-rendering: -webkit-optimize-contrast; 
     }
 
-    /* Target Reticles for Mag Boxes */
+    /* Optical Target Reticles for Mag Boxes */
     .crosshair-h, .crosshair-v { position: absolute; background: rgba(251, 191, 36, 0.3); pointer-events: none; z-index: 10; }
     .crosshair-h { left: 0; right: 0; top: 50%; height: 1px; }
     .crosshair-v { top: 0; bottom: 0; left: 50%; width: 1px; }
@@ -243,7 +246,7 @@
     </div>
   </header>
 
-  <!-- ================= FIXED PPT NAVIGATION TOOLBAR ================= -->
+  <!-- ================= PPT NAVIGATION TOOLBAR ================= -->
   <div class="toolbar">
     <div class="nav-counter" id="slideStatus">
       <span class="badge-slide">SLIDE 1 / 25</span>
@@ -251,7 +254,6 @@
     </div>
 
     <div class="btn-group">
-      <!-- FIXED: Navigation buttons are present and operational -->
       <button class="btn" id="btnPrev" disabled>◀ Previous</button>
       <button class="btn" id="btnNext">Next ▶</button>
       <a href="https://garrf.in/ai_assistants/emi/" target="_blank" class="btn btn-gold">⚡ Arjun AI</a>
@@ -320,7 +322,7 @@
       <span>Dr. Kalam Zero Funding Initiative • Section 8 Non-Profit Research Foundation</span>
     </div>
     <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--gold-glow);">
-      EMI-PRESENTATION-CONSOLE v1.1 • [cite: 1]
+      EMI-PRESENTATION-CONSOLE v1.2 • [cite: 1]
     </div>
   </footer>
 
@@ -356,7 +358,7 @@
     ];
 
     let currentSlide = 0; // magazine/0.png (Cover)
-    const zoomPower = 2.4; // Slightly lower magnification for the 4-zone viewer.
+    const zoomPower = 2.4; // Fixed magnification factor.
 
     const mainSlide = document.getElementById('mainSlide');
     const zoomLayers = [
@@ -375,7 +377,6 @@
     const slideStatusBadge = document.getElementById('slideStatus').querySelector('.badge-slide');
     const slideTitleLabel = document.getElementById('slideTitle');
     const inspectorStatus = document.getElementById('inspectorStatus');
-    const plateLabelFocus = document.getElementById('plateLabelFocus');
     const btnPrev = document.getElementById('btnPrev');
     const btnNext = document.getElementById('btnNext');
 
@@ -388,11 +389,10 @@
     ];
 
     // -----------------------------------------------------------------
-    // CENTRALIZED SLIDE NAVIGATION & VIEWER ENGINE
+    // CENTRALIZED SLIDE NAVIGATION ENGINE
     // -----------------------------------------------------------------
     
-    // Core function to set correct slide paths. PNG is tried first, 
-    // then JPG. Crucially, it waits for images to load before syncing.
+    // Core function to set correct slide paths. PNG tried first, then JPG.
     function setSafeImagePath(slideIndex) {
       const pngPath = `magazine/${slideIndex}.png`;
       const jpgPath = `magazine/${slideIndex}.jpg`;
@@ -426,11 +426,11 @@
         }));
       });
 
-      // CRITICAL: Force synchronization only after ALL images have finished loading
+      // CRITICAL FIX: The view on the right only syncs AFTER images confirm loaded.
+      // This ensures dimensions and base transforms are correct.
       Promise.all(imageLoadPromises).then(() => {
         forceInitializeViewerAlignment();
       }).catch(err => {
-        // Fallback for missing plates (mostly for development)
         inspectorStatus.textContent = `FAILED TO LOAD PLATE ${slideIndex}. Check paths.`;
         inspectorStatus.style.color = 'var(--text-white)';
       });
@@ -444,12 +444,11 @@
       slideStatusBadge.textContent = `SLIDE ${currentSlide + 1} / 25`;
       slideTitleLabel.textContent = slideTitles[currentSlide] || `Plate ${currentSlide}`;
       
-      // 3. Update Inspection view labels
+      // 3. Update Inspection view context
       const focusText = currentSlide === 0 ? "FOCUS: COVER PLATE" : `FOCUS: PAGE ${currentSlide}`;
       inspectorStatus.textContent = focusText;
-      plateLabelFocus.textContent = currentSlide === 0 ? "Cover Plate" : `Page ${currentSlide}`;
       
-      // Reset interaction hotspots
+      // Reset hotspot interaction
       resetHotspots();
 
       // 4. Update Navigation Button States
@@ -460,11 +459,11 @@
     function nextSlide() { if (currentSlide < 24) { currentSlide++; renderSlide(); } }
     function prevSlide() { if (currentSlide > 0) { currentSlide--; renderSlide(); } }
 
-    // Toolbar Navigation Binding
+    // Navigation Button Bindings
     btnNext.onclick = nextSlide;
     btnPrev.onclick = prevSlide;
 
-    // KEYBOARD SHORTCUTS
+    // KEYBOARD NAVIGATION (Arrow keys & Spacebar)
     window.addEventListener('keydown', e => {
       if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
       if (e.key === 'ArrowLeft') prevSlide();
@@ -498,6 +497,7 @@
       const magW = stageW * zoomPower;
       const magH = stageH * zoomPower;
 
+      // CRITICAL FIX: Images must be given dimensions here, during forced alignment.
       layerImg.style.width = `${magW}px`;
       layerImg.style.height = `${magH}px`;
 
@@ -531,18 +531,12 @@
         inspectorStatus.style.color = 'var(--cyan)';
       });
 
-      // On click, navigate to that quarter (or keep it selected)
-      hotspot.addEventListener('click', () => {
-        resetHotspots();
-        magBoxes[qNum - 1].classList.add('active');
-      });
-
       hotspot.addEventListener('mouseleave', () => {
         resetHotspots();
       });
     });
 
-    // Final global synchronization bindings
+    // Handle initialization synchronization
     window.addEventListener('resize', forceInitializeViewerAlignment);
     window.addEventListener('load', forceInitializeViewerAlignment); // Ensures WASM or other slow-loading assets don't block layout
 
