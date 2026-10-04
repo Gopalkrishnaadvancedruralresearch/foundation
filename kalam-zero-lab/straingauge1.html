@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wheatstone Bridge & HX711 Load Cell Simulator - GARRF</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- FontAwesome Icons CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+    
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    .font-mono {
+      font-family: 'JetBrains+Mono', monospace;
+    }
+    
+    .glass-card {
+      background: rgba(30, 41, 59, 0.75);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    
+    .glass-input {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    /* Custom Range Slider */
+    input[type=range] {
+      -webkit-appearance: none;
+      background: transparent;
+    }
+    input[type=range]:focus {
+      outline: none;
+    }
+    input[type=range]::-webkit-slider-runnable-track {
+      width: 100%;
+      height: 10px;
+      cursor: pointer;
+      background: #334155;
+      border-radius: 5px;
+      border: 1px solid #475569;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      height: 24px;
+      width: 24px;
+      border-radius: 50%;
+      background: #38bdf8;
+      cursor: pointer;
+      -webkit-appearance: none;
+      margin-top: -8px;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+      transition: all 0.15s ease;
+    }
+    input[type=range]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+      background: #7dd3fc;
+    }
+
+    /* Custom scrollbar for modal */
+    .custom-scroll::-webkit-scrollbar {
+      width: 8px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+      border-radius: 4px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col min-h-screen bg-slate-950 text-slate-100 overflow-x-hidden">
+
+  <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-40 px-4 py-3">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+      
+      <!-- Top Left Branding & Logo -->
+      <div class="flex items-center space-x-3.5">
+        <div class="relative w-12 h-12 rounded-xl overflow-hidden bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0 shadow-md">
+          <img src="logo.jpeg" alt="GARRF Logo" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='https://placehold.co/100x100/1e293b/38bdf8?text=GARRF';">
+        </div>
+        <div>
+          <h1 class="text-base sm:text-lg font-extrabold text-slate-100 tracking-tight leading-snug">
+            Gopalkrishna Advanced Rural Research Foundation
+          </h1>
+          <p class="text-xs font-semibold text-sky-400">
+            (Dr. APJ Abdul Kalam Research Zero Funding Initiative)
+          </p>
+        </div>
+      </div>
+
+      <!-- Top Right Actions: India Flag Badge + Help + Setup -->
+      <div class="flex items-center space-x-2 sm:space-x-3 self-end sm:self-center">
+        
+        <!-- HELP & GUIDE BUTTON -->
+        <button onclick="openHelpModal()" class="px-3.5 py-1.5 text-xs font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-lg transition-all flex items-center gap-1.5 shadow-sm">
+          <i class="fa-solid fa-circle-question text-amber-400"></i>
+          <span>HELP &amp; GUIDE</span>
+        </button>
+
+        <!-- India Flag Badge -->
+        <div class="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-slate-800/80 border border-slate-700/80 text-xs font-medium shadow-inner">
+          <div class="w-5 h-3.5 rounded-sm overflow-hidden flex flex-col border border-slate-600 shadow-sm">
+            <div class="h-1/3 bg-[#FF9933]"></div>
+            <div class="h-1/3 bg-white flex items-center justify-center">
+              <div class="w-1 h-1 rounded-full border-[0.5px] border-[#000080]"></div>
+            </div>
+            <div class="h-1/3 bg-[#138808]"></div>
+          </div>
+          <span class="text-slate-200 font-semibold">India</span>
+        </div>
+
+        <button id="reconfigBtn" onclick="openSetupModal()" class="px-3 py-1.5 text-xs font-medium bg-sky-600 hover:bg-sky-500 text-white rounded-lg transition-all flex items-center gap-1.5 shadow-lg shadow-sky-600/20">
+          <i class="fa-solid fa-sliders"></i>
+          <span>Setup Max Load</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 space-y-6">
+
+    <!-- Parameter Banner Summary -->
+    <section class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+      <div class="glass-card p-3 rounded-xl border border-slate-800">
+        <div class="text-xs text-slate-400 mb-1">Target Max Load</div>
+        <div class="text-lg font-bold text-sky-400 font-mono" id="summaryChoiceMax">3.00 kg</div>
+      </div>
+      <div class="glass-card p-3 rounded-xl border border-slate-800">
+        <div class="text-xs text-slate-400 mb-1">Scale Max (+10%)</div>
+        <div class="text-lg font-bold text-indigo-400 font-mono" id="summaryScaleMax">3.30 kg</div>
+      </div>
+      <div class="glass-card p-3 rounded-xl border border-slate-800">
+        <div class="text-xs text-slate-400 mb-1">Excitation Voltage</div>
+        <div class="text-lg font-bold text-amber-400 font-mono">5.00 V</div>
+      </div>
+      <div class="glass-card p-3 rounded-xl border border-slate-800">
+        <div class="text-xs text-slate-400 mb-1">Bridge Sensitivity</div>
+        <div class="text-lg font-bold text-emerald-400 font-mono">2.0 mV/V</div>
+      </div>
+      <div class="glass-card p-3 rounded-xl border border-slate-800">
+        <div class="text-xs text-slate-400 mb-1">Nominal Resistance</div>
+        <div class="text-lg font-bold text-cyan-400 font-mono">1000.0 Ω</div>
+      </div>
+      <div class="glass-card p-3 rounded-xl border border-slate-800">
+        <div class="text-xs text-slate-400 mb-1">HX711 Gain</div>
+        <div class="text-lg font-bold text-fuchsia-400 font-mono">128x (Ch A)</div>
+      </div>
+    </section>
+
+    <!-- Interactive Mechanical Force Slider Controls -->
+    <section class="glass-card rounded-2xl p-6 border border-slate-800 shadow-xl relative overflow-hidden">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+        <div>
+          <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+            <i class="fa-solid fa-weight-hanging text-sky-400"></i>
+            Apply Weight Load to Strain Gauge Beam
+          </h2>
+          <p class="text-sm text-slate-400">Drag slider to test force correlation against bridge mV and 24-bit ADC output.</p>
+        </div>
+        <div class="flex items-baseline space-x-3 bg-slate-900/90 px-4 py-2 rounded-xl border border-slate-800">
+          <span class="text-xs text-slate-400 uppercase font-semibold">Applied Weight:</span>
+          <span class="text-2xl font-extrabold text-sky-400 font-mono" id="appliedWeightVal">0.000 kg</span>
+          <span class="text-xs text-slate-500 font-mono" id="appliedForceN">(0.00 N)</span>
+        </div>
+      </div>
+
+      <div class="space-y-3">
+        <div class="relative pt-2">
+          <input type="range" id="loadSlider" min="0" max="3.3" step="0.005" value="0" class="w-full">
+        </div>
+        <div class="flex justify-between text-xs font-mono text-slate-500">
+          <span>0.00 kg (Tare)</span>
+          <span id="targetMaxMarker" class="text-sky-400 font-bold">Target Max: 3.00 kg</span>
+          <span id="fullScaleMaxMarker" class="text-indigo-400 font-bold">Scale Max (+10%): 3.30 kg</span>
+        </div>
+      </div>
+
+      <!-- Quick Presets -->
+      <div class="flex flex-wrap items-center gap-2 pt-4 border-t border-slate-800/80 mt-4">
+        <span class="text-xs text-slate-400 font-medium mr-2">Quick Presets:</span>
+        <button onclick="setWeight(0)" class="px-2.5 py-1 text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 font-mono">0 kg (Tare)</button>
+        <button onclick="setWeightPreset(0.25)" class="px-2.5 py-1 text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 font-mono">25% Max</button>
+        <button onclick="setWeightPreset(0.50)" class="px-2.5 py-1 text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 font-mono">50% Max</button>
+        <button onclick="setWeightPreset(0.75)" class="px-2.5 py-1 text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 font-mono">75% Max</button>
+        <button onclick="setWeightPreset(1.00)" class="px-2.5 py-1 text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 font-mono">100% Target</button>
+        <button onclick="setWeightPreset(1.10)" class="px-2.5 py-1 text-xs bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 rounded border border-amber-500/30 font-mono">+10% Overload</button>
+      </div>
+    </section>
+
+    <!-- Two-Column Layout: Wheatstone Bridge + HX711 Signal Path -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+      <!-- Wheatstone Bridge Diagram (7 Cols) -->
+      <div class="lg:col-span-7 glass-card rounded-2xl p-5 border border-slate-800 flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
+              <i class="fa-solid fa-circle-nodes text-indigo-400"></i>
+              Internal Wheatstone Bridge Schematic
+            </h3>
+            <span class="text-xs bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 px-2 py-0.5 rounded-full font-mono">
+              4 Strain Gauges
+            </span>
+          </div>
+          <p class="text-xs text-slate-400 mb-4">
+            Mechanical bending creates micro-strain: Tension arms ($R_1, R_3$) increase in resistance while compression arms ($R_2, R_4$) decrease.
+          </p>
+
+          <!-- SVG Bridge Diagram -->
+          <div class="relative w-full aspect-[4/3] bg-slate-950/70 rounded-xl border border-slate-800 p-4 flex items-center justify-center">
+            <svg id="bridgeSvg" viewBox="0 0 500 400" class="w-full h-full">
+              <defs>
+                <pattern id="smallGrid" width="20" height="20" patternUnits="userSpaceOnUse">
+                  <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#334155" stroke-width="0.5" opacity="0.3"/>
+                </pattern>
+              </defs>
+              <rect width="100%" height="100%" fill="url(#smallGrid)" />
+
+              <!-- VCC Line (Top) -->
+              <path d="M 250 30 L 250 80" stroke="#ef4444" stroke-width="3" fill="none" />
+              <circle cx="250" cy="30" r="5" fill="#ef4444" />
+              <text x="250" y="20" fill="#ef4444" text-anchor="middle" font-size="12" font-weight="bold" font-family="sans-serif">E+ (5V VCC - RED)</text>
+
+              <!-- GND Line (Bottom) -->
+              <path d="M 250 370 L 250 320" stroke="#64748b" stroke-width="3" fill="none" />
+              <circle cx="250" cy="370" r="5" fill="#64748b" />
+              <text x="250" y="390" fill="#94a3b8" text-anchor="middle" font-size="12" font-weight="bold" font-family="sans-serif">E- (GND - BLACK)</text>
+
+              <!-- Diamond Lines -->
+              <line x1="250" y1="80" x2="130" y2="200" stroke="#38bdf8" stroke-width="2.5" />
+              <line x1="130" y1="200" x2="250" y2="320" stroke="#38bdf8" stroke-width="2.5" />
+              <line x1="250" y1="80" x2="370" y2="200" stroke="#38bdf8" stroke-width="2.5" />
+              <line x1="370" y1="200" x2="250" y2="320" stroke="#38bdf8" stroke-width="2.5" />
+
+              <!-- Signal Output Taps -->
+              <line x1="130" y1="200" x2="60" y2="200" stroke="#f87171" stroke-dasharray="4,4" stroke-width="2" />
+              <circle cx="130" cy="200" r="6" fill="#f87171" />
+              <circle cx="60" cy="200" r="5" fill="#f87171" />
+              <text x="50" y="195" fill="#f87171" text-anchor="end" font-size="12" font-weight="bold" font-family="sans-serif">A- (WHITE)</text>
+
+              <line x1="370" y1="200" x2="440" y2="200" stroke="#4ade80" stroke-dasharray="4,4" stroke-width="2" />
+              <circle cx="370" cy="200" r="6" fill="#4ade80" />
+              <circle cx="440" cy="200" r="5" fill="#4ade80" />
+              <text x="450" y="195" fill="#4ade80" text-anchor="start" font-size="12" font-weight="bold" font-family="sans-serif">A+ (GREEN)</text>
+
+              <!-- Center Voltmeter Indicator -->
+              <g transform="translate(250, 200)">
+                <circle cx="0" cy="0" r="38" fill="#0f172a" stroke="#38bdf8" stroke-width="2" />
+                <text x="0" y="-8" fill="#94a3b8" text-anchor="middle" font-size="9" font-family="sans-serif">V_OUT (A+ - A-)</text>
+                <text id="svgVoutVal" x="0" y="12" fill="#38bdf8" text-anchor="middle" font-size="14" font-weight="bold" font-family="monospace">0.000 mV</text>
+              </g>
+
+              <!-- Resistors -->
+              <g transform="translate(190, 140)">
+                <rect x="-35" y="-14" width="70" height="28" rx="6" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5"/>
+                <text x="0" y="-2" fill="#38bdf8" text-anchor="middle" font-size="10" font-weight="bold">R1 (Tension)</text>
+                <text id="svgR1Val" x="0" y="10" fill="#cbd5e1" text-anchor="middle" font-size="9" font-family="monospace">1000.00 Ω</text>
+              </g>
+
+              <g transform="translate(190, 260)">
+                <rect x="-42" y="-14" width="84" height="28" rx="6" fill="#1e293b" stroke="#f43f5e" stroke-width="1.5"/>
+                <text x="0" y="-2" fill="#f43f5e" text-anchor="middle" font-size="10" font-weight="bold">R2 (Compress)</text>
+                <text id="svgR2Val" x="0" y="10" fill="#cbd5e1" text-anchor="middle" font-size="9" font-family="monospace">1000.00 Ω</text>
+              </g>
+
+              <g transform="translate(310, 140)">
+                <rect x="-42" y="-14" width="84" height="28" rx="6" fill="#1e293b" stroke="#f43f5e" stroke-width="1.5"/>
+                <text x="0" y="-2" fill="#f43f5e" text-anchor="middle" font-size="10" font-weight="bold">R4 (Compress)</text>
+                <text id="svgR4Val" x="0" y="10" fill="#cbd5e1" text-anchor="middle" font-size="9" font-family="monospace">1000.00 Ω</text>
+              </g>
+
+              <g transform="translate(310, 260)">
+                <rect x="-35" y="-14" width="70" height="28" rx="6" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5"/>
+                <text x="0" y="-2" fill="#38bdf8" text-anchor="middle" font-size="10" font-weight="bold">R3 (Tension)</text>
+                <text id="svgR3Val" x="0" y="10" fill="#cbd5e1" text-anchor="middle" font-size="9" font-family="monospace">1000.00 Ω</text>
+              </g>
+            </svg>
+          </div>
+        </div>
+
+        <div class="mt-4 p-3 bg-slate-900/80 rounded-xl border border-slate-800 text-xs text-slate-300 font-mono">
+          <div class="text-slate-400 font-sans font-semibold mb-1">Bridge Differential Formula:</div>
+          <div class="text-sky-300 text-center py-1">
+            V<sub>OUT</sub> = V<sub>EX</sub> &times; [ R<sub>3</sub> / (R<sub>3</sub> + R<sub>4</sub>) &minus; R<sub>2</sub> / (R<sub>1</sub> + R<sub>2</sub>) ]
+          </div>
+        </div>
+      </div>
+
+      <!-- HX711 Internal Signal Path (5 Cols) -->
+      <div class="lg:col-span-5 glass-card rounded-2xl p-5 border border-slate-800 flex flex-col justify-between space-y-4">
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
+              <i class="fa-solid fa-microchip text-fuchsia-400"></i>
+              HX711 Module Pipeline
+            </h3>
+            <span class="text-xs bg-fuchsia-500/10 text-fuchsia-300 border border-fuchsia-500/20 px-2 py-0.5 rounded-full font-mono">
+              24-Bit ADC
+            </span>
+          </div>
+          <p class="text-xs text-slate-400 mb-4">
+            Transforming millivolt strain signals into high-precision 24-bit digital counts.
+          </p>
+
+          <div class="space-y-3 font-mono text-xs">
+            
+            <div class="p-3 bg-slate-900/90 rounded-xl border border-slate-800 flex items-center justify-between">
+              <div>
+                <span class="text-slate-400 text-[10px] uppercase block">Stage 1: Raw Bridge Output</span>
+                <span class="text-sky-400 font-bold text-sm" id="stage1Vout">0.000 mV</span>
+              </div>
+              <i class="fa-solid fa-arrow-right text-slate-600"></i>
+              <div class="text-right">
+                <span class="text-slate-500 text-[10px] block">Span</span>
+                <span class="text-slate-300">0 to +10.0 mV</span>
+              </div>
+            </div>
+
+            <div class="p-3 bg-slate-900/90 rounded-xl border border-indigo-900/50 flex items-center justify-between relative overflow-hidden">
+              <div class="absolute inset-y-0 left-0 w-1 bg-indigo-500"></div>
+              <div>
+                <span class="text-indigo-400 text-[10px] uppercase font-bold block">Stage 2: Low-Noise PGA (128x Gain)</span>
+                <span class="text-indigo-300 font-bold text-sm" id="stage2Amplified">0.000 V</span>
+              </div>
+              <i class="fa-solid fa-arrow-right text-slate-600"></i>
+              <div class="text-right">
+                <span class="text-slate-500 text-[10px] block">Amplified V</span>
+                <span class="text-indigo-400 font-bold">128x Boost</span>
+              </div>
+            </div>
+
+            <div class="p-3 bg-slate-900/90 rounded-xl border border-fuchsia-900/50 flex items-center justify-between relative overflow-hidden">
+              <div class="absolute inset-y-0 left-0 w-1 bg-fuchsia-500"></div>
+              <div>
+                <span class="text-fuchsia-400 text-[10px] uppercase font-bold block">Stage 3: 24-Bit ΔΣ ADC</span>
+                <span class="text-fuchsia-300 font-bold text-base" id="stage3AdcVal">8,388,608</span>
+              </div>
+              <i class="fa-solid fa-arrow-right text-slate-600"></i>
+              <div class="text-right">
+                <span class="text-slate-500 text-[10px] block">Total Steps</span>
+                <span class="text-fuchsia-400 font-bold">16,777,216</span>
+              </div>
+            </div>
+
+            <div class="p-3 bg-slate-900/90 rounded-xl border border-emerald-900/50 flex items-center justify-between relative overflow-hidden">
+              <div class="absolute inset-y-0 left-0 w-1 bg-emerald-500"></div>
+              <div>
+                <span class="text-emerald-400 text-[10px] uppercase font-bold block">Stage 4: Calibrated Weight</span>
+                <span class="text-emerald-300 font-bold text-base" id="stage4Weight">0.000 kg</span>
+              </div>
+              <div class="text-right">
+                <span class="text-slate-500 text-[10px] block">Formula</span>
+                <span class="text-emerald-400 text-[11px]">(ADC - Tare) / Scale</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 text-xs text-amber-200 space-y-1">
+          <div class="font-bold flex items-center gap-1.5 text-amber-300">
+            <i class="fa-solid fa-lightbulb"></i>
+            10-bit Arduino analogRead() vs 24-bit HX711:
+          </div>
+          <p class="text-slate-300 text-[11px] leading-relaxed">
+            Standard Arduino 10-bit ADC provides 4.88 mV steps ($5\text{V}/1024$). Since full 3 kg load outputs only $10\text{ mV}$, direct `analogRead()` yields only ~2 total steps over the entire range! The HX711 provides 24-bit resolution for precise gram-level measurements.
+          </p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ARDUINO HARDWARE WIRING & CONNECTION SECTION -->
+    <section class="glass-card rounded-2xl p-6 border border-slate-800 shadow-xl">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-6 pb-4 border-b border-slate-800">
+        <div>
+          <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+            <i class="fa-solid fa-plug text-amber-400"></i>
+            Hardware Wiring Guide: Load Cell $\rightarrow$ HX711 $\rightarrow$ Arduino
+          </h2>
+          <p class="text-xs text-slate-400">Connection reference for mapping physical load cell wires to HX711 and Arduino pins.</p>
+        </div>
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/30">
+          <i class="fa-solid fa-bolt mr-1.5"></i> 5V Power Recommended
+        </span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+        <div class="bg-slate-900/80 rounded-xl p-4 border border-slate-800 space-y-3">
+          <h3 class="text-xs font-bold text-sky-400 uppercase tracking-wider flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+            1. Load Cell $\rightarrow$ HX711 (Input)
+          </h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs font-mono">
+              <thead class="text-slate-400 border-b border-slate-800 text-[10px]">
+                <tr>
+                  <th class="pb-2">Wire Color</th>
+                  <th class="pb-2">Function</th>
+                  <th class="pb-2">HX711 Pin</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-800/60 text-slate-300">
+                <tr>
+                  <td class="py-2 flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-red-500"></span> Red</td>
+                  <td>Excitation +</td>
+                  <td class="font-bold text-red-400">E+ / VCC</td>
+                </tr>
+                <tr>
+                  <td class="py-2 flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-slate-900 border border-slate-600"></span> Black</td>
+                  <td>Excitation -</td>
+                  <td class="font-bold text-slate-400">E- / GND</td>
+                </tr>
+                <tr>
+                  <td class="py-2 flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-emerald-500"></span> Green</td>
+                  <td>Signal +</td>
+                  <td class="font-bold text-emerald-400">A+</td>
+                </tr>
+                <tr>
+                  <td class="py-2 flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-white"></span> White</td>
+                  <td>Signal -</td>
+                  <td class="font-bold text-white">A-</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="bg-slate-900/80 rounded-xl p-4 border border-slate-800 space-y-3">
+          <h3 class="text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
+            2. HX711 $\rightarrow$ Arduino Uno (Output)
+          </h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs font-mono">
+              <thead class="text-slate-400 border-b border-slate-800 text-[10px]">
+                <tr>
+                  <th class="pb-2">HX711 Pin</th>
+                  <th class="pb-2">Arduino Pin</th>
+                  <th class="pb-2">Notes</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-800/60 text-slate-300">
+                <tr>
+                  <td class="py-2 font-bold text-red-400">VCC</td>
+                  <td>5V (or 3.3V)</td>
+                  <td class="text-[10px] text-slate-500">Power Pin</td>
+                </tr>
+                <tr>
+                  <td class="py-2 font-bold text-slate-400">GND</td>
+                  <td>GND</td>
+                  <td class="text-[10px] text-slate-500">Ground</td>
+                </tr>
+                <tr>
+                  <td class="py-2 font-bold text-sky-400">DT (DOUT)</td>
+                  <td>Digital Pin 2</td>
+                  <td class="text-[10px] text-slate-500">Serial Data Line</td>
+                </tr>
+                <tr>
+                  <td class="py-2 font-bold text-fuchsia-400">SCK (CLK)</td>
+                  <td>Digital Pin 3</td>
+                  <td class="text-[10px] text-slate-500">Serial Clock Line</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="bg-slate-900/80 rounded-xl p-4 border border-slate-800 space-y-2 flex flex-col justify-between">
+          <div>
+            <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2 mb-2">
+              <i class="fa-solid fa-code"></i>
+              3. Arduino C++ Starter Code
+            </h3>
+            <pre class="p-2 bg-slate-950 rounded-lg border border-slate-800 text-[11px] font-mono text-slate-300 overflow-x-auto"><code>#include "HX711.h"
+#define DOUT_PIN 2
+#define CLK_PIN  3
+
+HX711 scale;
+
+void setup() {
+  Serial.begin(9600);
+  scale.begin(DOUT_PIN, CLK_PIN);
+  scale.set_scale(420.0); // Calibration factor
+  scale.tare(); // Zero scale
+}
+
+void loop() {
+  Serial.print("Weight: ");
+  Serial.print(scale.get_units(5), 3);
+  Serial.println(" kg");
+}</code></pre>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Live Telemetry & Dynamic Chart -->
+    <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+      <div class="lg:col-span-8 glass-card rounded-2xl p-5 border border-slate-800">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
+              <i class="fa-solid fa-chart-line text-sky-400"></i>
+              Live Signal Correlation Chart
+            </h3>
+            <p class="text-xs text-slate-400">Real-time trace of bridge mV output vs raw 24-bit ADC counts</p>
+          </div>
+        </div>
+
+        <div class="w-full h-64">
+          <canvas id="liveSignalChart"></canvas>
+        </div>
+      </div>
+
+      <div class="lg:col-span-4 glass-card rounded-2xl p-5 border border-slate-800 flex flex-col items-center justify-between">
+        <div class="w-full text-center">
+          <h3 class="text-base font-bold text-slate-100 flex items-center justify-center gap-2">
+            <i class="fa-solid fa-gauge-high text-emerald-400"></i>
+            Digital Scale Readout
+          </h3>
+          <p class="text-xs text-slate-400">Calibrated weight output</p>
+        </div>
+
+        <div class="relative w-48 h-48 my-2 flex items-center justify-center">
+          <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="40" stroke="#1e293b" stroke-width="8" fill="transparent" />
+            <circle id="gaugeArc" cx="50" cy="50" r="40" stroke="#38bdf8" stroke-width="8" fill="transparent"
+                    stroke-dasharray="251.2" stroke-dashoffset="251.2" stroke-linecap="round" class="transition-all duration-200" />
+          </svg>
+          <div class="absolute flex flex-col items-center justify-center text-center">
+            <span id="gaugeValue" class="text-2xl font-black font-mono text-slate-100">0.000</span>
+            <span class="text-xs text-slate-400 font-semibold uppercase">Kilograms</span>
+            <span id="gaugePercent" class="text-[10px] text-sky-400 font-mono font-bold mt-1">0% Load</span>
+          </div>
+        </div>
+
+        <div class="w-full bg-slate-900/80 p-3 rounded-xl border border-slate-800 text-center font-mono text-xs">
+          <span class="text-slate-400">Target Max: </span>
+          <span class="text-sky-400 font-bold" id="gaugeTargetMax">3.00 kg</span>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Data Logger Section -->
+    <section class="glass-card rounded-2xl p-6 border border-slate-800">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+        <div>
+          <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
+            <i class="fa-solid fa-table text-indigo-400"></i>
+            Laboratory Correlation Data Logger
+          </h3>
+          <p class="text-xs text-slate-400">Record trial data points to verify gauge factor linearity and calibration stability.</p>
+        </div>
+
+        <div class="flex items-center space-x-2">
+          <button onclick="logDataPoint()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl shadow-lg shadow-indigo-600/20 transition-all flex items-center gap-2">
+            <i class="fa-solid fa-plus"></i>
+            <span>Log Trial Point</span>
+          </button>
+          <button onclick="exportCSV()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl border border-slate-700 transition-all flex items-center gap-1.5">
+            <i class="fa-solid fa-download"></i>
+            <span>CSV</span>
+          </button>
+          <button onclick="clearLoggedData()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl border border-slate-700 transition-all">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs font-mono">
+          <thead class="bg-slate-900/90 text-slate-400 uppercase text-[10px] border-b border-slate-800">
+            <tr>
+              <th class="p-3"># Trial</th>
+              <th class="p-3">Applied Weight (kg)</th>
+              <th class="p-3">Bridge Voltage V<sub>OUT</sub> (mV)</th>
+              <th class="p-3">Amplified V (128x)</th>
+              <th class="p-3">Raw 24-Bit ADC Count</th>
+              <th class="p-3">Calculated Weight (kg)</th>
+              <th class="p-3">Error (%)</th>
+            </tr>
+          </thead>
+          <tbody id="dataTableBody" class="divide-y divide-slate-800/60 text-slate-300">
+            <tr id="emptyTableMsg">
+              <td colspan="7" class="p-6 text-center text-slate-500 font-sans italic">
+                No data points logged yet. Set a weight on the slider above and click "Log Trial Point".
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer with Attribution & LinkedIn Link -->
+  <footer class="border-t border-slate-800 bg-slate-900/80 backdrop-blur py-6 px-4 mt-8">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
+      <div>
+        <p class="text-xs font-medium text-slate-300">
+          Developed by <span class="text-sky-400 font-semibold">Dr. Annamdas Venu Gopal Madhav</span> &amp; <span class="text-sky-400 font-semibold">Annamdas Shantanu Vasudev Krishna</span>
+        </p>
+        <p class="text-[11px] text-slate-500 mt-0.5">
+          Gopalkrishna Advanced Rural Research Foundation &bull; Dr. APJ Abdul Kalam Research Zero Funding Initiative
+        </p>
+      </div>
+
+      <a href="https://www.linkedin.com/company/gopalkrishnaadvancedruralresearchfoundation/" 
+         target="_blank" rel="noopener noreferrer" 
+         class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-sky-600/10 hover:bg-sky-600/20 border border-sky-500/30 text-sky-400 text-xs font-semibold transition-all shadow-sm">
+        <i class="fa-brands fa-linkedin text-sm"></i>
+        <span>Follow us on LinkedIn</span>
+        <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-sky-400 opacity-70"></i>
+      </a>
+    </div>
+  </footer>
+
+  <!-- Comprehensive HELP & GUIDANCE MODAL OVERLAY (75-80% Screen Width) -->
+  <div id="helpModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/85 backdrop-blur-md transition-all duration-300 opacity-0 pointer-events-none">
+    <div class="glass-card w-[92%] sm:w-[82%] max-w-5xl max-h-[88vh] rounded-2xl border border-slate-700 shadow-2xl flex flex-col overflow-hidden relative">
+      
+      <!-- Modal Header -->
+      <div class="px-6 py-4 border-b border-slate-800 bg-slate-900/90 flex items-center justify-between shrink-0">
+        <div class="flex items-center space-x-3">
+          <div class="p-2.5 bg-amber-500/10 text-amber-400 rounded-xl border border-amber-500/20">
+            <i class="fa-solid fa-book-open text-xl"></i>
+          </div>
+          <div>
+            <h2 class="text-lg font-bold text-slate-100">Student Laboratory Help &amp; Experimentation Manual</h2>
+            <p class="text-xs text-amber-400 font-semibold">Gopalkrishna Advanced Rural Research Foundation Guidance Sheet</p>
+          </div>
+        </div>
+        <button onclick="closeHelpModal()" class="p-2 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-lg transition-all">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body (Scrollable Content) -->
+      <div class="p-6 overflow-y-auto custom-scroll space-y-6 text-sm text-slate-300 leading-relaxed">
+        
+        <!-- SECTION 1 -->
+        <section class="bg-slate-900/60 p-5 rounded-xl border border-slate-800 space-y-3">
+          <h3 class="text-base font-bold text-sky-400 flex items-center gap-2">
+            <i class="fa-solid fa-flask-vial"></i>
+            1. How to Use This Interactive Simulation First
+          </h3>
+          <p class="text-xs text-slate-400">
+            Before assembling physical hardware, study the virtual lab to understand force-to-voltage relationships:
+          </p>
+          <ol class="list-decimal list-inside space-y-2 text-xs text-slate-300">
+            <li><strong class="text-slate-100">Set Target Maximum Load:</strong> Click <em>"Setup Max Load"</em> in top menu and enter your intended maximum weight capacity (e.g., <code class="text-sky-300 font-mono">3.0 kg</code> or custom up to <code class="text-sky-300 font-mono">5.0 kg</code>).</li>
+            <li><strong class="text-slate-100">Observe +10% Headroom Margin:</strong> Notice how the simulator automatically adds $+10\%$ scale headroom (e.g., <code class="text-indigo-300 font-mono">3.3 kg</code> max) so you can test overload safety limits without clipping digital bounds.</li>
+            <li><strong class="text-slate-100">Drag the Applied Weight Slider:</strong> Observe how mechanical pressure bends the Wheatstone bridge, changing strain gauge resistances (<code class="text-cyan-300 font-mono">R1, R2, R3, R4</code>) and generating micro-volt differential outputs (<code class="text-sky-300 font-mono">V_OUT</code>).</li>
+            <li><strong class="text-slate-100">Follow the HX711 Signal Path:</strong> Trace the signal through the 128x Programmable Gain Amplifier (PGA) up to the 24-bit Delta-Sigma ADC count (<code class="text-fuchsia-300 font-mono">8,388,608 to 16,777,215</code>).</li>
+            <li><strong class="text-slate-100">Log Experimental Trials:</strong> Click <em>"Log Trial Point"</em> at various weight positions to build a linear calibration curve and export the CSV log for report writing.</li>
+          </ol>
+        </section>
+
+        <!-- SECTION 2 -->
+        <section class="bg-slate-900/60 p-5 rounded-xl border border-slate-800 space-y-4">
+          <h3 class="text-base font-bold text-emerald-400 flex items-center gap-2">
+            <i class="fa-solid fa-arrow-right-arrow-left"></i>
+            2. Understanding Physical Load Correlation (Load &leftrightarrow; ADC Integer)
+          </h3>
+          <p class="text-xs text-slate-300">
+            Students often ask: <em>"Can a serial reading on my computer or smartphone screen be correlated back to physical load, or does a physical load produce a unique reading?"</em> <strong class="text-emerald-400">Both directions are directly correlated due to gauge factor linearity!</strong>
+          </p>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
+            <div class="p-4 bg-slate-950/80 rounded-xl border border-emerald-900/50 space-y-2">
+              <span class="text-emerald-400 font-bold uppercase block font-sans">Direction A: Calibration Step</span>
+              <p class="text-slate-300 font-sans leading-normal">
+                Applying a <strong>known physical weight</strong> ($W_{known}$) creates a predictable strain shift, outputting a specific raw 24-bit ADC integer ($ADC_{raw}$).
+              </p>
+              <div class="p-2 bg-slate-900 rounded border border-slate-800 text-emerald-300">
+                Calibration Factor = (ADC_raw - Tare_Baseline) / Weight_known
+              </div>
+            </div>
+
+            <div class="p-4 bg-slate-950/80 rounded-xl border border-sky-900/50 space-y-2">
+              <span class="text-sky-400 font-bold uppercase block font-sans">Direction B: Measurement Step</span>
+              <p class="text-slate-300 font-sans leading-normal">
+                Once calibrated, placing an <strong>unknown object</strong> yields a raw integer reading that your program instantly converts to exact weight.
+              </p>
+              <div class="p-2 bg-slate-900 rounded border border-slate-800 text-sky-300">
+                Weight_calc = (ADC_observed - Tare_Baseline) / Calibration_Factor
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION 3 -->
+        <section class="bg-slate-900/60 p-5 rounded-xl border border-slate-800 space-y-3">
+          <h3 class="text-base font-bold text-amber-400 flex items-center gap-2">
+            <i class="fa-solid fa-code text-amber-400"></i>
+            3. How to Build &amp; Customize Arduino Code for Real Load Cells
+          </h3>
+          <p class="text-xs text-slate-300">
+            To build a physical scale with your 3 kg or 5 kg load cell and HX711 board, follow these modifications in Arduino IDE:
+          </p>
+
+          <ul class="list-disc list-inside space-y-1 text-xs text-slate-300">
+            <li>Install the official <strong class="text-slate-100">"HX711 Arduino Library"</strong> by <em>Bogde</em> via Arduino Library Manager.</li>
+            <li>Connect HX711 <code class="text-amber-300 font-mono">DT</code> to Arduino <code class="text-amber-300 font-mono">Pin 2</code> and <code class="text-amber-300 font-mono">SCK</code> to <code class="text-amber-300 font-mono">Pin 3</code>.</li>
+            <li>Perform zeroing (<code class="text-amber-300 font-mono">scale.tare()</code>) with an empty weighing platform.</li>
+            <li>Adjust the <code class="text-amber-300 font-mono">calibration_factor</code> float parameter until displayed output matches your reference test mass.</li>
+          </ul>
+
+          <div class="relative">
+            <pre class="p-3 bg-slate-950 rounded-xl border border-slate-800 text-xs font-mono text-slate-300 overflow-x-auto leading-normal"><code>#include "HX711.h"
+
+// 1. DEFINE DIGITAL PINS CONNECTED TO HX711
+#define DOUT_PIN 2  // Data Out pin from HX711
+#define CLK_PIN  3  // Serial Clock pin from HX711
+
+HX711 scale;
+
+// 2. ADJUST THIS CALIBRATION FACTOR DURING CALIBRATION
+// Increase if output reading is higher than actual mass
+// Decrease if output reading is lower than actual mass
+float calibration_factor = 420.0; 
+
+void setup() {
+  Serial.begin(9600);
+  Serial.println("Initializing Gopalkrishna Foundation Scale...");
+
+  scale.begin(DOUT_PIN, CLK_PIN);
+  
+  // Reset scale to zero (Tare out empty platform weight)
+  scale.set_scale();
+  scale.tare(); 
+  
+  Serial.println("Zero completed. Place known weight to verify correlation.");
+}
+
+void loop() {
+  // Apply calibration factor to convert raw ADC counts to kilograms
+  scale.set_scale(calibration_factor);
+
+  Serial.print("Correlated Weight: ");
+  Serial.print(scale.get_units(5), 3); // Average 5 readings for stability
+  Serial.println(" kg");
+
+  delay(300);
+}</code></pre>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-6 py-4 border-t border-slate-800 bg-slate-900/90 flex items-center justify-between shrink-0">
+        <span class="text-xs text-slate-400">GARRF Educational Manual &bull; Dr. APJ Abdul Kalam Initiative</span>
+        <button onclick="closeHelpModal()" class="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg transition-all">
+          Got It / Close Manual
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Setup Configuration Modal -->
+  <div id="setupModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm transition-opacity duration-300 opacity-100 pointer-events-auto">
+    <div class="glass-card max-w-lg w-full rounded-2xl p-6 border border-slate-700 shadow-2xl relative">
+      <div class="flex items-center space-x-3 mb-4">
+        <div class="p-3 bg-sky-500/10 text-sky-400 rounded-xl border border-sky-500/20">
+          <i class="fa-solid fa-weight-scale text-2xl"></i>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold text-slate-100">Load Cell Workbench Setup</h2>
+          <p class="text-xs text-slate-400">Configure your target maximum weight load (up to 5.0 kg)</p>
+        </div>
+      </div>
+
+      <form id="setupForm" onsubmit="handleSetupSubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">
+            Target Maximum Load Choice (0.5 kg to 5.0 kg):
+          </label>
+          <div class="relative">
+            <input type="number" id="inputMaxChoice" min="0.5" max="5.0" step="0.1" value="3.0" required
+                   class="glass-input w-full px-4 py-2.5 rounded-xl text-slate-100 font-mono text-sm focus:outline-none focus:border-sky-500 transition-colors">
+            <span class="absolute right-4 top-2.5 text-sm text-slate-400 font-mono">kg</span>
+          </div>
+        </div>
+
+        <div class="p-3 bg-slate-900/90 rounded-xl border border-slate-800 space-y-2">
+          <div class="flex justify-between text-xs">
+            <span class="text-slate-400">Selected Choice Max:</span>
+            <span id="modalChoicePreview" class="font-mono text-sky-400 font-bold">3.00 kg</span>
+          </div>
+          <div class="flex justify-between text-xs">
+            <span class="text-slate-400">+10% Overload Margin:</span>
+            <span id="modalMarginPreview" class="font-mono text-indigo-400 font-bold">+0.30 kg</span>
+          </div>
+          <div class="border-t border-slate-800 pt-2 flex justify-between text-xs font-bold">
+            <span class="text-slate-200">Scale Full Range (Max):</span>
+            <span id="modalScaleMaxPreview" class="font-mono text-emerald-400 text-sm">3.30 kg</span>
+          </div>
+        </div>
+
+        <button type="submit" class="w-full py-3 bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-bold text-sm rounded-xl shadow-lg shadow-sky-500/25 transition-all">
+          Initialize Workbench
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let config = {
+      choiceMax: 3.0,
+      headroomFactor: 0.10,
+      scaleMax: 3.3,
+      vEx: 5.0,
+      nominalR: 1000.0,
+      sensitivity: 2.0,
+      pgaGain: 128,
+      adcTareOffset: 8388608
+    };
+
+    let currentState = {
+      appliedWeight: 0.0,
+      appliedForceN: 0.0,
+      deltaR: 0.0,
+      vOutMv: 0.0,
+      amplifiedV: 0.0,
+      adcCount: 8388608,
+      calcWeight: 0.0
+    };
+
+    let loggedTrials = [];
+    let signalChart = null;
+
+    const setupModal = document.getElementById('setupModal');
+    const helpModal = document.getElementById('helpModal');
+    const inputMaxChoice = document.getElementById('inputMaxChoice');
+
+    inputMaxChoice.addEventListener('input', updateModalPreviews);
+
+    function openHelpModal() {
+      helpModal.classList.remove('opacity-0', 'pointer-events-none');
+      helpModal.classList.add('opacity-100', 'pointer-events-auto');
+    }
+
+    function closeHelpModal() {
+      helpModal.classList.remove('opacity-100', 'pointer-events-auto');
+      helpModal.classList.add('opacity-0', 'pointer-events-none');
+    }
+
+    function updateModalPreviews() {
+      let choice = parseFloat(inputMaxChoice.value);
+      if (isNaN(choice) || choice <= 0) choice = 1.0;
+      if (choice > 5.0) choice = 5.0;
+
+      const margin = choice * config.headroomFactor;
+      const scaleMax = choice + margin;
+
+      document.getElementById('modalChoicePreview').textContent = choice.toFixed(2) + ' kg';
+      document.getElementById('modalMarginPreview').textContent = '+' + margin.toFixed(2) + ' kg';
+      document.getElementById('modalScaleMaxPreview').textContent = scaleMax.toFixed(2) + ' kg';
+    }
+
+    function openSetupModal() {
+      setupModal.classList.remove('opacity-0', 'pointer-events-none');
+      setupModal.classList.add('opacity-100', 'pointer-events-auto');
+    }
+
+    function handleSetupSubmit(e) {
+      e.preventDefault();
+      let choice = parseFloat(inputMaxChoice.value);
+      if (isNaN(choice) || choice <= 0) choice = 3.0;
+      if (choice > 5.0) choice = 5.0;
+
+      config.choiceMax = choice;
+      config.scaleMax = choice * (1 + config.headroomFactor);
+
+      document.getElementById('summaryChoiceMax').textContent = config.choiceMax.toFixed(2) + ' kg';
+      document.getElementById('summaryScaleMax').textContent = config.scaleMax.toFixed(2) + ' kg';
+      document.getElementById('gaugeTargetMax').textContent = config.choiceMax.toFixed(2) + ' kg';
+
+      const loadSlider = document.getElementById('loadSlider');
+      loadSlider.max = config.scaleMax.toFixed(3);
+      loadSlider.value = 0;
+
+      document.getElementById('targetMaxMarker').textContent = 'Target Max: ' + config.choiceMax.toFixed(2) + ' kg';
+      document.getElementById('fullScaleMaxMarker').textContent = 'Scale Max (+10%): ' + config.scaleMax.toFixed(2) + ' kg';
+
+      setupModal.classList.remove('opacity-100', 'pointer-events-auto');
+      setupModal.classList.add('opacity-0', 'pointer-events-none');
+
+      updateSimulation();
+    }
+
+    function updateSimulation() {
+      const slider = document.getElementById('loadSlider');
+      const weight = parseFloat(slider.value);
+      
+      currentState.appliedWeight = weight;
+      currentState.appliedForceN = weight * 9.80665;
+
+      const maxMvOutput = config.vEx * config.sensitivity;
+      const loadRatio = weight / config.choiceMax; 
+      
+      currentState.vOutMv = maxMvOutput * loadRatio;
+      currentState.deltaR = (currentState.vOutMv / 1000.0 / config.vEx) * config.nominalR;
+
+      const r1 = config.nominalR + currentState.deltaR;
+      const r2 = config.nominalR - currentState.deltaR;
+      const r3 = config.nominalR + currentState.deltaR;
+      const r4 = config.nominalR - currentState.deltaR;
+
+      currentState.amplifiedV = (currentState.vOutMv / 1000.0) * config.pgaGain;
+
+      const scaleFactorCount = 8388608 / maxMvOutput;
+      currentState.adcCount = Math.round(config.adcTareOffset + (currentState.vOutMv * scaleFactorCount));
+
+      const scaleFactorKg = scaleFactorCount * (maxMvOutput / config.choiceMax);
+      currentState.calcWeight = (currentState.adcCount - config.adcTareOffset) / scaleFactorKg;
+
+      renderUI(r1, r2, r3, r4);
+    }
+
+    function renderUI(r1, r2, r3, r4) {
+      document.getElementById('appliedWeightVal').textContent = currentState.appliedWeight.toFixed(3) + ' kg';
+      document.getElementById('appliedForceN').textContent = '(' + currentState.appliedForceN.toFixed(2) + ' N)';
+
+      document.getElementById('svgR1Val').textContent = r1.toFixed(2) + ' Ω';
+      document.getElementById('svgR2Val').textContent = r2.toFixed(2) + ' Ω';
+      document.getElementById('svgR3Val').textContent = r3.toFixed(2) + ' Ω';
+      document.getElementById('svgR4Val').textContent = r4.toFixed(2) + ' Ω';
+      document.getElementById('svgVoutVal').textContent = currentState.vOutMv.toFixed(3) + ' mV';
+
+      document.getElementById('stage1Vout').textContent = currentState.vOutMv.toFixed(3) + ' mV';
+      document.getElementById('stage2Amplified').textContent = currentState.amplifiedV.toFixed(3) + ' V';
+      document.getElementById('stage3AdcVal').textContent = currentState.adcCount.toLocaleString();
+      document.getElementById('stage4Weight').textContent = currentState.calcWeight.toFixed(3) + ' kg';
+
+      const gaugePercent = Math.min(100, (currentState.appliedWeight / config.choiceMax) * 100);
+      const arc = document.getElementById('gaugeArc');
+      const maxDash = 251.2;
+      const dashOffset = maxDash - (maxDash * Math.min(1.10, currentState.appliedWeight / config.scaleMax));
+      
+      arc.style.strokeDashoffset = dashOffset;
+      if (currentState.appliedWeight > config.choiceMax) {
+        arc.setAttribute('stroke', '#f59e0b');
+      } else {
+        arc.setAttribute('stroke', '#38bdf8');
+      }
+
+      document.getElementById('gaugeValue').textContent = currentState.calcWeight.toFixed(3);
+      document.getElementById('gaugePercent').textContent = gaugePercent.toFixed(1) + '% Load';
+
+      pushChartData(currentState.vOutMv, currentState.adcCount);
+    }
+
+    document.getElementById('loadSlider').addEventListener('input', updateSimulation);
+
+    function setWeight(val) {
+      document.getElementById('loadSlider').value = val;
+      updateSimulation();
+    }
+
+    function setWeightPreset(percentage) {
+      const val = config.choiceMax * percentage;
+      setWeight(val);
+    }
+
+    function initChart() {
+      const ctx = document.getElementById('liveSignalChart').getContext('2d');
+      
+      signalChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: Array(20).fill(''),
+          datasets: [
+            {
+              label: 'Bridge Vout (mV)',
+              data: Array(20).fill(0),
+              borderColor: '#38bdf8',
+              backgroundColor: 'rgba(56, 189, 248, 0.1)',
+              borderWidth: 2,
+              yAxisID: 'yMv',
+              tension: 0.3,
+              fill: true
+            },
+            {
+              label: '24-bit ADC Count',
+              data: Array(20).fill(8388608),
+              borderColor: '#c084fc',
+              borderWidth: 2,
+              borderDash: [4, 4],
+              yAxisID: 'yAdc',
+              tension: 0.3,
+              fill: false
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 200 },
+          scales: {
+            x: { display: false },
+            yMv: {
+              type: 'linear',
+              position: 'left',
+              title: { display: true, text: 'mV Output', color: '#38bdf8' },
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: { color: '#94a3b8' }
+            },
+            yAdc: {
+              type: 'linear',
+              position: 'right',
+              title: { display: true, text: 'Raw ADC Integer', color: '#c084fc' },
+              grid: { drawOnChartArea: false },
+              ticks: { color: '#94a3b8' }
+            }
+          },
+          plugins: {
+            legend: { display: false }
+          }
+        }
+      });
+    }
+
+    function pushChartData(mV, adc) {
+      if (!signalChart) return;
+      
+      const dsMv = signalChart.data.datasets[0].data;
+      const dsAdc = signalChart.data.datasets[1].data;
+
+      dsMv.shift();
+      dsAdc.shift();
+      
+      dsMv.push(mV);
+      dsAdc.push(adc);
+
+      signalChart.update();
+    }
+
+    function logDataPoint() {
+      const trialNum = loggedTrials.length + 1;
+      let errorPct = 0;
+      if (currentState.appliedWeight > 0) {
+        errorPct = Math.abs((currentState.calcWeight - currentState.appliedWeight) / currentState.appliedWeight) * 100;
+      }
+
+      const trial = {
+        num: trialNum,
+        applied: currentState.appliedWeight,
+        vOut: currentState.vOutMv,
+        amplified: currentState.amplifiedV,
+        adc: currentState.adcCount,
+        calc: currentState.calcWeight,
+        error: errorPct
+      };
+
+      loggedTrials.push(trial);
+      renderTable();
+    }
+
+    function clearLoggedData() {
+      loggedTrials = [];
+      renderTable();
+    }
+
+    function exportCSV() {
+      if (loggedTrials.length === 0) return;
+      let csv = "Trial,Applied_Weight_kg,Bridge_mV,Amplified_V,Raw_ADC,Calc_Weight_kg,Error_Percent\n";
+      loggedTrials.forEach(t => {
+        csv += `${t.num},${t.applied.toFixed(3)},${t.vOut.toFixed(3)},${t.amplified.toFixed(3)},${t.adc},${t.calc.toFixed(3)},${t.error.toFixed(2)}\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.setAttribute('href', url);
+      a.setAttribute('download', 'Wheatstone_HX711_Trial_Data.csv');
+      a.click();
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('dataTableBody');
+      tbody.innerHTML = '';
+
+      if (loggedTrials.length === 0) {
+        tbody.innerHTML = `
+          <tr id="emptyTableMsg">
+            <td colspan="7" class="p-6 text-center text-slate-500 font-sans italic">
+              No data points logged yet. Set a weight on the slider above and click "Log Trial Point".
+            </td>
+          </tr>`;
+        return;
+      }
+
+      loggedTrials.forEach(t => {
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-slate-800/50 transition-colors';
+        row.innerHTML = `
+          <td class="p-3 font-bold text-sky-400">#${t.num}</td>
+          <td class="p-3">${t.applied.toFixed(3)} kg</td>
+          <td class="p-3 text-cyan-300">${t.vOut.toFixed(3)} mV</td>
+          <td class="p-3 text-indigo-300">${t.amplified.toFixed(3)} V</td>
+          <td class="p-3 text-fuchsia-300">${t.adc.toLocaleString()}</td>
+          <td class="p-3 text-emerald-300 font-bold">${t.calc.toFixed(3)} kg</td>
+          <td class="p-3 text-amber-300">${t.error.toFixed(2)}%</td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    window.onload = function() {
+      initChart();
+      updateModalPreviews();
+      updateSimulation();
+    };
+  </script>
+</body>
+</html>
