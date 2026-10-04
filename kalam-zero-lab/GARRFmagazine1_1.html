@@ -3,21 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GARRF Interactive PPT • Issue 1 (Direct Canvas 4-Quarter Inspection)</title>
+  <title>GARRF Interactive PPT • Issue 1 (Single Quarter Enlarged View)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      /* Soft slate-gray background to separate from black plate assets */
       --bg-page: #1a202c;
       --panel-bg: #242d3d;
-      --card-inner: #151b26;
+      --card-inner: #0f141d;
       --border-line: #3b485d;
       --gold: #f59e0b;
       --gold-glow: #fbbf24;
       --cyan: #38bdf8;
-      --green: #10b981;
       --text-white: #ffffff;
       --text-muted: #94a3b8;
     }
@@ -140,7 +138,7 @@
       display: block;
     }
 
-    /* Interactive 4-Quarter Click / Hover Grid over left image */
+    /* 4-Quarter Click / Hover Grid over Left Image */
     .hotspot-overlay {
       position: absolute;
       inset: 10px;
@@ -154,7 +152,7 @@
       position: relative;
       border: 1.5px dashed rgba(56, 189, 248, 0.25);
       cursor: pointer;
-      transition: background 0.15s ease, border-color 0.15s ease;
+      transition: all 0.15s ease;
       display: flex;
       align-items: flex-start;
       justify-content: flex-start;
@@ -162,22 +160,22 @@
     }
 
     .quarter-zone:hover, .quarter-zone.active-zone {
-      background: rgba(245, 158, 11, 0.15);
+      background: rgba(245, 158, 11, 0.18);
       border: 2px solid var(--gold);
     }
 
     .quarter-tag {
-      background: rgba(0, 0, 0, 0.75);
+      background: rgba(0, 0, 0, 0.8);
       border: 1px solid var(--gold);
       color: var(--gold-glow);
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.65rem;
-      padding: 2px 6px;
+      font-size: 0.68rem;
+      padding: 2px 7px;
       border-radius: 4px;
       pointer-events: none;
     }
 
-    /* Right Panel: Canvas Magnifier Viewer */
+    /* Right Panel: Single Enlarged Quarter Stage */
     .zoom-panel {
       flex: 1;
       height: 100%;
@@ -191,55 +189,60 @@
       box-shadow: 0 10px 30px rgba(0,0,0,0.4);
     }
 
-    .zoom-display-stage {
+    .zoom-stage-single {
       flex: 1;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      grid-template-rows: 1fr 1fr;
-      padding: 12px;
-      gap: 12px;
       background: #0f141d;
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
     }
 
-    .canvas-card {
+    .canvas-container {
+      width: 100%;
+      height: 100%;
       background: var(--card-inner);
-      border: 1.5px solid var(--border-line);
+      border: 2px solid var(--gold);
       border-radius: 8px;
       position: relative;
       overflow: hidden;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
-      opacity: 0.45;
-    }
-
-    .canvas-card.highlighted {
-      opacity: 1.0;
-      border-color: var(--gold);
-      box-shadow: 0 0 16px rgba(245, 158, 11, 0.35);
+      box-shadow: 0 0 25px rgba(245, 158, 11, 0.2);
     }
 
     canvas {
       width: 100%;
       height: 100%;
-      object-fit: cover;
+      object-fit: contain;
       display: block;
     }
 
-    .canvas-label {
+    .enlarged-quarter-badge {
       position: absolute;
-      bottom: 8px;
-      left: 8px;
-      background: rgba(7, 13, 22, 0.85);
-      border: 1px solid var(--border-line);
-      color: var(--text-white);
-      font-size: 0.65rem;
+      bottom: 12px;
+      left: 12px;
+      background: rgba(7, 13, 22, 0.9);
+      border: 1px solid var(--gold);
+      color: var(--gold-glow);
       font-family: 'JetBrains Mono', monospace;
-      padding: 3px 8px;
-      border-radius: 4px;
-      z-index: 5;
+      font-size: 0.75rem;
+      padding: 5px 12px;
+      border-radius: 6px;
+      z-index: 15;
     }
+
+    /* Target Crosshairs in zoomed viewport */
+    .crosshair-h, .crosshair-v {
+      position: absolute;
+      background: rgba(56, 189, 248, 0.15);
+      pointer-events: none;
+      z-index: 10;
+    }
+    .crosshair-h { left: 0; right: 0; top: 50%; height: 1px; }
+    .crosshair-v { top: 0; bottom: 0; left: 50%; width: 1px; }
 
     /* ---------------- FOOTER ---------------- */
     footer {
@@ -288,8 +291,8 @@
     <!-- LEFT PANEL: FULL PRESENTATION SLIDE -->
     <section class="slide-panel">
       <div class="panel-header">
-        <span>A4 LECTURE PLATE (HOVER / CLICK ANY QUARTER)</span>
-        <span style="color: var(--gold-glow);">4-ZONE INTERACTION ACTIVE</span>
+        <span>A4 LECTURE PLATE (HOVER / CLICK TO SELECT QUARTER)</span>
+        <span style="color: var(--gold-glow);">4-ZONE SELECTOR</span>
       </div>
 
       <div class="slide-canvas-wrap">
@@ -297,7 +300,7 @@
 
         <!-- 4-Quarter Click / Hover Zones -->
         <div class="hotspot-overlay">
-          <div class="quarter-zone" data-q="0"><span class="quarter-tag">Q1: Top-Left</span></div>
+          <div class="quarter-zone active-zone" data-q="0"><span class="quarter-tag">Q1: Top-Left</span></div>
           <div class="quarter-zone" data-q="1"><span class="quarter-tag">Q2: Top-Right</span></div>
           <div class="quarter-zone" data-q="2"><span class="quarter-tag">Q3: Bottom-Left</span></div>
           <div class="quarter-zone" data-q="3"><span class="quarter-tag">Q4: Bottom-Right</span></div>
@@ -305,29 +308,19 @@
       </div>
     </section>
 
-    <!-- RIGHT PANEL: NATIVE CANVAS 4-QUARTER INSPECTOR -->
+    <!-- RIGHT PANEL: SINGLE ENLARGED QUARTER VIEW -->
     <section class="zoom-panel">
       <div class="panel-header">
-        <span style="color: var(--gold-glow);">4-QUARTER HIGH-RESOLUTION INSPECTOR</span>
-        <span id="inspectionFocusText" style="color: var(--cyan);">ALL QUARTERS SYNCHRONIZED</span>
+        <span style="color: var(--gold-glow);">ENLARGED HIGH-RESOLUTION INSPECTOR</span>
+        <span id="inspectionFocusText" style="color: var(--cyan);">FOCUSED: Q1 (TOP-LEFT)</span>
       </div>
 
-      <div class="zoom-display-stage">
-        <div class="canvas-card" id="card0">
-          <canvas id="cv0"></canvas>
-          <div class="canvas-label">Q1 • TOP-LEFT DETAIL</div>
-        </div>
-        <div class="canvas-card" id="card1">
-          <canvas id="cv1"></canvas>
-          <div class="canvas-label">Q2 • TOP-RIGHT DETAIL</div>
-        </div>
-        <div class="canvas-card" id="card2">
-          <canvas id="cv2"></canvas>
-          <div class="canvas-label">Q3 • BOTTOM-LEFT DETAIL</div>
-        </div>
-        <div class="canvas-card" id="card3">
-          <canvas id="cv3"></canvas>
-          <div class="canvas-label">Q4 • BOTTOM-RIGHT DETAIL</div>
+      <div class="zoom-stage-single">
+        <div class="canvas-container">
+          <canvas id="zoomCanvas"></canvas>
+          <div class="crosshair-h"></div>
+          <div class="crosshair-v"></div>
+          <div class="enlarged-quarter-badge" id="zoomBadge">Q1 • TOP-LEFT [ENLARGED VIEW]</div>
         </div>
       </div>
     </section>
@@ -337,7 +330,7 @@
   <footer>
     <div>Developed by <strong>Dr. Annamdas VGM</strong> & <strong>Annamdas Shantanu Vasudev Krishna</strong></div>
     <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--gold-glow);">
-      GARRF TECHNICAL MONOGRAPH • 100% CLIENT NATIVE CANVAS ENGINE
+      GARRF TECHNICAL MONOGRAPH • SINGLE QUARTER MAGNIFIED BLIT
     </div>
   </footer>
 
@@ -371,7 +364,9 @@
     ];
 
     let currentSlide = 0;
+    let selectedQuarter = 0; // Default to Q1
     const totalSlides = 25;
+    let currentLoadedImage = null;
 
     const mainSlide = document.getElementById('mainSlide');
     const badgeSlide = document.getElementById('badgeSlide');
@@ -379,31 +374,27 @@
     const btnPrev = document.getElementById('btnPrev');
     const btnNext = document.getElementById('btnNext');
     const inspectionFocusText = document.getElementById('inspectionFocusText');
-
-    const canvases = [
-      document.getElementById('cv0'),
-      document.getElementById('cv1'),
-      document.getElementById('cv2'),
-      document.getElementById('cv3')
-    ];
-    const cards = [
-      document.getElementById('card0'),
-      document.getElementById('card1'),
-      document.getElementById('card2'),
-      document.getElementById('card3')
-    ];
+    const zoomCanvas = document.getElementById('zoomCanvas');
+    const zoomBadge = document.getElementById('zoomBadge');
     const quarterZones = document.querySelectorAll('.quarter-zone');
 
-    // Slice image into exact 4 quadrants and draw directly to canvas pixels
-    function sliceAndDrawToCanvases(img) {
-      if (!img.naturalWidth || !img.naturalHeight) return;
+    const quarterNames = [
+      "Q1 • TOP-LEFT",
+      "Q2 • TOP-RIGHT",
+      "Q3 • BOTTOM-LEFT",
+      "Q4 • BOTTOM-RIGHT"
+    ];
+
+    // Blit only the selected quarter into the single canvas
+    function renderEnlargedQuarter(img, qIndex) {
+      if (!img || !img.naturalWidth || !img.naturalHeight) return;
 
       const fullW = img.naturalWidth;
       const fullH = img.naturalHeight;
       const halfW = fullW / 2;
       const halfH = fullH / 2;
 
-      // Quadrant coordinates: [sourceX, sourceY, sourceW, sourceH]
+      // Coordinate mapping for each quadrant: [sourceX, sourceY, sourceW, sourceH]
       const quadrants = [
         [0, 0, halfW, halfH],         // Q1: Top-Left
         [halfW, 0, halfW, halfH],     // Q2: Top-Right
@@ -411,18 +402,22 @@
         [halfW, halfH, halfW, halfH]  // Q4: Bottom-Right
       ];
 
-      quadrants.forEach((q, idx) => {
-        const cv = canvases[idx];
-        cv.width = q[2];
-        cv.height = q[3];
-        const ctx = cv.getContext('2d');
-        ctx.clearRect(0, 0, cv.width, cv.height);
-        // Direct pixel blit — 100% reliable across all browsers
-        ctx.drawImage(img, q[0], q[1], q[2], q[3], 0, 0, cv.width, cv.height);
-      });
+      const q = quadrants[qIndex];
+      zoomCanvas.width = q[2];
+      zoomCanvas.height = q[3];
 
-      // Default highlight all slightly
-      cards.forEach(c => c.classList.add('highlighted'));
+      const ctx = zoomCanvas.getContext('2d');
+      ctx.clearRect(0, 0, zoomCanvas.width, zoomCanvas.height);
+      // Direct pixel draw at full source resolution
+      ctx.drawImage(img, q[0], q[1], q[2], q[3], 0, 0, zoomCanvas.width, zoomCanvas.height);
+
+      zoomBadge.textContent = `${quarterNames[qIndex]} [ENLARGED VIEW]`;
+      inspectionFocusText.textContent = `FOCUSED: ${quarterNames[qIndex]}`;
+
+      quarterZones.forEach((z, idx) => {
+        if (idx === qIndex) z.classList.add('active-zone');
+        else z.classList.remove('active-zone');
+      });
     }
 
     function loadSlide(index) {
@@ -433,14 +428,14 @@
       btnPrev.disabled = (currentSlide === 0);
       btnNext.disabled = (currentSlide === totalSlides - 1);
 
-      // Create memory image object to guarantee natural dimensions exist
       const offscreenImg = new Image();
       const pngPath = `magazine/${currentSlide}.png`;
       const jpgPath = `magazine/${currentSlide}.jpg`;
 
       offscreenImg.onload = function() {
+        currentLoadedImage = offscreenImg;
         mainSlide.src = offscreenImg.src;
-        sliceAndDrawToCanvases(offscreenImg);
+        renderEnlargedQuarter(currentLoadedImage, selectedQuarter);
       };
 
       offscreenImg.onerror = function() {
@@ -452,7 +447,7 @@
       offscreenImg.src = pngPath;
     }
 
-    // Navigation triggers
+    // Navigation Triggers
     btnNext.onclick = () => {
       if (currentSlide < totalSlides - 1) loadSlide(currentSlide + 1);
     };
@@ -468,38 +463,19 @@
       }
     });
 
-    // Quarter Hover and Click Focus Interaction
-    const quarterNames = ["Q1: TOP-LEFT", "Q2: TOP-RIGHT", "Q3: BOTTOM-LEFT", "Q4: BOTTOM-RIGHT"];
-
+    // Quarter Selection (Hover & Click)
     quarterZones.forEach(zone => {
       const qIndex = parseInt(zone.getAttribute('data-q'));
 
-      const setFocus = () => {
-        cards.forEach((c, idx) => {
-          if (idx === qIndex) {
-            c.classList.add('highlighted');
-            c.style.opacity = '1.0';
-          } else {
-            c.classList.remove('highlighted');
-            c.style.opacity = '0.25';
-          }
-        });
-        quarterZones.forEach(z => z.classList.remove('active-zone'));
-        zone.classList.add('active-zone');
-        inspectionFocusText.textContent = `FOCUSED: ${quarterNames[qIndex]}`;
+      const setQuarter = () => {
+        selectedQuarter = qIndex;
+        if (currentLoadedImage) {
+          renderEnlargedQuarter(currentLoadedImage, selectedQuarter);
+        }
       };
 
-      zone.addEventListener('mouseenter', setFocus);
-      zone.addEventListener('click', setFocus);
-
-      zone.addEventListener('mouseleave', () => {
-        cards.forEach(c => {
-          c.classList.add('highlighted');
-          c.style.opacity = '1.0';
-        });
-        zone.classList.remove('active-zone');
-        inspectionFocusText.textContent = "ALL QUARTERS SYNCHRONIZED";
-      });
+      zone.addEventListener('mouseenter', setQuarter);
+      zone.addEventListener('click', setQuarter);
     });
 
     // Initial Load
