@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gopalkrishna Foundation - 17-DOF Humanoid Robotics Studio</title>
+  
+  <!-- Tailwind CSS & Lucide Icons -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Three.js & OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; color: #0f172a; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-blue-100 selection:text-blue-900">
+
+  <!-- ==================== HEADER ==================== -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-4">
+      
+      <!-- Foundation Identity -->
+      <div class="flex items-center gap-3.5">
+        <div class="w-12 h-12 rounded-xl border border-amber-200 bg-amber-50 p-1 flex items-center justify-center shrink-0 shadow-inner">
+          <img src="logo.jpeg" alt="Logo" class="w-full h-full object-contain" onerror="this.onerror=null; this.parentElement.innerHTML='<svg class=\'w-7 h-7 text-amber-600\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\'><path d=\'M12 2v8\'/><path d=\'M4.93 10.93a10 10 0 0 0 14.14 0\'/><path d=\'M2 18h20\'/><circle cx=\'12\' cy=\'5\' r=\'2\' fill=\'currentColor\'/></svg>'">
+        </div>
+        <div>
+          <h1 class="text-base sm:text-lg font-black text-slate-900 leading-tight">
+            Gopalkrishna Advanced Rural Research Foundation
+          </h1>
+          <p class="text-xs font-bold text-amber-700">
+            Dr. APJ Abdul Kalam Research Zero Funding Initiative
+          </p>
+        </div>
+      </div>
+
+      <!-- Tiranga Flag Vector -->
+      <div class="flex items-center gap-3 bg-slate-50 border border-slate-200 px-3.5 py-1.5 rounded-xl shadow-xs">
+        <div class="flex flex-col text-right">
+          <span class="text-[10px] font-bold uppercase text-slate-400">Educational Initiative</span>
+          <span class="text-xs font-bold text-slate-700">Make In India Robotics</span>
+        </div>
+        <div class="w-10 h-7 rounded border border-slate-300 overflow-hidden flex flex-col shrink-0 shadow-xs">
+          <div class="h-1/3 bg-[#FF9933]"></div>
+          <div class="h-1/3 bg-white flex items-center justify-center">
+            <svg class="w-2.5 h-2.5 text-[#000080]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 2v20M2 12h20M4.93 4.93l14.14 14.14M4.93 19.07l14.14-14.14M8.46 2.54l7.08 18.92M2.54 8.46l18.92 7.08M15.54 2.54L8.46 21.46M21.46 8.46L2.54 15.54" />
+            </svg>
+          </div>
+          <div class="h-1/3 bg-[#138808]"></div>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ==================== MAIN WORKBENCH ==================== -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-4 w-full flex-grow">
+    
+    <!-- Navigation Tabs -->
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-4 bg-white p-2.5 rounded-2xl border border-slate-200 shadow-xs">
+      <div class="flex flex-wrap items-center gap-2">
+        <button id="tab-build" onclick="setMode('build')" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-blue-600 text-white shadow-sm flex items-center gap-1.5">
+          <i data-lucide="wrench" class="w-4 h-4"></i> Step-by-Step Build
+        </button>
+        <button id="tab-pose" onclick="setMode('pose')" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-100 flex items-center gap-1.5">
+          <i data-lucide="activity" class="w-4 h-4"></i> Kinematics Studio
+        </button>
+        <button id="tab-wire" onclick="setMode('wire')" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-100 flex items-center gap-1.5">
+          <i data-lucide="network" class="w-4 h-4"></i> Wiring & Circuit
+        </button>
+        <button id="tab-code" onclick="setMode('code')" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-100 flex items-center gap-1.5">
+          <i data-lucide="code" class="w-4 h-4"></i> Arduino Mega Code
+        </button>
+        <button id="tab-theory" onclick="setMode('theory')" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-100 flex items-center gap-1.5">
+          <i data-lucide="book-open" class="w-4 h-4"></i> Theory & Hardware
+        </button>
+      </div>
+
+      <!-- Color Legend -->
+      <div class="flex items-center gap-3 text-xs bg-slate-50 px-3.5 py-1.5 rounded-xl border border-slate-200">
+        <span class="flex items-center gap-1.5 font-bold text-slate-800">
+          <span class="w-3.5 h-3.5 rounded-xs bg-[#2563eb] border border-blue-700"></span> Anodized Blue Frame
+        </span>
+        <span class="flex items-center gap-1.5 font-bold text-slate-800">
+          <span class="w-3.5 h-3.5 rounded-xs bg-[#09090b] border border-slate-700"></span> Black Servo Body
+        </span>
+        <span class="flex items-center gap-1.5 font-bold text-slate-800">
+          <span class="w-3.5 h-3.5 rounded-xs bg-[#f59e0b]"></span> Brass/Silver Drive Spline
+        </span>
+      </div>
+    </div>
+
+    <!-- Dual Column Split Layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+      
+      <!-- Left Column: 3D Visualization Canvas (Large 7-Col) -->
+      <div class="lg:col-span-7 bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col relative h-[620px] sm:h-[720px]">
+        
+        <!-- Viewport Top Overlay Badges -->
+        <div class="absolute top-4 left-4 z-10 flex flex-col gap-2 pointer-events-none">
+          <div class="bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 shadow-xs flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+            <span id="canvas-badge">Step 0: Electrical 90° Centering</span>
+          </div>
+        </div>
+
+        <!-- Camera Control Bar (Pan, Tilt, Reset) -->
+        <div class="absolute top-4 right-4 z-10 flex gap-1.5">
+          <button onclick="panCamera(0, 3)" title="Move Camera Up" class="p-2 rounded-xl bg-white/90 border border-slate-200 text-slate-700 hover:bg-slate-100 shadow-xs">
+            <i data-lucide="arrow-up" class="w-4 h-4"></i>
+          </button>
+          <button onclick="panCamera(0, -3)" title="Move Camera Down" class="p-2 rounded-xl bg-white/90 border border-slate-200 text-slate-700 hover:bg-slate-100 shadow-xs">
+            <i data-lucide="arrow-down" class="w-4 h-4"></i>
+          </button>
+          <button onclick="resetCamera()" title="Reset Camera View" class="p-2 rounded-xl bg-white/90 border border-slate-200 text-slate-700 hover:bg-slate-100 shadow-xs">
+            <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <!-- Three.js Canvas Container -->
+        <div id="canvas-container" class="w-full h-full bg-slate-50 cursor-grab active:cursor-grabbing"></div>
+
+        <!-- Viewport Bottom Status Bar -->
+        <div class="p-3 bg-white border-t border-slate-200 flex items-center justify-between text-xs text-slate-500 font-medium">
+          <div class="flex items-center gap-1.5">
+            <i data-lucide="mouse-pointer" class="w-3.5 h-3.5 text-blue-500"></i>
+            <span>Left-drag: Rotate | Right-drag: Pan | Scroll: Zoom</span>
+          </div>
+          <span id="joint-step-counter" class="font-mono font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+            STEP 0 / 20
+          </span>
+        </div>
+      </div>
+
+      <!-- Right Column: Curriculum & Dad-Son Dialogue (5-Col) -->
+      <div class="lg:col-span-5 flex flex-col gap-4">
+        
+        <!-- Mentor Dialogue (Dad & Shantanu) -->
+        <div class="bg-gradient-to-br from-blue-50/70 via-white to-amber-50/40 rounded-3xl p-5 border border-blue-100 shadow-xs">
+          <div class="flex items-center justify-between mb-3 border-b border-blue-100/80 pb-2">
+            <span class="text-xs font-black uppercase tracking-wider text-blue-700 flex items-center gap-1.5">
+              <i data-lucide="message-square" class="w-3.5 h-3.5"></i> Mentor & Builder Laboratory Dialogue
+            </span>
+            <span class="text-[11px] font-mono font-bold text-slate-400">LAB-LOG</span>
+          </div>
+
+          <!-- Shantanu Bubble -->
+          <div class="flex items-start gap-3 mb-3.5">
+            <div class="w-8 h-8 rounded-full bg-amber-500 text-white font-black text-xs flex items-center justify-center shrink-0 shadow-xs">S</div>
+            <div class="bg-white rounded-2xl rounded-tl-none p-3 border border-amber-200/80 text-xs text-slate-700 shadow-xs max-w-sm">
+              <p class="font-bold text-amber-900 mb-0.5">Shantanu</p>
+              <p id="shantanu-msg">"Dad, before we screw any aluminum brackets onto these TowerPro MG996R motors, do we need to power them up first?"</p>
+            </div>
+          </div>
+
+          <!-- Dr. Venu Gopal Bubble -->
+          <div class="flex items-start gap-3 justify-end">
+            <div class="bg-blue-600 text-white rounded-2xl rounded-tr-none p-3 text-xs shadow-xs max-w-sm text-right">
+              <p class="font-bold text-blue-100 mb-0.5">Dr. Venu Gopal</p>
+              <p id="venu-msg" class="text-left text-blue-50">"Precisely, Shantanu! That is Step 0. Standard 180° servos must receive a 1500 µs pulse to lock at exactly 90°. If you bolt the horns without electrical zero-centering, the robot will rip its brackets apart on first boot!"</p>
+            </div>
+            <div class="w-8 h-8 rounded-full bg-blue-700 text-white font-black text-xs flex items-center justify-center shrink-0 shadow-xs">VG</div>
+          </div>
+        </div>
+
+        <!-- Dynamic Content Switcher -->
+        <div id="dynamic-panel" class="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs flex flex-col gap-4"></div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ==================== FOOTER ==================== -->
+  <footer class="bg-white border-t border-slate-200 py-6 mt-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
+      <div>
+        <p class="text-xs font-bold text-slate-800">
+          Developed by Dr. Annamdas Venu Gopal Madhav & Annamdas Shantanu Vasudev Krishna
+        </p>
+        <p class="text-[11px] text-slate-500 mt-0.5">
+          Copyright &copy; 2026. Gopalkrishna Advanced Rural Research Foundation. Educational Purpose (Not for Commercial Use).
+        </p>
+      </div>
+
+      <!-- Active LinkedIn Profile Link -->
+      <div>
+        <a href="https://www.linkedin.com/company/gopalkrishnaadvancedruralresearchfoundation/" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 transition-colors text-xs font-semibold">
+          <i data-lucide="linkedin" class="w-3.5 h-3.5"></i> Follow Us on LinkedIn
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ==================== LOGIC & THREE.JS ENGINE ==================== -->
+  <script>
+    const STEPS_DATA = [
+      { step: 0, title: "Step 0: Electrical 90° Centering", s: "Dad, before we screw any brackets, do we power the motors?", v: "Yes, Shantanu! Send 1500 µs PWM to each motor to lock them at 90° before mechanical bolting.", hw: "17x Servos, Arduino Mega, PCA9685" },
+      { step: 1, title: "Step 1: Left Foot Base Plate & Ankle Roll", s: "Dad, how does the footplate balance the robot?", v: "The Ankle Roll servo sits directly on the flat plate to handle lateral stability.", hw: "1x Blue Footplate, 1x U-Bracket, 4x M3 Screws" },
+      { step: 2, title: "Step 2: Left Ankle Pitch & Bearing", s: "Dad, look at this joint! Motor horn on one side, silver bearing on the other?", v: "That flanged bearing absorbs the shear bending load so the motor spline never snaps under weight!", hw: "1x Servo, 1x Flanged Bearing, 1x M3 Pivot Screw" },
+      { step: 3, title: "Step 3: Left Shin Channel", s: "Dad, how should we route the wires through this shin bracket?", v: "Route the 3-pin cable inside the channel cavity with spiral wrap to avoid pinch points.", hw: "1x Long Blue U-Bracket, 4x M3 Screws" },
+      { step: 4, title: "Step 4: Left Knee Pitch (High Torque)", s: "Dad, does the knee need the most torque?", v: "Yes! The knee carries a 1.8 kg cantilever load during single-leg support. Always use threadlocker.", hw: "1x High Torque Servo, 1x 25T Metal Horn" },
+      { step: 5, title: "Step 5: Left Thigh Channel", s: "Dad, the thigh bracket connects straight to the hip.", v: "Keep the U-flanges facing inward to leave room for the wiring harness.", hw: "1x Long Blue U-Bracket, 8x M3 Fasteners" },
+      { step: 6, title: "Step 6: Left Hip Pitch & Roll Gimbal", s: "Dad, two servos are joined at 90 degrees here!", v: "That forms our 2-DOF universal hip joint for forward strides and lateral lean.", hw: "2x Servos, 1x Blue Crossover Bracket" },
+      { step: 7, title: "Step 7: Right Foot Base Plate", s: "Dad, building the right footplate now!", v: "Mirror the mechanical assembly, but remember software angles are inverted for symmetry.", hw: "1x Blue Footplate, 1x U-Bracket" },
+      { step: 8, title: "Step 8: Right Ankle Pitch & Bearing", s: "Dad, chrome bearing seated!", v: "Good job. Seating the bearing first makes horn alignment much smoother.", hw: "1x Servo, 1x Bearing, 1x M3 Screw" },
+      { step: 9, title: "Step 9: Right Shin Channel", s: "Dad, right shin fastened rigid.", v: "Verify zero lateral play so the leg only rotates in the pitch plane.", hw: "1x Long Blue U-Bracket, M3 Hardware" },
+      { step: 10, title: "Step 10: Right Knee Pitch Motor", s: "Dad, right knee horn aligned at 90 degrees.", v: "Great! That gives full symmetrical range of motion for walking gaits.", hw: "1x Servo, 1x 25T Horn" },
+      { step: 11, title: "Step 11: Right Thigh Channel", s: "Dad, right leg structure is finished!", v: "Notice how the blue aluminum carries the structural load while black servos provide torque.", hw: "1x Long Blue U-Bracket" },
+      { step: 12, title: "Step 12: Right Hip Gimbal", s: "Dad, right hip pitch and roll servos assembled.", v: "Both leg kinematic chains are now ready for the pelvis base plate.", hw: "2x Servos, 1x Blue Crossover Bracket" },
+      { step: 13, title: "Step 13: Central Pelvis Base Plate", s: "Dad! Connecting both legs to the pelvis plate. The robot stands!", v: "A major milestone! Ensure the plate is perfectly horizontal across both hip roll joints.", hw: "1x Blue Pelvis Plate, 8x M3x8mm Screws" },
+      { step: 14, title: "Step 14: Torso Aluminum Roll Cage", s: "Dad, where will the electronics sit?", v: "Inside this upper aluminum cage to protect the Mega board and wiring.", hw: "2x Blue Torso Plates, 1x Crossbeam" },
+      { step: 15, title: "Step 15: Left Shoulder & Arm Chain", s: "Dad, mounting the left arm: 3 servos for shoulder pitch, roll, and elbow.", v: "Parent the arm directly to the shoulder frame so it moves solidly with the torso.", hw: "3x Servos, 2x Blue U-Brackets, 1x Hand Plate" },
+      { step: 16, title: "Step 16: Right Shoulder & Arm Chain", s: "Dad, right arm assembled! The skeleton is almost complete.", v: "Check that both arms can swing forward 90 degrees to assist forward gait momentum.", hw: "3x Servos, 2x Blue U-Brackets, 1x Hand Plate" },
+      { step: 17, title: "Step 17: Head Pan Servo & Dual Ultrasonic Sensor", s: "Dad, motor 17 mounted on top for the sensor neck!", v: "That finishes the physical 17-DOF humanoid skeleton. Now let's connect the brain!", hw: "1x Servo, 1x Blue Sensor Neck Bracket" },
+      { step: 18, title: "Step 18: Arduino Mega 2560 & PCA9685 Wiring", s: "Dad, how do we wire all 17 servos?", v: "Connect Mega Pin 20 to SDA and Pin 21 to SCL. Ground must be shared across all components!", hw: "Mega 2560, PCA9685, Jumper Wire Bus" },
+      { step: 19, title: "Step 19: Power Budget (7.4V LiPo & 6V 20A UBEC)", s: "Dad, why not power servos directly from the Arduino 5V pin?", v: "Never! 17 metal-gear servos pull up to 25A stall spikes. Always use a 2S LiPo and a 20A UBEC.", hw: "7.4V 2S LiPo, 6V 20A UBEC, XT60" },
+      { step: 20, title: "Step 20: Visual Inspection & Joint Calibration", s: "Dad, the blue aluminum brackets contrast clearly with the black servos!", v: "Exactly, Shantanu. Structural airframe and electromechanical drive are now fully calibrated!", hw: "Joint Labels J01-J17" }
+    ];
+
+    let scene, camera, renderer, controls;
+    let currentStep = 0;
+    let currentMode = 'build';
+    const parts = [];
+
+    // DISTINCT COLOR MATERIALS: Blue Aluminum vs Black Polycarbonate Motors
+    const matBlueFrame = new THREE.MeshStandardMaterial({ 
+      color: 0x2563eb, // High-contrast anodized sapphire blue aluminum
+      metalness: 0.8, 
+      roughness: 0.25 
+    });
+    const matDarkFrame = new THREE.MeshStandardMaterial({ 
+      color: 0x1d4ed8, 
+      metalness: 0.85, 
+      roughness: 0.3 
+    });
+    const matServo = new THREE.MeshStandardMaterial({ 
+      color: 0x09090b, // Deep matte black servo polycarbonate casing
+      metalness: 0.1, 
+      roughness: 0.8 
+    });
+    const matSpline = new THREE.MeshStandardMaterial({ 
+      color: 0xf59e0b, // Polished brass gear spline
+      metalness: 0.85, 
+      roughness: 0.25 
+    });
+    const matBearing = new THREE.MeshStandardMaterial({ 
+      color: 0xf8fafc, // Mirror chrome bearing
+      metalness: 0.95, 
+      roughness: 0.1 
+    });
+
+    function makeServo(w=2.2, h=4.2, d=4.0) {
+      const g = new THREE.Group();
+      
+      // Black Body
+      const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), matServo);
+      body.castShadow = true;
+      g.add(body);
+      
+      // Brass Spline & Horn
+      const spline = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.4, 16), matSpline);
+      spline.rotation.z = Math.PI / 2;
+      spline.position.set(w/2 + 0.15, h/4, 0);
+      
+      const horn = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 0.2, 20), matSpline);
+      horn.rotation.z = Math.PI / 2;
+      horn.position.set(w/2 + 0.25, h/4, 0);
+      g.add(spline, horn);
+
+      // Rear Chrome Bearing
+      const bearing = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 0.2, 20), matBearing);
+      bearing.rotation.z = Math.PI / 2;
+      bearing.position.set(-w/2 - 0.12, h/4, 0);
+      g.add(bearing);
+
+      return g;
+    }
+
+    function makeUBracket(w=2.8, h=5.0, d=4.4) {
+      const g = new THREE.Group();
+      const base = new THREE.Mesh(new THREE.BoxGeometry(0.35, h, d), matBlueFrame);
+      base.position.set(-w/2, 0, 0);
+      const top = new THREE.Mesh(new THREE.BoxGeometry(w, 0.35, d), matBlueFrame);
+      top.position.set(0, h/2, 0);
+      const bot = new THREE.Mesh(new THREE.BoxGeometry(w, 0.35, d), matBlueFrame);
+      bot.position.set(0, -h/2, 0);
+      g.add(base, top, bot);
+      return g;
+    }
+
+    let leftArmGroup, rightArmGroup, headGroup, leftKneeGroup, rightKneeGroup;
+
+    function initThree() {
+      const container = document.getElementById('canvas-container');
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0xf8fafc);
+
+      camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+      camera.position.set(0, 14, 52);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.shadowMap.enabled = true;
+      container.appendChild(renderer.domElement);
+
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.target.set(0, 10, 0);
+      controls.enableDamping = true;
+
+      // Studio Lighting
+      scene.add(new THREE.AmbientLight(0xffffff, 0.75));
+      const dl = new THREE.DirectionalLight(0xffffff, 0.85);
+      dl.position.set(25, 45, 30);
+      dl.castShadow = true;
+      scene.add(dl);
+
+      const fill = new THREE.DirectionalLight(0xdbeafe, 0.4);
+      fill.position.set(-25, 20, -20);
+      scene.add(fill);
+
+      const grid = new THREE.GridHelper(50, 25, 0x93c5fd, 0xe2e8f0);
+      grid.position.y = -8.5;
+      scene.add(grid);
+
+      buildRobotKinematics();
+      renderStep(0);
+      animate();
+    }
+
+    function buildRobotKinematics() {
+      // Step 0: Dummy Spline
+      const dummy0 = new THREE.Mesh(new THREE.CylinderGeometry(2, 2, 0.4, 24), matSpline);
+      dummy0.position.set(0, -8, 0);
+      parts[0] = dummy0; scene.add(dummy0);
+
+      // Step 1: Left Foot
+      const footL = new THREE.Mesh(new THREE.BoxGeometry(5.0, 0.4, 8.0), matBlueFrame);
+      footL.position.set(-4.5, -8.3, 0.5);
+      parts[1] = footL; scene.add(footL);
+
+      // Step 2: Left Ankle Pitch
+      const anklePitchL = makeServo();
+      anklePitchL.position.set(-4.5, -6.0, 0);
+      parts[2] = anklePitchL; scene.add(anklePitchL);
+
+      // Step 3: Left Shin
+      const shinL = makeUBracket(3.2, 5.5, 4.4);
+      shinL.position.set(-4.5, -2.8, 0);
+      parts[3] = shinL; scene.add(shinL);
+
+      // Step 4: Left Knee
+      leftKneeGroup = new THREE.Group();
+      const kneeL = makeServo();
+      leftKneeGroup.position.set(-4.5, 0.5, 0);
+      leftKneeGroup.add(kneeL);
+      parts[4] = leftKneeGroup; scene.add(leftKneeGroup);
+
+      // Step 5: Left Thigh
+      const thighL = makeUBracket(3.2, 5.5, 4.4);
+      thighL.position.set(-4.5, 3.8, 0);
+      parts[5] = thighL; scene.add(thighL);
+
+      // Step 6: Left Hip
+      const hipL = makeServo();
+      hipL.position.set(-4.5, 7.2, 0);
+      parts[6] = hipL; scene.add(hipL);
+
+      // Step 7: Right Foot
+      const footR = new THREE.Mesh(new THREE.BoxGeometry(5.0, 0.4, 8.0), matBlueFrame);
+      footR.position.set(4.5, -8.3, 0.5);
+      parts[7] = footR; scene.add(footR);
+
+      // Step 8: Right Ankle Pitch
+      const anklePitchR = makeServo();
+      anklePitchR.position.set(4.5, -6.0, 0);
+      parts[8] = anklePitchR; scene.add(anklePitchR);
+
+      // Step 9: Right Shin
+      const shinR = makeUBracket(3.2, 5.5, 4.4);
+      shinR.position.set(4.5, -2.8, 0);
+      parts[9] = shinR; scene.add(shinR);
+
+      // Step 10: Right Knee
+      rightKneeGroup = new THREE.Group();
+      const kneeR = makeServo();
+      rightKneeGroup.position.set(4.5, 0.5, 0);
+      rightKneeGroup.add(kneeR);
+      parts[10] = rightKneeGroup; scene.add(rightKneeGroup);
+
+      // Step 11: Right Thigh
+      const thighR = makeUBracket(3.2, 5.5, 4.4);
+      thighR.position.set(4.5, 3.8, 0);
+      parts[11] = thighR; scene.add(thighR);
+
+      // Step 12: Right Hip
+      const hipR = makeServo();
+      hipR.position.set(4.5, 7.2, 0);
+      parts[12] = hipR; scene.add(hipR);
+
+      // Step 13: Pelvis Base Plate
+      const pelvis = new THREE.Mesh(new THREE.BoxGeometry(13.0, 1.0, 4.8), matDarkFrame);
+      pelvis.position.set(0, 9.8, 0);
+      parts[13] = pelvis; scene.add(pelvis);
+
+      // Step 14: Torso Aluminum Cage
+      const torso = makeUBracket(11.0, 6.5, 4.8);
+      torso.position.set(0, 13.5, 0);
+      parts[14] = torso; scene.add(torso);
+
+      // Step 15: Left Arm (Full Chain: Shoulder Pitch, Shoulder Roll, Elbow, Hand)
+      leftArmGroup = new THREE.Group();
+      leftArmGroup.position.set(-6.8, 15.5, 0);
+      const shoulderL = makeServo(2.0, 3.6, 3.6);
+      const bicepBracketL = makeUBracket(2.4, 4.0, 3.6);
+      bicepBracketL.position.set(-0.8, -2.2, 0);
+      const elbowL = makeServo(2.0, 3.4, 3.4);
+      elbowL.position.set(-1.0, -4.5, 0);
+      const handL = new THREE.Mesh(new THREE.BoxGeometry(0.3, 2.5, 2.0), matBlueFrame);
+      handL.position.set(-1.0, -6.5, 0);
+      leftArmGroup.add(shoulderL, bicepBracketL, elbowL, handL);
+      parts[15] = leftArmGroup; scene.add(leftArmGroup);
+
+      // Step 16: Right Arm (Full Chain)
+      rightArmGroup = new THREE.Group();
+      rightArmGroup.position.set(6.8, 15.5, 0);
+      const shoulderR = makeServo(2.0, 3.6, 3.6);
+      const bicepBracketR = makeUBracket(2.4, 4.0, 3.6);
+      bicepBracketR.position.set(0.8, -2.2, 0);
+      const elbowR = makeServo(2.0, 3.4, 3.4);
+      elbowR.position.set(1.0, -4.5, 0);
+      const handR = new THREE.Mesh(new THREE.BoxGeometry(0.3, 2.5, 2.0), matBlueFrame);
+      handR.position.set(1.0, -6.5, 0);
+      rightArmGroup.add(shoulderR, bicepBracketR, elbowR, handR);
+      parts[16] = rightArmGroup; scene.add(rightArmGroup);
+
+      // Step 17: Head Pan & Dual Eyes
+      headGroup = new THREE.Group();
+      headGroup.position.set(0, 17.5, 0);
+      const neckBracket = makeUBracket(3.0, 2.8, 3.0);
+      const headS = makeServo(2.2, 3.0, 3.0);
+      headS.position.set(0, 1.2, 0);
+      const eyeL = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.5, 16), matSpline);
+      eyeL.rotation.x = Math.PI / 2; eyeL.position.set(-0.8, 2.8, 1.2);
+      const eyeR = eyeL.clone(); eyeR.position.x = 0.8;
+      headGroup.add(neckBracket, headS, eyeL, eyeR);
+      parts[17] = headGroup; scene.add(headGroup);
+
+      // Steps 18-20 Components
+      const mega = new THREE.Mesh(new THREE.BoxGeometry(7, 0.4, 4), new THREE.MeshStandardMaterial({color: 0x0284c7}));
+      mega.position.set(0, 13.5, 0);
+      parts[18] = mega; scene.add(mega);
+
+      const bat = new THREE.Mesh(new THREE.BoxGeometry(6, 2, 3), new THREE.MeshStandardMaterial({color: 0xd97706}));
+      bat.position.set(0, 13.5, 0);
+      parts[19] = bat; scene.add(bat);
+
+      parts[20] = new THREE.Group(); scene.add(parts[20]);
+    }
+
+    function renderStep(s) {
+      currentStep = s;
+      parts.forEach((p, idx) => {
+        if (!p) return;
+        if (idx === 18) p.visible = (s === 18);
+        else if (idx === 19) p.visible = (s === 19);
+        else if (idx === 20) p.visible = (s === 20);
+        else p.visible = (idx <= s);
+      });
+
+      const d = STEPS_DATA[s];
+      document.getElementById('joint-step-counter').innerText = `STEP ${s} / 20`;
+      document.getElementById('canvas-badge').innerText = d.title;
+      document.getElementById('shantanu-msg').innerText = `"${d.s}"`;
+      document.getElementById('venu-msg').innerText = `"${d.v}"`;
+
+      if (currentMode === 'build') renderBuildPanel();
+    }
+
+    function panCamera(dx, dy) {
+      controls.target.y += dy;
+      camera.position.y += dy;
+    }
+
+    function resetCamera() {
+      controls.target.set(0, 10, 0);
+      camera.position.set(0, 14, 52);
+    }
+
+    function setMode(mode) {
+      currentMode = mode;
+      ['build', 'pose', 'wire', 'code', 'theory'].forEach(m => {
+        const btn = document.getElementById(`tab-${m}`);
+        if (m === mode) {
+          btn.className = "px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-blue-600 text-white shadow-sm flex items-center gap-1.5";
+        } else {
+          btn.className = "px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-100 flex items-center gap-1.5";
+        }
+      });
+
+      if (mode === 'build') {
+        renderStep(currentStep);
+      } else if (mode === 'pose') {
+        parts.forEach(p => { if (p) p.visible = true; });
+        parts[18].visible = false; parts[19].visible = false;
+        renderPosePanel();
+      } else if (mode === 'wire') {
+        renderWiringPanel();
+      } else if (mode === 'code') {
+        renderCodePanel();
+      } else if (mode === 'theory') {
+        renderTheoryPanel();
+      }
+    }
+
+    function renderBuildPanel() {
+      const d = STEPS_DATA[currentStep];
+      const panel = document.getElementById('dynamic-panel');
+      panel.innerHTML = `
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Step-by-Step Build</span>
+          <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">Step ${currentStep} of 20</span>
+        </div>
+        <h3 class="text-base font-extrabold text-slate-900">${d.title}</h3>
+        <div class="p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs">
+          <span class="font-bold text-slate-500 uppercase text-[10px]">Required Hardware:</span>
+          <p class="font-medium text-slate-700 mt-0.5">${d.hw}</p>
+        </div>
+        <input type="range" min="0" max="20" value="${currentStep}" oninput="renderStep(parseInt(this.value))" class="w-full h-2 bg-slate-200 rounded-lg cursor-pointer accent-blue-600">
+        <div class="flex gap-2 pt-2">
+          <button onclick="renderStep(Math.max(0, currentStep-1))" ${currentStep === 0 ? 'disabled' : ''} class="flex-1 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40">Previous</button>
+          <button onclick="renderStep(Math.min(20, currentStep+1))" ${currentStep === 20 ? 'disabled' : ''} class="flex-1 py-2.5 rounded-xl bg-blue-600 text-xs font-bold text-white hover:bg-blue-700 disabled:opacity-40">Next Joint</button>
+        </div>
+      `;
+      lucide.createIcons();
+    }
+
+    function renderPosePanel() {
+      const panel = document.getElementById('dynamic-panel');
+      panel.innerHTML = `
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Kinematics Studio</span>
+          <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">Live Posing</span>
+        </div>
+        <p class="text-xs text-slate-600">Adjust joints to test ranges of motion and mechanical clearances:</p>
+        <div class="space-y-3 pt-2">
+          <div>
+            <div class="flex justify-between text-xs font-semibold text-slate-700 mb-1">
+              <span>Neck Pan:</span> <span id="v-head" class="font-mono">90°</span>
+            </div>
+            <input type="range" min="0" max="180" value="90" oninput="setAngle('head', this.value)" class="w-full accent-blue-600">
+          </div>
+          <div>
+            <div class="flex justify-between text-xs font-semibold text-slate-700 mb-1">
+              <span>Knees Pitch:</span> <span id="v-knee" class="font-mono">90°</span>
+            </div>
+            <input type="range" min="0" max="180" value="90" oninput="setAngle('knee', this.value)" class="w-full accent-blue-600">
+          </div>
+          <div>
+            <div class="flex justify-between text-xs font-semibold text-slate-700 mb-1">
+              <span>Arms Roll:</span> <span id="v-arm" class="font-mono">90°</span>
+            </div>
+            <input type="range" min="0" max="180" value="90" oninput="setAngle('arm', this.value)" class="w-full accent-blue-600">
+          </div>
+        </div>
+      `;
+      lucide.createIcons();
+    }
+
+    function setAngle(type, val) {
+      document.getElementById(`v-${type}`).innerText = `${val}°`;
+      const rad = THREE.MathUtils.degToRad(val - 90);
+      if (type === 'head' && headGroup) headGroup.rotation.y = rad;
+      if (type === 'knee') {
+        if (leftKneeGroup) leftKneeGroup.rotation.x = rad;
+        if (rightKneeGroup) rightKneeGroup.rotation.x = rad;
+      }
+      if (type === 'arm') {
+        if (leftArmGroup) leftArmGroup.rotation.z = rad;
+        if (rightArmGroup) rightArmGroup.rotation.z = -rad;
+      }
+    }
+
+    function renderWiringPanel() {
+      const panel = document.getElementById('dynamic-panel');
+      panel.innerHTML = `
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Circuit Laboratory</span>
+          <span class="text-xs font-mono font-bold text-sky-600 bg-sky-50 px-2 py-0.5 rounded-md border border-sky-100">Full Schematics</span>
+        </div>
+        <h3 class="text-base font-extrabold text-slate-900">Arduino Mega 2560 & PCA9685 Wiring</h3>
+        
+        <div class="space-y-2 text-xs">
+          <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+            <span class="text-[10px] font-bold text-slate-400 uppercase">I2C Control Bus (Hardware Pins)</span>
+            <p class="font-mono font-bold text-slate-800">Arduino Mega Pin 20 (SDA) -> PCA9685 SDA</p>
+            <p class="font-mono font-bold text-slate-800">Arduino Mega Pin 21 (SCL) -> PCA9685 SCL</p>
+          </div>
+          
+          <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+            <span class="text-[10px] font-bold text-slate-400 uppercase">Power Rails & Grounding</span>
+            <p class="font-mono text-slate-700">PCA9685 VCC (Logic) -> Mega 5V Pin</p>
+            <p class="font-mono font-bold text-amber-700">PCA9685 V+ (Motor Power) -> 6.0V 20A UBEC Output</p>
+            <p class="font-mono font-bold text-rose-700">Common GND -> Mega GND + PCA9685 GND + UBEC GND</p>
+          </div>
+
+          <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+            <span class="text-[10px] font-bold text-slate-400 uppercase">17th Servo Connection</span>
+            <p class="font-mono text-slate-700">Head Pan PWM Signal -> Arduino Mega Pin 2</p>
+            <p class="font-mono text-slate-700">Head Pan V+ / GND -> Powered from UBEC Rail</p>
+          </div>
+        </div>
+      `;
+      lucide.createIcons();
+    }
+
+    function renderCodePanel() {
+      const panel = document.getElementById('dynamic-panel');
+      panel.innerHTML = `
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Arduino Mega 2560</span>
+          <span class="text-xs font-mono font-bold text-sky-600 bg-sky-50 px-2 py-0.5 rounded-md border border-sky-100">C++ Firmware</span>
+        </div>
+        <h3 class="text-base font-extrabold text-slate-900">PCA9685 16-Ch + 17th Servo Firmware</h3>
+        <p class="text-xs text-slate-600">Mega Hardware I2C Pins: <strong>Pin 20 (SDA)</strong> & <strong>Pin 21 (SCL)</strong>.</p>
+        <div class="relative">
+          <pre class="bg-slate-900 text-slate-100 p-3.5 rounded-2xl text-[11px] font-mono overflow-x-auto max-h-64">
+#include &lt;Wire.h&gt;
+#include &lt;Adafruit_PWMServoDriver.h&gt;
+#include &lt;Servo.h&gt;
+
+Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver(0x40);
+Servo headServo; // 17th Servo on Arduino Mega Pin 2
+
+#define SERVOMIN  150 // Minimum pulse tick (0 deg)
+#define SERVOMAX  600 // Maximum pulse tick (180 deg)
+
+void setup() {
+  Serial.begin(115200);
+  Wire.begin(); // Uses Mega Pin 20 (SDA) and Pin 21 (SCL)
+  
+  pwm.begin();
+  pwm.setPWMFreq(50); // Standard 50Hz PWM for MG996R
+
+  headServo.attach(2); // Attach 17th servo to digital pin 2
+
+  // Center all 16 PCA9685 servos to 90 degrees
+  for (uint8_t ch = 0; ch < 16; ch++) {
+    pwm.setPWM(ch, 0, 375); // 375 ticks = 1500 us (center)
+  }
+  headServo.write(90); // Center head pan
+  Serial.println("Robot Joints Centered at 90 Degrees.");
+}
+
+void loop() {
+  // Walking gait sequence routines here
+}
+          </pre>
+          <button onclick="copyFirmware()" class="absolute top-2.5 right-2.5 px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-[10px] font-bold border border-slate-700">
+            Copy
+          </button>
+        </div>
+      `;
+      lucide.createIcons();
+    }
+
+    function copyFirmware() {
+      navigator.clipboard.writeText(`#include <Wire.h>\n#include <Adafruit_PWMServoDriver.h>\n#include <Servo.h>\n\nAdafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver(0x40);\nServo headServo;\n\nvoid setup() {\n  Wire.begin();\n  pwm.begin();\n  pwm.setPWMFreq(50);\n  headServo.attach(2);\n  for (uint8_t ch = 0; ch < 16; ch++) {\n    pwm.setPWM(ch, 0, 375);\n  }\n  headServo.write(90);\n}\nvoid loop() {}`);
+      alert("Arduino Mega Code Copied to Clipboard!");
+    }
+
+    function renderTheoryPanel() {
+      const panel = document.getElementById('dynamic-panel');
+      panel.innerHTML = `
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Educational Theory</span>
+          <span class="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-100">Reference Guide</span>
+        </div>
+        <h3 class="text-base font-extrabold text-slate-900">Humanoid Actuation & Components</h3>
+        
+        <div class="space-y-2 text-xs text-slate-700 max-h-80 overflow-y-auto pr-1">
+          <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+            <h4 class="font-bold text-slate-900 mb-0.5">1. Why Dual-Axis Brackets?</h4>
+            <p>Cantilevered walking forces would bend a single-sided motor shaft. Sandwiched brackets transfer radial loads to the flanged chrome bearing on the opposite side.</p>
+          </div>
+          
+          <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+            <h4 class="font-bold text-slate-900 mb-0.5">2. Power & Current Limits</h4>
+            <p>17 metal-gear servos moving simultaneously pull up to 25.5A surge current. Powering directly from an Arduino 5V pin causes immediate thermal shutdown. A 7.4V 2S LiPo with a 6.0V 20A UBEC is strictly required.</p>
+          </div>
+
+          <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+            <h4 class="font-bold text-slate-900 mb-0.5">3. Essential Student Hardware Checklist</h4>
+            <ul class="list-disc pl-4 space-y-1 text-slate-600 mt-1">
+              <li>17x TowerPro MG996R or RDS3218 180° Positional Servos</li>
+              <li>1x 17-DOF Anodized Aluminum Bracket Frame Kit</li>
+              <li>1x Arduino Mega 2560 R3 Board</li>
+              <li>1x PCA9685 16-Channel 12-bit PWM I2C Driver</li>
+              <li>1x 7.4V 2S 2200mAh-3000mAh LiPo Battery (35C+)</li>
+              <li>1x 6.0V 20A Continuous UBEC / DC-DC Buck Converter</li>
+            </ul>
+          </div>
+        </div>
+      `;
+      lucide.createIcons();
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initThree();
+      renderBuildPanel();
+      lucide.createIcons();
+    });
+  </script>
+</body>
+</html>
