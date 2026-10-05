@@ -1,0 +1,2336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GARRF 3D Virtual Robotics Lab - Extra-Wide Workbench, Distant Center Traffic Pole & Precision Assembly</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Three.js + OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            saffron: {
+              400: '#fb923c',
+              500: '#f97316',
+              600: '#ea580c'
+            },
+            ashoka: '#000080',
+            indiaGreen: '#138808'
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #070b14; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #334155; }
+
+    .glass-card {
+      background: rgba(11, 17, 32, 0.90);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .india-strip {
+      height: 3.5px;
+      background: linear-gradient(90deg, #FF9933 0%, #FFFFFF 50%, #138808 100%);
+    }
+
+    .glow-orange {
+      box-shadow: 0 0 25px -4px rgba(249, 115, 22, 0.4);
+    }
+
+    .glow-cyan {
+      box-shadow: 0 0 25px -4px rgba(6, 182, 212, 0.4);
+    }
+
+    .glow-emerald {
+      box-shadow: 0 0 25px -4px rgba(16, 185, 129, 0.4);
+    }
+  </style>
+</head>
+<body class="bg-[#050811] text-slate-100 font-sans min-h-screen flex flex-col antialiased selection:bg-saffron-500 selection:text-white overflow-x-hidden">
+
+  <!-- National Tricolor Accent Strip -->
+  <div class="india-strip w-full"></div>
+
+  <!-- Header with GARRF Branding & National Badge -->
+  <header class="sticky top-0 z-40 bg-[#090d1a]/95 backdrop-blur-md border-b border-slate-800">
+    <div class="max-w-[1780px] mx-auto px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3">
+      
+      <!-- Organization Title & Emblem -->
+      <div class="flex items-center gap-3.5">
+        <div class="relative w-11 h-11 rounded-xl bg-gradient-to-tr from-slate-900 to-slate-800 p-0.5 shadow-md flex-shrink-0 border border-slate-700 overflow-hidden flex items-center justify-center">
+          <img src="Logo.jpeg" alt="GARRF Logo" class="w-full h-full object-cover rounded-[10px]" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'w-full h-full bg-slate-900 flex flex-col items-center justify-center font-black text-xs text-saffron-400\'><span>GA</span><span class=\'text-[9px] text-emerald-400\'>RRF</span></div>'">
+        </div>
+        
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-sm sm:text-base font-extrabold tracking-tight text-white flex items-center gap-1.5">
+              Gopalkrishna Advanced Rural Research Foundation
+            </h1>
+            <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-800/90 border border-slate-700 text-slate-200">
+              <svg class="w-3.5 h-2.5 rounded-sm shadow-sm" viewBox="0 0 900 600" xmlns="http://www.w3.org/2000/svg">
+                <rect width="900" height="200" fill="#FF9933"/>
+                <rect y="200" width="900" height="200" fill="#FFFFFF"/>
+                <rect y="400" width="900" height="200" fill="#138808"/>
+                <circle cx="450" cy="300" r="80" fill="none" stroke="#000080" stroke-width="12"/>
+                <circle cx="450" cy="300" r="16" fill="#000080"/>
+              </svg>
+              <span>INDIA</span>
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-400 font-medium">
+            Virtual Robotics Lab • Center-Aligned Distant Traffic Light, Wide Collision-Free Circuit & Plate Assembly
+          </p>
+        </div>
+      </div>
+
+      <!-- Quick Action Controls & Visitor Tag -->
+      <div class="flex items-center gap-2.5">
+        <div id="userHeaderTag" class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800/90 border border-slate-700 text-xs">
+          <span class="w-2 h-2 rounded-full bg-saffron-400 animate-pulse"></span>
+          <span class="text-slate-400 font-mono">Visitor:</span>
+          <span id="userHeaderName" class="font-bold text-white">Student</span>
+        </div>
+
+        <button onclick="toggleBomModal(true)" class="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold transition active:scale-95">
+          <i data-lucide="receipt" class="w-4 h-4 text-emerald-400"></i>
+          <span>BOM & Cost</span>
+        </button>
+
+        <button onclick="toggleCatalogDrawer(true)" class="flex items-center gap-2 px-3.5 py-1.5 bg-gradient-to-r from-saffron-500 to-amber-600 hover:from-saffron-600 hover:to-amber-700 text-white rounded-xl text-xs font-bold shadow-lg shadow-saffron-500/20 transition active:scale-95">
+          <i data-lucide="grid" class="w-4 h-4"></i>
+          <span>Choose Robot (20 Kits)</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-[1780px] w-full mx-auto p-3 sm:p-4 lg:p-5 flex flex-col gap-4">
+    
+    <!-- Workbench Mode Selection & Environment Status -->
+    <div class="glass-card rounded-2xl p-3 flex flex-wrap items-center justify-between gap-3 border border-slate-800">
+      
+      <!-- Current Model Details -->
+      <div class="flex items-center gap-3 min-w-[280px]">
+        <div id="modelNumberBadge" class="w-10 h-10 rounded-xl bg-saffron-500/15 border border-saffron-500/30 flex items-center justify-center font-mono font-bold text-saffron-400 text-sm">
+          #2
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h2 id="currentRobotName" class="text-sm sm:text-base font-extrabold text-white">Elegoo Smart Robot Car V4.0</h2>
+            <span id="currentRobotCategory" class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-sky-500/20 text-sky-400 border border-sky-500/30">
+              WHEELED 4WD
+            </span>
+          </div>
+          <p id="currentRobotSummary" class="text-xs text-slate-400">Solid alloy clamp brackets, zero-gap brass pillars, and clear traffic light spacing.</p>
+        </div>
+      </div>
+
+      <!-- Action Mode Buttons -->
+      <div class="flex items-center bg-[#070b14] p-1 rounded-xl border border-slate-800">
+        <button id="btnModeAssembly" onclick="setInteractionMode('assembly')" class="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition bg-saffron-500 text-white shadow-md">
+          <i data-lucide="hammer" class="w-3.5 h-3.5"></i>
+          <span>1. Build from Tray</span>
+        </button>
+        <button id="btnModeRun" onclick="setInteractionMode('run')" class="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition text-slate-400 hover:text-slate-200">
+          <i data-lucide="play-circle" class="w-3.5 h-3.5 text-emerald-400"></i>
+          <span>2. Manual Drive</span>
+        </button>
+        <button id="btnModeLine" onclick="setInteractionMode('line')" class="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition text-slate-400 hover:text-slate-200">
+          <i data-lucide="git-commit" class="w-3.5 h-3.5 text-sky-400"></i>
+          <span>3. Traffic Line Follower</span>
+        </button>
+      </div>
+
+      <!-- Table Environment Actions -->
+      <div class="flex items-center gap-2">
+        <button onclick="resetRobotOnTable()" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 transition border border-slate-700 flex items-center gap-1.5">
+          <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-saffron-400"></i>
+          <span>Reset on Table</span>
+        </button>
+        <button onclick="resetCamera()" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition border border-slate-700" title="Reset Camera Angle">
+          <i data-lucide="video" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1">
+      
+      <!-- 3D Canvas Viewport (8 Cols) -->
+      <div class="lg:col-span-8 flex flex-col relative rounded-3xl overflow-hidden border border-slate-800 bg-[#04060d] shadow-2xl min-h-[540px] lg:min-h-[660px]">
+        
+        <div id="canvas-container" class="w-full h-full absolute inset-0 cursor-grab active:cursor-grabbing">
+          <!-- Three.js Canvas Renders Here -->
+        </div>
+
+        <!-- Real-Time Traffic Light HUD (Top Left) -->
+        <div id="trafficStatusHud" class="absolute top-4 left-4 z-10 glass-card px-4 py-2.5 rounded-2xl flex items-center gap-3.5 border border-slate-700 shadow-xl">
+          <div class="flex flex-col gap-1.5 p-1 rounded-lg bg-black/70 border border-slate-800">
+            <span id="hudLightRed" class="w-3 h-3 rounded-full bg-rose-950 border border-rose-800 transition-all duration-300"></span>
+            <span id="hudLightYellow" class="w-3 h-3 rounded-full bg-amber-950 border border-amber-800 transition-all duration-300"></span>
+            <span id="hudLightGreen" class="w-3 h-3 rounded-full bg-emerald-500 border border-emerald-400 shadow-[0_0_10px_#10b981] transition-all duration-300"></span>
+          </div>
+          <div>
+            <div class="text-[10px] font-mono text-slate-400 uppercase tracking-wider">Traffic Light Signal</div>
+            <div id="trafficStateText" class="text-xs sm:text-sm font-black font-mono text-emerald-400 uppercase">
+              GREEN: FULL SPEED TRACKING
+            </div>
+            <div class="text-[11px] text-slate-400 font-mono">
+              Status: <span id="assemblyStatusHudTag" class="text-saffron-400 font-bold">Parts on Side Plate</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Fall Off Table Warning Banner -->
+        <div id="tableOffWarning" class="hidden absolute top-4 left-1/2 -translate-x-1/2 z-20 glass-card px-4 py-2 rounded-2xl border border-rose-500 bg-rose-950/80 text-white flex items-center gap-3 shadow-2xl animate-bounce">
+          <i data-lucide="alert-triangle" class="w-5 h-5 text-rose-400"></i>
+          <div>
+            <span class="text-xs font-black text-rose-300">⚠️ Robot Exceeded Wide Workbench Edge!</span>
+            <p class="text-[11px] text-slate-300">Resetting position safely onto the laboratory bench surface.</p>
+          </div>
+          <button onclick="resetRobotOnTable()" class="px-3 py-1 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg text-xs ml-1 shadow-md">
+            Place on Table
+          </button>
+        </div>
+
+        <!-- Assembly Bottom Right Action Bar -->
+        <div id="assemblyActionBar" class="absolute bottom-4 right-4 z-10 flex items-center gap-2">
+          <button onclick="disassembleAll()" class="p-2.5 glass-card hover:bg-slate-800 text-slate-300 rounded-xl text-xs font-semibold transition border border-slate-700 active:scale-95" title="Move All to Tray">
+            <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+            <span class="hidden sm:inline ml-1 font-mono">To Tray</span>
+          </button>
+          <button onclick="stepSnapPart(1)" class="px-4 py-2.5 bg-saffron-500 hover:bg-saffron-600 text-white rounded-xl text-xs font-bold transition active:scale-95 shadow-lg shadow-saffron-500/25 flex items-center gap-1.5">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            <span>Snap Next from Tray</span>
+          </button>
+          <button onclick="assembleAll()" class="px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition active:scale-95 shadow-lg shadow-emerald-600/25 flex items-center gap-1.5">
+            <i data-lucide="check-check" class="w-4 h-4"></i>
+            <span>Auto Assemble All</span>
+          </button>
+        </div>
+
+        <!-- Driving Telemetry Bar (Run / Line Mode) -->
+        <div id="runTelemetryBar" class="hidden absolute bottom-4 right-4 z-10 glass-card px-4 py-2.5 rounded-2xl flex items-center gap-4 border border-emerald-500/30">
+          <div class="text-center font-mono">
+            <div class="text-[9px] text-slate-400 uppercase">Speed</div>
+            <div id="telemetrySpeed" class="text-xs font-bold text-emerald-400">28 cm/s</div>
+          </div>
+          <div class="w-px h-6 bg-slate-700"></div>
+          <div class="text-center font-mono">
+            <div class="text-[9px] text-slate-400 uppercase">Wheels RPM</div>
+            <div id="telemetryRpm" class="text-xs font-bold text-saffron-400">120 RPM</div>
+          </div>
+          <div class="w-px h-6 bg-slate-700"></div>
+          <div class="text-center font-mono">
+            <div class="text-[9px] text-slate-400 uppercase">IR Sensors</div>
+            <div id="telemetryLine" class="text-xs font-bold text-sky-400">L:TRACK | R:TRACK</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Sidebar Controls (4 Cols) -->
+      <div class="lg:col-span-4 flex flex-col gap-4">
+        
+        <!-- Safety Alert Card -->
+        <div class="glass-card rounded-2xl p-4 border border-rose-500/25 bg-rose-950/15">
+          <div class="flex items-center justify-between pb-2 border-b border-rose-500/20">
+            <div class="flex items-center gap-2">
+              <i data-lucide="shield-alert" class="w-4 h-4 text-rose-400"></i>
+              <span class="text-xs font-bold text-rose-300 uppercase tracking-wide">Physical Hardware Assembly Safety</span>
+            </div>
+            <span id="robotRiskBadge" class="text-[10px] font-mono px-2 py-0.5 rounded-full font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+              Moderate Risk
+            </span>
+          </div>
+          <p id="robotDangerNote" class="text-xs text-rose-200/90 mt-2.5 leading-relaxed font-medium">
+            Laser-cut acrylic parts can crack or snap into sharp splinters. Uninsulated 18650 Li-ion battery terminals cause short circuits. Virtual assembly guarantees safety.
+          </p>
+        </div>
+
+        <!-- PANEL 1: ASSEMBLY BUILD TREE -->
+        <div id="panelAssembly" class="glass-card rounded-2xl p-4 flex-1 flex flex-col justify-between border border-slate-800">
+          <div>
+            <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-saffron-500"></span>
+                <h3 class="text-xs font-bold text-white uppercase tracking-wider">Side Tray Assembly Tree</h3>
+              </div>
+              <span id="assemblyProgressLabel" class="text-xs font-mono font-bold text-saffron-400">
+                0 of 6 Parts Fitted
+              </span>
+            </div>
+
+            <!-- Focused Active Part Preview -->
+            <div class="mt-3 p-3 rounded-xl bg-[#070c18] border border-slate-800">
+              <div class="flex items-center justify-between text-[10px] font-mono text-saffron-400 mb-1">
+                <span>Active Tray Component</span>
+                <span id="activePartTag">TRAY-01</span>
+              </div>
+              <h4 id="activePartName" class="text-sm font-bold text-white">Chassis Base Frame & Standoffs</h4>
+              <p id="activePartDesc" class="text-xs text-slate-400 mt-1 leading-relaxed">
+                Dual acrylic deck structure fastened with rigid brass pillars.
+              </p>
+            </div>
+
+            <!-- Parts List -->
+            <div class="mt-3 space-y-2 max-h-[220px] overflow-y-auto pr-1" id="assemblyPartsList">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <div class="pt-3 border-t border-slate-800/80 mt-3 flex items-center justify-between text-xs text-slate-400">
+            <span>Finished assembling?</span>
+            <button onclick="setInteractionMode('line')" class="text-sky-400 hover:text-sky-300 font-bold flex items-center gap-1">
+              <span>Test Traffic Track!</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- PANEL 2: MANUAL RUN ON TABLE -->
+        <div id="panelRun" class="hidden glass-card rounded-2xl p-4 flex-1 flex flex-col justify-between border border-slate-800">
+          <div>
+            <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <h3 class="text-xs font-bold text-white uppercase tracking-wider">Free Manual Driving</h3>
+              </div>
+              <span id="tableWidthBadge" class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold">
+                EXTRA WIDE 3.2M BENCH
+              </span>
+            </div>
+
+            <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+              Drive your robot freely on the wide laboratory bench using keyboard or the directional pad. Ample room on all sides!
+            </p>
+
+            <!-- Directional Pad -->
+            <div class="mt-4 p-3 rounded-2xl bg-[#070c18] border border-slate-800 text-center">
+              <div class="text-[11px] font-mono text-slate-400 uppercase mb-3">
+                Directional Drive Pad (WASD / Arrows)
+              </div>
+              <div class="grid grid-cols-3 gap-2 max-w-[200px] mx-auto">
+                <div></div>
+                <button onmousedown="triggerDrive('forward')" onmouseup="stopDrive()" ontouchstart="triggerDrive('forward')" ontouchend="stopDrive()" class="p-3.5 bg-slate-800 hover:bg-saffron-500 active:scale-90 rounded-xl flex items-center justify-center border border-slate-700 transition">
+                  <i data-lucide="arrow-up" class="w-5 h-5 text-white"></i>
+                </button>
+                <div></div>
+
+                <button onmousedown="triggerDrive('left')" onmouseup="stopDrive()" ontouchstart="triggerDrive('left')" ontouchend="stopDrive()" class="p-3.5 bg-slate-800 hover:bg-saffron-500 active:scale-90 rounded-xl flex items-center justify-center border border-slate-700 transition">
+                  <i data-lucide="arrow-left" class="w-5 h-5 text-white"></i>
+                </button>
+                <button onclick="stopDrive()" class="p-3.5 bg-rose-900/60 hover:bg-rose-700 active:scale-90 rounded-xl flex items-center justify-center border border-rose-600 text-[10px] font-mono font-black text-rose-200">
+                  BRAKE
+                </button>
+                <button onmousedown="triggerDrive('right')" onmouseup="stopDrive()" ontouchstart="triggerDrive('right')" ontouchend="stopDrive()" class="p-3.5 bg-slate-800 hover:bg-saffron-500 active:scale-90 rounded-xl flex items-center justify-center border border-slate-700 transition">
+                  <i data-lucide="arrow-right" class="w-5 h-5 text-white"></i>
+                </button>
+
+                <div></div>
+                <button onmousedown="triggerDrive('backward')" onmouseup="stopDrive()" ontouchstart="triggerDrive('backward')" ontouchend="stopDrive()" class="p-3.5 bg-slate-800 hover:bg-saffron-500 active:scale-90 rounded-xl flex items-center justify-center border border-slate-700 transition">
+                  <i data-lucide="arrow-down" class="w-5 h-5 text-white"></i>
+                </button>
+                <div></div>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="pt-3 border-t border-slate-800/80 mt-3 flex items-center justify-between text-xs text-slate-400">
+            <button onclick="setInteractionMode('assembly')" class="text-slate-400 hover:text-white font-bold flex items-center gap-1">
+              <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+              <span>Back to Assembly</span>
+            </button>
+            <button onclick="setInteractionMode('line')" class="text-sky-400 hover:text-sky-300 font-bold flex items-center gap-1">
+              <span>Traffic Rules Track</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- PANEL 3: LINE FOLLOWER & TRAFFIC LIGHT RULES -->
+        <div id="panelLine" class="hidden glass-card rounded-2xl p-4 flex-1 flex flex-col justify-between border border-slate-800">
+          <div>
+            <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-sky-400 animate-pulse"></span>
+                <h3 class="text-xs font-bold text-white uppercase tracking-wider">Traffic Light Controller</h3>
+              </div>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-500/20 text-sky-400 font-bold">
+                DISTANT CENTER POLE
+              </span>
+            </div>
+
+            <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+              The robot follows the wide black circuit cleanly. The traffic light is placed dead center on the X-axis and shifted distantly along the long Z-axis, eliminating any touch or overlap!
+            </p>
+
+            <!-- Traffic Light Switch Buttons -->
+            <div class="mt-4 p-3.5 rounded-2xl bg-[#070c18] border border-slate-800">
+              <div class="text-[10px] font-mono text-slate-400 uppercase mb-2 font-bold flex items-center justify-between">
+                <span>Signal Control Console:</span>
+                <button id="btnAutoCycle" onclick="toggleTrafficAutoCycle()" class="text-xs text-sky-400 hover:text-sky-300 underline font-semibold">
+                  Auto-Cycle: OFF
+                </button>
+              </div>
+
+              <div class="grid grid-cols-3 gap-2">
+                <!-- Red Button -->
+                <button onclick="setTrafficLight('red')" id="btnLightRed" class="py-3 px-2 rounded-xl border border-rose-500/40 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 font-bold text-xs flex flex-col items-center gap-1 transition active:scale-95">
+                  <span class="w-4 h-4 rounded-full bg-rose-500 shadow-[0_0_8px_#f43f5e]"></span>
+                  <span>RED</span>
+                  <span class="text-[9px] font-mono text-slate-400 font-normal">Full Stop</span>
+                </button>
+
+                <!-- Yellow Button -->
+                <button onclick="setTrafficLight('yellow')" id="btnLightYellow" class="py-3 px-2 rounded-xl border border-amber-500/40 bg-amber-950/40 hover:bg-amber-900/60 text-amber-300 font-bold text-xs flex flex-col items-center gap-1 transition active:scale-95">
+                  <span class="w-4 h-4 rounded-full bg-amber-400 shadow-[0_0_8px_#fbbf24]"></span>
+                  <span>YELLOW</span>
+                  <span class="text-[9px] font-mono text-slate-400 font-normal">Slow Drive</span>
+                </button>
+
+                <!-- Green Button -->
+                <button onclick="setTrafficLight('green')" id="btnLightGreen" class="py-3 px-2 rounded-xl border border-emerald-500 bg-emerald-500/20 text-emerald-300 font-bold text-xs flex flex-col items-center gap-1 transition active:scale-95">
+                  <span class="w-4 h-4 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]"></span>
+                  <span>GREEN</span>
+                  <span class="text-[9px] font-mono text-slate-400 font-normal">Normal Run</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Start / Stop Tracking Toggle Button -->
+            <button id="btnToggleLineFollower" onclick="toggleLineFollowing()" class="w-full mt-3 py-3 bg-sky-500 hover:bg-sky-600 text-white rounded-xl text-xs font-bold transition active:scale-95 shadow-lg shadow-sky-500/20 flex items-center justify-center gap-2">
+              <i data-lucide="play" class="w-4 h-4"></i>
+              <span id="btnLineFollowerLabel">Engage Line Tracking</span>
+            </button>
+
+            <!-- Dual IR Optical Status -->
+            <div class="grid grid-cols-2 gap-2 mt-3 font-mono text-xs text-center">
+              <div class="p-2 rounded-xl bg-[#080d1a] border border-slate-800">
+                <div class="text-[10px] text-slate-400">Left IR Sensor</div>
+                <div id="sensorLeftText" class="font-bold text-emerald-400 mt-0.5">BLACK (1)</div>
+              </div>
+              <div class="p-2 rounded-xl bg-[#080d1a] border border-slate-800">
+                <div class="text-[10px] text-slate-400">Right IR Sensor</div>
+                <div id="sensorRightText" class="font-bold text-emerald-400 mt-0.5">BLACK (1)</div>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="pt-3 border-t border-slate-800/80 mt-3 flex items-center justify-between text-xs text-slate-400">
+            <button onclick="setInteractionMode('assembly')" class="text-slate-400 hover:text-white font-bold flex items-center gap-1">
+              <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+              <span>Back to Assembly</span>
+            </button>
+            <button onclick="setInteractionMode('run')" class="text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1">
+              <span>Manual Run</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- 1. ONBOARDING MODAL -->
+    <div id="onboardingModal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+      <div class="glass-card w-full max-w-md rounded-3xl border border-saffron-500/40 p-6 sm:p-7 shadow-2xl glow-orange">
+        
+        <div class="text-center">
+          <div class="w-14 h-14 mx-auto rounded-2xl bg-saffron-500/15 border border-saffron-500/30 flex items-center justify-center text-saffron-400 mb-3">
+            <i data-lucide="user-check" class="w-7 h-7"></i>
+          </div>
+          <h2 class="text-lg sm:text-xl font-extrabold text-white">Welcome to GARRF Robotics Lab</h2>
+          <p class="text-xs text-slate-400 mt-1">Components are placed on the side tray plate. Build step-by-step or auto-assemble to follow traffic rules!</p>
+        </div>
+
+        <form id="onboardingForm" onsubmit="handleOnboardingSubmit(event)" class="mt-5 space-y-4">
+          <div>
+            <label class="block text-xs font-mono font-bold text-slate-300 mb-1.5">First Name of Student</label>
+            <input id="inputStudentName" type="text" required placeholder="e.g., Aarav or Priya" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm focus:outline-none focus:border-saffron-500">
+          </div>
+
+          <div>
+            <label class="block text-xs font-mono font-bold text-slate-300 mb-1.5">Student Avatar Type</label>
+            <div class="grid grid-cols-2 gap-3">
+              <label class="cursor-pointer border border-slate-700 rounded-xl p-3 flex flex-col items-center gap-1.5 bg-slate-900/60 hover:border-saffron-500 transition has-[:checked]:border-saffron-500 has-[:checked]:bg-saffron-500/15">
+                <input type="radio" name="studentGender" value="boy" checked class="hidden">
+                <span class="text-xl">👦</span>
+                <span class="text-xs font-bold text-slate-200">Boy</span>
+                <span class="text-[10px] text-saffron-400 font-mono">T-shirt & Tilak</span>
+              </label>
+              <label class="cursor-pointer border border-slate-700 rounded-xl p-3 flex flex-col items-center gap-1.5 bg-slate-900/60 hover:border-saffron-500 transition has-[:checked]:border-saffron-500 has-[:checked]:bg-saffron-500/15">
+                <input type="radio" name="studentGender" value="girl" class="hidden">
+                <span class="text-xl">👧</span>
+                <span class="text-xs font-bold text-slate-200">Girl</span>
+                <span class="text-[10px] text-rose-400 font-mono">Silk Saree & Bindi</span>
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-mono font-bold text-slate-300 mb-1.5">Class / Grade / School</label>
+            <input id="inputStudentGrade" type="text" placeholder="e.g., Grade 8, Kendriya Vidyalaya" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm focus:outline-none focus:border-saffron-500">
+          </div>
+
+          <button type="submit" class="w-full py-3 bg-gradient-to-r from-saffron-500 to-amber-600 hover:from-saffron-600 hover:to-amber-700 text-white font-bold rounded-xl text-sm shadow-lg shadow-saffron-500/25 transition active:scale-95 flex items-center justify-center gap-2">
+            <span>Enter Virtual Lab</span>
+            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          </button>
+        </form>
+
+      </div>
+    </div>
+
+    <!-- 2. SHANTANU BRO'S WELCOME DIALOG BOX -->
+    <div id="shantanuDialog" class="hidden fixed bottom-6 left-6 z-40 max-w-md glass-card rounded-2xl border border-sky-500/40 p-4 sm:p-5 shadow-2xl glow-cyan animate-in fade-in duration-300">
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-full bg-sky-500/20 border border-sky-400/50 flex items-center justify-center text-sky-400 font-bold text-sm shadow-inner">
+            SB
+          </div>
+          <div>
+            <h4 class="text-sm font-extrabold text-white">Shantanu Bro</h4>
+            <span class="text-[10px] font-mono text-sky-400 font-semibold">Robotics Co-Mentor • GARRF</span>
+          </div>
+        </div>
+        <button onclick="closeShantanuDialog()" class="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <p id="shantanuDialogText" class="text-xs text-slate-200 mt-3 leading-relaxed font-medium">
+        "Hi Aarav, welcome! Our workbench is 3.2m wide and the traffic pole is placed in the center corridor at a safe distance on the long axis. Build your robot and let's roll!"
+      </p>
+
+      <div class="mt-4 flex items-center gap-2">
+        <button onclick="acceptShantanuBuild()" class="flex-1 py-2 bg-saffron-500 hover:bg-saffron-600 text-white rounded-xl text-xs font-bold shadow-md shadow-saffron-500/20 transition active:scale-95 flex items-center justify-center gap-1.5">
+          <span>✅ Yes, Let's Build!</span>
+        </button>
+        <button onclick="closeShantanuDialog()" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition active:scale-95">
+          <span>❌ No, Later</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 3. DR VENU GOPAL'S COMPLETION SPEECH MODAL -->
+    <div id="drVenuModal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+      <div class="glass-card w-full max-w-lg rounded-3xl border border-emerald-500/40 p-6 sm:p-7 shadow-2xl glow-emerald">
+        
+        <div class="flex items-center gap-3.5 border-b border-slate-800 pb-4">
+          <div class="w-13 h-13 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-extrabold text-lg p-3">
+            👨‍🏫
+          </div>
+          <div>
+            <h3 class="text-base font-extrabold text-white">Dr Annamdas Venu Gopal Madhav</h3>
+            <p class="text-xs text-emerald-400 font-mono">Chief Mentor • Gopalkrishna Advanced Rural Research Foundation</p>
+          </div>
+        </div>
+
+        <div class="mt-4 bg-[#070d1a] p-4 rounded-2xl border border-slate-800">
+          <div class="text-[11px] font-mono text-saffron-400 uppercase font-bold mb-1">Robotics & Structural Assembly:</div>
+          <p class="text-xs text-slate-200 leading-relaxed font-medium">
+            "All components are rigidly mounted with mechanical brackets, and the wide bench ensures reliable ground contact. The traffic pole is positioned safely along the central axis with zero touch risk. I invite you to explore the other research divisions of GARRF!"
+          </p>
+        </div>
+
+        <div class="mt-5 flex items-center gap-3">
+          <button onclick="openOtherLabsModal()" class="flex-1 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-500/25 transition active:scale-95 flex items-center justify-center gap-1.5">
+            <i data-lucide="building-2" class="w-4 h-4"></i>
+            <span>Visit Foundation Labs</span>
+          </button>
+          <button onclick="closeDrVenuModal()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition active:scale-95">
+            Done
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 4. OTHER GARRF RESEARCH LABS MODAL -->
+    <div id="otherLabsModal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+      <div class="glass-card w-full max-w-2xl rounded-3xl border border-slate-700 p-6 flex flex-col max-h-[90vh] shadow-2xl">
+        
+        <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-saffron-500/20 border border-saffron-500/40 flex items-center justify-center text-saffron-400">
+              <i data-lucide="layers" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h3 class="text-base font-extrabold text-white">GARRF Innovation Research Divisions</h3>
+              <p class="text-xs text-slate-400">Gopalkrishna Advanced Rural Research Foundation Initiatives</p>
+            </div>
+          </div>
+          <button onclick="closeOtherLabsModal()" class="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <div class="mt-4 space-y-3 overflow-y-auto pr-1 text-xs">
+          <!-- External Action Links -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <a href="https://garrf.in/kalam-zero-lab/dronewelcomeclub.html" target="_blank" rel="noopener noreferrer" class="p-3.5 rounded-2xl bg-gradient-to-r from-cyan-950/60 to-slate-900 border border-cyan-500/40 hover:border-cyan-400 text-white flex items-center justify-between group transition duration-200 shadow-md hover:shadow-cyan-500/20">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-400 group-hover:scale-105 transition">
+                  <i data-lucide="navigation" class="w-4 h-4"></i>
+                </div>
+                <div>
+                  <div class="font-extrabold text-sm text-cyan-300">Visit Drone club</div>
+                  <div class="text-[10px] text-slate-400 font-mono">Autonomous Drone Lab</div>
+                </div>
+              </div>
+              <i data-lucide="external-link" class="w-4 h-4 text-cyan-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition"></i>
+            </a>
+
+            <a href="https://garrf.in/kalam-zero-lab/bullettrain2032.html" target="_blank" rel="noopener noreferrer" class="p-3.5 rounded-2xl bg-gradient-to-r from-saffron-950/60 to-slate-900 border border-saffron-500/40 hover:border-saffron-400 text-white flex items-center justify-between group transition duration-200 shadow-md hover:shadow-saffron-500/20">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-saffron-500/20 border border-saffron-400/40 flex items-center justify-center text-saffron-400 group-hover:scale-105 transition">
+                  <i data-lucide="train" class="w-4 h-4"></i>
+                </div>
+                <div>
+                  <div class="font-extrabold text-sm text-saffron-300">Bullet Trains: Bharat 2032</div>
+                  <div class="text-[10px] text-slate-400 font-mono">High-Speed Rail Simulator</div>
+                </div>
+              </div>
+              <i data-lucide="external-link" class="w-4 h-4 text-saffron-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition"></i>
+            </a>
+          </div>
+
+          <div class="p-3.5 rounded-2xl bg-[#070c18] border border-slate-800">
+            <div class="flex items-center justify-between text-emerald-400 font-bold mb-1">
+              <span>2. Autonomous Agricultural Robotics & Drone SLAM</span>
+              <span class="font-mono text-[10px] text-slate-400">Lead: Shantanu Annamdas</span>
+            </div>
+            <p class="text-slate-300 leading-relaxed">AI vision rovers for precision weed eradication, drone multispectral crop health indexing, and low-cost automated seed drills.</p>
+          </div>
+
+          <div class="p-3.5 rounded-2xl bg-[#070c18] border border-slate-800">
+            <div class="flex items-center justify-between text-sky-400 font-bold mb-1">
+              <span>3. Rural Microgrid & Solar Hydrogen Research</span>
+              <span class="font-mono text-[10px] text-slate-400">Energy Division</span>
+            </div>
+            <p class="text-slate-300 leading-relaxed">Decentralized village microgrid energy storage, supercapacitors, and solar-to-hydrogen electrolysis for sustainable farms.</p>
+          </div>
+
+          <div class="p-3.5 rounded-2xl bg-[#070c18] border border-slate-800">
+            <div class="flex items-center justify-between text-indigo-400 font-bold mb-1">
+              <span>4. Rural STEAM Innovation & Safe Maker Labs</span>
+              <span class="font-mono text-[10px] text-slate-400">Community Outreach</span>
+            </div>
+            <p class="text-slate-300 leading-relaxed">Providing high-end virtual simulators and low-cost hardware kits to empower school students across rural and semi-urban India.</p>
+          </div>
+        </div>
+
+        <div class="mt-4 pt-3 border-t border-slate-800 text-right">
+          <button onclick="closeOtherLabsModal()" class="px-5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl text-xs transition">
+            Close Overview
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 6. BILL OF MATERIALS (BOM) MODAL -->
+    <div id="bomModal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+      <div class="glass-card w-full max-w-3xl rounded-3xl border border-slate-700 p-6 flex flex-col max-h-[90vh] shadow-2xl">
+        
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+              <i data-lucide="receipt" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h3 class="text-base font-extrabold text-white">Bill of Materials (BOM) & Sourcing Cost</h3>
+              <p class="text-xs text-slate-400" id="bomRobotSubtitle">Component Cost Breakdown</p>
+            </div>
+          </div>
+          <button onclick="toggleBomModal(false)" class="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <div class="mt-4 overflow-y-auto pr-1">
+          <table class="w-full text-left text-xs font-mono">
+            <thead>
+              <tr class="border-b border-slate-800 text-slate-400 uppercase text-[10px]">
+                <th class="py-2">Item / Component</th>
+                <th class="py-2">Qty</th>
+                <th class="py-2">Specifications</th>
+                <th class="py-2 text-right">INR (₹)</th>
+                <th class="py-2 text-right">USD ($)</th>
+              </tr>
+            </thead>
+            <tbody id="bomTableBody" class="divide-y border-slate-800/60 text-slate-300">
+              <!-- Injected -->
+            </tbody>
+            <tfoot>
+              <tr class="border-t border-slate-700 font-bold text-white text-xs bg-slate-900/60">
+                <td class="py-3 px-1" colspan="3">Estimated Total Kit Cost</td>
+                <td class="py-3 text-right text-emerald-400 font-mono" id="bomTotalInr">₹3,450</td>
+                <td class="py-3 text-right text-cyan-400 font-mono" id="bomTotalUsd">$42.00</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <div class="mt-4 p-3 rounded-xl bg-[#070c18] border border-slate-800 text-xs text-slate-400 flex items-center justify-between">
+          <span class="flex items-center gap-1.5 text-emerald-400">
+            <i data-lucide="shield-check" class="w-4 h-4"></i>
+            <span>Safety: Always use battery packs with internal PCM circuit protection.</span>
+          </span>
+          <button onclick="toggleBomModal(false)" class="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl transition">
+            Close BOM
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 7. 20 DIY ROBOTS CATALOG DRAWER -->
+    <div id="catalogModal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5">
+      <div class="glass-card w-full max-w-6xl max-h-[92vh] rounded-3xl border border-slate-700 flex flex-col overflow-hidden shadow-2xl">
+        
+        <div class="p-4 sm:p-5 border-b border-slate-800 bg-[#090e1c] flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-saffron-500/15 border border-saffron-500/30 flex items-center justify-center text-saffron-400">
+              <i data-lucide="cpu" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h3 class="text-base sm:text-lg font-extrabold text-white">20 DIY Robotics Assembly Catalog</h3>
+              <p class="text-xs text-slate-400">Pick any robot: parts will load onto the storage plate for custom build and testing!</p>
+            </div>
+          </div>
+          <button onclick="toggleCatalogDrawer(false)" class="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <div id="catalogGrid" class="p-4 sm:p-6 overflow-y-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 bg-[#060913]">
+          <!-- Injected via JavaScript -->
+        </div>
+
+        <div class="p-3.5 bg-[#090e1c] border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+          <span>Digital Twins engineered for Gopalkrishna Advanced Rural Research Foundation</span>
+          <button onclick="toggleCatalogDrawer(false)" class="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl transition">
+            Close
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="mt-auto border-t border-slate-800/90 bg-[#070b14] py-4 text-xs text-slate-400">
+    <div class="max-w-[1780px] mx-auto px-4 sm:px-6 flex flex-col md:flex-row items-center justify-between gap-3 text-center md:text-left">
+      <div>
+        <span class="font-bold text-slate-200">Copyright @garrf.in</span> , 
+        <span class="text-saffron-400 font-semibold">Dr Annamdas Venu Gopal Madhav</span> and 
+        <span class="text-emerald-400 font-semibold">Shantanu Vasudev Krishna Annamdas</span>
+      </div>
+      <div class="flex items-center gap-2 font-mono text-[11px] text-slate-500">
+        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+        <span>Storage Tray Assembly Active • Center-Spaced Traffic Light Pole • 3D WebGL</span>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const ROBOT_DATABASE = [
+      {
+        id: 1,
+        name: "LEGO SPIKE Prime / Mindstorms",
+        cat: "STEAM",
+        type: "hub",
+        chassisColor: 0xffffff,
+        accentColor: 0xf59e0b,
+        risk: "Low",
+        hazard: "Minor pinch point when meshing high-torque plastic bevel gears; very safe overall.",
+        summary: "Modular smart brick with 5x5 LED matrix, dual optical encoder motors, and ultrasonic eyes.",
+        bom: [
+          { item: "Intelligent Smart Hub", qty: 1, spec: "6-port M4 core with 6-axis gyro", inr: 12500, usd: 150 },
+          { item: "Medium Angular Motors", qty: 2, spec: "Integrated optical rotation encoders", inr: 4200, usd: 50 },
+          { item: "Ultrasonic Distance Eye", qty: 1, spec: "1-200cm range with LED break-out", inr: 2800, usd: 34 },
+          { item: "Technic Beam Chassis Pack", qty: 1, spec: "Reinforced ABS snap-pin beams", inr: 3500, usd: 42 },
+          { item: "Rechargeable Li-ion Hub Battery", qty: 1, spec: "2100mAh integrated BMS pack", inr: 3900, usd: 47 }
+        ]
+      },
+      {
+        id: 2,
+        name: "Elegoo Smart Robot Car V4.0",
+        cat: "WHEELED 4WD",
+        type: "4wd",
+        chassisColor: 0x111827,
+        accentColor: 0xfacc15,
+        risk: "Moderate",
+        hazard: "Laser-cut acrylic parts can crack into sharp splinters. 18650 Li-ion battery short hazard.",
+        summary: "Acrylic chassis, 4 yellow TT gearmotors, pan-tilt ultrasonic eyes, and custom programmable LEDs.",
+        bom: [
+          { item: "Dual Acrylic Decks", qty: 2, spec: "3mm Laser-cut high-gloss acrylic", inr: 650, usd: 8 },
+          { item: "Yellow TT DC Gearmotors", qty: 4, spec: "1:48 gear ratio, 3-6V DC", inr: 480, usd: 5.8 },
+          { item: "Rubber Tires + Yellow Rims", qty: 4, spec: "65mm high-traction rubber treads", inr: 400, usd: 4.8 },
+          { item: "Arduino Uno R3 + Shield", qty: 1, spec: "ATmega328P with TB6612 motor driver", inr: 950, usd: 11.5 },
+          { item: "Ultrasonic Sonar HC-SR04", qty: 1, spec: "Dual 40kHz acoustic transducers", inr: 150, usd: 1.8 },
+          { item: "18650 Li-ion Battery Holder", qty: 1, spec: "2S with built-in protection fuse", inr: 320, usd: 3.9 }
+        ]
+      },
+      {
+        id: 3,
+        name: "Makeblock mBot2 / Neo",
+        cat: "STEAM",
+        type: "hub",
+        chassisColor: 0x0284c7,
+        accentColor: 0x38bdf8,
+        risk: "Low",
+        hazard: "Stripped hex bolts during chassis assembly; safe enclosed battery and shielded drive motors.",
+        summary: "Anodized blue aluminum unibody chassis, CyberPi display screen, encoder motors, slick wheels.",
+        bom: [
+          { item: "Anodized Aluminum Shell", qty: 1, spec: "Aerospace aluminum alloy unibody", inr: 2200, usd: 26 },
+          { item: "CyberPi ESP32-WROVER", qty: 1, spec: "Full-color IPS screen with WiFi/BLE", inr: 3400, usd: 41 },
+          { item: "High-precision Encoder Motors", qty: 2, spec: "Optical position feedback 1RPM", inr: 1900, usd: 23 },
+          { item: "mBuild Ultrasonic 2 RGB", qty: 1, spec: "Dual RGB eye halo rings", inr: 1450, usd: 17.5 },
+          { item: "Internal 2500mAh LiPo", qty: 1, spec: "Enclosed safety sealed pack", inr: 1100, usd: 13 }
+        ]
+      },
+      {
+        id: 4,
+        name: "Yahboom ROS AI Rover",
+        cat: "AI ROVER",
+        type: "4wd",
+        chassisColor: 0x1e293b,
+        accentColor: 0x06b6d4,
+        risk: "High",
+        hazard: "Rapidly spinning optical LiDAR turret pinch; Raspberry Pi 4 thermal heat sink burn risk.",
+        summary: "Multi-layer chassis, 360-degree rotating LiDAR turret, depth camera, mecanum wheels.",
+        bom: [
+          { item: "Laser 360° RPLiDAR A1", qty: 1, spec: "12m radius, 8000 points/sec", inr: 8800, usd: 106 },
+          { item: "Raspberry Pi 4B (4GB)", qty: 1, spec: "Quad Cortex-A72 with cooler fan", inr: 6800, usd: 82 },
+          { item: "Mecanum Omnidirectional Wheels", qty: 4, spec: "60mm rubber roller hubs", inr: 2400, usd: 29 },
+          { item: "ROS Robot Motor Expansion Board", qty: 1, spec: "STM32 IMU onboard controller", inr: 3200, usd: 38.5 },
+          { item: "12V 3S Li-ion 2600mAh Pack", qty: 1, spec: "11.1V high-discharge BMS", inr: 2900, usd: 35 }
+        ]
+      },
+      {
+        id: 5,
+        name: "Adeept RaspTank-Pro",
+        cat: "TANK",
+        type: "tank",
+        chassisColor: 0x334155,
+        accentColor: 0xf97316,
+        risk: "Moderate",
+        hazard: "Pinch hazards inside moving continuous tracks and sharp aluminum gripper claw teeth.",
+        summary: "Continuous rubber tank treads, dual sprocket drive wheels, front robotic arm with pincher gripper.",
+        bom: [
+          { item: "Tank Tread Suspension Set", qty: 2, spec: "Continuous engineering silicone links", inr: 1800, usd: 21.6 },
+          { item: "Alloy 3-DOF Arm Assembly", qty: 1, spec: "Laser-cut aluminum linkage", inr: 2600, usd: 31.3 },
+          { item: "High-torque MG996R Servos", qty: 4, spec: "Metal gear 12kg·cm torque", inr: 1950, usd: 23.5 },
+          { item: "Motor Driver & Sensor Shield", qty: 1, spec: "Dual H-bridge with I2C bus", inr: 1200, usd: 14.4 },
+          { item: "Heavy Duty Tank Hull", qty: 1, spec: "Black powder coated steel", inr: 2100, usd: 25.3 }
+        ]
+      },
+      {
+        id: 6,
+        name: "Freenove 4WD Smart Car",
+        cat: "WHEELED 4WD",
+        type: "4wd",
+        chassisColor: 0x0f172a,
+        accentColor: 0xef4444,
+        risk: "Moderate",
+        hazard: "Screwdriver slips causing hand punctures; fragile ultrasonic solder joints breaking.",
+        summary: "4-wheel drive yellow hub chassis, camera pan-tilt, line sensor array.",
+        bom: [
+          { item: "Dual Layer PCB Frame", qty: 2, spec: "Copper clad chassis plate", inr: 850, usd: 10.2 },
+          { item: "ESP32 CAM Pan-Tilt Turret", qty: 1, spec: "Dual 9g servos with OV2640", inr: 920, usd: 11 },
+          { item: "4WD Geared Motor Set", qty: 4, spec: "Standard yellow TT motors", inr: 520, usd: 6.2 },
+          { item: "5-Channel IR Line Array", qty: 1, spec: "Infrared TCRT5000 sensors", inr: 320, usd: 3.8 },
+          { item: "18650 Battery Shield", qty: 1, spec: "Dual slot battery cradle", inr: 280, usd: 3.3 }
+        ]
+      },
+      {
+        id: 7,
+        name: "SunFounder PiCar-X",
+        cat: "WHEELED",
+        type: "4wd",
+        chassisColor: 0x1e3a8a,
+        accentColor: 0x60a5fa,
+        risk: "Moderate",
+        hazard: "Steering knuckle tie-rod binding; snapping fragile plastic steering ball joints.",
+        summary: "Ackermann steering front suspension, rear differential drive, pan-tilt camera head.",
+        bom: [
+          { item: "Ackermann Metal Steering Linkage", qty: 1, spec: "Twin ball-joint tie rods", inr: 1450, usd: 17.4 },
+          { item: "RobotHAT Driver Interface", qty: 1, spec: "PWM servo controller with speaker", inr: 1850, usd: 22.2 },
+          { item: "Rear Differential Axle Motors", qty: 2, spec: "Metal gear shaft reduction", inr: 980, usd: 11.8 },
+          { item: "Camera Pan-Tilt Sonar Head", qty: 1, spec: "Integrated vision sensor pod", inr: 1650, usd: 19.8 },
+          { item: "Aluminum PiCar Frame", qty: 1, spec: "Anodized structural spine", inr: 1550, usd: 18.6 }
+        ]
+      },
+      {
+        id: 8,
+        name: "VEX IQ Super Kit",
+        cat: "STEAM",
+        type: "hub",
+        chassisColor: 0x475569,
+        accentColor: 0x3b82f6,
+        risk: "Low",
+        hazard: "Choking hazard on small connector pins; completely safe tool-free assembly.",
+        summary: "Snap-pin plastic beams, smart brain with LCD, omni-directional intake rollers.",
+        bom: [
+          { item: "VEX IQ Robot Brain", qty: 1, spec: "12-port smart controller with LCD", inr: 14200, usd: 171 },
+          { item: "VEX Smart Motors", qty: 4, spec: "Internal encoders with telemetry", inr: 7200, usd: 86 },
+          { item: "Structural Beams & Pins", qty: 850, spec: "Modular tool-less snap parts", inr: 5800, usd: 69 },
+          { item: "Omni-Directional Wheels", qty: 4, spec: "Low-friction axial rollers", inr: 2800, usd: 33 },
+          { item: "7.2V NiMH Smart Battery", qty: 1, spec: "2000mAh rapid recharge pack", inr: 3400, usd: 41 }
+        ]
+      },
+      {
+        id: 9,
+        name: "Makeblock Ultimate 2.0 (10-in-1)",
+        cat: "TANK",
+        type: "tank",
+        chassisColor: 0x0284c7,
+        accentColor: 0x0f172a,
+        risk: "Moderate",
+        hazard: "Heavy anodized beams pinching fingers; high torque motor stalling issues.",
+        summary: "Heavy aluminum tracked base with long 3-segment robotic pickup arm.",
+        bom: [
+          { item: "Heavy Blue Aluminum Beams", qty: 1, spec: "Industrial extrusion pack (50+ pcs)", inr: 6800, usd: 82 },
+          { item: "MegaPi ATmega2560 Board", qty: 1, spec: "High-current multi-motor board", inr: 4500, usd: 54 },
+          { item: "Optical Encoder DC Motors", qty: 3, spec: "Metal planetary gearhead", inr: 3600, usd: 43 },
+          { item: "Parallel Aluminum Gripper", qty: 1, spec: "Worm gear motorized clamp", inr: 2200, usd: 26 },
+          { item: "Track Tread Chain Kit", qty: 2, spec: "Reinforced tank track links", inr: 1900, usd: 23 }
+        ]
+      },
+      {
+        id: 10,
+        name: "Hiwonder Armer / xArm 1S",
+        cat: "ROBOTIC ARM",
+        type: "arm",
+        chassisColor: 0x1e3a8a,
+        accentColor: 0x38bdf8,
+        risk: "High",
+        hazard: "Severe finger pinch hazard in serial bus servos generating over 15kg·cm of torque.",
+        summary: "Full 6-DOF bus servo metallic desktop robotic arm with rotating wrist and clamping gripper.",
+        bom: [
+          { item: "Serial Bus Servos LX-15D", qty: 6, spec: "15kg·cm high torque smart bus", inr: 8900, usd: 107 },
+          { item: "Anodized Aluminum Arm Bones", qty: 1, spec: "Matte blue alloy brackets", inr: 3200, usd: 38 },
+          { item: "Heavy Circular Counterweight Base", qty: 1, spec: "Anti-tip cast base plate", inr: 2400, usd: 29 },
+          { item: "STM32 6-DOF Servo Controller", qty: 1, spec: "Bluetooth & wireless remote bus", inr: 2800, usd: 33 },
+          { item: "7.5V 5A Regulated Power Supply", qty: 1, spec: "High surge current desktop adapter", inr: 1600, usd: 19 }
+        ]
+      },
+      {
+        id: 11,
+        name: "Waveshare Wave Rover",
+        cat: "WHEELED 4WD",
+        type: "4wd",
+        chassisColor: 0x475569,
+        accentColor: 0x10b981,
+        risk: "Moderate",
+        hazard: "Suspension scissor joints pinching skin; unprotected battery terminals in metal box.",
+        summary: "Heavy duty full-metal 4WD suspension rover with dual rocker bogeys.",
+        bom: [
+          { item: "Full Steel Monocoque Hull", qty: 1, spec: "Laser cut 1.5mm stainless steel", inr: 4200, usd: 50 },
+          { item: "Bilateral Rocker Suspension", qty: 2, spec: "Articulated rock crawler arms", inr: 2800, usd: 33 },
+          { item: "Planetary Gearmotors (Metal)", qty: 4, spec: "12V 330RPM high-torque shafts", inr: 3400, usd: 41 },
+          { item: "Deep Lug Off-Road Rubber Tires", qty: 4, spec: "80mm diameter terrain tires", inr: 1800, usd: 21 },
+          { item: "ESP32 Motor Driver HAT", qty: 1, spec: "Current sense with telemetry", inr: 1950, usd: 23 }
+        ]
+      },
+      {
+        id: 12,
+        name: "Petoi Bittle (Bionic Dog)",
+        cat: "BIONIC",
+        type: "bionic",
+        chassisColor: 0xfacc15,
+        accentColor: 0x1e293b,
+        risk: "Moderate",
+        hazard: "Fast servo snapping during zero-calibration; fragile nylon gear teeth stripping.",
+        summary: "Quadruped robot with 4 articulated 2-joint legs, torso controller, head ultrasonic.",
+        bom: [
+          { item: "Bionic Composite Torso Shell", qty: 1, spec: "Injection molded lightweight spine", inr: 3400, usd: 41 },
+          { item: "Coreless High-Speed Servos", qty: 9, spec: "Custom fast response mini actuators", inr: 6800, usd: 82 },
+          { item: "NyBoard V1 Controller", qty: 1, spec: "ATmega328P with 6-axis MPU6050", inr: 3800, usd: 45 },
+          { item: "Articulated Spring Leg Kit", qty: 4, spec: "Dual link shock-absorbing limbs", inr: 2200, usd: 26 },
+          { item: "Li-ion 7.4V Smart Battery", qty: 1, spec: "Quick release USB-C rechargeable", inr: 2100, usd: 25 }
+        ]
+      },
+      {
+        id: 13,
+        name: "Freenove Hexapod Robot",
+        cat: "BIONIC",
+        type: "bionic",
+        chassisColor: 0x0f172a,
+        accentColor: 0xa855f7,
+        risk: "High",
+        hazard: "Complex cable bundle causing wire shorts; 18 moving joints can pinch fingers simultaneously.",
+        summary: "6-legged bionic spider with 18 servo joints, insect gait movement.",
+        bom: [
+          { item: "Micro Servos 9g Metal Gear", qty: 18, spec: "MG90S 2.2kg·cm actuators", inr: 6400, usd: 77 },
+          { item: "Hexagonal Chassis & Brackets", qty: 1, spec: "Sandwich acrylic plate set", inr: 2800, usd: 33 },
+          { item: "18-Channel PCA9685 Shield", qty: 1, spec: "High current PWM controller", inr: 1800, usd: 21 },
+          { item: "ESP32 Controller Module", qty: 1, spec: "Dual core WiFi/BLE master", inr: 850, usd: 10 },
+          { item: "Dual 18650 High-Drain Cells", qty: 2, spec: "30A discharge rated cells", inr: 1100, usd: 13 }
+        ]
+      },
+      {
+        id: 14,
+        name: "SunFounder 4-DOF Acrylic Arm",
+        cat: "ROBOTIC ARM",
+        type: "arm",
+        chassisColor: 0x0284c7,
+        accentColor: 0x38bdf8,
+        risk: "Moderate",
+        hazard: "Laser-cut acrylic parts cracking if screws are overtightened; exposed plastic gears.",
+        summary: "Laser-cut clear/blue acrylic desktop manipulator with base rotation, shoulder, elbow, claw.",
+        bom: [
+          { item: "Precision Laser Acrylic Parts", qty: 1, spec: "3mm clear and blue acrylic links", inr: 850, usd: 10 },
+          { item: "Micro Servos SG90", qty: 4, spec: "Standard 9g plastic gear actuators", inr: 640, usd: 7.7 },
+          { item: "Dual Potentiometer Joystick", qty: 1, spec: "Analog manual control board", inr: 450, usd: 5.4 },
+          { item: "Arduino Compatible Uno R3", qty: 1, spec: "CH340G USB interface board", inr: 580, usd: 7 },
+          { item: "5V 2A Power Adapter", qty: 1, spec: "External DC wall adapter", inr: 350, usd: 4.2 }
+        ]
+      },
+      {
+        id: 15,
+        name: "Yahboom Micro:bit Tiny:bit",
+        cat: "STEAM",
+        type: "hub",
+        chassisColor: 0x111827,
+        accentColor: 0x10b981,
+        risk: "Low",
+        hazard: "Very low risk; small screws requiring care; ideal for elementary school robotics.",
+        summary: "Compact PCB chassis, micro:bit 5x5 LED matrix slot, mini rubber wheels.",
+        bom: [
+          { item: "Integrated Tiny:bit PCB Chassis", qty: 1, spec: "All-in-one motherboard with RGBs", inr: 1950, usd: 23 },
+          { item: "BBC Micro:bit V2 Board", qty: 1, spec: "Nordic nRF52833 with microphone", inr: 2200, usd: 26 },
+          { item: "Micro N20 DC Gearmotors", qty: 2, spec: "All-metal precision gearboxes", inr: 650, usd: 7.8 },
+          { item: "Soft Silicone Wheels", qty: 2, spec: "Slip-on direct drive tires", inr: 300, usd: 3.6 },
+          { item: "Ultrasonic Distance Sensor", qty: 1, spec: "Direct-plug 3-pin sonar pod", inr: 350, usd: 4.2 }
+        ]
+      },
+      {
+        id: 16,
+        name: "Pololu 3pi+ Robot",
+        cat: "WHEELED",
+        type: "hub",
+        chassisColor: 0x0f172a,
+        accentColor: 0xe2e8f0,
+        risk: "Moderate",
+        hazard: "High speed crash hazards; exposed motor cans heating up after rapid line-maze runs.",
+        summary: "Ultra-low profile round PCB chassis, high-speed micro metal gearmotors, OLED screen.",
+        bom: [
+          { item: "Circular Motherboard Chassis", qty: 1, spec: "9.5cm diameter with ATmega32U4", inr: 5800, usd: 69 },
+          { item: "High-Power Micro Gearmotors", qty: 2, spec: "30:1 gear ratio, 1000 RPM", inr: 2900, usd: 35 },
+          { item: "128x64 OLED Graphical Screen", qty: 1, spec: "Monochrome I2C system screen", inr: 750, usd: 9 },
+          { item: "Downward IR Sensor Array", qty: 5, spec: "Precision phototransistor line array", inr: 850, usd: 10 },
+          { item: "Quadrature Encoders (Pair)", qty: 2, spec: "Magnetic disc wheel encoders", inr: 1200, usd: 14 }
+        ]
+      },
+      {
+        id: 17,
+        name: "Adeept DarkPaw Quadruped",
+        cat: "BIONIC",
+        type: "bionic",
+        chassisColor: 0x1e293b,
+        accentColor: 0x38bdf8,
+        risk: "Moderate",
+        hazard: "Overheating micro servos under continuous crawl load; 18650 battery cell handling.",
+        summary: "Spider/crawler quadruped with 12 micro servos and FPV camera head.",
+        bom: [
+          { item: "Metal Skeleton Chassis", qty: 1, spec: "Laser cut 1.5mm aluminum plates", inr: 2400, usd: 29 },
+          { item: "Metal Gear Servos MG90S", qty: 12, spec: "Full metal gear train 2.0kg·cm", inr: 4200, usd: 50 },
+          { item: "ESP32 CAM WiFi Controller", qty: 1, spec: "Video streaming and PWM driver", inr: 1650, usd: 19 },
+          { item: "High Friction Silicone Feet", qty: 4, spec: "Hemispherical anti-skid foot pads", inr: 320, usd: 3.8 },
+          { item: "2S Li-ion Battery Cradle", qty: 1, spec: "With balance charge socket", inr: 450, usd: 5.4 }
+        ]
+      },
+      {
+        id: 18,
+        name: "Waveshare RoArm-M2-S",
+        cat: "ROBOTIC ARM",
+        type: "arm",
+        chassisColor: 0x475569,
+        accentColor: 0xf97316,
+        risk: "High",
+        hazard: "High payload capacity; pinch hazard during rapid reverse inverse kinematics.",
+        summary: "Direct-drive serial bus robotic arm with 360-degree turntable base.",
+        bom: [
+          { item: "High-Resolution Serial Bus Servos", qty: 4, spec: "30kg·cm magnetic encoding servos", inr: 9600, usd: 115 },
+          { item: "Full Metal Arm Skeletal Bones", qty: 1, spec: "Sandblasted heavy aluminum beams", inr: 4500, usd: 54 },
+          { item: "Weighted Anti-Vibration Base", qty: 1, spec: "Solid cast steel mounting plate", inr: 2800, usd: 33 },
+          { item: "ESP32 Web Control Host", qty: 1, spec: "HTTP / WebSocket IK solver board", inr: 2100, usd: 25 },
+          { item: "12V 5A Certified Power Supply", qty: 1, spec: "Low-ripple regulated DC brick", inr: 1800, usd: 21 }
+        ]
+      },
+      {
+        id: 19,
+        name: "Yahboom JetBot AI Kit",
+        cat: "AI ROVER",
+        type: "4wd",
+        chassisColor: 0x15803d,
+        accentColor: 0x22c55e,
+        risk: "High",
+        hazard: "Large aluminum heatsink reaches 65°C+ during neural network inference; high capacity batteries.",
+        summary: "NVIDIA Jetson Nano heatsink carrier, dual wide-angle stereo cameras, high-torque micro DC motors.",
+        bom: [
+          { item: "NVIDIA Jetson Nano (4GB)", qty: 1, spec: "128-core Maxwell GPU system", inr: 14500, usd: 174 },
+          { item: "Broad Green Anodized Frame", qty: 1, spec: "Laser cut 2.5mm aluminum deck", inr: 3200, usd: 38 },
+          { item: "Wide-Angle 160° Camera Module", qty: 1, spec: "Sony IMX219 sensor with ribbon cable", inr: 2600, usd: 31 },
+          { item: "Magnetic Encoder DC Motors", qty: 2, spec: "High-RPM carbon brush gearboxes", inr: 2400, usd: 28 },
+          { item: "OLED Real-Time Telemetry Screen", qty: 1, spec: "IP address and CPU temp display", inr: 850, usd: 10 }
+        ]
+      },
+      {
+        id: 20,
+        name: "Otto DIY Maker Bot",
+        cat: "STEAM",
+        type: "bionic",
+        chassisColor: 0x38bdf8,
+        accentColor: 0xffffff,
+        risk: "Low",
+        hazard: "Burrs on rough 3D prints; soldering iron hazard if building from raw kits (avoided here).",
+        summary: "3D-printed biped walker with bobbing foot legs, oscillating hip servos, HC-SR04 eyes.",
+        bom: [
+          { item: "3D Printed PLA Shell Set", qty: 1, spec: "Head box, legs, and foot soles", inr: 800, usd: 9.6 },
+          { item: "Micro Servos SG90", qty: 4, spec: "9g positional servos for dancing", inr: 640, usd: 7.7 },
+          { item: "Arduino Nano V3 Board", qty: 1, spec: "ATmega328P mini microcomputer", inr: 450, usd: 5.4 },
+          { item: "HC-SR04 Sonar Transducer", qty: 1, spec: "Ultrasonic rangefinder eyes", inr: 150, usd: 1.8 },
+          { item: "Active Piezo Buzzer & Shield", qty: 1, spec: "Sound FX synthesizer buzzer", inr: 220, usd: 2.6 }
+        ]
+      }
+    ];
+
+    /* Sub-assembly components tree */
+    const CAR_PARTS_TREE = [
+      { id: "chassis", name: "Structural Base Deck & Brass Standoffs", desc: "Dual acrylic decks fastened with solid brass pillars." },
+      { id: "motors", name: "4x Geared Motors & Metal Brackets", desc: "TT DC gearmotors held with rigid aluminum angle brackets." },
+      { id: "wheels", name: "4x Traction Wheels & Axle Hubs", desc: "Surface traction wheels secured onto drive motor output shafts." },
+      { id: "controller", name: "Microcontroller & Aluminum Standoffs", desc: "Controller PCB mounted securely onto brass hex standoffs." },
+      { id: "battery", name: "Battery Pack & Screw Clamp Frame", desc: "Safety-insulated power supply clamped to upper deck plate." },
+      { id: "ultrasonic", name: "HC-SR04 Eyes & Anodized Pan-Tilt Mast", desc: "Twin acoustic eye cones fastened onto rigid alloy servo bracket." }
+    ];
+
+    /* GLOBAL THREE.JS STATE */
+    let currentRobotIndex = 1; // Elegoo (#2)
+    let currentMode = 'assembly'; // Start in Assembly mode so student can build from tray
+    let assembledSteps = 0;       // Starts with all parts on tray (0 of 6)
+    let visitorName = "Student";
+    let visitorGender = "boy";
+
+    let scene, camera, renderer, controls;
+    let tableSurfaceMesh = null;
+    let robotRoot = null;
+    let lineTrackMesh = null;
+    let trafficStandGroup = null;
+
+    // Traffic Light State: 'green', 'yellow', 'red'
+    let trafficLightState = 'green';
+    let isAutoCycleTraffic = false;
+    let trafficAutoTimer = 0;
+    const traffic3dMeshes = {};
+
+    const parts3D = {};
+    let ultrasonicRaysGroup = null;
+
+    let caricatureGroup = null;
+    let avatarTabletScreen = null;
+    let avatarArm = null;
+    let drVenuHead = null;
+
+    // Car physics starting on the wide loop path
+    const carPhysics = {
+      x: -0.90,
+      z: 0.0,
+      y: 0,
+      rotY: 0,
+      vx: 0,
+      vz: 0,
+      vRot: 0,
+      wheelRot: 0,
+      offTable: false,
+      trackT: 0
+    };
+
+    const driveKeys = { w: false, s: false, a: false, d: false };
+    let lineFollowingActive = false;
+
+    function initLabScene() {
+      const container = document.getElementById('canvas-container');
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x060913);
+      scene.fog = new THREE.FogExp2(0x060913, 0.020);
+
+      camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 100);
+      camera.position.set(4.6, 4.2, 5.4);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+      renderer.setSize(w, h);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      container.appendChild(renderer.domElement);
+
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.06;
+      controls.maxPolarAngle = Math.PI / 2 - 0.02;
+      controls.minDistance = 1.0;
+      controls.maxDistance = 24.0;
+      controls.target.set(-0.2, 0.7, 0.4);
+
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.95);
+      scene.add(ambientLight);
+
+      const keyLight = new THREE.DirectionalLight(0xfffbf2, 1.4);
+      keyLight.position.set(8, 15, 8);
+      keyLight.castShadow = true;
+      keyLight.shadow.mapSize.width = 2048;
+      keyLight.shadow.mapSize.height = 2048;
+      scene.add(keyLight);
+
+      const fillLight = new THREE.DirectionalLight(0x93c5fd, 0.6);
+      fillLight.position.set(-8, 10, -6);
+      scene.add(fillLight);
+
+      buildLaboratoryWorkbench();
+      buildCaricatures();
+      buildLineTrack();
+      buildCenterTrafficLightStand();
+      rebuildSelectedRobot3D();
+      buildUltrasonicRays();
+
+      window.addEventListener('resize', onWindowResize);
+      setupKeyboardControls();
+
+      // Start traffic light state on green
+      setTrafficLight('green');
+
+      animate();
+      document.getElementById('onboardingModal').classList.remove('hidden');
+    }
+
+    /* EXTRA-WIDE TABLE (3.2m x 7.8m) AND COMPONENT STORAGE PLATE */
+    function buildLaboratoryWorkbench() {
+      const groundGeo = new THREE.PlaneGeometry(40, 40);
+      const groundMat = new THREE.MeshStandardMaterial({ color: 0x090d18, roughness: 0.9, metalness: 0.1 });
+      const ground = new THREE.Mesh(groundGeo, groundMat);
+      ground.rotation.x = -Math.PI / 2;
+      ground.position.y = -0.01;
+      ground.receiveShadow = true;
+      scene.add(ground);
+
+      const floorGrid = new THREE.GridHelper(40, 40, 0x1e293b, 0x0f172a);
+      floorGrid.position.y = 0.005;
+      scene.add(floorGrid);
+
+      // TABLE DIMENSIONS: Width 3.2m, Length 7.8m
+      const tableWidth = 3.2;
+      const tableLength = 7.8;
+      const tableHeight = 0.65;
+
+      const topGeo = new THREE.BoxGeometry(tableWidth, 0.08, tableLength);
+      const topMat = new THREE.MeshStandardMaterial({
+        color: 0x1e293b,
+        roughness: 0.4,
+        metalness: 0.3
+      });
+      tableSurfaceMesh = new THREE.Mesh(topGeo, topMat);
+      tableSurfaceMesh.position.set(0, tableHeight - 0.04, 0.4);
+      tableSurfaceMesh.receiveShadow = true;
+      tableSurfaceMesh.castShadow = true;
+      scene.add(tableSurfaceMesh);
+
+      // Saffron border lines
+      const stripGeo = new THREE.BoxGeometry(0.04, 0.085, tableLength);
+      const stripMat = new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.4 });
+      const leftStrip = new THREE.Mesh(stripGeo, stripMat);
+      leftStrip.position.set(-tableWidth / 2, tableHeight - 0.04, 0.4);
+      const rightStrip = new THREE.Mesh(stripGeo, stripMat);
+      rightStrip.position.set(tableWidth / 2, tableHeight - 0.04, 0.4);
+      scene.add(leftStrip, rightStrip);
+
+      // Heavy Metal Workbench Legs
+      const legGeo = new THREE.CylinderGeometry(0.055, 0.055, tableHeight - 0.08, 16);
+      const legMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.7, roughness: 0.3 });
+      
+      const legPositions = [
+        [-tableWidth / 2 + 0.2, (tableHeight - 0.08) / 2, -tableLength / 2 + 0.45],
+        [tableWidth / 2 - 0.2, (tableHeight - 0.08) / 2, -tableLength / 2 + 0.45],
+        [-tableWidth / 2 + 0.2, (tableHeight - 0.08) / 2, tableLength / 2 - 0.45],
+        [tableWidth / 2 - 0.2, (tableHeight - 0.08) / 2, tableLength / 2 - 0.45]
+      ];
+
+      legPositions.forEach(pos => {
+        const leg = new THREE.Mesh(legGeo, legMat);
+        leg.position.set(pos[0], pos[1], pos[2]);
+        leg.castShadow = true;
+        scene.add(leg);
+      });
+
+      // COMPONENT STORAGE PLATE / TRAY (Placed next to table on left side at x = -2.45)
+      const trayWidth = 1.3;
+      const trayLength = 3.8;
+      const trayGeo = new THREE.BoxGeometry(trayWidth, 0.06, trayLength);
+      const trayMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.5, metalness: 0.2 });
+      const tray = new THREE.Mesh(trayGeo, trayMat);
+      tray.position.set(-2.45, tableHeight - 0.03, 0.4);
+      tray.receiveShadow = true;
+      tray.castShadow = true;
+      scene.add(tray);
+
+      // Beveled Border Rim around Storage Plate
+      const rimMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, metalness: 0.6 });
+      const rimL = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.07, trayLength), rimMat);
+      rimL.position.set(-2.45 - trayWidth / 2, tableHeight - 0.02, 0.4);
+      const rimR = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.07, trayLength), rimMat);
+      rimR.position.set(-2.45 + trayWidth / 2, tableHeight - 0.02, 0.4);
+      scene.add(rimL, rimR);
+
+      const traySign = makeCanvasTextSprite("COMPONENT STORAGE PLATE", "#38bdf8", 260, 44);
+      traySign.position.set(-2.45, tableHeight + 0.08, 0.4);
+      traySign.scale.set(1.2, 0.22, 1);
+      scene.add(traySign);
+    }
+
+    /* CENTER CLOSED LOOP LINE TRACK (SYMMETRIC AROUND CENTER WITH LARGE INTERNAL CLEARANCE) */
+    let trackCurve = null;
+    function buildLineTrack() {
+      // Loop is symmetrically positioned on X (from x = -0.9 to x = 0.9)
+      // The traffic pole will sit at x = 0, z = -1.5, leaving huge clearance (0.9m to left/right, and 1.3m to south)
+      const trackPoints = [
+        new THREE.Vector3(-0.90, 0.652, -2.6),
+        new THREE.Vector3(-0.90, 0.652, 2.6),
+        new THREE.Vector3(0.00, 0.652, 3.1),
+        new THREE.Vector3(0.90, 0.652, 2.6),
+        new THREE.Vector3(0.90, 0.652, -2.6),
+        new THREE.Vector3(0.00, 0.652, -3.1),
+        new THREE.Vector3(-0.90, 0.652, -2.6)
+      ];
+
+      trackCurve = new THREE.CatmullRomCurve3(trackPoints, true, 'centripetal', 0.5);
+      const tubeGeo = new THREE.TubeGeometry(trackCurve, 150, 0.028, 8, true);
+      const tubeMat = new THREE.MeshBasicMaterial({ color: 0x020617 });
+      lineTrackMesh = new THREE.Mesh(tubeGeo, tubeMat);
+      scene.add(lineTrackMesh);
+    }
+
+    /* DISTANT TRAFFIC LIGHT STAND (EXACTLY IN X-CENTER, SPACED DISTANTLY ALONG LONGER Z-AXIS) */
+    function buildCenterTrafficLightStand() {
+      trafficStandGroup = new THREE.Group();
+      // EXACTLY centered on X (x = 0), but placed distantly on the longer Z-axis (z = -1.5)
+      // The track loops around it with minimum 0.9m side spacing and 1.6m end spacing!
+      trafficStandGroup.position.set(0.0, 0.65, -1.5);
+      scene.add(trafficStandGroup);
+
+      // Base Pedestal
+      const baseGeo = new THREE.CylinderGeometry(0.18, 0.20, 0.04, 24);
+      const baseMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8, roughness: 0.3 });
+      const base = new THREE.Mesh(baseGeo, baseMat);
+      base.position.y = 0.02;
+      trafficStandGroup.add(base);
+
+      // Vertical Mast
+      const poleGeo = new THREE.CylinderGeometry(0.028, 0.028, 1.05, 16);
+      const poleMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.9, roughness: 0.2 });
+      const pole = new THREE.Mesh(poleGeo, poleMat);
+      pole.position.y = 0.54;
+      trafficStandGroup.add(pole);
+
+      // Signal Enclosure Head
+      const boxGeo = new THREE.BoxGeometry(0.19, 0.48, 0.19);
+      const boxMat = new THREE.MeshStandardMaterial({ color: 0x090d16, roughness: 0.5 });
+      const box = new THREE.Mesh(boxGeo, boxMat);
+      box.position.y = 1.18;
+      trafficStandGroup.add(box);
+
+      // 3 Spherical Indicator Lamps
+      const lampGeo = new THREE.SphereGeometry(0.044, 20, 16);
+
+      // Red Lamp
+      const redMat = new THREE.MeshBasicMaterial({ color: 0x450a0a });
+      const redMesh = new THREE.Mesh(lampGeo, redMat);
+      redMesh.position.set(0, 1.32, 0.096);
+      const redLight = new THREE.PointLight(0xef4444, 0, 4.5);
+      redLight.position.set(0, 1.32, 0.15);
+      trafficStandGroup.add(redMesh, redLight);
+      traffic3dMeshes.red = { mesh: redMesh, light: redLight, onColor: 0xef4444, offColor: 0x450a0a };
+
+      // Yellow Lamp
+      const yellowMat = new THREE.MeshBasicMaterial({ color: 0x451a03 });
+      const yellowMesh = new THREE.Mesh(lampGeo, yellowMat);
+      yellowMesh.position.set(0, 1.18, 0.096);
+      const yellowLight = new THREE.PointLight(0xf59e0b, 0, 4.5);
+      yellowLight.position.set(0, 1.18, 0.15);
+      trafficStandGroup.add(yellowMesh, yellowLight);
+      traffic3dMeshes.yellow = { mesh: yellowMesh, light: yellowLight, onColor: 0xf59e0b, offColor: 0x451a03 };
+
+      // Green Lamp
+      const greenMat = new THREE.MeshBasicMaterial({ color: 0x052e16 });
+      const greenMesh = new THREE.Mesh(lampGeo, greenMat);
+      greenMesh.position.set(0, 1.04, 0.096);
+      const greenLight = new THREE.PointLight(0x10b981, 1.8, 4.5);
+      greenLight.position.set(0, 1.04, 0.15);
+      trafficStandGroup.add(greenMesh, greenLight);
+      traffic3dMeshes.green = { mesh: greenMesh, light: greenLight, onColor: 0x10b981, offColor: 0x052e16 };
+
+      // Top Finial
+      const finial = new THREE.Mesh(new THREE.ConeGeometry(0.048, 0.095, 16), new THREE.MeshStandardMaterial({ color: 0xf97316 }));
+      finial.position.y = 1.46;
+      trafficStandGroup.add(finial);
+    }
+
+    function setTrafficLight(color) {
+      tapStudentMiniPad();
+      trafficLightState = color;
+
+      ['red', 'yellow', 'green'].forEach(c => {
+        const item = traffic3dMeshes[c];
+        if (c === color) {
+          item.mesh.material.color.setHex(item.onColor);
+          item.light.intensity = 2.0;
+        } else {
+          item.mesh.material.color.setHex(item.offColor);
+          item.light.intensity = 0;
+        }
+      });
+
+      const hudR = document.getElementById('hudLightRed');
+      const hudY = document.getElementById('hudLightYellow');
+      const hudG = document.getElementById('hudLightGreen');
+      const hudText = document.getElementById('trafficStateText');
+
+      hudR.className = "w-3 h-3 rounded-full bg-rose-950 border border-rose-800 transition-all duration-300";
+      hudY.className = "w-3 h-3 rounded-full bg-amber-950 border border-amber-800 transition-all duration-300";
+      hudG.className = "w-3 h-3 rounded-full bg-emerald-950 border border-emerald-800 transition-all duration-300";
+
+      const btnR = document.getElementById('btnLightRed');
+      const btnY = document.getElementById('btnLightYellow');
+      const btnG = document.getElementById('btnLightGreen');
+
+      btnR.className = "py-3 px-2 rounded-xl border border-rose-500/30 bg-rose-950/30 hover:bg-rose-900/50 text-rose-300 font-bold text-xs flex flex-col items-center gap-1 transition active:scale-95";
+      btnY.className = "py-3 px-2 rounded-xl border border-amber-500/30 bg-amber-950/30 hover:bg-amber-900/50 text-amber-300 font-bold text-xs flex flex-col items-center gap-1 transition active:scale-95";
+      btnG.className = "py-3 px-2 rounded-xl border border-emerald-500/30 bg-emerald-950/30 hover:bg-emerald-900/50 text-emerald-300 font-bold text-xs flex flex-col items-center gap-1 transition active:scale-95";
+
+      if (color === 'red') {
+        hudR.className = "w-3 h-3 rounded-full bg-rose-500 border border-rose-400 shadow-[0_0_10px_#ef4444]";
+        btnR.className = "py-3 px-2 rounded-xl border border-rose-500 bg-rose-500/25 text-rose-300 font-bold text-xs flex flex-col items-center gap-1 transition active:scale-95 shadow-md shadow-rose-500/20";
+        hudText.innerText = "RED: FULL STOP (BRAKE ON)";
+        hudText.className = "text-xs sm:text-sm font-black font-mono text-rose-400 uppercase";
+      } else if (color === 'yellow') {
+        hudY.className = "w-3 h-3 rounded-full bg-amber-400 border border-amber-300 shadow-[0_0_10px_#f59e0b]";
+        btnY.className = "py-3 px-2 rounded-xl border border-amber-500 bg-amber-500/25 text-amber-300 font-bold text-xs flex flex-col items-center gap-1 transition active:scale-95 shadow-md shadow-amber-500/20";
+        hudText.innerText = "YELLOW: CAUTION (SLOW DRIVE)";
+        hudText.className = "text-xs sm:text-sm font-black font-mono text-amber-400 uppercase";
+      } else {
+        hudG.className = "w-3 h-3 rounded-full bg-emerald-500 border border-emerald-400 shadow-[0_0_10px_#10b981]";
+        btnG.className = "py-3 px-2 rounded-xl border border-emerald-500 bg-emerald-500/25 text-emerald-300 font-bold text-xs flex flex-col items-center gap-1 transition active:scale-95 shadow-md shadow-emerald-500/20";
+        hudText.innerText = "GREEN: FULL SPEED TRACKING";
+        hudText.className = "text-xs sm:text-sm font-black font-mono text-emerald-400 uppercase";
+      }
+    }
+
+    function toggleTrafficAutoCycle() {
+      tapStudentMiniPad();
+      isAutoCycleTraffic = !isAutoCycleTraffic;
+      const btn = document.getElementById('btnAutoCycle');
+      btn.innerText = `Auto-Cycle: ${isAutoCycleTraffic ? 'ON' : 'OFF'}`;
+      btn.className = isAutoCycleTraffic ? "text-xs text-emerald-400 font-bold underline" : "text-xs text-sky-400 underline font-semibold";
+      trafficAutoTimer = 0;
+    }
+
+    /* RIGID MECHANICAL FASTENERS & COMPONENT MOUNTING (NO FLOATING PARTS) */
+    function rebuildSelectedRobot3D() {
+      if (robotRoot) scene.remove(robotRoot);
+
+      robotRoot = new THREE.Group();
+      robotRoot.name = "robotRoot";
+      scene.add(robotRoot);
+
+      const bot = ROBOT_DATABASE[currentRobotIndex];
+      const tableTopY = 0.65;
+      const wheelRadius = 0.16;
+      const axleY = tableTopY + wheelRadius; // = 0.81m
+
+      // Storage Tray Location Coordinates (Parts rest spaced out on the storage plate at x = -2.45)
+      const trayY = tableTopY + 0.05;
+      const trayX = -2.45;
+
+      const brassMat = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.85, roughness: 0.25 });
+      const metalAlloyMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9, roughness: 0.2 });
+
+      // 1. BASE CHASSIS DECK + BRASS STANDOFF PILLARS
+      const chassisGroup = new THREE.Group();
+      let chassisMat = new THREE.MeshStandardMaterial({ color: bot.chassisColor, roughness: 0.25, metalness: 0.3 });
+
+      const lowerPlate = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.025, 0.92), chassisMat);
+      lowerPlate.castShadow = true;
+      chassisGroup.add(lowerPlate);
+
+      // 4 Brass Standoff Pillars supporting upper deck (Rigid bridge, no gap)
+      const standoffGeo = new THREE.CylinderGeometry(0.014, 0.014, 0.13, 16);
+      [[-0.28, 0.075, -0.38], [0.28, 0.075, -0.38], [-0.28, 0.075, 0.38], [0.28, 0.075, 0.38]].forEach(pos => {
+        const pin = new THREE.Mesh(standoffGeo, brassMat);
+        pin.position.set(pos[0], pos[1], pos[2]);
+        chassisGroup.add(pin);
+      });
+
+      // Upper Deck Plate
+      const upperPlate = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.02, 0.88), chassisMat);
+      upperPlate.position.y = 0.14;
+      upperPlate.castShadow = true;
+      chassisGroup.add(upperPlate);
+
+      chassisGroup.userData = {
+        assembledPos: new THREE.Vector3(0, axleY + 0.02, 0),
+        disassembledPos: new THREE.Vector3(trayX, trayY + 0.02, -1.2)
+      };
+      parts3D.chassis = chassisGroup;
+      robotRoot.add(chassisGroup);
+
+      // 2. MOTORS WITH MECHANICAL CLAMP BRACKETS
+      const motorsGroup = new THREE.Group();
+      const motorAccentMat = new THREE.MeshStandardMaterial({ color: bot.accentColor, roughness: 0.3, metalness: 0.2 });
+      const motorPositions = [[-0.31, -0.02, 0.25], [0.31, -0.02, 0.25], [-0.31, -0.02, -0.25], [0.31, -0.02, -0.25]];
+
+      motorPositions.forEach(pos => {
+        // Gearbox block
+        const m = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.11, 0.23), motorAccentMat);
+        m.position.set(pos[0], pos[1], pos[2]);
+
+        // Metal L-Bracket firmly bolting motor to lower chassis
+        const bracket = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.08, 0.18), metalAlloyMat);
+        bracket.position.set(pos[0] > 0 ? -0.065 : 0.065, 0.04, 0);
+        m.add(bracket);
+
+        // Steel Output Axle Shaft
+        const axle = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.09, 16), metalAlloyMat);
+        axle.rotation.z = Math.PI / 2;
+        axle.position.set(pos[0] > 0 ? 0.075 : -0.075, 0, 0);
+        m.add(axle);
+
+        motorsGroup.add(m);
+      });
+
+      motorsGroup.userData = {
+        assembledPos: new THREE.Vector3(0, axleY + 0.02, 0),
+        disassembledPos: new THREE.Vector3(trayX, trayY + 0.06, -0.6)
+      };
+      parts3D.motors = motorsGroup;
+      robotRoot.add(motorsGroup);
+
+      // 3. WHEELS / TRACTION DRIVE UNITS
+      const wheelsGroup = new THREE.Group();
+      const wheelMeshes = [];
+
+      if (bot.type === 'tank') {
+        [-0.34, 0.34].forEach(x => {
+          const track = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.24, 0.92), new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.9 }));
+          track.position.set(x, 0, 0);
+          wheelsGroup.add(track);
+          wheelMeshes.push(track);
+        });
+      } else if (bot.type === 'bionic') {
+        [[-0.32, 0.28], [0.32, 0.28], [-0.32, -0.28], [0.32, -0.28]].forEach(pos => {
+          const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.02, 0.32, 12), motorAccentMat);
+          leg.rotation.z = pos[0] > 0 ? 0.35 : -0.35;
+          leg.position.set(pos[0], -0.05, pos[1]);
+          wheelsGroup.add(leg);
+          wheelMeshes.push(leg);
+        });
+      } else {
+        const offsets = [[-0.42, 0, 0.25], [0.42, 0, 0.25], [-0.42, 0, -0.25], [0.42, 0, -0.25]];
+        offsets.forEach(pos => {
+          const w = new THREE.Group();
+          w.position.set(pos[0], pos[1], pos[2]);
+          const tireGeo = new THREE.CylinderGeometry(wheelRadius, wheelRadius, 0.1, 28);
+          tireGeo.rotateZ(Math.PI / 2);
+          const tire = new THREE.Mesh(tireGeo, new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.8 }));
+          const hub = new THREE.Mesh(new THREE.CylinderGeometry(wheelRadius * 0.6, wheelRadius * 0.6, 0.105, 18), motorAccentMat);
+          hub.rotation.z = Math.PI / 2;
+          w.add(tire, hub);
+          wheelsGroup.add(w);
+          wheelMeshes.push(w);
+        });
+      }
+
+      wheelsGroup.userData = {
+        assembledPos: new THREE.Vector3(0, axleY, 0),
+        disassembledPos: new THREE.Vector3(trayX, trayY + 0.16, 0.0)
+      };
+      parts3D.wheels = wheelsGroup;
+      parts3D.wheelSubMeshes = wheelMeshes;
+      robotRoot.add(wheelsGroup);
+
+      // 4. MICROCONTROLLER BOARD WITH CORNER HEX STANDOFFS
+      const pcbGroup = new THREE.Group();
+      const pcb = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.02, 0.44), new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.3 }));
+      pcbGroup.add(pcb);
+
+      // 4 Brass hex mounting standoffs securing PCB to deck (No floating)
+      const pcbStandGeo = new THREE.CylinderGeometry(0.008, 0.008, 0.03, 12);
+      [[-0.17, -0.02, -0.19], [0.17, -0.02, -0.19], [-0.17, -0.02, 0.19], [0.17, -0.02, 0.19]].forEach(pt => {
+        const s = new THREE.Mesh(pcbStandGeo, brassMat);
+        s.position.set(pt[0], pt[1], pt[2]);
+        pcbGroup.add(s);
+      });
+
+      const ic = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.025, 0.2), new THREE.MeshStandardMaterial({ color: 0x090d16 }));
+      ic.position.y = 0.02;
+      pcbGroup.add(ic);
+
+      pcbGroup.userData = {
+        assembledPos: new THREE.Vector3(0, axleY + 0.18, -0.05),
+        disassembledPos: new THREE.Vector3(trayX, trayY + 0.04, 0.6)
+      };
+      parts3D.controller = pcbGroup;
+      robotRoot.add(pcbGroup);
+
+      // 5. BATTERY PACK CLAMPED IN SECURE CRADLE
+      const batteryGroup = new THREE.Group();
+      const cradle = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.04, 0.26), new THREE.MeshStandardMaterial({ color: 0x111827 }));
+      // Clamping metal cross-strap
+      const strap = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.015, 0.06), metalAlloyMat);
+      strap.position.y = 0.065;
+      cradle.add(strap);
+
+      const cell1 = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.22, 16), new THREE.MeshStandardMaterial({ color: 0x0284c7 }));
+      cell1.rotation.x = Math.PI / 2;
+      cell1.position.set(-0.065, 0.04, 0);
+      const cell2 = cell1.clone();
+      cell2.position.x = 0.065;
+      batteryGroup.add(cradle, cell1, cell2);
+
+      batteryGroup.userData = {
+        assembledPos: new THREE.Vector3(0, axleY + 0.18, -0.30),
+        disassembledPos: new THREE.Vector3(trayX, trayY + 0.05, 1.1)
+      };
+      parts3D.battery = batteryGroup;
+      robotRoot.add(batteryGroup);
+
+      // 6. ULTRASONIC SENSOR WITH ANODIZED ALUMINUM PAN-TILT MAST (SOLID FASTENING)
+      const ultrasonicGroup = new THREE.Group();
+
+      // Metal Pedestal Mount (Rests directly on upper chassis deck)
+      const alloyMastGeo = new THREE.BoxGeometry(0.12, 0.12, 0.12);
+      const alloyMast = new THREE.Mesh(alloyMastGeo, metalAlloyMat);
+      alloyMast.position.set(0, -0.06, 0);
+      ultrasonicGroup.add(alloyMast);
+
+      // Black Pan-Tilt Servo Case
+      const panServo = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.08), new THREE.MeshStandardMaterial({ color: 0x1e293b }));
+      panServo.position.set(0, 0.02, 0);
+      ultrasonicGroup.add(panServo);
+
+      // Front Blue Sensor PCB
+      const sensorPcb = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.12, 0.015), new THREE.MeshStandardMaterial({ color: 0x0284c7 }));
+      sensorPcb.position.set(0, 0.09, 0.05);
+      ultrasonicGroup.add(sensorPcb);
+
+      // Chrome Transducer Cones (The Eyes)
+      const eye1 = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.042, 0.08, 18), new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.9 }));
+      eye1.rotation.x = Math.PI / 2;
+      eye1.position.set(-0.065, 0.09, 0.095);
+      const eye2 = eye1.clone();
+      eye2.position.set(0.065, 0.09, 0.095);
+      ultrasonicGroup.add(eye1, eye2);
+
+      ultrasonicGroup.userData = {
+        assembledPos: new THREE.Vector3(0, axleY + 0.24, 0.38),
+        disassembledPos: new THREE.Vector3(trayX, trayY + 0.09, 1.6)
+      };
+      parts3D.ultrasonic = ultrasonicGroup;
+      robotRoot.add(ultrasonicGroup);
+
+      updatePartsAssemblyPositions();
+    }
+
+    function buildUltrasonicRays() {
+      ultrasonicRaysGroup = new THREE.Group();
+      scene.add(ultrasonicRaysGroup);
+
+      const rings = [];
+      for (let i = 0; i < 6; i++) {
+        const ring = new THREE.Mesh(
+          new THREE.TorusGeometry(0.12 + i * 0.08, 0.012, 12, 28),
+          new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.55 })
+        );
+        ring.rotation.x = Math.PI / 2;
+        ring.userData = { phase: i * 0.8 };
+        ultrasonicRaysGroup.add(ring);
+        rings.push(ring);
+      }
+      ultrasonicRaysGroup.userData = { rings };
+    }
+
+    function buildCaricatures() {
+      caricatureGroup = new THREE.Group();
+      scene.add(caricatureGroup);
+      const standX = 2.05;
+
+      function createMentor(x, z, coatColor, pantColor, headType, name, role) {
+        const char = new THREE.Group();
+        char.position.set(x, 0, z);
+
+        const legMat = new THREE.MeshStandardMaterial({ color: pantColor, roughness: 0.7 });
+        const lLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.065, 0.65, 16), legMat); lLeg.position.set(-0.08, 0.38, 0);
+        const rLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.065, 0.65, 16), legMat); rLeg.position.set(0.08, 0.38, 0);
+        char.add(lLeg, rLeg);
+
+        const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.16, 0.6, 20), new THREE.MeshStandardMaterial({ color: coatColor, roughness: 0.5 }));
+        torso.position.y = 0.95;
+        char.add(torso);
+
+        const headGroup = new THREE.Group(); headGroup.position.y = 1.35;
+        const face = new THREE.Mesh(new THREE.SphereGeometry(0.16, 24, 24), new THREE.MeshStandardMaterial({ color: 0xf6d3b3 }));
+        headGroup.add(face);
+
+        if (headType === 'drVenu') {
+          const hair = new THREE.Mesh(new THREE.SphereGeometry(0.17, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2.2), new THREE.MeshStandardMaterial({ color: 0xd1d5db }));
+          hair.position.y = 0.03;
+          headGroup.add(hair);
+          drVenuHead = headGroup;
+        } else {
+          const hair = new THREE.Mesh(new THREE.SphereGeometry(0.17, 20, 16, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x1f2937 }));
+          hair.position.y = 0.03;
+          headGroup.add(hair);
+        }
+        char.add(headGroup);
+
+        const nameSprite = makeCanvasNameBadge(name, role);
+        nameSprite.position.set(0, 1.78, 0);
+        nameSprite.scale.set(1.1, 0.32, 1);
+        char.add(nameSprite);
+        char.rotation.y = -Math.PI / 2.5;
+        return char;
+      }
+
+      caricatureGroup.add(createMentor(standX, -0.6, 0x1e3a8a, 0x374151, 'drVenu', "Dr Venu Gopal", "Chief Mentor • GARRF"));
+      caricatureGroup.add(createMentor(standX, 0.4, 0x0284c7, 0x1e293b, 'shantanu', "Shantanu Bro", "Robotics Co-Mentor"));
+      rebuildStudentAvatar();
+    }
+
+    function rebuildStudentAvatar() {
+      const oldAvatar = caricatureGroup.getObjectByName("studentAvatar");
+      if (oldAvatar) caricatureGroup.remove(oldAvatar);
+
+      const standX = 2.05;
+      const avatarZ = 1.3;
+      const avatar = new THREE.Group();
+      avatar.name = "studentAvatar";
+      avatar.position.set(standX, 0, avatarZ);
+
+      let coatColor = 0xf97316;
+      let pantColor = 0x1e3a8a;
+
+      if (visitorGender === 'girl') {
+        const saree = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.25, 0.9, 20), new THREE.MeshStandardMaterial({ color: 0xb91c1c }));
+        saree.position.y = 0.55;
+        avatar.add(saree);
+      } else {
+        const lLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.065, 0.65, 16), new THREE.MeshStandardMaterial({ color: pantColor }));
+        lLeg.position.set(-0.08, 0.38, 0);
+        const rLeg = lLeg.clone(); rLeg.position.x = 0.08;
+        const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.16, 0.6, 20), new THREE.MeshStandardMaterial({ color: coatColor }));
+        torso.position.y = 0.95;
+        avatar.add(lLeg, rLeg, torso);
+      }
+
+      const headGroup = new THREE.Group(); headGroup.position.y = 1.35;
+      const face = new THREE.Mesh(new THREE.SphereGeometry(0.16, 24, 24), new THREE.MeshStandardMaterial({ color: 0xf6d3b3 }));
+      headGroup.add(face);
+      avatar.add(headGroup);
+
+      const armMat = new THREE.MeshStandardMaterial({ color: visitorGender === 'girl' ? 0xb91c1c : coatColor });
+      const rightArmGroup = new THREE.Group();
+      rightArmGroup.position.set(0.22, 1.05, 0);
+      const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.45, 12), armMat);
+      arm.position.set(0, -0.2, -0.12);
+      arm.rotation.x = -Math.PI / 3;
+      rightArmGroup.add(arm);
+
+      const pad = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.02, 0.16), new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.8 }));
+      pad.position.set(0, -0.36, -0.22); pad.rotation.x = -0.4;
+      const scr = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.12), new THREE.MeshBasicMaterial({ color: 0xf97316 }));
+      scr.rotation.x = -Math.PI / 2; scr.position.y = 0.012;
+      pad.add(scr);
+      rightArmGroup.add(pad);
+      avatar.add(rightArmGroup);
+      avatarArm = rightArmGroup;
+      avatarTabletScreen = scr;
+
+      const nameSprite = makeCanvasNameBadge(visitorName, "Student Robotics Fellow");
+      nameSprite.position.set(0, 1.78, 0);
+      nameSprite.scale.set(1.1, 0.32, 1);
+      avatar.add(nameSprite);
+
+      avatar.rotation.y = -Math.PI / 2.5;
+      caricatureGroup.add(avatar);
+    }
+
+    function makeCanvasNameBadge(name, subtitle) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512; canvas.height = 160;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = 'rgba(10, 15, 29, 0.92)';
+      ctx.strokeStyle = '#f97316'; ctx.lineWidth = 6;
+      roundRect(ctx, 10, 10, 492, 140, 24, true, true);
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 44px Plus Jakarta Sans, sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(name, 256, 68);
+      ctx.fillStyle = '#38bdf8'; ctx.font = '600 24px JetBrains Mono, monospace';
+      ctx.fillText(subtitle, 256, 115);
+      return new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(canvas), transparent: true }));
+    }
+
+    function makeCanvasTextSprite(text, color, w, h) {
+      const canvas = document.createElement('canvas');
+      canvas.width = w * 2; canvas.height = h * 2;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = color; ctx.font = 'bold 28px JetBrains Mono, monospace'; ctx.textAlign = 'center';
+      ctx.fillText(text, w, h + 10);
+      return new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(canvas), transparent: true }));
+    }
+
+    function roundRect(ctx, x, y, width, height, radius, fill, stroke) {
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + width - radius, y);
+      ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+      ctx.lineTo(x + width, y + height - radius);
+      ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+      ctx.lineTo(x + radius, y + height);
+      ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
+      if (fill) ctx.fill();
+      if (stroke) ctx.stroke();
+    }
+
+    function updatePartsAssemblyPositions() {
+      CAR_PARTS_TREE.forEach((part, index) => {
+        const group = parts3D[part.id];
+        if (!group) return;
+        const isAssembled = index < assembledSteps;
+        group.position.copy(isAssembled ? group.userData.assembledPos : group.userData.disassembledPos);
+      });
+
+      if (ultrasonicRaysGroup) ultrasonicRaysGroup.visible = assembledSteps >= 6;
+
+      const label = document.getElementById('assemblyProgressLabel');
+      if (label) label.innerText = `${assembledSteps} of ${CAR_PARTS_TREE.length} Parts Fitted`;
+
+      const tag = document.getElementById('assemblyStatusHudTag');
+      if (tag) {
+        tag.innerText = (assembledSteps >= 6) ? "Fully Built on Table" : `${assembledSteps}/6 Parts Assembled`;
+        tag.className = (assembledSteps >= 6) ? "text-emerald-400 font-bold" : "text-saffron-400 font-bold";
+      }
+
+      if (assembledSteps < CAR_PARTS_TREE.length) {
+        const nextPart = CAR_PARTS_TREE[assembledSteps];
+        document.getElementById('activePartTag').innerText = `TRAY-0${assembledSteps + 1}`;
+        document.getElementById('activePartName').innerText = nextPart.name;
+        document.getElementById('activePartDesc').innerText = nextPart.desc;
+      } else {
+        document.getElementById('activePartTag').innerText = "ASSEMBLY LOCKED";
+        document.getElementById('activePartName').innerText = "All Hardware Rigidly Bolted";
+        document.getElementById('activePartDesc').innerText = "No loose or floating parts! Ready to follow traffic signals.";
+      }
+
+      renderPartsListUI();
+
+      if (assembledSteps === CAR_PARTS_TREE.length && currentMode === 'assembly') {
+        setTimeout(() => {
+          openDrVenuModal();
+        }, 500);
+      }
+    }
+
+    function stepSnapPart(delta) {
+      tapStudentMiniPad();
+      assembledSteps = Math.max(0, Math.min(CAR_PARTS_TREE.length, assembledSteps + delta));
+      updatePartsAssemblyPositions();
+    }
+
+    function assembleAll() {
+      tapStudentMiniPad();
+      assembledSteps = CAR_PARTS_TREE.length;
+      updatePartsAssemblyPositions();
+    }
+
+    function disassembleAll() {
+      tapStudentMiniPad();
+      assembledSteps = 0;
+      updatePartsAssemblyPositions();
+    }
+
+    function renderPartsListUI() {
+      const container = document.getElementById('assemblyPartsList');
+      if (!container) return;
+      container.innerHTML = '';
+
+      CAR_PARTS_TREE.forEach((part, idx) => {
+        const isFitted = idx < assembledSteps;
+        const isCurrent = idx === assembledSteps;
+
+        const row = document.createElement('div');
+        row.className = `p-2.5 rounded-xl border flex items-center justify-between transition cursor-pointer text-xs font-mono ${
+          isCurrent
+            ? 'bg-saffron-500/15 border-saffron-500/50 text-saffron-300 font-bold'
+            : isFitted
+              ? 'bg-[#080d1a] border-emerald-500/30 text-emerald-400'
+              : 'bg-[#080d1a]/40 border-slate-800 text-slate-500 hover:text-slate-400'
+        }`;
+
+        row.onclick = () => {
+          tapStudentMiniPad();
+          assembledSteps = idx + 1;
+          updatePartsAssemblyPositions();
+        };
+
+        row.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
+              isFitted ? 'bg-emerald-500 text-slate-950 font-black' : 'bg-slate-800 text-slate-400'
+            }">${isFitted ? '✓' : idx + 1}</span>
+            <span class="truncate">${part.name}</span>
+          </div>
+          <span class="text-[10px] uppercase font-bold">${isFitted ? 'Mounted' : 'On Plate'}</span>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    function tapStudentMiniPad() {
+      if (!avatarTabletScreen || !avatarArm) return;
+      avatarTabletScreen.material.color.setHex(0xffffff);
+      const startRotX = avatarArm.rotation.x;
+      avatarArm.rotation.x -= 0.18;
+      setTimeout(() => {
+        if (avatarTabletScreen) avatarTabletScreen.material.color.setHex(0xf97316);
+        if (avatarArm) avatarArm.rotation.x = startRotX;
+      }, 160);
+    }
+
+    function handleOnboardingSubmit(e) {
+      e.preventDefault();
+      const nameInput = document.getElementById('inputStudentName').value.trim();
+      const gradeInput = document.getElementById('inputStudentGrade').value.trim();
+      const genderRadios = document.getElementsByName('studentGender');
+
+      visitorName = nameInput || "Aarav";
+      for (let r of genderRadios) {
+        if (r.checked) visitorGender = r.value;
+      }
+
+      document.getElementById('userHeaderName').innerText = `${visitorName} (${gradeInput || 'Student'})`;
+      document.getElementById('userHeaderTag').classList.remove('hidden');
+      document.getElementById('onboardingModal').classList.add('hidden');
+      rebuildStudentAvatar();
+
+      document.getElementById('shantanuDialogText').innerText = 
+        `"Hi ${visitorName}, the traffic pole is placed distantly on the center axis with plenty of space. Click 'Snap Next from Tray' to assemble and start driving!"`;
+      document.getElementById('shantanuDialog').classList.remove('hidden');
+    }
+
+    function acceptShantanuBuild() {
+      tapStudentMiniPad();
+      closeShantanuDialog();
+      setInteractionMode('assembly');
+      stepSnapPart(1);
+    }
+
+    function closeShantanuDialog() {
+      document.getElementById('shantanuDialog').classList.add('hidden');
+    }
+
+    function openDrVenuModal() { document.getElementById('drVenuModal').classList.remove('hidden'); }
+    function closeDrVenuModal() { document.getElementById('drVenuModal').classList.add('hidden'); }
+    function openOtherLabsModal() { closeDrVenuModal(); document.getElementById('otherLabsModal').classList.remove('hidden'); }
+    function closeOtherLabsModal() { document.getElementById('otherLabsModal').classList.add('hidden'); }
+
+    function toggleBomModal(show) {
+      tapStudentMiniPad();
+      const modal = document.getElementById('bomModal');
+      if (show) {
+        modal.classList.remove('hidden');
+        renderBomTable();
+      } else {
+        modal.classList.add('hidden');
+      }
+    }
+
+    function renderBomTable() {
+      const robot = ROBOT_DATABASE[currentRobotIndex];
+      document.getElementById('bomRobotSubtitle').innerText = `${robot.name} Component Cost Breakdown`;
+      const tbody = document.getElementById('bomTableBody');
+      tbody.innerHTML = '';
+      let totalInr = 0, totalUsd = 0;
+      robot.bom.forEach(b => {
+        totalInr += b.inr; totalUsd += b.usd;
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-800/40";
+        tr.innerHTML = `
+          <td class="py-2.5 font-bold text-white">${b.item}</td>
+          <td class="py-2.5 text-slate-400">${b.qty}</td>
+          <td class="py-2.5 text-slate-400">${b.spec}</td>
+          <td class="py-2.5 text-right font-bold text-emerald-400">₹${b.inr.toLocaleString()}</td>
+          <td class="py-2.5 text-right font-bold text-cyan-400">$${b.usd.toFixed(2)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+      document.getElementById('bomTotalInr').innerText = `₹${totalInr.toLocaleString()}`;
+      document.getElementById('bomTotalUsd').innerText = `$${totalUsd.toFixed(2)}`;
+    }
+
+    function setInteractionMode(mode) {
+      tapStudentMiniPad();
+      currentMode = mode;
+
+      const btnAssembly = document.getElementById('btnModeAssembly');
+      const btnRun = document.getElementById('btnModeRun');
+      const btnLine = document.getElementById('btnModeLine');
+
+      const panelAssembly = document.getElementById('panelAssembly');
+      const panelRun = document.getElementById('panelRun');
+      const panelLine = document.getElementById('panelLine');
+
+      const assemblyActions = document.getElementById('assemblyActionBar');
+      const runTelemetry = document.getElementById('runTelemetryBar');
+
+      [btnAssembly, btnRun, btnLine].forEach(b => {
+        b.className = "flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition text-slate-400 hover:text-slate-200";
+      });
+      [panelAssembly, panelRun, panelLine].forEach(p => p.classList.add('hidden'));
+
+      if (mode === 'assembly') {
+        btnAssembly.className = "flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition bg-saffron-500 text-white shadow-md";
+        panelAssembly.classList.remove('hidden');
+        assemblyActions.classList.remove('hidden');
+        runTelemetry.classList.add('hidden');
+        lineFollowingActive = false;
+      } else if (mode === 'run') {
+        assembleAll();
+        btnRun.className = "flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition bg-emerald-500 text-white shadow-md";
+        panelRun.classList.remove('hidden');
+        assemblyActions.classList.add('hidden');
+        runTelemetry.classList.remove('hidden');
+        lineFollowingActive = false;
+      } else if (mode === 'line') {
+        assembleAll();
+        btnLine.className = "flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition bg-sky-500 text-white shadow-md";
+        panelLine.classList.remove('hidden');
+        assemblyActions.classList.add('hidden');
+        runTelemetry.classList.remove('hidden');
+        lineFollowingActive = true;
+      }
+    }
+
+    function setupKeyboardControls() {
+      window.addEventListener('keydown', (e) => {
+        if (currentMode !== 'run') return;
+        const k = e.key.toLowerCase();
+        if (k === 'w' || k === 'arrowup') driveKeys.w = true;
+        if (k === 's' || k === 'arrowdown') driveKeys.s = true;
+        if (k === 'a' || k === 'arrowleft') driveKeys.a = true;
+        if (k === 'd' || k === 'arrowright') driveKeys.d = true;
+      });
+
+      window.addEventListener('keyup', (e) => {
+        if (currentMode !== 'run') return;
+        const k = e.key.toLowerCase();
+        if (k === 'w' || k === 'arrowup') driveKeys.w = false;
+        if (k === 's' || k === 'arrowdown') driveKeys.s = false;
+        if (k === 'a' || k === 'arrowleft') driveKeys.a = false;
+        if (k === 'd' || k === 'arrowright') driveKeys.d = false;
+      });
+    }
+
+    function triggerDrive(dir) {
+      tapStudentMiniPad();
+      stopDrive();
+      if (dir === 'forward') driveKeys.w = true;
+      if (dir === 'backward') driveKeys.s = true;
+      if (dir === 'left') driveKeys.a = true;
+      if (dir === 'right') driveKeys.d = true;
+    }
+
+    function stopDrive() {
+      driveKeys.w = driveKeys.s = driveKeys.a = driveKeys.d = false;
+      carPhysics.vx = carPhysics.vz = carPhysics.vRot = 0;
+    }
+
+    function resetRobotOnTable() {
+      tapStudentMiniPad();
+      carPhysics.x = -0.90;
+      carPhysics.z = 0.0;
+      carPhysics.rotY = 0;
+      carPhysics.trackT = 0;
+      carPhysics.offTable = false;
+
+      if (robotRoot) {
+        robotRoot.position.set(-0.90, 0, 0.0);
+        robotRoot.rotation.set(0, 0, 0);
+      }
+      document.getElementById('tableOffWarning').classList.add('hidden');
+      resetCamera();
+    }
+
+    function toggleLineFollowing() {
+      tapStudentMiniPad();
+      lineFollowingActive = !lineFollowingActive;
+      const btn = document.getElementById('btnToggleLineFollower');
+      const label = document.getElementById('btnLineFollowerLabel');
+      if (lineFollowingActive) {
+        btn.className = "w-full mt-3 py-3 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold transition active:scale-95 shadow-lg shadow-rose-600/20 flex items-center justify-center gap-2";
+        label.innerText = "Disengage Line Autopilot";
+      } else {
+        btn.className = "w-full mt-3 py-3 bg-sky-500 hover:bg-sky-600 text-white rounded-xl text-xs font-bold transition active:scale-95 shadow-lg shadow-sky-500/20 flex items-center justify-center gap-2";
+        label.innerText = "Engage Line Tracking";
+      }
+    }
+
+    const clock = new THREE.Clock();
+    let pulseTimer = 0;
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = clock.getDelta();
+      pulseTimer += delta;
+
+      if (drVenuHead) drVenuHead.rotation.y = Math.sin(pulseTimer * 0.8) * 0.25;
+
+      if (isAutoCycleTraffic) {
+        trafficAutoTimer += delta;
+        if (trafficAutoTimer < 4.0) {
+          if (trafficLightState !== 'green') setTrafficLight('green');
+        } else if (trafficAutoTimer < 6.5) {
+          if (trafficLightState !== 'yellow') setTrafficLight('yellow');
+        } else if (trafficAutoTimer < 10.0) {
+          if (trafficLightState !== 'red') setTrafficLight('red');
+        } else {
+          trafficAutoTimer = 0;
+        }
+      }
+
+      if (ultrasonicRaysGroup && ultrasonicRaysGroup.visible) {
+        ultrasonicRaysGroup.userData.rings.forEach(ring => {
+          let offsetZ = ((pulseTimer * 1.8 + ring.userData.phase) % 1.5);
+          ring.position.z = 0.42 + offsetZ;
+          ring.scale.setScalar(0.7 + offsetZ * 1.0);
+          ring.material.opacity = Math.max(0, 0.6 - offsetZ * 0.35);
+        });
+        ultrasonicRaysGroup.position.copy(robotRoot.position);
+        ultrasonicRaysGroup.position.y += 0.81 + 0.24;
+        ultrasonicRaysGroup.rotation.y = robotRoot.rotation.y;
+      }
+
+      // TRAFFIC RULES KINEMATICS ENGINE
+      if (currentMode === 'line' && lineFollowingActive && trackCurve) {
+        let speed = 0;
+        if (trafficLightState === 'green') speed = 0.080;
+        else if (trafficLightState === 'yellow') speed = 0.028;
+        else speed = 0;
+
+        carPhysics.trackT = (carPhysics.trackT + speed * delta) % 1;
+
+        const currentPos = trackCurve.getPointAt(carPhysics.trackT);
+        const lookT = (carPhysics.trackT + 0.01) % 1;
+        const forwardPos = trackCurve.getPointAt(lookT);
+
+        carPhysics.x = currentPos.x;
+        carPhysics.z = currentPos.z;
+        carPhysics.rotY = Math.atan2(forwardPos.x - currentPos.x, forwardPos.z - currentPos.z);
+        carPhysics.wheelRot += (speed > 0 ? 6.5 : 0) * delta;
+
+        robotRoot.position.set(carPhysics.x, 0, carPhysics.z);
+        robotRoot.rotation.y = carPhysics.rotY;
+
+        if (parts3D.wheelSubMeshes) {
+          parts3D.wheelSubMeshes.forEach(w => { w.rotation.x = carPhysics.wheelRot; });
+        }
+
+        if (speed === 0) {
+          document.getElementById('telemetrySpeed').innerText = "0 cm/s (STOP)";
+          document.getElementById('telemetryRpm').innerText = "0 RPM";
+          document.getElementById('sensorLeftText').innerText = "HALTED (0)";
+          document.getElementById('sensorRightText').innerText = "HALTED (0)";
+        } else if (speed === 0.028) {
+          document.getElementById('telemetrySpeed').innerText = "10 cm/s (SLOW)";
+          document.getElementById('telemetryRpm').innerText = "45 RPM";
+          document.getElementById('sensorLeftText').innerText = "BLACK (1)";
+          document.getElementById('sensorRightText').innerText = "BLACK (1)";
+        } else {
+          document.getElementById('telemetrySpeed').innerText = "28 cm/s (RUN)";
+          document.getElementById('telemetryRpm').innerText = "120 RPM";
+          document.getElementById('sensorLeftText').innerText = "BLACK (1)";
+          document.getElementById('sensorRightText').innerText = "BLACK (1)";
+        }
+      } else if (currentMode === 'run') {
+        if (!carPhysics.offTable) {
+          let forwardSpeed = 0;
+          if (driveKeys.w) forwardSpeed = 2.4;
+          if (driveKeys.s) forwardSpeed = -1.6;
+
+          if (driveKeys.a) carPhysics.vRot = 2.6;
+          else if (driveKeys.d) carPhysics.vRot = -2.6;
+          else carPhysics.vRot = 0;
+
+          carPhysics.rotY += carPhysics.vRot * delta;
+          carPhysics.x += Math.sin(carPhysics.rotY) * forwardSpeed * delta;
+          carPhysics.z += Math.cos(carPhysics.rotY) * forwardSpeed * delta;
+
+          if (forwardSpeed !== 0) carPhysics.wheelRot += (forwardSpeed / 0.16) * delta;
+
+          // Checked against extra-wide 3.2m x 7.8m bench boundaries (Safe margin ±1.6m and ±3.9m)
+          if (Math.abs(carPhysics.x) > 1.6 || Math.abs(carPhysics.z - 0.4) > 3.9) {
+            carPhysics.offTable = true;
+            document.getElementById('tableOffWarning').classList.remove('hidden');
+          }
+
+          robotRoot.position.set(carPhysics.x, 0, carPhysics.z);
+          robotRoot.rotation.y = carPhysics.rotY;
+
+          const spdCm = Math.round(Math.abs(forwardSpeed) * 100);
+          document.getElementById('telemetrySpeed').innerText = `${spdCm} cm/s`;
+          document.getElementById('telemetryRpm').innerText = `${Math.round(spdCm * 1.8)} RPM`;
+        } else {
+          if (robotRoot.position.y > -0.65) {
+            robotRoot.position.y -= 3.5 * delta;
+            robotRoot.rotation.z += 2.5 * delta;
+          }
+        }
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    function onWindowResize() {
+      const container = document.getElementById('canvas-container');
+      if (!container || !renderer || !camera) return;
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    }
+
+    function resetCamera() {
+      camera.position.set(4.6, 4.2, 5.4);
+      controls.target.set(-0.2, 0.7, 0.4);
+      controls.update();
+    }
+
+    function toggleCatalogDrawer(show) {
+      tapStudentMiniPad();
+      const modal = document.getElementById('catalogModal');
+      if (show) {
+        modal.classList.remove('hidden');
+        renderCatalogCards();
+      } else {
+        modal.classList.add('hidden');
+      }
+    }
+
+    function renderCatalogCards() {
+      const grid = document.getElementById('catalogGrid');
+      grid.innerHTML = '';
+
+      ROBOT_DATABASE.forEach((bot, idx) => {
+        const isCurrent = idx === currentRobotIndex;
+        const card = document.createElement('div');
+        card.className = `p-4 rounded-2xl border transition flex flex-col justify-between cursor-pointer ${
+          isCurrent
+            ? 'bg-saffron-500/15 border-saffron-500 glow-orange'
+            : 'bg-[#080d1a] border-slate-800 hover:border-slate-600'
+        }`;
+
+        card.onclick = () => {
+          currentRobotIndex = idx;
+          toggleCatalogDrawer(false);
+          updateRobotHeaderInfo();
+          assembledSteps = 0; // Fresh kit placed onto storage plate
+          rebuildSelectedRobot3D();
+          setInteractionMode('assembly');
+          resetRobotOnTable();
+        };
+
+        let badgeCol = "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
+        if (bot.risk === 'Moderate') badgeCol = "bg-amber-500/20 text-amber-400 border-amber-500/30";
+        if (bot.risk === 'High') badgeCol = "bg-rose-500/20 text-rose-400 border-rose-500/30";
+
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between text-[11px] font-mono">
+              <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-bold">#${bot.id}</span>
+              <span class="px-2 py-0.5 rounded-full border ${badgeCol} font-semibold">${bot.risk} Risk</span>
+            </div>
+            <h4 class="text-sm font-bold text-white mt-2 leading-snug">${bot.name}</h4>
+            <div class="text-[11px] text-sky-400 font-mono mt-0.5">${bot.cat} (${bot.type.toUpperCase()})</div>
+            <p class="text-xs text-slate-400 mt-1.5 line-clamp-2 leading-relaxed">${bot.summary}</p>
+          </div>
+          <div class="mt-3 pt-2.5 border-t border-slate-800 flex items-center justify-between text-xs">
+            <span class="text-slate-500 font-mono text-[10px]">${bot.bom.length} BOM Items</span>
+            <span class="text-saffron-400 font-bold flex items-center gap-0.5">
+              <span>Load on Tray</span>
+              <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+            </span>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function updateRobotHeaderInfo() {
+      const bot = ROBOT_DATABASE[currentRobotIndex];
+      document.getElementById('modelNumberBadge').innerText = `#${bot.id}`;
+      document.getElementById('currentRobotName').innerText = bot.name;
+      document.getElementById('currentRobotCategory').innerText = `${bot.cat} • ${bot.type.toUpperCase()}`;
+      document.getElementById('currentRobotSummary').innerText = bot.summary;
+      document.getElementById('robotDangerNote').innerText = bot.hazard;
+
+      const riskBadge = document.getElementById('robotRiskBadge');
+      riskBadge.innerText = `${bot.risk} Risk`;
+      if (bot.risk === 'High') riskBadge.className = "text-[10px] font-mono px-2 py-0.5 rounded-full font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30";
+      else if (bot.risk === 'Moderate') riskBadge.className = "text-[10px] font-mono px-2 py-0.5 rounded-full font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30";
+      else riskBadge.className = "text-[10px] font-mono px-2 py-0.5 rounded-full font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+    }
+
+    window.onload = function () {
+      initLabScene();
+      if (window.lucide) lucide.createIcons();
+    };
+  </script>
+</body>
+</html>
