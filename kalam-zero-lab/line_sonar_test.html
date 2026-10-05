@@ -1,0 +1,2223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kids: Robot Making Club - GARRF Virtual Robotics Lab</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #070d18;
+      --card-bg: rgba(13, 24, 43, 0.92);
+      --card-border: rgba(45, 90, 150, 0.4);
+      --accent: #ff8c00;
+      --accent-glow: rgba(255, 140, 0, 0.45);
+      --cyan: #00d4ff;
+      --green: #10b981;
+      --red: #ef4444;
+      --gold: #f59e0b;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+    }
+    #webgl-canvas {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 1;
+    }
+
+    /* TOP HEADER */
+    header {
+      position: absolute;
+      top: 12px; left: 16px; right: 16px;
+      z-index: 20;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--card-bg);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 10px 18px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.5);
+    }
+    .brand-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .brand-logo {
+      width: 44px; height: 44px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #ff8c00, #ff4500);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 20px;
+      color: #fff;
+      box-shadow: 0 4px 12px var(--accent-glow);
+      overflow: hidden;
+    }
+    .brand-logo img { width: 100%; height: 100%; object-fit: cover; }
+    .brand-text h1 {
+      font-size: 19px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      background: linear-gradient(90deg, #fff, #ffb347);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .brand-text p {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .brand-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .flag-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,255,255,0.06);
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.12);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .flag-icon {
+      width: 22px; height: 14px;
+      border-radius: 2px;
+      display: inline-block;
+      background: linear-gradient(#ff9933 33.3%, #ffffff 33.3%, #ffffff 66.6%, #138808 66.6%);
+      box-shadow: 0 0 4px rgba(0,0,0,0.4);
+      position: relative;
+    }
+    .flag-icon::after {
+      content: '';
+      position: absolute;
+      top: 5px; left: 8px;
+      width: 4px; height: 4px;
+      border-radius: 50%;
+      border: 1px solid #000088;
+    }
+
+    /* FOOTER */
+    footer {
+      position: absolute;
+      bottom: 10px; left: 16px; right: 16px;
+      z-index: 20;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--card-bg);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 8px 18px;
+      font-size: 11.5px;
+      color: var(--text-muted);
+    }
+    footer b { color: #fff; font-weight: 700; }
+
+    /* HUD PANELS */
+    .hud-panel {
+      position: absolute;
+      z-index: 20;
+      background: var(--card-bg);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 14px 34px rgba(0,0,0,0.55);
+    }
+    #panel-workflow {
+      top: 86px; left: 16px;
+      width: 320px;
+    }
+    #panel-experiments {
+      top: 86px; right: 16px;
+      width: 360px;
+      display: none;
+    }
+
+    .panel-tag {
+      font-size: 10.5px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--cyan);
+      margin-bottom: 6px;
+      display: block;
+    }
+    .panel-title {
+      font-size: 16px;
+      font-weight: 800;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .step-list {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      margin-bottom: 14px;
+      max-height: 250px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .step-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255,255,255,0.04);
+      padding: 8px 11px;
+      border-radius: 9px;
+      font-size: 12px;
+      border: 1px solid transparent;
+      transition: all 0.2s;
+    }
+    .step-item.active {
+      border-color: var(--accent);
+      background: rgba(255, 140, 0, 0.12);
+      font-weight: 700;
+    }
+    .step-item.done {
+      border-color: var(--green);
+      background: rgba(16, 185, 129, 0.12);
+      color: #a7f3d0;
+    }
+    .step-color-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 8px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: none;
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: transform 0.15s, box-shadow 0.15s, background 0.2s;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary {
+      background: linear-gradient(135deg, #ff8c00, #ff5722);
+      color: #fff;
+      box-shadow: 0 4px 14px var(--accent-glow);
+    }
+    .btn-secondary {
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.15);
+      margin-top: 8px;
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,0.14); }
+    .btn-cyan {
+      background: linear-gradient(135deg, #00d4ff, #0077ff);
+      color: #00122e;
+      font-weight: 800;
+      box-shadow: 0 4px 14px rgba(0,212,255,0.35);
+    }
+    .btn-green {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #fff;
+      font-weight: 800;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+    }
+    .btn-normal-reset {
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: #fff;
+      font-weight: 800;
+      border: 1px solid rgba(255,255,255,0.25);
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+    }
+    .btn-normal-reset:hover {
+      background: linear-gradient(135deg, #0369a1, #1d4ed8);
+    }
+
+    /* EXPERIMENT SELECTOR TABS */
+    .exp-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+    .exp-tab {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.12);
+      padding: 8px 4px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+      position: relative;
+    }
+    .exp-tab.completed::after {
+      content: '✓';
+      position: absolute;
+      top: 2px; right: 4px;
+      color: var(--green);
+      font-size: 10px;
+      font-weight: 900;
+    }
+    .exp-tab.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+      box-shadow: 0 3px 10px var(--accent-glow);
+    }
+
+    .exp-body {
+      background: rgba(0,0,0,0.25);
+      border-radius: 12px;
+      padding: 12px;
+      border: 1px solid rgba(255,255,255,0.08);
+      margin-bottom: 12px;
+    }
+    .exp-body p {
+      font-size: 12px;
+      line-height: 1.45;
+      color: #cbd5e1;
+      margin-bottom: 10px;
+    }
+
+    /* TELEMETRY READOUT */
+    .sensor-readout {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(0,212,255,0.08);
+      border: 1px solid rgba(0,212,255,0.3);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: var(--cyan);
+      margin-bottom: 10px;
+    }
+    .sensor-readout b { font-size: 18px; font-weight: 800; }
+
+    /* JOYSTICK / DRIVE CONTROLS */
+    .drive-pad-card {
+      background: rgba(0,0,0,0.3);
+      border-radius: 12px;
+      padding: 10px;
+      border: 1px solid rgba(255,255,255,0.08);
+      margin-top: 10px;
+    }
+    .drive-pad-title {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .drive-pad-desc {
+      font-size: 10.5px;
+      color: #94a3b8;
+      line-height: 1.35;
+      margin-bottom: 8px;
+    }
+    .drive-pad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      max-width: 190px;
+      margin: 0 auto;
+    }
+    .drive-btn {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 8px;
+      padding: 10px;
+      color: #fff;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+    }
+    .drive-btn:active {
+      background: var(--accent);
+      transform: scale(0.92);
+    }
+    .drive-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      background: rgba(255,255,255,0.03);
+    }
+    .drive-center-btn {
+      background: rgba(255, 140, 0, 0.18);
+      border-color: var(--accent);
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    /* LED CONFIG BOX */
+    .led-cfg-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 12px;
+    }
+    .color-swatch-list {
+      display: flex;
+      gap: 6px;
+    }
+    .swatch {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: transform 0.15s;
+    }
+    .swatch.selected {
+      border-color: #fff;
+      transform: scale(1.18);
+      box-shadow: 0 0 8px currentColor;
+    }
+
+    /* DIALOG MODALS */
+    .speech-modal {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 100;
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      border: 2px solid var(--accent);
+      border-radius: 20px;
+      padding: 24px;
+      max-width: 520px;
+      width: 90%;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.85);
+      animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      display: none;
+    }
+    @keyframes popIn {
+      from { opacity: 0; transform: translate(-50%, -45%) scale(0.92); }
+      to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    }
+    .speech-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 14px;
+      position: relative;
+    }
+    .speech-avatar-ico {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      background: #1e3a8a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      border: 2px solid var(--gold);
+    }
+    .speech-header h3 { font-size: 17px; font-weight: 800; color: #fff; }
+    .speech-header p { font-size: 12px; color: var(--gold); font-weight: 600; }
+    .close-speech {
+      position: absolute;
+      top: 0; right: 0;
+      background: none;
+      border: none;
+      color: #94a3b8;
+      font-size: 20px;
+      cursor: pointer;
+    }
+    .speech-body {
+      font-size: 13.5px;
+      line-height: 1.6;
+      color: #e2e8f0;
+      margin-bottom: 18px;
+    }
+    .speech-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+    .speech-actions .btn { width: auto; padding: 10px 18px; }
+
+    /* BOM MODAL */
+    #bom-modal {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 150;
+      background: #0d1a2d;
+      border: 2px solid var(--cyan);
+      border-radius: 20px;
+      padding: 24px;
+      max-width: 780px;
+      width: 92%;
+      max-height: 85vh;
+      overflow-y: auto;
+      box-shadow: 0 30px 70px rgba(0,0,0,0.9);
+      display: none;
+    }
+    .bom-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0;
+      font-size: 12px;
+      text-align: left;
+    }
+    .bom-table th {
+      background: rgba(0,212,255,0.15);
+      color: var(--cyan);
+      padding: 10px;
+      font-weight: 700;
+      border-bottom: 1px solid rgba(0,212,255,0.3);
+    }
+    .bom-table td {
+      padding: 9px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      color: #e2e8f0;
+    }
+    .buy-link-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 5px 9px;
+      background: rgba(255, 140, 0, 0.2);
+      border: 1px solid var(--accent);
+      border-radius: 6px;
+      color: #ffb347;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 11px;
+      transition: background 0.15s;
+    }
+    .buy-link-btn:hover {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    /* ONBOARDING MODAL */
+    #onboarding-modal {
+      position: absolute;
+      inset: 0;
+      z-index: 200;
+      background: rgba(4, 8, 16, 0.88);
+      backdrop-filter: blur(16px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .onboard-card {
+      background: #0d1a2d;
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 32px;
+      max-width: 440px;
+      width: 90%;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+      text-align: center;
+    }
+    .onboard-card h2 {
+      font-size: 24px;
+      font-weight: 800;
+      margin-bottom: 6px;
+      background: linear-gradient(90deg, #ff8c00, #ffb347);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .onboard-card p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 22px;
+    }
+    .input-group {
+      text-align: left;
+      margin-bottom: 16px;
+    }
+    .input-group label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #cbd5e1;
+      display: block;
+      margin-bottom: 6px;
+    }
+    .input-field {
+      width: 100%;
+      padding: 11px 14px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: #fff;
+      font-family: inherit;
+      font-size: 14px;
+      outline: none;
+    }
+    .gender-selector {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .gender-btn {
+      padding: 12px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 12px;
+      color: #fff;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .gender-btn.selected {
+      background: var(--accent);
+      border-color: var(--accent);
+      box-shadow: 0 4px 14px var(--accent-glow);
+    }
+
+    /* IN-WORLD ALERTS WITH "RESET TO NORMAL" BUTTON */
+    .hud-alert {
+      position: absolute;
+      top: 86px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 50;
+      background: rgba(220, 38, 38, 0.95);
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 13.5px;
+      box-shadow: 0 10px 30px rgba(220, 38, 38, 0.5);
+      display: none;
+      align-items: center;
+      gap: 12px;
+      animation: alertPulse 1.4s infinite;
+    }
+    @keyframes alertPulse {
+      0%, 100% { transform: translateX(-50%) scale(1); }
+      50% { transform: translateX(-50%) scale(1.03); }
+    }
+
+    .success-alert {
+      position: absolute;
+      top: 86px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 50;
+      background: rgba(16, 185, 129, 0.95);
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 30px;
+      font-weight: 800;
+      font-size: 14px;
+      box-shadow: 0 10px 30px rgba(16, 185, 129, 0.45);
+      display: none;
+      align-items: center;
+      gap: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <canvas id="webgl-canvas"></canvas>
+
+  <!-- TOP HEADER -->
+  <header>
+    <div class="brand-left">
+      <div class="brand-logo" id="logo-container">
+        <img src="Logo.jpeg" alt="GARRF" onerror="this.onerror=null; this.parentNode.innerHTML='<span style=\'font-size:16px;font-weight:900\'>GARRF</span>';">
+      </div>
+      <div class="brand-text">
+        <h1>Kids: Robot Making Club</h1>
+        <p>Gopalkrishna Advanced Rural Research Foundation</p>
+      </div>
+    </div>
+    <div class="brand-right">
+      <div class="flag-badge">
+        <span class="flag-icon"></span>
+        <span>🇮🇳 INDIA</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- IN-WORLD ALERTS WITH "RESET TO NORMAL" BUTTON -->
+  <div class="hud-alert" id="edge-fall-alert">
+    <span id="edge-alert-txt">⚠️ Robot reached table edge & stopped!</span>
+    <div style="display:flex; gap:6px;">
+      <button class="btn btn-secondary" style="padding: 4px 10px; font-size:11px; margin-top:0;" onclick="rotateRobot180()">↺ Rotate 180°</button>
+      <button class="btn btn-normal-reset" style="padding: 4px 10px; font-size:11px; margin-top:0;" onclick="resetToNormalPosition()">↺ Normal (Base)</button>
+    </div>
+  </div>
+
+  <div class="success-alert" id="milestone-alert">
+    🎉 Robot Reached Destination! Well done!
+  </div>
+
+  <!-- BUILD & ASSEMBLY HUD (LEFT) -->
+  <div class="hud-panel" id="panel-workflow">
+    <span class="panel-tag">Modular Snap Engine</span>
+    <div class="panel-title">
+      <span>Assembly Sequence</span>
+      <span id="assembly-progress" style="font-size:13px; color:var(--accent);">0 / 6 Parts</span>
+    </div>
+    <div class="step-list" id="parts-step-list">
+      <!-- Injected via JS -->
+    </div>
+    <button class="btn btn-primary" id="btn-snap-next" onclick="snapNextPart()">
+      <span>⚡ Snap Next Component</span>
+    </button>
+    <button class="btn btn-secondary" id="btn-auto-assemble" onclick="autoAssembleRobot()">
+      <span>✨ Final Auto Assemble</span>
+    </button>
+    <button class="btn btn-cyan" id="btn-start-run" style="margin-top:10px; display:none;" onclick="enterExperimentsMode()">
+      <span>🚀 Robot Built! Let's Run It</span>
+    </button>
+  </div>
+
+  <!-- EXPERIMENT SUITE HUD (RIGHT) -->
+  <div class="hud-panel" id="panel-experiments">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+      <span class="panel-tag" style="margin:0;">Lab Test Suite</span>
+      <button class="btn btn-normal-reset" style="width:auto; padding:3px 10px; font-size:11px; margin:0;" onclick="resetToNormalPosition()" title="Reset Robot to Center Base Position (Normal)">
+        ↺ Get Back to "Normal"
+      </button>
+    </div>
+
+    <div class="panel-title">
+      <span>Virtual Experiments</span>
+      <span id="exp-status-indicator" style="font-size:11px; color:#10b981; font-weight:700;">● Active</span>
+    </div>
+
+    <div class="exp-tabs">
+      <div class="exp-tab active" id="tab-exp-1" onclick="switchExperiment(1)">1. Line Track</div>
+      <div class="exp-tab" id="tab-exp-2" onclick="switchExperiment(2)">2. Sonar Block</div>
+      <div class="exp-tab" id="tab-exp-3" onclick="switchExperiment(3)">3. Free Play</div>
+    </div>
+
+    <!-- EXP 1: LINE FOLLOWER & TABLE TRAVERSAL -->
+    <div class="exp-body" id="exp-1-body">
+      <p><b>Black Line Traversal:</b> The robot strictly follows the center black line (cannot steer off line). Press <b>Move/Pause</b> to run till the edge. When stopped, rotate 180° or press <b>Normal</b> to return!</p>
+      <div style="display:flex; gap:8px; margin-bottom:8px;">
+        <button class="btn btn-primary" id="btn-line-auto" onclick="toggleLineFollower()">▶ Move/Pause Line</button>
+        <button class="btn btn-secondary" style="margin-top:0;" onclick="rotateRobot180()">↺ 180° Rotate</button>
+      </div>
+      <button class="btn btn-normal-reset" style="margin-bottom:8px; font-size:12px;" onclick="resetToNormalPosition()">
+        ↺ Return to "Normal" Base Position
+      </button>
+      <button class="btn btn-secondary" style="font-size:11.5px; margin-top:0;" onclick="markExpComplete(1)">✓ Mark Experiment 1 Finished</button>
+    </div>
+
+    <!-- EXP 2: ULTRASONIC RAYS & BLOCK DISTANCE (WITH STRICT 3CM COLLISION BARRIER & ABSOLUTE TABLE BOUNDARY CLAMP) -->
+    <div class="exp-body" id="exp-2-body" style="display:none;">
+      <p><b>Distance Measurement & Solid Obstacle Barrier:</b> Block is clamped firmly inside the table surface (cannot leave the table edge). The robot is strictly stopped at <b>3.0 cm safe margin</b>. Adjust slider or drive forward to test!</p>
+      <div class="sensor-readout">
+        <span>SONAR RANGE:</span>
+        <span id="sonar-dist-val"><b>42.5</b> cm</span>
+      </div>
+      <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">Position Obstacle Block along Table:</label>
+      <input type="range" id="block-slider" min="15" max="95" value="45" style="width:100%; margin-bottom:10px;" oninput="updateBlockPosition(this.value)">
+      <div style="display:flex; gap:8px; margin-bottom:8px;">
+        <button class="btn btn-secondary" style="margin-top:0;" onclick="driveTowardBlock()">🤖 Drive to Block (Auto-Stop @ 3cm)</button>
+        <button class="btn btn-secondary" style="margin-top:0;" onclick="resetBlockPosition()">↺ Center Block</button>
+      </div>
+      <button class="btn btn-normal-reset" style="margin-bottom:8px; font-size:12px;" onclick="resetToNormalPosition()">
+        ↺ Return to "Normal" Base Position
+      </button>
+      <button class="btn btn-secondary" style="font-size:11.5px; margin-top:0;" onclick="markExpComplete(2)">✓ Mark Experiment 2 Finished</button>
+    </div>
+
+    <!-- EXP 3: FREE PLAY & CUSTOM LEDS -->
+    <div class="exp-body" id="exp-3-body" style="display:none;">
+      <p><b>Super-Long Table Run:</b> Tripled length (15.6m)! Steer anywhere with the remote pad without falling off. If you reach an edge, it stops and prompts you to rotate or reset to normal!</p>
+      <div class="led-cfg-row">
+        <span>Mount LEDs:</span>
+        <div style="display:flex; gap:6px;">
+          <button class="exp-tab" id="led-count-0" style="padding:4px 8px;" onclick="setLedCount(0)">None</button>
+          <button class="exp-tab" id="led-count-1" style="padding:4px 8px;" onclick="setLedCount(1)">1</button>
+          <button class="exp-tab" id="led-count-2" style="padding:4px 8px;" onclick="setLedCount(2)">2</button>
+          <button class="exp-tab active" id="led-count-3" style="padding:4px 8px;" onclick="setLedCount(3)">3</button>
+        </div>
+      </div>
+      <div class="led-cfg-row" id="led-color-row">
+        <span>LED Colors:</span>
+        <div class="color-swatch-list">
+          <div class="swatch selected" style="background:#ff3333; color:#ff3333;" onclick="setLedColor('#ff2222', this)"></div>
+          <div class="swatch" style="background:#00ff66; color:#00ff66;" onclick="setLedColor('#00ff66', this)"></div>
+          <div class="swatch" style="background:#00d4ff; color:#00d4ff;" onclick="setLedColor('#00d4ff', this)"></div>
+          <div class="swatch" style="background:#ffbb00; color:#ffbb00;" onclick="setLedColor('#ffbb00', this)"></div>
+          <div class="swatch" style="background:#d946ef; color:#d946ef;" onclick="setLedColor('#d946ef', this)"></div>
+        </div>
+      </div>
+      <button class="btn btn-secondary" onclick="toggleLedBlink()" id="btn-led-blink" style="margin-bottom:8px;">✨ Test LED Blink Mode</button>
+      <button class="btn btn-normal-reset" style="margin-bottom:8px; font-size:12px;" onclick="resetToNormalPosition()">
+        ↺ Return to "Normal" Base Position
+      </button>
+      <button class="btn btn-secondary" style="font-size:11.5px; margin-top:0;" onclick="markExpComplete(3)">✓ Mark Experiment 3 Finished</button>
+    </div>
+
+    <!-- REMOTE DRIVE PAD -->
+    <div class="drive-pad-card">
+      <div class="drive-pad-title">
+        <span>🎮 Remote Drive Pad</span>
+        <span id="drive-pad-status-tag" style="font-size:9.5px; color:var(--gold);">Strict Line Mode</span>
+      </div>
+      <p class="drive-pad-desc" id="drive-pad-desc-txt">
+        <b>In Experiment 1:</b> The robot is strictly locked to the black line using dual IR sensors. Steering left/right is locked to prevent arbitrary drifting. Use <b>Move/Pause</b> or <b>180° Rotate</b>!
+      </p>
+      <div class="drive-pad">
+        <div></div>
+        <button class="drive-btn" id="dpad-up" onmousedown="startDrive('forward')" onmouseup="stopDrive()" title="Drive Forward">▲</button>
+        <div></div>
+        <button class="drive-btn" id="dpad-left" onmousedown="startDrive('left')" onmouseup="stopDrive()" title="Rotate Left">◀</button>
+        <button class="drive-btn drive-center-btn" onclick="toggleContinuousDrive()" id="btn-center-drive">MOVE / PAUSE</button>
+        <button class="drive-btn" id="dpad-right" onmousedown="startDrive('right')" onmouseup="stopDrive()" title="Rotate Right">▶</button>
+        <div></div>
+        <button class="drive-btn" id="dpad-down" onmousedown="startDrive('backward')" onmouseup="stopDrive()" title="Drive Backward">▼</button>
+        <div></div>
+      </div>
+    </div>
+
+    <!-- NEXT STEPS / BOM TRIGGER BUTTON -->
+    <button class="btn btn-green" id="btn-open-bom-trigger" style="margin-top:10px;" onclick="promptNextStepModal()">
+      <span>📋 View Bill of Materials (BOM) & Buying Links</span>
+    </button>
+  </div>
+
+  <!-- ONBOARDING MODAL -->
+  <div id="onboarding-modal">
+    <div class="onboard-card">
+      <h2>Welcome, Junior Engineer!</h2>
+      <p>Enter your details to create your 3D avatar alongside Dr. Venu Gopal, Shantanu Bro, and the student club!</p>
+      <div class="input-group">
+        <label>Your First Name:</label>
+        <input type="text" id="visitor-name" class="input-field" placeholder="e.g., Aarav or Ananya" value="Aarav">
+      </div>
+      <div class="input-group">
+        <label>Select Your Avatar:</label>
+        <div class="gender-selector">
+          <button type="button" class="gender-btn selected" id="btn-gender-boy" onclick="selectGender('boy')">
+            <span>👦 Boy (T-Shirt & Tilak)</span>
+          </button>
+          <button type="button" class="gender-btn" id="btn-gender-girl" onclick="selectGender('girl')">
+            <span>👧 Girl (Saree & Bindi)</span>
+          </button>
+        </div>
+      </div>
+      <button class="btn btn-primary" style="padding:13px;" onclick="completeOnboarding()">
+        <span>Enter Kids Robot Making Club 🚀</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- SPEECH MODAL: SHANTANU BRO -->
+  <div class="speech-modal" id="shantanu-dialog">
+    <button class="close-speech" onclick="closeSpeechModal('shantanu-dialog')">✕</button>
+    <div class="speech-header">
+      <div class="speech-avatar-ico">🤖</div>
+      <div>
+        <h3>Shantanu Bro</h3>
+        <p>Robotics Co-Mentor • GARRF</p>
+      </div>
+    </div>
+    <div class="speech-body" id="shantanu-speech-txt">
+      Hi Aarav! Please press Build Mode and build step by step. Would you like to assemble your robot now?
+    </div>
+    <div class="speech-actions">
+      <button class="btn btn-secondary" onclick="closeSpeechModal('shantanu-dialog')">❌ No, Later</button>
+      <button class="btn btn-primary" onclick="acceptShantanuBuild()">✅ Yes, Let's Build!</button>
+    </div>
+  </div>
+
+  <!-- SPEECH MODAL: DR VENU GOPAL -->
+  <div class="speech-modal" id="dr-dialog">
+    <button class="close-speech" onclick="closeSpeechModal('dr-dialog')">✕</button>
+    <div class="speech-header">
+      <div class="speech-avatar-ico" style="background:#065f46;">🎓</div>
+      <div>
+        <h3>Dr Venu Gopal</h3>
+        <p>Chief Mentor • GARRF</p>
+      </div>
+    </div>
+    <div class="speech-body" id="dr-speech-txt">
+      "Excellent work! Remember, all robots are built similarly: join all mechanical parts firmly, put proper safety-rated batteries, and use a microcontroller with the remote provided or build your own custom boards. Always inspect the Bill of Materials (BOM) to verify your circuit. Thank you for building with us! Don't forget to visit our other research labs at Gopalkrishna Advanced Rural Research Foundation."
+    </div>
+    <div class="speech-actions">
+      <button class="btn btn-primary" onclick="closeSpeechModal('dr-dialog'); enterExperimentsMode();">
+        <span>🚀 Let's Test & Run Experiments!</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- COMPLETION PROMPT MODAL -->
+  <div class="speech-modal" id="next-step-prompt-modal">
+    <div class="speech-header">
+      <div class="speech-avatar-ico" style="background:#10b981;">🏆</div>
+      <div>
+        <h3 id="next-step-title">All Experiments Completed!</h3>
+        <p>Lab Certification Level 1 • GARRF</p>
+      </div>
+    </div>
+    <div class="speech-body" id="next-step-body-txt">
+      Superb job, Junior Engineer! You have verified line-following kinematics, ultrasonic obstacle ranging, and LED signaling. 
+      <br><br>
+      <b>What would you like to do next?</b>
+      <br>• Advance to view the real-world <b>Bill of Materials (BOM)</b> with parts costs & verified store links to build the physical robot at home.
+      <br>• Or <b>continue playing</b> in the virtual sandbox!
+    </div>
+    <div class="speech-actions">
+      <button class="btn btn-secondary" onclick="closeSpeechModal('next-step-prompt-modal')">🎮 Continue Playing</button>
+      <button class="btn btn-green" onclick="closeSpeechModal('next-step-prompt-modal'); showBomModal();">📋 View BOM & Where to Buy</button>
+    </div>
+  </div>
+
+  <!-- BILL OF MATERIALS (BOM) & SOURCING MODAL -->
+  <div id="bom-modal">
+    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(0,212,255,0.3); padding-bottom:12px; margin-bottom:12px;">
+      <div>
+        <h2 style="font-size:20px; font-weight:800; color:var(--cyan);">📦 Bill of Materials (BOM) & Buying Guide</h2>
+        <p style="font-size:11.5px; color:var(--text-muted);">GARRF Certified Kid-Safe Sourcing List (India & Global Distributors)</p>
+      </div>
+      <button class="btn btn-secondary" style="width:auto; padding:6px 12px; margin:0;" onclick="closeBomModal()">✕ Close</button>
+    </div>
+
+    <table class="bom-table">
+      <thead>
+        <tr>
+          <th>Part Description</th>
+          <th>Qty</th>
+          <th>Estimated Cost (INR / USD)</th>
+          <th>Safety Note</th>
+          <th>Where to Buy</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><b>ESP32 Type-C Development Board</b><br><span style="color:#94a3b8; font-size:11px;">Dual-Core Wi-Fi/Bluetooth MCU</span></td>
+          <td>1</td>
+          <td>₹450 / ~$5.50</td>
+          <td>Safe low-voltage 3.3V logic</td>
+          <td>
+            <a href="https://robu.in/product/esp32-development-board/" target="_blank" class="buy-link-btn">🛒 Robu.in ↗</a>
+            <a href="https://www.amazon.in/s?k=esp32+development+board" target="_blank" class="buy-link-btn" style="margin-left:4px;">Amazon ↗</a>
+          </td>
+        </tr>
+        <tr>
+          <td><b>Dual TT Gearmotors with Rubber Tires</b><br><span style="color:#94a3b8; font-size:11px;">1:48 gear ratio, 3-6V DC</span></td>
+          <td>1 Pair</td>
+          <td>₹220 / ~$2.70</td>
+          <td>Keep fingers clear of wheel spokes</td>
+          <td>
+            <a href="https://robu.in/product/smart-car-robot-plastic-tire-wheel-with-dc-3-6v-gear-motor/" target="_blank" class="buy-link-btn">🛒 Robu.in ↗</a>
+            <a href="https://www.amazon.in/s?k=tt+gearmotor+wheels" target="_blank" class="buy-link-btn" style="margin-left:4px;">Amazon ↗</a>
+          </td>
+        </tr>
+        <tr>
+          <td><b>Laser-Cut Clear Acrylic Chassis Plate</b><br><span style="color:#94a3b8; font-size:11px;">Pre-drilled mounting holes</span></td>
+          <td>1</td>
+          <td>₹180 / ~$2.20</td>
+          <td>Deburred round safety edges</td>
+          <td>
+            <a href="https://robu.in/product/2wd-robot-chassis/" target="_blank" class="buy-link-btn">🛒 Robu.in ↗</a>
+            <a href="https://www.amazon.in/s?k=2wd+robot+chassis" target="_blank" class="buy-link-btn" style="margin-left:4px;">Amazon ↗</a>
+          </td>
+        </tr>
+        <tr>
+          <td><b>Ultrasonic Distance Sensor (HC-SR04)</b><br><span style="color:#94a3b8; font-size:11px;">2cm to 400cm sonar ranging</span></td>
+          <td>1</td>
+          <td>₹95 / ~$1.15</td>
+          <td>Non-hazardous acoustic pulses</td>
+          <td>
+            <a href="https://robu.in/product/hc-sr04-ultrasonic-sensor/" target="_blank" class="buy-link-btn">🛒 Robu.in ↗</a>
+            <a href="https://www.amazon.in/s?k=hc-sr04+ultrasonic+sensor" target="_blank" class="buy-link-btn" style="margin-left:4px;">Amazon ↗</a>
+          </td>
+        </tr>
+        <tr>
+          <td><b>Dual 18650 Battery Holder with PCM Protection</b><br><span style="color:#94a3b8; font-size:11px;">7.4V battery pack with built-in fuse</span></td>
+          <td>1 Set</td>
+          <td>₹380 / ~$4.60</td>
+          <td>Always use short-circuit protected cells</td>
+          <td>
+            <a href="https://robu.in/product/2-slot-18650-battery-holder-with-cover-switch/" target="_blank" class="buy-link-btn">🛒 Robu.in ↗</a>
+            <a href="https://www.amazon.in/s?k=18650+holder+with+switch" target="_blank" class="buy-link-btn" style="margin-left:4px;">Amazon ↗</a>
+          </td>
+        </tr>
+        <tr>
+          <td><b>High-Brightness 5mm LEDs (Assorted Pack)</b><br><span style="color:#94a3b8; font-size:11px;">Red, Green, Blue with 220Ω resistors</span></td>
+          <td>1 Pack</td>
+          <td>₹60 / ~$0.75</td>
+          <td>Always use current-limiting resistors</td>
+          <td>
+            <a href="https://robu.in/product/5mm-diffused-led-pack/" target="_blank" class="buy-link-btn">🛒 Robu.in ↗</a>
+            <a href="https://www.amazon.in/s?k=5mm+led+assorted" target="_blank" class="buy-link-btn" style="margin-left:4px;">Amazon ↗</a>
+          </td>
+        </tr>
+        <tr>
+          <td><b>L298N / TB6612FNG Dual H-Bridge Motor Driver</b><br><span style="color:#94a3b8; font-size:11px;">Dual motor direction & speed PWM controller</span></td>
+          <td>1</td>
+          <td>₹150 / ~$1.80</td>
+          <td>Heatsink gets warm under heavy stall</td>
+          <td>
+            <a href="https://robu.in/product/l298n-dual-h-bridge-motor-driver-module/" target="_blank" class="buy-link-btn">🛒 Robu.in ↗</a>
+            <a href="https://www.amazon.in/s?k=l298n+motor+driver" target="_blank" class="buy-link-btn" style="margin-left:4px;">Amazon ↗</a>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="background:rgba(255,140,0,0.1); border:1px solid var(--accent); border-radius:12px; padding:12px; font-size:12px; line-height:1.5;">
+      <b>💰 Total Estimated DIY Kit Cost:</b> Approximately <b>₹1,535 INR (~$18.70 USD)</b>.
+      <br>
+      <span style="color:#cbd5e1;">All components listed above use standard open-source footprints compatible with Arduino IDE, ESP-IDF, and Blockly visual block coding taught at the Gopalkrishna Advanced Rural Research Foundation.</span>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <span>Kids: Robot Making Club • Gopalkrishna Advanced Rural Research Foundation</span>
+    <span>Copyright <b>@garrf.in</b>, <b>Dr Annamdas Venu Gopal Madhav</b> and <b>Shantanu Vasudev Krishna Annamdas</b></span>
+  </footer>
+
+  <script>
+    /* =========================================================================
+       GLOBAL STATE & CONFIGURATION WITH EXACT COLLISION & TABLE EDGES
+       ========================================================================= */
+    const TABLE_TOP_Y = 0.69;
+    const BASE_TABLE_LEN = 5.2;
+    const TRIPLED_TABLE_LEN = 15.6;
+
+    // PHYSICAL BOUNDING DIMENSIONS
+    const ROBOT_NOSE_OFFSET = 0.278; 
+    const ROBOT_HALF_WIDTH = 0.20;
+    const ROBOT_HALF_LEN = 0.28;
+
+    // Obstacle Block dimensions
+    const BLOCK_HALF_X = 0.09;
+    const BLOCK_HALF_Z = 0.14;
+
+    // STRICT 3CM AIR GAP SAFETY BARRIER
+    const SAFE_COLLISION_GAP = 0.03;
+
+    const STATE = {
+      visitorName: 'Aarav',
+      visitorGender: 'boy',
+      assembledCount: 0,
+      totalParts: 6,
+      currentExp: 1,
+      completedExps: { 1: false, 2: false, 3: false },
+      isAutoAssembling: false,
+      isDriving: false,
+      driveDir: null,
+      continuousDrive: false,
+      lineFollowing: false,
+      ledCount: 3,
+      ledColor: '#ff2222',
+      ledBlinking: true,
+      blockDist: 42.5,
+      currentTableLength: BASE_TABLE_LEN
+    };
+
+    const PARTS_DEF = [
+      { id: 'chassis', name: 'Precision Acrylic Base Plate', color: '#1e293b', hexColor: 0x1e293b, yOffset: 0.72 },
+      { id: 'motors', name: 'Dual High-Torque TT Gearmotors', color: '#facc15', hexColor: 0xfacc15, yOffset: 0.71 },
+      { id: 'wheels', name: 'High-Traction Tread Rubber Wheels', color: '#0f172a', hexColor: 0x0f172a, yOffset: 0.78 },
+      { id: 'mcu', name: 'ESP32 IoT Robotics Microcontroller', color: '#15803d', hexColor: 0x15803d, yOffset: 0.79 },
+      { id: 'battery', name: 'Lithium Safe-Pack Dual Battery Unit', color: '#0284c7', hexColor: 0x0284c7, yOffset: 0.81 },
+      { id: 'sonar', name: 'Ultrasonic Sonar Sensor Eyes (HC-SR04)', color: '#0ea5e9', hexColor: 0x0ea5e9, yOffset: 0.84 }
+    ];
+
+    /* =========================================================================
+       THREE.JS LAB SETUP
+       ========================================================================= */
+    const canvas = document.getElementById('webgl-canvas');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x060c18);
+    scene.fog = new THREE.FogExp2(0x060c18, 0.035);
+
+    const camera = new THREE.PerspectiveCamera(48, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(0, 3.8, 4.6);
+
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.maxPolarAngle = Math.PI / 2 - 0.02;
+    controls.minDistance = 1.2;
+    controls.maxDistance = 24.0;
+    controls.target.set(0, 0.75, 0);
+
+    // LIGHTS
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+    scene.add(ambientLight);
+
+    const mainSpot = new THREE.SpotLight(0xfff1db, 1.8, 30, Math.PI / 3.5, 0.3, 1.0);
+    mainSpot.position.set(0, 7, 3);
+    mainSpot.castShadow = true;
+    mainSpot.shadow.mapSize.width = 1024;
+    mainSpot.shadow.mapSize.height = 1024;
+    scene.add(mainSpot);
+
+    const fillLight = new THREE.DirectionalLight(0x00d4ff, 0.5);
+    fillLight.position.set(-6, 4, -4);
+    scene.add(fillLight);
+
+    // FLOOR
+    const roomFloorGeo = new THREE.PlaneGeometry(50, 40);
+    const roomFloorMat = new THREE.MeshStandardMaterial({ color: 0x071120, roughness: 0.85, metalness: 0.1 });
+    const roomFloor = new THREE.Mesh(roomFloorGeo, roomFloorMat);
+    roomFloor.rotation.x = -Math.PI / 2;
+    roomFloor.receiveShadow = true;
+    scene.add(roomFloor);
+
+    const gridHelper = new THREE.GridHelper(40, 40, 0x1e3a8a, 0x0d2142);
+    gridHelper.position.y = 0.005;
+    scene.add(gridHelper);
+
+    /* =========================================================================
+       DYNAMIC WORKSHOP TABLE SYSTEM
+       ========================================================================= */
+    const tableGroup = new THREE.Group();
+    scene.add(tableGroup);
+
+    const tableTopMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4, metalness: 0.2 });
+    const trimMat = new THREE.MeshStandardMaterial({ color: 0x92400e, roughness: 0.5 });
+    const legMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.6, metalness: 0.8 });
+
+    function buildTableMesh(length) {
+      while(tableGroup.children.length > 0) {
+        tableGroup.remove(tableGroup.children[0]);
+      }
+
+      const tableTop = new THREE.Mesh(new THREE.BoxGeometry(length, 0.08, 1.1), tableTopMat);
+      tableTop.position.set(0, 0.65, 0);
+      tableTop.receiveShadow = true;
+      tableTop.castShadow = true;
+      tableGroup.add(tableTop);
+
+      const edgeFront = new THREE.Mesh(new THREE.BoxGeometry(length + 0.04, 0.09, 0.03), trimMat);
+      edgeFront.position.set(0, 0.65, 0.56);
+      const edgeBack = new THREE.Mesh(new THREE.BoxGeometry(length + 0.04, 0.09, 0.03), trimMat);
+      edgeBack.position.set(0, 0.65, -0.56);
+      tableGroup.add(edgeFront, edgeBack);
+
+      const lineLen = length - 0.4;
+      const blackLine = new THREE.Mesh(new THREE.PlaneGeometry(lineLen, 0.05), new THREE.MeshBasicMaterial({ color: 0x050505 }));
+      blackLine.rotation.x = -Math.PI / 2;
+      blackLine.position.set(0, 0.692, 0);
+      tableGroup.add(blackLine);
+
+      const stopGeo = new THREE.PlaneGeometry(0.06, 0.3);
+      const halfLen = (length / 2) - 0.25;
+      const stopA = new THREE.Mesh(stopGeo, new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+      stopA.rotation.x = -Math.PI / 2;
+      stopA.position.set(halfLen, 0.693, 0);
+
+      const stopB = new THREE.Mesh(stopGeo, new THREE.MeshBasicMaterial({ color: 0x10b981 }));
+      stopB.rotation.x = -Math.PI / 2;
+      stopB.position.set(-halfLen, 0.693, 0);
+      tableGroup.add(stopA, stopB);
+
+      const legCount = Math.max(4, Math.floor(length / 2.5) * 2);
+      const legGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.65, 16);
+      const stepX = (length - 0.6) / (legCount / 2 - 1);
+
+      for (let i = 0; i < legCount / 2; i++) {
+        const lx = -(length - 0.6) / 2 + (i * stepX);
+        [0.45, -0.45].forEach(lz => {
+          const leg = new THREE.Mesh(legGeo, legMat);
+          leg.position.set(lx, 0.325, lz);
+          leg.castShadow = true;
+          tableGroup.add(leg);
+        });
+      }
+
+      STATE.currentTableLength = length;
+    }
+
+    buildTableMesh(BASE_TABLE_LEN);
+
+    /* =========================================================================
+       MOVABLE OBSTACLE BLOCK WITH 3CM SHIELD (STRICT TABLE SURFACE CLAMP)
+       ========================================================================= */
+    const blockGroup = new THREE.Group();
+    const blockMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(0.18, 0.28, 0.28),
+      new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.6, metalness: 0.1 })
+    );
+    blockMesh.position.y = 0.14;
+    blockMesh.castShadow = true;
+    blockMesh.receiveShadow = true;
+    blockGroup.add(blockMesh);
+
+    // Hazard Stripes
+    const stripeGeo = new THREE.PlaneGeometry(0.02, 0.24);
+    const stripeMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
+    [-0.05, 0.0, 0.05].forEach(sx => {
+      const stripe = new THREE.Mesh(stripeGeo, stripeMat);
+      stripe.position.set(-0.091, 0.14, sx);
+      stripe.rotation.y = -Math.PI / 2;
+      blockGroup.add(stripe);
+    });
+
+    // 3cm Cushion Boundary Outline
+    const shieldGeo = new THREE.BoxGeometry(
+      0.18 + (SAFE_COLLISION_GAP * 2),
+      0.28,
+      0.28 + (SAFE_COLLISION_GAP * 2)
+    );
+    const shieldEdges = new THREE.EdgesGeometry(shieldGeo);
+    const shieldLine = new THREE.LineSegments(shieldEdges, new THREE.LineBasicMaterial({
+      color: 0x10b981,
+      transparent: true,
+      opacity: 0.6
+    }));
+    shieldLine.position.y = 0.14;
+    blockGroup.add(shieldLine);
+
+    blockGroup.position.set(1.2, TABLE_TOP_Y, 0);
+    blockGroup.visible = false;
+    scene.add(blockGroup);
+
+    /* =========================================================================
+       STUDENT ROBOT 3D CONTAINER & PARTS
+       ========================================================================= */
+    const robotRoot = new THREE.Group();
+    robotRoot.position.set(0, TABLE_TOP_Y, 0);
+    scene.add(robotRoot);
+
+    const partMeshes = {};
+    const unmountedPositions = {
+      chassis: [-0.65, 0.72, -0.32],
+      motors:  [-0.35, 0.72, -0.32],
+      wheels:  [-0.05, 0.78, -0.32],
+      mcu:     [0.25, 0.78, -0.32],
+      battery: [0.55, 0.80, -0.32],
+      sonar:   [0.85, 0.82, -0.32]
+    };
+
+    // 1. Chassis
+    const chassisGeo = new THREE.BoxGeometry(0.48, 0.03, 0.32);
+    const chassisMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.3, metalness: 0.4 });
+    const chassisMesh = new THREE.Mesh(chassisGeo, chassisMat);
+    chassisMesh.castShadow = true;
+    partMeshes['chassis'] = chassisMesh;
+
+    // 2. Motors
+    const motorsGroup = new THREE.Group();
+    const motorMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.3, metalness: 0.2 });
+    const mLeft = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.06, 0.07), motorMat);
+    mLeft.position.set(0, 0, 0.13);
+    const mRight = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.06, 0.07), motorMat);
+    mRight.position.set(0, 0, -0.13);
+    motorsGroup.add(mLeft, mRight);
+    partMeshes['motors'] = motorsGroup;
+
+    // 3. Wheels & Caster
+    const wheelsGroup = new THREE.Group();
+    const tireMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.8 });
+    const hubMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.4 });
+    const wheelGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.04, 24);
+
+    const makeWheel = (z) => {
+      const g = new THREE.Group();
+      const tire = new THREE.Mesh(wheelGeo, tireMat);
+      tire.rotation.x = Math.PI / 2;
+      const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.045, 16), hubMat);
+      hub.rotation.x = Math.PI / 2;
+      g.add(tire, hub);
+      g.position.set(-0.06, 0.08, z);
+      g.castShadow = true;
+      return g;
+    };
+    const wheelFL = makeWheel(0.18);
+    const wheelFR = makeWheel(-0.18);
+    const caster = new THREE.Mesh(new THREE.SphereGeometry(0.038, 16, 16), new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9 }));
+    caster.position.set(0.18, 0.038, 0);
+    wheelsGroup.add(wheelFL, wheelFR, caster);
+    partMeshes['wheels'] = wheelsGroup;
+
+    // 4. MCU
+    const mcuGroup = new THREE.Group();
+    const pcb = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.015, 0.16), new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.4 }));
+    pcb.position.y = 0.025;
+    const soc = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.018, 0.07), new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9 }));
+    soc.position.set(0, 0.03, 0);
+    mcuGroup.add(pcb, soc);
+    mcuGroup.position.set(0, 0.03, 0);
+    partMeshes['mcu'] = mcuGroup;
+
+    // 5. Battery
+    const battGroup = new THREE.Group();
+    const cellMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.3 });
+    const cellGeo = new THREE.CylinderGeometry(0.028, 0.028, 0.14, 16);
+    const c1 = new THREE.Mesh(cellGeo, cellMat);
+    c1.rotation.z = Math.PI / 2;
+    c1.position.set(-0.08, 0.07, 0.04);
+    const c2 = new THREE.Mesh(cellGeo, cellMat);
+    c2.rotation.z = Math.PI / 2;
+    c2.position.set(-0.08, 0.07, -0.04);
+    battGroup.add(c1, c2);
+    partMeshes['battery'] = battGroup;
+
+    // 6. Ultrasonic Sonar Eyes (HC-SR04) + Waves (Front = +X axis)
+    const sonarGroup = new THREE.Group();
+    const sonarPcb = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.06, 0.15), new THREE.MeshStandardMaterial({ color: 0x0284c7 }));
+    sonarPcb.position.set(0.24, 0.09, 0);
+
+    const eyeGeo = new THREE.CylinderGeometry(0.026, 0.026, 0.035, 16);
+    const eyeMat = new THREE.MeshStandardMaterial({ color: 0x00d4ff, metalness: 0.8, roughness: 0.2 });
+    const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
+    eyeL.rotation.z = Math.PI / 2;
+    eyeL.position.set(0.26, 0.09, 0.04);
+    const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
+    eyeR.rotation.z = Math.PI / 2;
+    eyeR.position.set(0.26, 0.09, -0.04);
+    sonarGroup.add(sonarPcb, eyeL, eyeR);
+
+    // Ultrasonic Conical Rays: starts right at ultrasonic face (+0.28m) and projects forward
+    const pulseGeo = new THREE.ConeGeometry(0.28, 0.7, 16, 1, true);
+    const pulseMat = new THREE.MeshBasicMaterial({
+      color: 0x00d4ff,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.55
+    });
+    const pulseCone = new THREE.Mesh(pulseGeo, pulseMat);
+    pulseCone.rotation.z = -Math.PI / 2;
+    pulseCone.position.set(0.65, 0.09, 0);
+    pulseCone.visible = false;
+    sonarGroup.add(pulseCone);
+
+    partMeshes['sonar'] = sonarGroup;
+
+    // TOP CUSTOM LED SYSTEM
+    const ledMountGroup = new THREE.Group();
+    ledMountGroup.position.set(0.05, 0.09, 0);
+    const ledMeshes = [];
+    const ledPointLights = [];
+
+    [-0.06, 0.0, 0.06].forEach((lz, idx) => {
+      const ledG = new THREE.Group();
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.015, 12), new THREE.MeshBasicMaterial({ color: 0x334155 }));
+      const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.018, 14, 14), new THREE.MeshBasicMaterial({ color: 0xff2222 }));
+      bulb.position.y = 0.016;
+      const pLight = new THREE.PointLight(0xff2222, 1.2, 0.8);
+      pLight.position.y = 0.02;
+
+      ledG.add(base, bulb, pLight);
+      ledG.position.set(0, 0, lz);
+      ledMountGroup.add(ledG);
+      ledMeshes.push(bulb);
+      ledPointLights.push(pLight);
+    });
+    robotRoot.add(ledMountGroup);
+    ledMountGroup.visible = false;
+
+    // Disassembled layout initially
+    PARTS_DEF.forEach(p => {
+      const mesh = partMeshes[p.id];
+      const pos = unmountedPositions[p.id];
+      mesh.position.set(pos[0], pos[1] - TABLE_TOP_Y, pos[2]);
+      robotRoot.add(mesh);
+    });
+
+    /* =========================================================================
+       3D TEXT BADGE BUILDER
+       ========================================================================= */
+    function create3DBadge(title, subtitle, bgColor = '#1e3a8a') {
+      const c = document.createElement('canvas');
+      c.width = 340;
+      c.height = 110;
+      const ctx = c.getContext('2d');
+
+      ctx.fillStyle = bgColor;
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.roundRect(8, 8, 324, 94, 24);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 28px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(title, 170, 48);
+
+      ctx.fillStyle = '#fde047';
+      ctx.font = '600 20px sans-serif';
+      ctx.fillText(subtitle, 170, 82);
+
+      const tex = new THREE.CanvasTexture(c);
+      const mat = new THREE.SpriteMaterial({ map: tex, transparent: true });
+      const sprite = new THREE.Sprite(mat);
+      sprite.scale.set(0.95, 0.32, 1);
+      return sprite;
+    }
+
+    /* =========================================================================
+       PROCEDURAL 3D CARICATURE BUILDER
+       ========================================================================= */
+    const caricaturesGroup = new THREE.Group();
+    scene.add(caricaturesGroup);
+
+    let visitorAvatarMesh = null;
+    let visitorTabletMesh = null;
+    let drHeadMesh = null;
+
+    function buildCaricature(opts) {
+      const g = new THREE.Group();
+      const skinMat = new THREE.MeshStandardMaterial({ color: opts.skinColor || 0xd49b72, roughness: 0.7 });
+      const clothMat = new THREE.MeshStandardMaterial({ color: opts.clothColor || 0x2563eb, roughness: 0.6 });
+
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.15, 0.5, 16), clothMat);
+      body.position.y = 0.55;
+      body.castShadow = true;
+      g.add(body);
+
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.13, 18, 18), skinMat);
+      head.position.y = 0.92;
+      head.castShadow = true;
+      g.add(head);
+
+      if (opts.glasses) {
+        const frameMat = new THREE.MeshBasicMaterial({ color: 0x0f172a });
+        const gL = new THREE.Mesh(new THREE.RingGeometry(0.025, 0.035, 16), frameMat);
+        gL.position.set(0.045, 0.93, 0.128);
+        const gR = new THREE.Mesh(new THREE.RingGeometry(0.025, 0.035, 16), frameMat);
+        gR.position.set(-0.045, 0.93, 0.128);
+        head.add(gL, gR);
+      }
+
+      if (opts.hasTilak) {
+        const tilak = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.05, 0.01), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+        tilak.position.set(0, 0.96, 0.126);
+        head.add(tilak);
+      }
+
+      if (opts.hasBindi) {
+        const bindi = new THREE.Mesh(new THREE.CircleGeometry(0.014, 16), new THREE.MeshBasicMaterial({ color: 0xd91212 }));
+        bindi.position.set(0, 0.95, 0.129);
+        head.add(bindi);
+      }
+
+      if (opts.isSaree) {
+        const drapeMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.4 });
+        const pallu = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.52, 0.03), drapeMat);
+        pallu.rotation.z = -0.45;
+        pallu.position.set(0.06, 0.58, 0.12);
+        g.add(pallu);
+      }
+
+      let tablet = null;
+      if (opts.hasTablet) {
+        const tabG = new THREE.Group();
+        const tabBody = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.12, 0.015), new THREE.MeshStandardMaterial({ color: 0x0f172a }));
+        const screenMat = new THREE.MeshBasicMaterial({ color: 0xff8c00 });
+        const tabScreen = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 0.1), screenMat);
+        tabScreen.position.z = 0.009;
+        tabG.add(tabBody, tabScreen);
+        tabG.position.set(0, 0.62, 0.22);
+        tabG.rotation.x = -0.4;
+        g.add(tabG);
+        tablet = tabScreen;
+      }
+
+      const badge = create3DBadge(opts.name, opts.role, opts.badgeBg || '#1e3a8a');
+      badge.position.set(0, 1.25, 0);
+      g.add(badge);
+
+      g.position.set(opts.x, 0, opts.z);
+      g.rotation.y = opts.rotY || 0;
+      return { group: g, head, tablet };
+    }
+
+    const drMentor = buildCaricature({
+      name: 'Dr Venu Gopal',
+      role: 'Chief Mentor • GARRF',
+      clothColor: 0x1e293b,
+      glasses: true,
+      hasTilak: true,
+      x: -1.85, z: 0.95,
+      rotY: -0.35,
+      badgeBg: '#0f172a'
+    });
+    drHeadMesh = drMentor.head;
+    caricaturesGroup.add(drMentor.group);
+
+    const shantanuMentor = buildCaricature({
+      name: 'Shantanu Bro',
+      role: 'Robotics Co-Mentor',
+      clothColor: 0x0369a1,
+      hasTablet: true,
+      x: -1.15, z: 0.95,
+      rotY: -0.2,
+      badgeBg: '#0369a1'
+    });
+    caricaturesGroup.add(shantanuMentor.group);
+
+    const peersData = [
+      { name: 'Lakshith', role: 'Club Member', boy: true, color: 0x059669, x: 0.75, z: 0.95 },
+      { name: 'Divya', role: 'Club Member', boy: false, color: 0xbe185d, isSaree: true, x: 1.35, z: 0.95 },
+      { name: 'Sunaina', role: 'Club Member', boy: false, color: 0x7c3aed, isSaree: true, x: 1.95, z: 0.95 },
+      { name: 'Suhuruth', role: 'Club Member', boy: true, color: 0xd97706, x: 2.55, z: 0.95 },
+      { name: 'Agastya', role: 'Club Member', boy: true, color: 0x2563eb, x: 3.15, z: 0.95 }
+    ];
+
+    peersData.forEach(p => {
+      const peer = buildCaricature({
+        name: p.name,
+        role: p.role,
+        clothColor: p.color,
+        hasTilak: p.boy,
+        hasBindi: !p.boy,
+        isSaree: p.isSaree,
+        x: p.x, z: p.z,
+        rotY: -0.45,
+        badgeBg: '#1e293b'
+      });
+      caricaturesGroup.add(peer.group);
+    });
+
+    function initVisitorAvatar(name, gender) {
+      if (visitorAvatarMesh) caricaturesGroup.remove(visitorAvatarMesh.group);
+
+      const isBoy = gender === 'boy';
+      visitorAvatarMesh = buildCaricature({
+        name: name,
+        role: 'Junior Robotics Fellow',
+        clothColor: isBoy ? 0xe11d48 : 0x0f766e,
+        hasTilak: isBoy,
+        hasBindi: !isBoy,
+        isSaree: !isBoy,
+        hasTablet: true,
+        x: -0.35, z: 0.95,
+        rotY: 0,
+        badgeBg: '#ff8c00'
+      });
+      visitorTabletMesh = visitorAvatarMesh.tablet;
+      caricaturesGroup.add(visitorAvatarMesh.group);
+    }
+
+    /* =========================================================================
+       ASSEMBLY & WORKFLOW LOGIC
+       ========================================================================= */
+    const partsListEl = document.getElementById('parts-step-list');
+    function renderPartsList() {
+      partsListEl.innerHTML = '';
+      PARTS_DEF.forEach((p, idx) => {
+        const isDone = idx < STATE.assembledCount;
+        const isActive = idx === STATE.assembledCount;
+        const div = document.createElement('div');
+        div.className = `step-item ${isDone ? 'done' : ''} ${isActive ? 'active' : ''}`;
+        div.innerHTML = `
+          <div style="display:flex; align-items:center;">
+            <span class="step-color-dot" style="background:${p.color};"></span>
+            <span>${p.name}</span>
+          </div>
+          <span>${isDone ? '✓ Fitted' : isActive ? 'Next' : 'Tray'}</span>
+        `;
+        partsListEl.appendChild(div);
+      });
+      document.getElementById('assembly-progress').textContent = `${STATE.assembledCount} / ${STATE.totalParts} Parts`;
+    }
+
+    function snapNextPart() {
+      triggerVisitorTabletTap();
+      if (STATE.assembledCount >= STATE.totalParts) return;
+
+      const pDef = PARTS_DEF[STATE.assembledCount];
+      const mesh = partMeshes[pDef.id];
+
+      animateSnap(mesh, { x: 0, y: pDef.yOffset - TABLE_TOP_Y, z: 0 });
+      STATE.assembledCount++;
+      renderPartsList();
+
+      if (STATE.assembledCount === STATE.totalParts) {
+        onAssemblyComplete();
+      }
+    }
+
+    function autoAssembleRobot() {
+      triggerVisitorTabletTap();
+      if (STATE.isAutoAssembling) return;
+      STATE.isAutoAssembling = true;
+
+      let interval = setInterval(() => {
+        if (STATE.assembledCount < STATE.totalParts) {
+          snapNextPart();
+        } else {
+          clearInterval(interval);
+          STATE.isAutoAssembling = false;
+        }
+      }, 380);
+    }
+
+    function animateSnap(mesh, targetPos) {
+      let t = 0;
+      const startPos = { x: mesh.position.x, y: mesh.position.y, z: mesh.position.z };
+      function step() {
+        t += 0.08;
+        mesh.position.x = THREE.MathUtils.lerp(startPos.x, targetPos.x, t);
+        mesh.position.y = THREE.MathUtils.lerp(startPos.y, targetPos.y, t);
+        mesh.position.z = THREE.MathUtils.lerp(startPos.z, targetPos.z, t);
+        if (t < 1) requestAnimationFrame(step);
+        else mesh.position.set(targetPos.x, targetPos.y, targetPos.z);
+      }
+      step();
+    }
+
+    function onAssemblyComplete() {
+      document.getElementById('btn-snap-next').style.display = 'none';
+      document.getElementById('btn-auto-assemble').style.display = 'none';
+      document.getElementById('btn-start-run').style.display = 'flex';
+
+      setTimeout(() => {
+        document.getElementById('dr-speech-txt').innerHTML =
+          `"Well done, <b>${STATE.visitorName}</b>! All robots are built similarly: join all parts firmly, put proper batteries, and use the microcontroller and remote given by them, or build using your own custom microcontroller boards. Inspect the BOM for component specifications. Thank you, and welcome to our research foundation!"`;
+        openSpeechModal('dr-dialog');
+      }, 500);
+    }
+
+    function enterExperimentsMode() {
+      triggerVisitorTabletTap();
+      document.getElementById('panel-workflow').style.display = 'none';
+      document.getElementById('panel-experiments').style.display = 'block';
+      ledMountGroup.visible = true;
+      switchExperiment(1);
+    }
+
+    /* =========================================================================
+       GET BACK TO "NORMAL" (BASE POSITION RESET FUNCTION)
+       ========================================================================= */
+    function resetToNormalPosition() {
+      triggerVisitorTabletTap();
+      hideFallAlert();
+
+      STATE.lineFollowing = false;
+      STATE.continuousDrive = false;
+      STATE.isDriving = false;
+      STATE.driveDir = null;
+
+      const lineBtn = document.getElementById('btn-line-auto');
+      if (lineBtn) {
+        lineBtn.textContent = '▶ Move/Pause Line';
+        lineBtn.className = 'btn btn-primary';
+      }
+      const centerDriveBtn = document.getElementById('btn-center-drive');
+      if (centerDriveBtn) {
+        centerDriveBtn.style.background = 'rgba(255, 140, 0, 0.18)';
+        centerDriveBtn.style.color = 'var(--accent)';
+        centerDriveBtn.textContent = 'MOVE / PAUSE';
+      }
+
+      let t = 0;
+      const startX = robotRoot.position.x;
+      const startZ = robotRoot.position.z;
+      const startRot = robotRoot.rotation.y;
+
+      function normalStep() {
+        t += 0.08;
+        robotRoot.position.x = THREE.MathUtils.lerp(startX, 0, t);
+        robotRoot.position.z = THREE.MathUtils.lerp(startZ, 0, t);
+        robotRoot.rotation.y = THREE.MathUtils.lerp(startRot, 0, t);
+        robotRoot.position.y = TABLE_TOP_Y;
+
+        if (t < 1) {
+          requestAnimationFrame(normalStep);
+        } else {
+          robotRoot.position.set(0, TABLE_TOP_Y, 0);
+          robotRoot.rotation.set(0, 0, 0);
+          if (STATE.currentExp === 2) {
+            resetBlockPosition();
+          }
+          showSuccessMilestone("↺ Returned to Normal Base Position!");
+        }
+      }
+      normalStep();
+    }
+
+    /* =========================================================================
+       EXPERIMENTS SUITE & SWITCHING
+       ========================================================================= */
+    function switchExperiment(expId) {
+      triggerVisitorTabletTap();
+      STATE.currentExp = expId;
+      hideFallAlert();
+
+      STATE.lineFollowing = false;
+      STATE.continuousDrive = false;
+      STATE.isDriving = false;
+
+      [1, 2, 3].forEach(i => {
+        document.getElementById(`tab-exp-${i}`).classList.toggle('active', i === expId);
+        document.getElementById(`exp-${i}-body`).style.display = (i === expId) ? 'block' : 'none';
+      });
+
+      if (expId === 3) {
+        if (STATE.currentTableLength !== TRIPLED_TABLE_LEN) {
+          buildTableMesh(TRIPLED_TABLE_LEN);
+        }
+      } else {
+        if (STATE.currentTableLength !== BASE_TABLE_LEN) {
+          buildTableMesh(BASE_TABLE_LEN);
+        }
+      }
+
+      // Block is strictly shown in Exp 2 and clamped onto the table
+      blockGroup.visible = (expId === 2);
+      if (expId === 2) {
+        resetBlockPosition();
+      }
+
+      const pulseMesh = partMeshes['sonar'].children.find(c => c.geometry && c.geometry.type === 'ConeGeometry');
+      if (pulseMesh) {
+        pulseMesh.visible = (expId === 2);
+      }
+
+      const dpadStatus = document.getElementById('drive-pad-status-tag');
+      const dpadDesc = document.getElementById('drive-pad-desc-txt');
+      const btnLeft = document.getElementById('dpad-left');
+      const btnRight = document.getElementById('dpad-right');
+
+      if (expId === 1) {
+        dpadStatus.textContent = 'Strict Line Mode';
+        dpadStatus.style.color = 'var(--gold)';
+        dpadDesc.innerHTML = '<b>In Experiment 1:</b> The robot is strictly locked to the black line using dual IR sensors. Steering left/right is locked to prevent arbitrary drifting. Use <b>Move/Pause</b> or <b>180° Rotate</b>!';
+        btnLeft.disabled = true;
+        btnRight.disabled = true;
+      } else if (expId === 2) {
+        dpadStatus.textContent = 'Obstacle Shield (3cm Gap)';
+        dpadStatus.style.color = 'var(--cyan)';
+        dpadDesc.innerHTML = '<b>In Experiment 2:</b> Ranging obstacle block. Solid physical barrier prevents pass-through. Robot halts strictly at <b>3.0 cm safe margin</b>!';
+        btnLeft.disabled = false;
+        btnRight.disabled = false;
+      } else {
+        dpadStatus.textContent = 'Free Roam Mode';
+        dpadStatus.style.color = 'var(--green)';
+        dpadDesc.innerHTML = '<b>In Experiment 3:</b> Full directional remote pad enabled on the tripled length table! Steer freely anywhere without falling off.';
+        btnLeft.disabled = false;
+        btnRight.disabled = false;
+      }
+
+      robotRoot.position.y = TABLE_TOP_Y;
+
+      if (expId === 1) {
+        robotRoot.position.z = 0;
+        smoothMoveCamera(0, 3.4, 4.0, 0, 0.75, 0);
+      } else if (expId === 2) {
+        turnRobotToFaceBlock();
+        smoothMoveCamera(0.8, 2.6, 2.9, 0.5, 0.75, 0);
+      } else if (expId === 3) {
+        smoothMoveCamera(0, 5.5, 7.5, 0, 0.75, 0);
+      }
+    }
+
+    function turnRobotToFaceBlock() {
+      let currentY = robotRoot.rotation.y % (Math.PI * 2);
+      if (currentY < 0) currentY += (Math.PI * 2);
+
+      if (Math.abs(currentY - 0) > 0.05) {
+        let t = 0;
+        const startRot = robotRoot.rotation.y;
+        function turnStep() {
+          t += 0.09;
+          robotRoot.rotation.y = THREE.MathUtils.lerp(startRot, 0, t);
+          if (t < 1) requestAnimationFrame(turnStep);
+          else {
+            robotRoot.rotation.y = 0;
+            updateSonarDistance();
+          }
+        }
+        turnStep();
+      } else {
+        robotRoot.rotation.y = 0;
+        updateSonarDistance();
+      }
+    }
+
+    function markExpComplete(expId) {
+      triggerVisitorTabletTap();
+      STATE.completedExps[expId] = true;
+      document.getElementById(`tab-exp-${expId}`).classList.add('completed');
+      showSuccessMilestone(`🎉 Experiment ${expId} Verified!`);
+
+      if (STATE.completedExps[1] && STATE.completedExps[2] && STATE.completedExps[3]) {
+        setTimeout(() => {
+          promptNextStepModal();
+        }, 1200);
+      }
+    }
+
+    function promptNextStepModal() {
+      openSpeechModal('next-step-prompt-modal');
+    }
+
+    // 1. LINE FOLLOWER
+    function toggleLineFollower() {
+      triggerVisitorTabletTap();
+      STATE.lineFollowing = !STATE.lineFollowing;
+      const btn = document.getElementById('btn-line-auto');
+      if (STATE.lineFollowing) {
+        btn.textContent = '⏸ Move/Pause (Running)';
+        btn.className = 'btn btn-secondary';
+      } else {
+        btn.textContent = '▶ Move/Pause Line';
+        btn.className = 'btn btn-primary';
+      }
+    }
+
+    function rotateRobot180() {
+      triggerVisitorTabletTap();
+      hideFallAlert();
+      let rotTarget = robotRoot.rotation.y + Math.PI;
+      let t = 0;
+      function rotStep() {
+        t += 0.08;
+        robotRoot.rotation.y = THREE.MathUtils.lerp(robotRoot.rotation.y, rotTarget, t);
+        if (t < 1) requestAnimationFrame(rotStep);
+        else robotRoot.rotation.y = rotTarget;
+      }
+      rotStep();
+    }
+
+    /* =========================================================================
+       2. SONAR BLOCK INTERACTION WITH RIGID 3CM BARRIER & TABLE EDGE CLAMP
+       ========================================================================= */
+    function clampBlockOnTable(targetX) {
+      // Current table half-length
+      const halfTable = STATE.currentTableLength / 2;
+      // Absolute max X coordinate: block must remain at least 0.12m INSIDE the physical edge
+      const maxTableX = halfTable - BLOCK_HALF_X - 0.12;
+      
+      // Absolute min X coordinate: robot's nose + 3cm barrier + block's half-width
+      const minAllowableX = robotRoot.position.x + ROBOT_NOSE_OFFSET + SAFE_COLLISION_GAP + BLOCK_HALF_X;
+
+      return THREE.MathUtils.clamp(targetX, minAllowableX, maxTableX);
+    }
+
+    function updateBlockPosition(val) {
+      triggerVisitorTabletTap();
+      const halfTable = STATE.currentTableLength / 2;
+      const maxTableX = halfTable - BLOCK_HALF_X - 0.12;
+      const minX = robotRoot.position.x + ROBOT_NOSE_OFFSET + SAFE_COLLISION_GAP + BLOCK_HALF_X;
+
+      // Map slider value (15% to 95%) linearly between minX and maxTableX
+      const t = (val - 15) / (95 - 15);
+      const computedX = THREE.MathUtils.lerp(minX, maxTableX, t);
+
+      blockGroup.position.x = clampBlockOnTable(computedX);
+      blockGroup.position.z = 0;
+      blockGroup.position.y = TABLE_TOP_Y;
+
+      updateSonarDistance();
+    }
+
+    function resetBlockPosition() {
+      triggerVisitorTabletTap();
+      // Safe, prominent spot on the table: 1.25m from center
+      const safeInitX = clampBlockOnTable(1.25);
+      blockGroup.position.set(safeInitX, TABLE_TOP_Y, 0);
+
+      // Map reverse slider percentage
+      const halfTable = STATE.currentTableLength / 2;
+      const maxTableX = halfTable - BLOCK_HALF_X - 0.12;
+      const minX = robotRoot.position.x + ROBOT_NOSE_OFFSET + SAFE_COLLISION_GAP + BLOCK_HALF_X;
+      const pct = 15 + ((safeInitX - minX) / (maxTableX - minX)) * (95 - 15);
+      
+      const slider = document.getElementById('block-slider');
+      if (slider) slider.value = Math.round(pct);
+
+      updateSonarDistance();
+    }
+
+    // Automated Drive toward Block with GUARANTEED 3.0CM STOPPING
+    function driveTowardBlock() {
+      triggerVisitorTabletTap();
+      if (Math.abs(robotRoot.rotation.y) > 0.1) robotRoot.rotation.y = 0;
+
+      // Target X: front nose strictly 3.0 cm from obstacle front face
+      const obstacleFrontX = blockGroup.position.x - BLOCK_HALF_X;
+      const targetStopX = obstacleFrontX - ROBOT_NOSE_OFFSET - SAFE_COLLISION_GAP;
+
+      let t = 0;
+      const startX = robotRoot.position.x;
+      function driveStep() {
+        t += 0.04;
+        const curX = THREE.MathUtils.lerp(startX, targetStopX, t);
+        robotRoot.position.x = Math.min(curX, targetStopX);
+        robotRoot.position.y = TABLE_TOP_Y;
+        updateSonarDistance();
+
+        if (t < 1 && robotRoot.position.x < targetStopX) {
+          requestAnimationFrame(driveStep);
+        } else {
+          robotRoot.position.x = targetStopX;
+          updateSonarDistance();
+          showSuccessMilestone("🛑 Safe Barrier: Robot stopped strictly 3.0 cm in front of object!");
+          markExpComplete(2);
+        }
+      }
+      driveStep();
+    }
+
+    function updateSonarDistance() {
+      const obstacleFrontX = blockGroup.position.x - BLOCK_HALF_X;
+      const sensorNoseX = robotRoot.position.x + ROBOT_NOSE_OFFSET;
+      const gapM = Math.max(0, obstacleFrontX - sensorNoseX);
+      const distCm = (gapM * 100).toFixed(1);
+      STATE.blockDist = distCm;
+
+      const readoutEl = document.getElementById('sonar-dist-val');
+      if (readoutEl) {
+        readoutEl.innerHTML = `<b>${distCm}</b> cm ${distCm <= 3.0 ? '<span style="color:#10b981;font-size:11px;">[SAFE 3CM]</span>' : ''}`;
+      }
+
+      // Dynamic Cone Sizing & Color so it connects right between sensor face and the block face
+      const pulseMesh = partMeshes['sonar'].children.find(c => c.geometry && c.geometry.type === 'ConeGeometry');
+      if (pulseMesh && pulseMesh.visible) {
+        // Adjust cone length to span directly to obstacle face without poking out into empty air
+        const visualConeLen = Math.max(0.1, Math.min(gapM, 1.4));
+        pulseMesh.scale.set(visualConeLen / 0.7, visualConeLen / 0.7, visualConeLen / 0.7);
+        pulseMesh.position.x = 0.28 + (visualConeLen / 2);
+
+        if (gapM <= 0.035) pulseMesh.material.color.setHex(0x10b981);
+        else if (gapM < 0.15) pulseMesh.material.color.setHex(0xef4444);
+        else if (gapM < 0.28) pulseMesh.material.color.setHex(0xf59e0b);
+        else pulseMesh.material.color.setHex(0x00d4ff);
+      }
+    }
+
+    // 3. LED CONFIGURATION
+    function setLedCount(count) {
+      triggerVisitorTabletTap();
+      STATE.ledCount = count;
+      [0, 1, 2, 3].forEach(i => {
+        document.getElementById(`led-count-${i}`).classList.toggle('active', i === count);
+      });
+      ledMeshes.forEach((mesh, idx) => {
+        mesh.parent.visible = (idx < count);
+      });
+    }
+
+    function setLedColor(hex, el) {
+      triggerVisitorTabletTap();
+      STATE.ledColor = hex;
+      document.querySelectorAll('.swatch').forEach(s => s.classList.remove('selected'));
+      el.classList.add('selected');
+      ledMeshes.forEach(mesh => mesh.material.color.setStyle(hex));
+      ledPointLights.forEach(light => light.color.setStyle(hex));
+    }
+
+    function toggleLedBlink() {
+      triggerVisitorTabletTap();
+      STATE.ledBlinking = !STATE.ledBlinking;
+      document.getElementById('btn-led-blink').textContent = STATE.ledBlinking ? '✨ Blinking Mode: ON' : '💡 Steady Glow: ON';
+    }
+
+    /* =========================================================================
+       REMOTE DRIVE PAD WITH CONTINUOUS MOVE / PAUSE & STRICT 3CM COLLISION CHECK
+       ========================================================================= */
+    function toggleContinuousDrive() {
+      triggerVisitorTabletTap();
+      STATE.continuousDrive = !STATE.continuousDrive;
+      const btn = document.getElementById('btn-center-drive');
+      if (STATE.continuousDrive) {
+        btn.style.background = 'var(--green)';
+        btn.style.color = '#fff';
+        btn.textContent = 'RUNNING';
+      } else {
+        btn.style.background = 'rgba(255, 140, 0, 0.18)';
+        btn.style.color = 'var(--accent)';
+        btn.textContent = 'MOVE / PAUSE';
+      }
+    }
+
+    function startDrive(dir) {
+      triggerVisitorTabletTap();
+      if (STATE.currentExp === 1 && (dir === 'left' || dir === 'right')) return;
+
+      STATE.isDriving = true;
+      STATE.driveDir = dir;
+    }
+    function stopDrive() {
+      STATE.isDriving = false;
+      STATE.driveDir = null;
+    }
+
+    /* =========================================================================
+       IN-WORLD CARICATURE INTERACTION & MODALS
+       ========================================================================= */
+    function triggerVisitorTabletTap() {
+      if (visitorTabletMesh) {
+        visitorTabletMesh.material.color.setHex(0xffffff);
+        setTimeout(() => visitorTabletMesh.material.color.setHex(0xff8c00), 120);
+      }
+    }
+
+    function openSpeechModal(id) {
+      document.getElementById(id).style.display = 'block';
+    }
+    function closeSpeechModal(id) {
+      document.getElementById(id).style.display = 'none';
+    }
+
+    function showBomModal() {
+      document.getElementById('bom-modal').style.display = 'block';
+    }
+    function closeBomModal() {
+      document.getElementById('bom-modal').style.display = 'none';
+    }
+
+    function acceptShantanuBuild() {
+      closeSpeechModal('shantanu-dialog');
+      snapNextPart();
+    }
+
+    function showFallAlert(customMsg) {
+      const alertEl = document.getElementById('edge-fall-alert');
+      const txtEl = document.getElementById('edge-alert-txt');
+      if (customMsg) txtEl.innerHTML = customMsg;
+      else txtEl.innerHTML = "⚠️ Robot reached table edge & stopped!";
+      alertEl.style.display = 'flex';
+    }
+    function hideFallAlert() {
+      document.getElementById('edge-fall-alert').style.display = 'none';
+    }
+
+    function showSuccessMilestone(msg) {
+      const el = document.getElementById('milestone-alert');
+      el.innerHTML = msg;
+      el.style.display = 'flex';
+      setTimeout(() => { el.style.display = 'none'; }, 4000);
+    }
+
+    function smoothMoveCamera(tx, ty, tz, lx, ly, lz) {
+      let t = 0;
+      const sx = camera.position.x, sy = camera.position.y, sz = camera.position.z;
+      function camStep() {
+        t += 0.05;
+        camera.position.set(
+          THREE.MathUtils.lerp(sx, tx, t),
+          THREE.MathUtils.lerp(sy, ty, t),
+          THREE.MathUtils.lerp(sz, tz, t)
+        );
+        controls.target.set(lx, ly, lz);
+        if (t < 1) requestAnimationFrame(camStep);
+      }
+      camStep();
+    }
+
+    /* =========================================================================
+       ONBOARDING LOGIC
+       ========================================================================= */
+    function selectGender(g) {
+      STATE.visitorGender = g;
+      document.getElementById('btn-gender-boy').classList.toggle('selected', g === 'boy');
+      document.getElementById('btn-gender-girl').classList.toggle('selected', g === 'girl');
+    }
+
+    function completeOnboarding() {
+      const nameInput = document.getElementById('visitor-name').value.trim();
+      STATE.visitorName = nameInput || 'Aarav';
+      initVisitorAvatar(STATE.visitorName, STATE.visitorGender);
+      renderPartsList();
+      document.getElementById('onboarding-modal').style.display = 'none';
+
+      setTimeout(() => {
+        document.getElementById('shantanu-speech-txt').innerHTML =
+          `Hi <b>${STATE.visitorName}</b>! Please press <b>Build Mode</b> and assemble step by step. Ready to construct your first robot?`;
+        openSpeechModal('shantanu-dialog');
+      }, 500);
+    }
+
+    /* =========================================================================
+       MAIN RENDER & ANIMATION LOOP (WITH RIGID TABLE & OBJECT RESTRAINTS)
+       ========================================================================= */
+    let clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = clock.getDelta();
+      const time = clock.getElapsedTime();
+
+      // Idle Dr. Venu Gopal Head Look
+      if (drHeadMesh) {
+        drHeadMesh.rotation.y = Math.sin(time * 0.8) * 0.22;
+        drHeadMesh.rotation.x = Math.sin(time * 0.5) * 0.08;
+      }
+
+      // Sonar Pulse Waves (Active only in Exp 2)
+      const sonarWave = partMeshes['sonar'].children.find(c => c.geometry && c.geometry.type === 'ConeGeometry');
+      if (sonarWave && sonarWave.visible) {
+        const pulseFactor = 1 + Math.sin(time * 8) * 0.08;
+        sonarWave.scale.y = pulseFactor;
+        sonarWave.scale.z = pulseFactor;
+      }
+
+      // LED Blinking
+      if (STATE.ledBlinking && STATE.ledCount > 0) {
+        const glow = (Math.sin(time * 12) > 0);
+        ledPointLights.forEach(p => p.intensity = glow ? 1.6 : 0.1);
+        ledMeshes.forEach(m => m.material.color.setStyle(glow ? STATE.ledColor : '#222222'));
+      }
+
+      // Ground constraint
+      robotRoot.position.y = TABLE_TOP_Y;
+
+      const edgeLimitX = (STATE.currentTableLength / 2) - 0.28;
+      const edgeLimitZ = 0.44;
+
+      // Obstacle collision threshold in Exp 2
+      const obstacleFrontX = blockGroup.position.x - BLOCK_HALF_X;
+      const robotMaxAllowedX = obstacleFrontX - ROBOT_NOSE_OFFSET - SAFE_COLLISION_GAP;
+
+      // 1. LINE FOLLOWER MOTION (STRICTLY ON BLACK LINE Z=0)
+      if (STATE.lineFollowing) {
+        const speed = 0.65 * delta;
+        const dir = Math.cos(robotRoot.rotation.y) >= 0 ? 1 : -1;
+        const proposedX = robotRoot.position.x + (speed * dir);
+
+        if (proposedX > edgeLimitX) {
+          robotRoot.position.x = edgeLimitX;
+          STATE.lineFollowing = false;
+          showFallAlert();
+        } else if (proposedX < -edgeLimitX) {
+          robotRoot.position.x = -edgeLimitX;
+          STATE.lineFollowing = false;
+          showFallAlert();
+        } else {
+          robotRoot.position.x = proposedX;
+          robotRoot.position.z = 0;
+        }
+      }
+
+      // 2. CONTINUOUS DRIVE WITH BOUNDARY STOP & 3CM BARRIER
+      if (STATE.continuousDrive) {
+        const speed = 0.9 * delta;
+        const proposedX = robotRoot.position.x + Math.cos(robotRoot.rotation.y) * speed;
+        const proposedZ = robotRoot.position.z - Math.sin(robotRoot.rotation.y) * speed;
+
+        // Check 3cm safe distance against block in Exp 2
+        if (STATE.currentExp === 2 && blockGroup.visible && proposedX >= robotMaxAllowedX) {
+          robotRoot.position.x = robotMaxAllowedX;
+          STATE.continuousDrive = false;
+          document.getElementById('btn-center-drive').style.background = 'rgba(255, 140, 0, 0.18)';
+          document.getElementById('btn-center-drive').style.color = 'var(--accent)';
+          document.getElementById('btn-center-drive').textContent = 'MOVE / PAUSE';
+          showFallAlert("🛑 Safe Boundary: Robot stopped strictly 3.0 cm from obstacle!");
+        } else if (Math.abs(proposedX) >= edgeLimitX || Math.abs(proposedZ) >= edgeLimitZ) {
+          robotRoot.position.x = THREE.MathUtils.clamp(proposedX, -edgeLimitX, edgeLimitX);
+          robotRoot.position.z = THREE.MathUtils.clamp(proposedZ, -edgeLimitZ, edgeLimitZ);
+          STATE.continuousDrive = false;
+          document.getElementById('btn-center-drive').style.background = 'rgba(255, 140, 0, 0.18)';
+          document.getElementById('btn-center-drive').style.color = 'var(--accent)';
+          document.getElementById('btn-center-drive').textContent = 'MOVE / PAUSE';
+          showFallAlert();
+        } else {
+          robotRoot.position.x = proposedX;
+          robotRoot.position.z = (STATE.currentExp === 1) ? 0 : proposedZ;
+          hideFallAlert();
+        }
+
+        if (STATE.currentExp === 2) updateSonarDistance();
+      }
+
+      // 3. MANUAL JOYPAD STEERING WITH 3CM RIGID BARRIER
+      if (STATE.isDriving) {
+        const driveSpeed = 0.9 * delta;
+        let dx = 0;
+        let dz = 0;
+
+        if (STATE.driveDir === 'forward') {
+          dx = Math.cos(robotRoot.rotation.y) * driveSpeed;
+          dz = -Math.sin(robotRoot.rotation.y) * driveSpeed;
+        } else if (STATE.driveDir === 'backward') {
+          dx = -Math.cos(robotRoot.rotation.y) * driveSpeed;
+          dz = Math.sin(robotRoot.rotation.y) * driveSpeed;
+        }
+
+        if (STATE.currentExp !== 1) {
+          if (STATE.driveDir === 'left') robotRoot.rotation.y += 2.0 * delta;
+          if (STATE.driveDir === 'right') robotRoot.rotation.y -= 2.0 * delta;
+        }
+
+        const proposedX = robotRoot.position.x + dx;
+        const proposedZ = (STATE.currentExp === 1) ? 0 : robotRoot.position.z + dz;
+
+        // In Exp 2, enforce 3cm gap against block
+        if (STATE.currentExp === 2 && blockGroup.visible && proposedX >= robotMaxAllowedX && STATE.driveDir === 'forward') {
+          robotRoot.position.x = robotMaxAllowedX;
+          showFallAlert("🛑 Safe Boundary: Robot stopped strictly 3.0 cm from obstacle!");
+        } else if (Math.abs(proposedX) >= edgeLimitX || Math.abs(proposedZ) >= edgeLimitZ) {
+          robotRoot.position.x = THREE.MathUtils.clamp(proposedX, -edgeLimitX, edgeLimitX);
+          robotRoot.position.z = THREE.MathUtils.clamp(proposedZ, -edgeLimitZ, edgeLimitZ);
+          showFallAlert();
+        } else {
+          robotRoot.position.x = proposedX;
+          robotRoot.position.z = proposedZ;
+          hideFallAlert();
+        }
+
+        if (STATE.currentExp === 2) updateSonarDistance();
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    animate();
+  </script>
+</body>
+</html>
