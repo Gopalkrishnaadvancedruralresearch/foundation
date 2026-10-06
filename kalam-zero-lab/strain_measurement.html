@@ -1,0 +1,53 @@
+#include "HX711.h"
+
+// Pin configuration
+const int LOADCELL_DOUT_PIN = 2; // HX711 DT pin -> Arduino Digital 2
+const int LOADCELL_SCK_PIN  = 3; // HX711 SCK pin -> Arduino Digital 3
+
+HX711 scale;
+
+// Calibration scale factor for 500 Ohm quarter bridge (GF = 2.0, Gain = 128)
+// This outputs readings directly in microstrain (ue)
+const float CALIBRATION_FACTOR = 214.75;
+
+void setup() {
+  Serial.begin(115200);
+  while (!Serial) {
+    ; // Wait for serial port to initialize
+  }
+
+  Serial.println("=================================================");
+  Serial.println(" GARRF Lab - BRFX-500 Direct Strain Measurement ");
+  Serial.println("=================================================");
+
+  scale.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
+
+  if (scale.is_ready()) {
+    scale.set_scale();
+    Serial.println("Balancing 500 Ohm baseline... keep sensor unstrained.");
+    delay(1500);
+    scale.tare(); // Zero out baseline offset
+    scale.set_scale(CALIBRATION_FACTOR);
+    Serial.println("Zero baseline established. Outputting Microstrain (ue)...");
+  } else {
+    Serial.println("HX711 not detected. Check breadboard wiring!");
+  }
+}
+
+void loop() {
+  if (scale.is_ready()) {
+    // Read 5-sample averaged direct microstrain
+    float microstrain = scale.get_units(5);
+    long raw_counts   = scale.read_average(5);
+
+    Serial.print("Raw ADC: ");
+    Serial.print(raw_counts);
+    Serial.print(" | Strain: ");
+    Serial.print(microstrain, 1);
+    Serial.println(" ue");
+  } else {
+    Serial.println("HX711 busy or offline.");
+  }
+
+  delay(150);
+}
