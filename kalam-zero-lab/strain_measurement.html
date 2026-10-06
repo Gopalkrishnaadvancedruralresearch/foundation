@@ -1,42 +1,785 @@
-#include "HX711.h"
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wheatstone Bridge & HX711 Virtual Laboratory - GARRF</title>
+  <style>
+    :root {
+      --primary: #0284c7;
+      --primary-dark: #0369a1;
+      --bg: #0b1120;
+      --card-bg: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #10b981;
+      --cyan: #38bdf8;
+    }
 
-// Pin configuration
-const int LOADCELL_DOUT_PIN = 2; // HX711 DT pin -> Arduino Digital 2
-const int LOADCELL_SCK_PIN  = 3; // HX711 SCK pin -> Arduino Digital 3
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: linear-gradient(135deg, #0f172a 0%, #172554 100%);
+      border-bottom: 2px solid #38bdf8;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    }
+
+    .brand-container {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .brand-logo {
+      width: 50px;
+      height: 50px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #0284c7, #38bdf8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 24px;
+      color: #fff;
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+      border: 1px solid rgba(255,255,255,0.25);
+    }
+
+    .brand-titles h1 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: #f8fafc;
+    }
+
+    .brand-titles p {
+      font-size: 0.82rem;
+      color: #38bdf8;
+      font-weight: 500;
+    }
+
+    .badge-tag {
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid #38bdf8;
+      color: #38bdf8;
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    main {
+      flex: 1;
+      padding: 18px;
+      max-width: 1560px;
+      margin: 0 auto;
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1.35fr 0.85fr;
+      gap: 18px;
+    }
+
+    @media (max-width: 1200px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.35);
+    }
+
+    .card-header {
+      background: rgba(15, 23, 42, 0.8);
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-header h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .canvas-container {
+      background: #070b14;
+      position: relative;
+      flex: 1;
+      min-height: 520px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    svg#circuitsvg {
+      width: 100%;
+      height: 100%;
+      min-height: 520px;
+      user-select: none;
+    }
+
+    .controls-grid {
+      padding: 16px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 12px;
+      background: #131d2e;
+      border-top: 1px solid var(--border);
+    }
+
+    .control-item {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .control-item label {
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .control-item input[type="number"] {
+      background: #0b1120;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: #38bdf8;
+      font-size: 0.95rem;
+      padding: 7px 10px;
+      font-weight: 700;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .control-item input[type="number"]:focus {
+      border-color: #38bdf8;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+      grid-column: 1 / -1;
+      flex-wrap: wrap;
+    }
+
+    button.btn {
+      background: #0284c7;
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    button.btn:hover {
+      background: #0369a1;
+      transform: translateY(-1px);
+    }
+
+    button.btn-outline {
+      background: transparent;
+      border: 1px solid #38bdf8;
+      color: #38bdf8;
+    }
+
+    button.btn-outline:hover {
+      background: rgba(56, 189, 248, 0.1);
+    }
+
+    button.btn-green {
+      background: #059669;
+    }
+    button.btn-green:hover {
+      background: #047857;
+    }
+
+    /* Tabs & Code panel */
+    .tab-bar {
+      display: flex;
+      background: #0f172a;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tab-btn {
+      padding: 12px 16px;
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      color: #38bdf8;
+      border-bottom: 2px solid #38bdf8;
+      background: rgba(56, 189, 248, 0.05);
+    }
+
+    .tab-content {
+      display: none;
+      padding: 16px;
+      overflow-y: auto;
+      max-height: 620px;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Metrics dashboard */
+    .metric-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .metric-box {
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      position: relative;
+    }
+
+    .metric-label {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .metric-val {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #38bdf8;
+      margin-top: 4px;
+      font-family: monospace;
+    }
+
+    .metric-sub {
+      font-size: 0.72rem;
+      color: #64748b;
+      margin-top: 4px;
+    }
+
+    .terminal {
+      background: #000;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 12px;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.8rem;
+      color: #38bdf8;
+      height: 180px;
+      overflow-y: auto;
+      margin-bottom: 14px;
+    }
+
+    .terminal-line {
+      margin-bottom: 4px;
+    }
+
+    .terminal-line.green {
+      color: #4ade80;
+    }
+
+    pre code {
+      display: block;
+      background: #0a0f1d;
+      padding: 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.8rem;
+      color: #e2e8f0;
+      overflow-x: auto;
+      line-height: 1.45;
+    }
+
+    .table-spec {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+      margin-top: 8px;
+    }
+
+    .table-spec th, .table-spec td {
+      border: 1px solid var(--border);
+      padding: 8px 10px;
+      text-align: left;
+    }
+
+    .table-spec th {
+      background: #0f172a;
+      color: #38bdf8;
+    }
+
+    footer {
+      background: #080d18;
+      border-top: 1px solid var(--border);
+      padding: 14px 20px;
+      margin-top: 18px;
+      text-align: center;
+      font-size: 0.78rem;
+      color: #64748b;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .footer-org {
+      color: #94a3b8;
+      font-weight: 600;
+    }
+
+    .footer-copy {
+      color: #38bdf8;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand-container">
+      <div class="brand-logo">G</div>
+      <div class="brand-titles">
+        <h1>Gopalkrishna Advanced Rural Research Foundation</h1>
+        <p>Virtual AISIA Instrumentation Laboratory &bull; India</p>
+      </div>
+    </div>
+    <div class="badge-tag">BRFX-500 &bull; HX711 &bull; Direct Strain (&mu;&epsilon;)</div>
+  </header>
+
+  <main>
+    <!-- Left Column: Interactive Breadboard & Circuit Visualization -->
+    <div class="card">
+      <div class="card-header">
+        <h2>
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+          Clean Circuit Simulation &amp; Physical Breadboard Wiring
+        </h2>
+        <span style="font-size:0.8rem; color:#10b981; display:flex; align-items:center; gap:6px;">
+          <span style="width:8px; height:8px; background:#10b981; border-radius:50%; display:inline-block; box-shadow:0 0 8px #10b981;"></span>
+          Active No-Collision Route
+        </span>
+      </div>
+
+      <div class="canvas-container">
+        <!-- SVG Canvas ViewBox: 0 0 980 540 (Widened layout prevents all overlaps) -->
+        <svg id="circuitsvg" viewBox="0 0 980 540">
+          <defs>
+            <linearGradient id="unoGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#0284c7" />
+              <stop offset="100%" stop-color="#034e7b" />
+            </linearGradient>
+            <linearGradient id="hxGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#059669" />
+              <stop offset="100%" stop-color="#064e3b" />
+            </linearGradient>
+            <pattern id="bbHoles" x="0" y="0" width="12" height="12" patternUnits="userSpaceOnUse">
+              <circle cx="6" cy="6" r="2.2" fill="#1e293b" stroke="#334155" stroke-width="0.8"/>
+            </pattern>
+            <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
+              <feDropShadow dx="3" dy="4" stdDeviation="4" flood-opacity="0.5"/>
+            </filter>
+          </defs>
+
+          <rect width="980" height="540" fill="#070b14" />
+
+          <!-- ================= ARDUINO UNO R3 (x=30, y=70) ================= -->
+          <g id="arduino-uno" transform="translate(30, 70)" filter="url(#shadow)">
+            <!-- PCB Body -->
+            <rect width="210" height="340" rx="10" fill="url(#unoGrad)" stroke="#38bdf8" stroke-width="2" />
+            <!-- USB Port -->
+            <rect x="25" y="-12" width="45" height="24" rx="3" fill="#94a3b8" stroke="#cbd5e1" stroke-width="1.5"/>
+            <text x="32" y="4" font-size="8" fill="#1e293b" font-weight="bold">USB</text>
+            <!-- Barrel Jack -->
+            <rect x="140" y="-14" width="45" height="26" rx="2" fill="#1e293b" stroke="#475569" stroke-width="1.5"/>
+            <!-- ATmega328P Chip -->
+            <rect x="60" y="160" width="90" height="28" rx="2" fill="#0f172a" stroke="#334155" stroke-width="1.5"/>
+            <text x="75" y="178" font-size="9" fill="#94a3b8" font-family="monospace">ATmega328P</text>
+            <!-- Crystal Oscillator -->
+            <rect x="40" y="110" width="16" height="30" rx="4" fill="#cbd5e1" stroke="#64748b"/>
+
+            <!-- Board Title -->
+            <text x="65" y="60" font-size="14" font-weight="bold" fill="#fff" letter-spacing="1">ARDUINO</text>
+            <text x="85" y="80" font-size="11" font-weight="bold" fill="#38bdf8">UNO R3</text>
+            <circle cx="170" cy="45" r="7" fill="#f59e0b"/>
+            <text x="167" y="48" font-size="8" font-weight="bold" fill="#000">ON</text>
+
+            <!-- LEFT HEADER: Power & Analog -->
+            <rect x="10" y="110" width="18" height="200" rx="2" fill="#021424" stroke="#0ea5e9"/>
+            
+            <!-- Pin 5V -->
+            <circle cx="19" cy="180" r="4" fill="#ef4444" stroke="#fff" stroke-width="1.2"/>
+            <rect x="32" y="172" width="24" height="15" rx="3" fill="#021424" opacity="0.85"/>
+            <text x="35" y="183" font-size="8.5" fill="#fca5a5" font-weight="bold">5V</text>
+
+            <!-- Pin GND -->
+            <circle cx="19" cy="210" r="4" fill="#0f172a" stroke="#fff" stroke-width="1.2"/>
+            <rect x="32" y="202" width="28" height="15" rx="3" fill="#021424" opacity="0.85"/>
+            <text x="35" y="213" font-size="8.5" fill="#cbd5e1" font-weight="bold">GND</text>
+
+            <!-- RIGHT HEADER: Digital Pins -->
+            <rect x="182" y="90" width="18" height="220" rx="2" fill="#021424" stroke="#0ea5e9"/>
+            
+            <!-- Pin D3 (SCK) -->
+            <circle cx="191" cy="200" r="4" fill="#a855f7" stroke="#fff" stroke-width="1.2"/>
+            <rect x="138" y="192" width="40" height="15" rx="3" fill="#021424" opacity="0.85"/>
+            <text x="142" y="203" font-size="8" fill="#e9d5ff" font-weight="bold">D3 (SCK)</text>
+
+            <!-- Pin D2 (DT) -->
+            <circle cx="191" cy="235" r="4" fill="#eab308" stroke="#fff" stroke-width="1.2"/>
+            <rect x="142" y="227" width="36" height="15" rx="3" fill="#021424" opacity="0.85"/>
+            <text x="146" y="238" font-size="8" fill="#fef08a" font-weight="bold">D2 (DT)</text>
+          </g>
+
+          <!-- ================= HX711 MODULE (x=330, y=110) ================= -->
+          <g id="hx711-module" transform="translate(330, 110)" filter="url(#shadow)">
+            <rect width="140" height="250" rx="8" fill="url(#hxGrad)" stroke="#10b981" stroke-width="2"/>
+            <text x="28" y="32" font-size="14" font-weight="bold" fill="#fff">HX711</text>
+            <text x="18" y="48" font-size="8.5" fill="#a7f3d0">24-Bit Strain ADC</text>
+            <rect x="44" y="85" width="52" height="75" rx="3" fill="#0f172a" stroke="#334155" stroke-width="1.5"/>
+            <text x="52" y="125" font-size="8" fill="#94a3b8" font-family="monospace">HX711 IC</text>
+
+            <!-- Left Input Pins (From Arduino) -->
+            <!-- VCC -->
+            <circle cx="12" cy="75" r="4" fill="#ef4444" stroke="#fff" stroke-width="1.2"/>
+            <text x="22" y="79" font-size="8.5" fill="#fff" font-weight="bold">VCC</text>
+            <!-- DT -->
+            <circle cx="12" cy="110" r="4" fill="#eab308" stroke="#fff" stroke-width="1.2"/>
+            <text x="22" y="114" font-size="8.5" fill="#fff" font-weight="bold">DT</text>
+            <!-- SCK -->
+            <circle cx="12" cy="145" r="4" fill="#a855f7" stroke="#fff" stroke-width="1.2"/>
+            <text x="22" y="149" font-size="8.5" fill="#fff" font-weight="bold">SCK</text>
+            <!-- GND -->
+            <circle cx="12" cy="180" r="4" fill="#0f172a" stroke="#fff" stroke-width="1.2"/>
+            <text x="22" y="184" font-size="8.5" fill="#fff" font-weight="bold">GND</text>
+
+            <!-- Right Output Pins (To Bridge) -->
+            <!-- E+ -->
+            <circle cx="128" cy="75" r="4" fill="#ef4444" stroke="#fff" stroke-width="1.2"/>
+            <text x="104" y="79" font-size="8.5" fill="#fff" font-weight="bold">E+</text>
+            <!-- E- -->
+            <circle cx="128" cy="110" r="4" fill="#0f172a" stroke="#fff" stroke-width="1.2"/>
+            <text x="104" y="114" font-size="8.5" fill="#fff" font-weight="bold">E-</text>
+            <!-- A+ -->
+            <circle cx="128" cy="145" r="4" fill="#10b981" stroke="#fff" stroke-width="1.2"/>
+            <text x="104" y="149" font-size="8.5" fill="#fff" font-weight="bold">A+</text>
+            <!-- A- -->
+            <circle cx="128" cy="180" r="4" fill="#0284c7" stroke="#fff" stroke-width="1.2"/>
+            <text x="104" y="184" font-size="8.5" fill="#fff" font-weight="bold">A-</text>
+          </g>
+
+          <!-- ================= BREADBOARD & WHEATSTONE BRIDGE (x=550, y=45) ================= -->
+          <g id="breadboard" transform="translate(550, 45)" filter="url(#shadow)">
+            <rect width="390" height="425" rx="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="3"/>
+            
+            <!-- Center Channel Divider -->
+            <rect x="185" y="30" width="20" height="365" fill="#e2e8f0"/>
+            <line x1="195" y1="30" x2="195" y2="395" stroke="#94a3b8" stroke-dasharray="4,4"/>
+
+            <!-- Power Rails Left & Right -->
+            <line x1="22" y1="25" x2="22" y2="400" stroke="#ef4444" stroke-width="2"/>
+            <line x1="32" y1="25" x2="32" y2="400" stroke="#0284c7" stroke-width="2"/>
+            <line x1="358" y1="25" x2="358" y2="400" stroke="#0284c7" stroke-width="2"/>
+            <line x1="368" y1="25" x2="368" y2="400" stroke="#ef4444" stroke-width="2"/>
+
+            <!-- Hole Matrices -->
+            <rect x="44" y="25" width="132" height="375" fill="url(#bbHoles)"/>
+            <rect x="214" y="25" width="134" height="375" fill="url(#bbHoles)"/>
+
+            <text x="105" y="20" font-size="11" font-weight="bold" fill="#475569">WHEATSTONE BRIDGE CIRCUIT (BREADBOARD)</text>
+
+            <!-- Bridge Nodes -->
+            <!-- Top E+ Node (x=195, y=95) -->
+            <circle id="node-top" cx="195" cy="95" r="7" fill="#ef4444" stroke="#fff" stroke-width="1.8"/>
+            <rect x="160" y="66" width="70" height="18" rx="3" fill="#fee2e2" stroke="#ef4444"/>
+            <text x="168" y="79" font-size="10" font-weight="bold" fill="#991b1b">E+ (+4.3V)</text>
+
+            <!-- Bottom E- Node (x=195, y=325) -->
+            <circle id="node-bot" cx="195" cy="325" r="7" fill="#0f172a" stroke="#fff" stroke-width="1.8"/>
+            <rect x="162" y="336" width="66" height="18" rx="3" fill="#f1f5f9" stroke="#334155"/>
+            <text x="170" y="349" font-size="10" font-weight="bold" fill="#0f172a">E- (GND)</text>
+
+            <!-- Left A+ Node (x=90, y=210) -->
+            <circle id="node-left" cx="90" cy="210" r="7" fill="#10b981" stroke="#fff" stroke-width="1.8"/>
+            <rect x="42" y="202" width="38" height="18" rx="3" fill="#dcfce7" stroke="#10b981"/>
+            <text x="49" y="215" font-size="10" font-weight="bold" fill="#166534">A+</text>
+
+            <!-- Right A- Node (x=300, y=210) -->
+            <circle id="node-right" cx="300" cy="210" r="7" fill="#0284c7" stroke="#fff" stroke-width="1.8"/>
+            <rect x="310" y="202" width="38" height="18" rx="3" fill="#e0f2fe" stroke="#0284c7"/>
+            <text x="318" y="215" font-size="10" font-weight="bold" fill="#075985">A-</text>
+
+            <!-- Bridge Wire Branches -->
+            <!-- Arm 1: Top to Left (R1) -->
+            <line x1="195" y1="95" x2="90" y2="210" stroke="#f59e0b" stroke-width="3.5"/>
+            <g transform="translate(122, 138) rotate(-48)">
+              <rect width="36" height="14" rx="3" fill="#fde68a" stroke="#b45309" stroke-width="1.5"/>
+              <text x="3" y="10.5" font-size="8" font-weight="bold" fill="#78350f" id="svg-r1-txt">R1: 500Ω</text>
+            </g>
+
+            <!-- Arm 2: Top to Right (R2) -->
+            <line x1="195" y1="95" x2="300" y2="210" stroke="#f59e0b" stroke-width="3.5"/>
+            <g transform="translate(230, 162) rotate(48)">
+              <rect width="36" height="14" rx="3" fill="#fde68a" stroke="#b45309" stroke-width="1.5"/>
+              <text x="3" y="10.5" font-size="8" font-weight="bold" fill="#78350f" id="svg-r2-txt">R2: 500Ω</text>
+            </g>
+
+            <!-- Arm 3: Left to Bottom (BRFX-500 Sensor) -->
+            <line x1="90" y1="210" x2="195" y2="325" stroke="#ef4444" stroke-width="3.5" stroke-dasharray="6,3"/>
+            <g transform="translate(122, 282) rotate(48)">
+              <rect width="44" height="15" rx="3" fill="#fecdd3" stroke="#e11d48" stroke-width="1.5"/>
+              <text x="2.5" y="11" font-size="7.5" font-weight="bold" fill="#9f1239" id="svg-r3-txt">BRFX: 500Ω</text>
+            </g>
+
+            <!-- Arm 4: Right to Bottom (R4) -->
+            <line x1="300" y1="210" x2="195" y2="325" stroke="#f59e0b" stroke-width="3.5"/>
+            <g transform="translate(230, 258) rotate(-48)">
+              <rect width="36" height="14" rx="3" fill="#fde68a" stroke="#b45309" stroke-width="1.5"/>
+              <text x="3" y="10.5" font-size="8" font-weight="bold" fill="#78350f" id="svg-r4-txt">R4: 500Ω</text>
+            </g>
+
+            <!-- Active Sensor Callout Box -->
+            <rect x="65" y="380" width="260" height="28" rx="5" fill="#f1f5f9" stroke="#cbd5e1"/>
+            <text x="80" y="398" font-size="10" font-weight="bold" fill="#334155">Active Strain Arm: BRFX-500 Nominal 500 Ω</text>
+          </g>
+
+          <!-- ================= JUMPER TRACES WITH NON-OVERLAPPING CORRIDORS ================= -->
+
+          <!-- 1. POWER WIRE 5V: Arduino 5V (49, 250) -> Routes down underneath -> HX711 VCC (342, 185) -->
+          <path d="M 49 250 
+                   C 49 460, 310 460, 310 200 
+                   L 342 185" 
+                fill="none" stroke="#ef4444" stroke-width="3.2" stroke-linecap="round"/>
+          <text x="75" y="452" font-size="8.5" fill="#f87171" font-weight="bold">5V Power Route</text>
+
+          <!-- 2. POWER WIRE GND: Arduino GND (49, 280) -> Routes below 5V -> HX711 GND (342, 290) -->
+          <path d="M 49 280 
+                   C 49 495, 290 495, 290 300 
+                   L 342 290" 
+                fill="none" stroke="#0f172a" stroke-width="3.8" stroke-linecap="round"/>
+          <text x="75" y="488" font-size="8.5" fill="#cbd5e1" font-weight="bold">Common GND Route</text>
+
+          <!-- 3. SIGNAL WIRE D3 (SCK): Arduino D3 (221, 270) -> HX711 SCK (342, 255) -->
+          <!-- Direct gentle curve that never touches D2 or any text -->
+          <path d="M 221 270 
+                   C 260 270, 290 255, 342 255" 
+                fill="none" stroke="#a855f7" stroke-width="3.2" stroke-linecap="round"/>
+          
+          <!-- 4. SIGNAL WIRE D2 (DT): Arduino D2 (221, 305) -> HX711 DT (342, 220) -->
+          <!-- Curves cleanly under D3 without intersection -->
+          <path d="M 221 305 
+                   C 265 315, 285 220, 342 220" 
+                fill="none" stroke="#eab308" stroke-width="3.2" stroke-linecap="round"/>
+
+          <!-- 5. BRIDGE WIRE E+: HX711 E+ (458, 185) -> Bridge Top E+ (745, 140) -->
+          <path d="M 458 185 
+                   C 520 185, 580 140, 745 140" 
+                fill="none" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>
+
+          <!-- 6. BRIDGE WIRE E-: HX711 E- (458, 220) -> Bridge Bottom E- (745, 370) -->
+          <path d="M 458 220 
+                   C 530 220, 580 370, 745 370" 
+                fill="none" stroke="#0f172a" stroke-width="3.5" stroke-linecap="round"/>
+
+          <!-- 7. BRIDGE SIGNAL A+: HX711 A+ (458, 255) -> Bridge Left A+ (640, 255) -->
+          <path d="M 458 255 
+                   L 640 255" 
+                fill="none" stroke="#10b981" stroke-width="3" stroke-linecap="round"/>
+
+          <!-- 8. BRIDGE SIGNAL A-: HX711 A- (458, 290) -> Bridge Right A- (850, 255) -->
+          <!-- Sweeps cleanly below the breadboard and loops up to A- right node -->
+          <path d="M 458 290 
+                   C 520 290, 560 480, 750 480 
+                   C 830 480, 850 360, 850 255" 
+                fill="none" stroke="#0284c7" stroke-width="3" stroke-linecap="round" stroke-dasharray="4,2"/>
+          <text x="640" y="474" font-size="8.5" fill="#38bdf8" font-weight="bold">A- Reference Wire</text>
+
+        </svg>
+      </div>
+
+      <!-- Controls -->
+      <div class="controls-grid">
+        <div class="control-item">
+          <label for="val-r1">R1 (Top-Left) [Ω]</label>
+          <input type="number" id="val-r1" value="500" min="10" max="10000" step="10">
+        </div>
+        <div class="control-item">
+          <label for="val-r2">R2 (Top-Right) [Ω]</label>
+          <input type="number" id="val-r2" value="500" min="10" max="10000" step="10">
+        </div>
+        <div class="control-item">
+          <label for="val-r3">BRFX Sensor (R3) [Ω]</label>
+          <input type="number" id="val-r3" value="500" min="10" max="10000" step="0.1">
+        </div>
+        <div class="control-item">
+          <label for="val-r4">R4 (Bottom-Right) [Ω]</label>
+          <input type="number" id="val-r4" value="500" min="10" max="10000" step="10">
+        </div>
+        <div class="control-item">
+          <label for="val-gf">Gauge Factor (GF)</label>
+          <input type="number" id="val-gf" value="2.00" min="1.0" max="3.5" step="0.01">
+        </div>
+
+        <div class="btn-group">
+          <button class="btn btn-green" id="btn-balance">
+            Reset to 500 Ω (Zero Baseline)
+          </button>
+          <button class="btn btn-outline" id="btn-strain-comp">
+            +500 με Tension (+0.5 Ω)
+          </button>
+          <button class="btn btn-outline" id="btn-strain-tens">
+            -500 με Compression (-0.5 Ω)
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Tabs -->
+    <div class="card">
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab('tab-sim')">Live Strain</button>
+        <button class="tab-btn" onclick="switchTab('tab-code')">Arduino Code</button>
+        <button class="tab-btn" onclick="switchTab('tab-wiring')">Connections</button>
+        <button class="tab-btn" onclick="switchTab('tab-help')">Help &amp; Formulas</button>
+      </div>
+
+      <!-- TAB 1: Real-time Strain -->
+      <div id="tab-sim" class="tab-content active">
+        <div class="metric-grid">
+          <div class="metric-box" style="border-color:#38bdf8;">
+            <div class="metric-label" style="color:#38bdf8;">Calculated Strain (&epsilon;)</div>
+            <div class="metric-val" id="disp-strain" style="color:#38bdf8; font-size:1.6rem;">0 &mu;&epsilon;</div>
+            <div class="metric-sub">Direct microstrain reading</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">Resistance Shift (&Delta;R)</div>
+            <div class="metric-val" id="disp-delta-r">0.00 &Omega;</div>
+            <div class="metric-sub">R_sensor - 500.0 &Omega; nominal</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">Bridge Differential</div>
+            <div class="metric-val" id="disp-vdiff">0.000 mV</div>
+            <div class="metric-sub">V_A+ minus V_A-</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">Raw 24-Bit ADC</div>
+            <div class="metric-val" id="disp-raw">0</div>
+            <div class="metric-sub">PGA 128x Ch-A counts</div>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <label style="font-size:0.8rem; color:var(--text-muted); font-weight:600;">ARDUINO SERIAL MONITOR SIMULATION (115200 baud)</label>
+          <button class="btn btn-outline" style="padding:3px 10px; font-size:0.75rem;" onclick="clearTerminal()">Clear Log</button>
+        </div>
+        <div class="terminal" id="serial-terminal">
+          <div class="terminal-line">[SYSTEM] Initializing HX711 Driver...</div>
+          <div class="terminal-line">[CALIBRATION] Nominal Bridge: 500.0 Ohms | GF: 2.00</div>
+          <div class="terminal-line green">[READY] Offset Zeroed. Direct Strain Output Enabled.</div>
+        </div>
+
+        <button class="btn" style="width:100%; justify-content:center;" onclick="downloadDataLog()">
+          Export Telemetry Log (.csv)
+        </button>
+      </div>
+
+      <!-- TAB 2: Arduino Code -->
+      <div id="tab-code" class="tab-content">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <span style="font-size:0.85rem; color:#38bdf8; font-weight:600;">Direct Microstrain (&mu;&epsilon;) Arduino Code</span>
+          <button class="btn btn-outline" style="padding:4px 10px; font-size:0.75rem;" onclick="downloadArduinoSketch()">
+            Download .ino File
+          </button>
+        </div>
+        <pre><code>#include "HX711.h"
+
+// Required Library: "HX711 by Bogdan Necula"
+// Install via Arduino IDE: Sketch -> Include Library -> Manage Libraries...
+
+const int LOADCELL_DOUT_PIN = 2; // Data Pin (DT)
+const int LOADCELL_SCK_PIN  = 3; // Clock Pin (SCK)
 
 HX711 scale;
 
-// Calibration scale factor for 500 Ohm quarter bridge (GF = 2.0, Gain = 128)
-// This outputs readings directly in microstrain (ue)
-const float CALIBRATION_FACTOR = 214.75;
+// Calibration scale factor for 500 Ohm Quarter Bridge (GF = 2.0, Gain = 128)
+// Directly outputs strain in microstrain (ue)
+float microstrain_scale_factor = 214.75; 
 
 void setup() {
   Serial.begin(115200);
-  while (!Serial) {
-    ; // Wait for serial port to initialize
-  }
+  while (!Serial) { delay(10); }
 
   Serial.println("=================================================");
-  Serial.println(" GARRF Lab - BRFX-500 Direct Strain Measurement ");
+  Serial.println(" GARRF Instrumentation Lab - BRFX-500 Direct Strain ");
   Serial.println("=================================================");
 
   scale.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
 
   if (scale.is_ready()) {
     scale.set_scale();
-    Serial.println("Balancing 500 Ohm baseline... keep sensor unstrained.");
+    Serial.println("Zeroing baseline (unstrained 500 Ohm)... Keep sensor unloaded.");
     delay(1500);
-    scale.tare(); // Zero out baseline offset
-    scale.set_scale(CALIBRATION_FACTOR);
-    Serial.println("Zero baseline established. Outputting Microstrain (ue)...");
+    scale.tare(); // Zero offset
+    scale.set_scale(microstrain_scale_factor);
+    Serial.println("System Ready! Outputting Microstrain (ue)...");
   } else {
-    Serial.println("HX711 not detected. Check breadboard wiring!");
+    Serial.println("Error: HX711 not detected. Check breadboard wiring!");
   }
 }
 
 void loop() {
   if (scale.is_ready()) {
-    // Read 5-sample averaged direct microstrain
+    // Read calibrated microstrain (&mu;&epsilon;) directly
     float microstrain = scale.get_units(5);
     long raw_counts   = scale.read_average(5);
 
@@ -44,10 +787,326 @@ void loop() {
     Serial.print(raw_counts);
     Serial.print(" | Strain: ");
     Serial.print(microstrain, 1);
-    Serial.println(" ue");
+    Serial.println(" microstrain (ue)");
   } else {
-    Serial.println("HX711 busy or offline.");
+    Serial.println("HX711 busy...");
   }
-
   delay(150);
+}</code></pre>
+      </div>
+
+      <!-- TAB 3: Connections -->
+      <div id="tab-wiring" class="tab-content">
+        <h3 style="font-size:0.95rem; margin-bottom:10px; color:#38bdf8;">Complete Circuit Wiring Architecture</h3>
+        <table class="table-spec">
+          <thead>
+            <tr>
+              <th>From Subsystem</th>
+              <th>Origin Pin</th>
+              <th>To Subsystem</th>
+              <th>Target Pin / Node</th>
+              <th>Signal Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Arduino UNO</td>
+              <td><strong>5V</strong></td>
+              <td>HX711 Module</td>
+              <td><strong>VCC</strong></td>
+              <td>5V DC Power Supply</td>
+            </tr>
+            <tr>
+              <td>Arduino UNO</td>
+              <td><strong>GND</strong></td>
+              <td>HX711 Module</td>
+              <td><strong>GND</strong></td>
+              <td>Common Ground Reference</td>
+            </tr>
+            <tr>
+              <td>Arduino UNO</td>
+              <td><strong>Digital 2</strong></td>
+              <td>HX711 Module</td>
+              <td><strong>DT (Data)</strong></td>
+              <td>24-Bit Serial Output Data</td>
+            </tr>
+            <tr>
+              <td>Arduino UNO</td>
+              <td><strong>Digital 3</strong></td>
+              <td>HX711 Module</td>
+              <td><strong>SCK (Clock)</strong></td>
+              <td>Serial Shift Clock Pulse</td>
+            </tr>
+            <tr>
+              <td>HX711 Module</td>
+              <td><strong>E+ (Excitation +)</strong></td>
+              <td>Wheatstone Bridge</td>
+              <td><strong>Top Node (R1 &amp; R2)</strong></td>
+              <td>Regulated Bridge Excitation (+4.3V)</td>
+            </tr>
+            <tr>
+              <td>HX711 Module</td>
+              <td><strong>E- (Excitation -)</strong></td>
+              <td>Wheatstone Bridge</td>
+              <td><strong>Bottom Node (R3 &amp; R4)</strong></td>
+              <td>Bridge Ground Reference</td>
+            </tr>
+            <tr>
+              <td>HX711 Module</td>
+              <td><strong>A+ (Analog +)</strong></td>
+              <td>Wheatstone Bridge</td>
+              <td><strong>Left Node (R1 &amp; BRFX R3)</strong></td>
+              <td>Active Half-Bridge Signal</td>
+            </tr>
+            <tr>
+              <td>HX711 Module</td>
+              <td><strong>A- (Analog -)</strong></td>
+              <td>Wheatstone Bridge</td>
+              <td><strong>Right Node (R2 &amp; R4)</strong></td>
+              <td>Reference Half-Bridge Signal</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- TAB 4: Help & Formulas -->
+      <div id="tab-help" class="tab-content">
+        <h3 style="font-size:0.95rem; margin-bottom:8px; color:#38bdf8;">Help File &amp; Strain Formulas</h3>
+        <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:12px;">
+          For a quarter-bridge arrangement with nominal resistance R0 = 500 Ohms, Gauge Factor GF = 2.0, and excitation voltage Vex:
+        </p>
+
+        <div style="background:#070b14; padding:12px; border-radius:6px; border:1px solid var(--border); font-family:monospace; font-size:0.84rem; color:#38bdf8; margin-bottom:12px;">
+          V_A+ = Vex * [ R3 / (R1 + R3) ]<br>
+          V_A- = Vex * [ R4 / (R2 + R4) ]<br>
+          V_diff = V_A+ - V_A-<br>
+          At balance (500 Ohms on all 4 arms): V_diff = 0.000 mV<br><br>
+          Delta_R = R3 - 500.0 Ohms<br>
+          Strain (&epsilon;) = (Delta_R / R0) / GF<br>
+          Microstrain (&mu;&epsilon;) = Strain * 1,000,000
+        </div>
+
+        <h4 style="font-size:0.88rem; color:#e2e8f0; margin-bottom:6px;">Required Arduino Libraries</h4>
+        <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:10px;">
+          Open Arduino IDE, navigate to <strong>Sketch &rarr; Include Library &rarr; Manage Libraries</strong>, search for <strong>HX711 by Bogdan Necula</strong>, and install it.
+        </p>
+
+        <button class="btn btn-outline" style="width:100%; justify-content:center; margin-top:10px;" onclick="downloadLabManual()">
+          Download Full Lab Manual (.txt)
+        </button>
+      </div>
+
+    </div>
+  </main>
+
+  <footer>
+    <div class="footer-org">Gopalkrishna Advanced Rural Research Foundation, India</div>
+    <div>Virtual AISIA Instrumentation Laboratory &bull; Educational Engineering Series</div>
+    <div class="footer-copy">Copyright &copy; Annamdas Venu Gopal Madhav and Shantanu Vasudev Krishna</div>
+  </footer>
+
+  <script>
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById(tabId).classList.add('active');
+    }
+
+    const r1In = document.getElementById('val-r1');
+    const r2In = document.getElementById('val-r2');
+    const r3In = document.getElementById('val-r3');
+    const r4In = document.getElementById('val-r4');
+    const gfIn = document.getElementById('val-gf');
+
+    const dispStrain = document.getElementById('disp-strain');
+    const dispDeltaR = document.getElementById('disp-delta-r');
+    const dispVdiff = document.getElementById('disp-vdiff');
+    const dispRaw = document.getElementById('disp-raw');
+
+    const svgR1 = document.getElementById('svg-r1-txt');
+    const svgR2 = document.getElementById('svg-r2-txt');
+    const svgR3 = document.getElementById('svg-r3-txt');
+    const svgR4 = document.getElementById('svg-r4-txt');
+
+    const terminal = document.getElementById('serial-terminal');
+
+    function calculateBridge() {
+      const R1 = parseFloat(r1In.value) || 500;
+      const R2 = parseFloat(r2In.value) || 500;
+      const R3 = parseFloat(r3In.value) || 500; // BRFX Active Sensor
+      const R4 = parseFloat(r4In.value) || 500;
+      const GF = parseFloat(gfIn.value) || 2.0;
+      const Vex = 4.3; // HX711 on-chip regulator output
+
+      svgR1.textContent = `R1: ${R1}Ω`;
+      svgR2.textContent = `R2: ${R2}Ω`;
+      svgR3.textContent = `BRFX: ${R3.toFixed(1)}Ω`;
+      svgR4.textContent = `R4: ${R4}Ω`;
+
+      const Va = Vex * (R3 / (R1 + R3));
+      const Vb = Vex * (R4 / (R2 + R4));
+      const Vdiff = (Va - Vb) * 1000; // in mV
+
+      const deltaR = R3 - 500.0;
+      const strain = (deltaR / 500.0) / GF;
+      const microstrain = strain * 1000000;
+
+      let rawAdc = Math.round((Vdiff / 20.0) * 8388607);
+      if (rawAdc > 8388607) rawAdc = 8388607;
+      if (rawAdc < -8388608) rawAdc = -8388608;
+
+      dispStrain.textContent = (microstrain >= 0 ? '+' : '') + Math.round(microstrain) + ' με';
+      dispDeltaR.textContent = (deltaR >= 0 ? '+' : '') + deltaR.toFixed(2) + ' Ω';
+      dispVdiff.textContent = (Vdiff >= 0 ? '+' : '') + Vdiff.toFixed(3) + ' mV';
+      dispRaw.textContent = rawAdc.toLocaleString();
+
+      if (Math.abs(microstrain) < 1) {
+        dispStrain.style.color = '#10b981';
+      } else {
+        dispStrain.style.color = '#38bdf8';
+      }
+
+      logTerminal(microstrain, deltaR, rawAdc);
+    }
+
+    let lastLogTime = 0;
+    function logTerminal(ue, dr, raw) {
+      const now = Date.now();
+      if (now - lastLogTime < 1200) return;
+      lastLogTime = now;
+
+      const line = document.createElement('div');
+      line.className = 'terminal-line';
+      const timeStr = new Date().toLocaleTimeString();
+      line.textContent = `[${timeStr}] Strain: ${(ue >= 0 ? '+' : '') + Math.round(ue)} ue | dR: ${(dr >= 0 ? '+' : '') + dr.toFixed(2)} Ohm | ADC: ${raw}`;
+      terminal.appendChild(line);
+      terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    function clearTerminal() {
+      terminal.innerHTML = '<div class="terminal-line">[TERMINAL CLEARED]</div>';
+    }
+
+    [r1In, r2In, r3In, r4In, gfIn].forEach(input => {
+      input.addEventListener('input', calculateBridge);
+    });
+
+    document.getElementById('btn-balance').addEventListener('click', () => {
+      r1In.value = 500;
+      r2In.value = 500;
+      r3In.value = 500;
+      r4In.value = 500;
+      calculateBridge();
+      const line = document.createElement('div');
+      line.className = 'terminal-line green';
+      line.textContent = `[ACTION] Bridge rebalanced to 500.00 Ohms baseline. Offset zeroed.`;
+      terminal.appendChild(line);
+      terminal.scrollTop = terminal.scrollHeight;
+    });
+
+    document.getElementById('btn-strain-comp').addEventListener('click', () => {
+      r3In.value = (parseFloat(r3In.value) + 0.5).toFixed(1);
+      calculateBridge();
+    });
+
+    document.getElementById('btn-strain-tens').addEventListener('click', () => {
+      r3In.value = (parseFloat(r3In.value) - 0.5).toFixed(1);
+      calculateBridge();
+    });
+
+    function downloadFile(filename, text) {
+      const element = document.createElement('a');
+      element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+      element.setAttribute('download', filename);
+      element.style.display = 'none';
+      document.body.appendChild(element);
+      element.click();
+      document.body.removeChild(element);
+    }
+
+    function downloadArduinoSketch() {
+      const code = `// GARRF Virtual Lab: BRFX-500 Direct Strain Measurement
+// Authors: Annamdas Venu Gopal Madhav & Shantanu Vasudev Krishna
+// Organization: Gopalkrishna Advanced Rural Research Foundation, India
+
+#include "HX711.h"
+
+const int LOADCELL_DOUT_PIN = 2; 
+const int LOADCELL_SCK_PIN  = 3; 
+
+HX711 scale;
+float microstrain_scale_factor = 214.75; 
+
+void setup() {
+  Serial.begin(115200);
+  while (!Serial) { delay(10); }
+
+  Serial.println("=================================================");
+  Serial.println(" GARRF Lab - BRFX-500 Direct Microstrain Measurement ");
+  Serial.println("=================================================");
+
+  scale.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
+
+  if (scale.is_ready()) {
+    scale.set_scale();
+    Serial.println("Taring 500 Ohm baseline... keep sensor unloaded.");
+    delay(1500);
+    scale.tare();
+    scale.set_scale(microstrain_scale_factor);
+    Serial.println("Baseline zeroed. Reading Microstrain (ue)...");
+  } else {
+    Serial.println("HX711 not detected. Check wiring!");
+  }
 }
+
+void loop() {
+  if (scale.is_ready()) {
+    float microstrain = scale.get_units(5);
+    long raw_adc = scale.read_average(5);
+
+    Serial.print("Raw ADC: ");
+    Serial.print(raw_adc);
+    Serial.print(" | Strain: ");
+    Serial.print(microstrain, 1);
+    Serial.println(" microstrain (ue)");
+  }
+  delay(150);
+}`;
+      downloadFile('GARRF_Direct_Strain_BRFX500.ino', code);
+    }
+
+    function downloadLabManual() {
+      const manual = `================================================================================
+GOPALKRISHNA ADVANCED RURAL RESEARCH FOUNDATION (GARRF), INDIA
+VIRTUAL AISIA INSTRUMENTATION LABORATORY
+BRFX-500 DIRECT STRAIN MEASUREMENT & CALIBRATION MANUAL
+Copyright (c) Annamdas Venu Gopal Madhav and Shantanu Vasudev Krishna
+================================================================================
+
+1. SYSTEM ARCHITECTURE
+   - Active Gauge: BRFX-500 (500 Ohm Nominal)
+   - Resistors: R1 = 500 Ohm, R2 = 500 Ohm, R4 = 500 Ohm (Quarter Bridge)
+   - Digitizer: HX711 24-Bit ADC (Gain 128)
+   - Microcontroller: Arduino UNO R3
+
+2. ARDUINO LIBRARIES
+   - Library: "HX711 by Bogdan Necula" (available via Arduino Library Manager).
+
+3. STRAIN CALIBRATION
+   - Gauge Factor (GF) = 2.00
+   - Delta_R = R_sensor - 500.0 Ohm
+   - Microstrain (ue) = (Delta_R / 500.0) / GF * 1,000,000
+`;
+      downloadFile('GARRF_Direct_Strain_Manual.txt', manual);
+    }
+
+    function downloadDataLog() {
+      const csv = `Parameter,Value,Unit\nR1,${r1In.value},Ohms\nR2,${r2In.value},Ohms\nBRFX,${r3In.value},Ohms\nR4,${r4In.value},Ohms\nDelta_R,${dispDeltaR.textContent}\nStrain,${dispStrain.textContent}\nADC_Raw,${dispRaw.textContent}\nTimestamp,${new Date().toISOString()}\n`;
+      downloadFile('strain_telemetry_snapshot.csv', csv);
+    }
+
+    calculateBridge();
+  </script>
+</body>
+</html>
