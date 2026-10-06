@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gopalkrishna Advanced Rural Research Foundation - Humanoid Robot & Dexterous Gripper Simulator</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Three.js and OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            accentCyan: '#00f2fe',
+            accentTeal: '#4facfe',
+            accentOrange: '#f59e0b',
+            accentGreen: '#10b981',
+            accentRed: '#f43f5e',
+            cadBg: '#090d16',
+            cadCard: 'rgba(15, 23, 42, 0.85)',
+          },
+          fontFamily: {
+            mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    .cad-blur {
+      background: rgba(13, 19, 33, 0.88);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(0, 242, 254, 0.15);
+      box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.6);
+    }
+    .glow-cyan {
+      box-shadow: 0 0 16px rgba(0, 242, 254, 0.35);
+    }
+    input[type=range] {
+      accent-color: #00f2fe;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #090d16;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #00f2fe;
+    }
+  </style>
+</head>
+<body class="bg-[#060911] text-slate-100 font-sans h-screen w-screen overflow-hidden flex flex-col select-none">
+
+  <!-- Top Header with Foundation Branding, Logo and India Roundel -->
+  <header class="h-16 border-b border-slate-800 bg-[#090d16]/95 backdrop-blur z-30 flex items-center justify-between px-3 sm:px-6">
+    <div class="flex items-center gap-3">
+      <!-- Logo Container with Graceful Fallback -->
+      <div class="relative w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center bg-slate-900 border border-slate-700 shrink-0">
+        <img src="logo.jpeg" alt="GARRF Logo" class="w-full h-full object-cover" onerror="this.style.display='none'; document.getElementById('logo-fallback').style.display='flex';">
+        <div id="logo-fallback" class="w-full h-full hidden items-center justify-center bg-gradient-to-br from-emerald-600 via-teal-700 to-cyan-800 text-white font-bold text-xs">
+          GAR
+        </div>
+      </div>
+
+      <!-- Foundation & Project Branding -->
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-xs sm:text-sm font-extrabold tracking-wide uppercase text-white leading-tight">
+            Gopalkrishna Advanced Rural Research Foundation[cite: 1]
+          </h1>
+          <span class="hidden md:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-cyan-950 text-accentCyan border border-cyan-500/30 font-mono text-[10px]">
+            HUMANOID LAB
+          </span>
+        </div>
+        <p class="text-[10px] sm:text-[11px] text-slate-400 font-mono flex items-center gap-1.5">
+          <span>Full Humanoid Kinematic Frame with Active Dexterous Hand[cite: 1]</span>
+        </p>
+      </div>
+    </div>
+
+    <!-- Center: Actuation Mode Selector[cite: 1, 2] -->
+    <div class="hidden lg:flex items-center bg-slate-900/90 rounded-lg p-1 border border-slate-700/60 text-xs font-mono">
+      <button onclick="setActuationMode('tendon')" id="btn-mode-tendon" class="px-3 py-1.5 rounded-md font-semibold transition-all text-black bg-accentCyan shadow-sm flex items-center gap-1.5">
+        <i data-lucide="git-branch" class="w-3.5 h-3.5"></i> Tendon-Driven[cite: 1, 2]
+      </button>
+      <button onclick="setActuationMode('direct')" id="btn-mode-direct" class="px-3 py-1.5 rounded-md font-semibold transition-all text-slate-400 hover:text-white flex items-center gap-1.5">
+        <i data-lucide="zap" class="w-3.5 h-3.5"></i> Direct In-Finger BLDC[cite: 1, 2]
+      </button>
+      <button onclick="setActuationMode('linkage')" id="btn-mode-linkage" class="px-3 py-1.5 rounded-md font-semibold transition-all text-slate-400 hover:text-white flex items-center gap-1.5">
+        <i data-lucide="link" class="w-3.5 h-3.5"></i> Underactuated Linkage[cite: 2]
+      </button>
+    </div>
+
+    <!-- Right: India Flag Badge and Camera Control Shortcuts -->
+    <div class="flex items-center gap-3">
+      <!-- India Badge[cite: 1] -->
+      <div class="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-slate-900/80 border border-slate-700/80">
+        <svg class="w-6 h-6 rounded-full shadow-sm" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="36" height="12" fill="#FF9933"/>
+          <rect y="12" width="36" height="12" fill="#FFFFFF"/>
+          <rect y="24" width="36" height="12" fill="#138808"/>
+          <circle cx="18" cy="18" r="4.5" stroke="#000080" stroke-width="0.8" fill="none"/>
+          <circle cx="18" cy="18" r="1.1" fill="#000080"/>
+          <g stroke="#000080" stroke-width="0.35">
+            <line x1="18" y1="13.5" x2="18" y2="22.5"/>
+            <line x1="13.5" y1="18" x2="22.5" y2="18"/>
+            <line x1="14.8" y1="14.8" x2="21.2" y2="21.2"/>
+            <line x1="14.8" y1="21.2" x2="21.2" y2="14.8"/>
+          </g>
+        </svg>
+        <span class="text-xs font-bold tracking-wider font-mono text-slate-200 hidden sm:inline">INDIA[cite: 1]</span>
+      </div>
+
+      <!-- Quick CAD Camera Reset -->
+      <button onclick="focusHandView()" class="px-2.5 py-1.5 rounded-lg border border-cyan-500/40 bg-cyan-950/40 text-cyan-300 hover:bg-cyan-500/20 text-xs font-mono transition flex items-center gap-1" title="Focus Camera on Gripper">
+        <i data-lucide="zoom-in" class="w-3.5 h-3.5"></i> Focus Gripper
+      </button>
+      <button onclick="resetFullBodyView()" class="p-2 rounded-lg border border-slate-800 bg-slate-900/80 text-slate-400 hover:text-accentCyan transition" title="Reset to Full Humanoid Body">
+        <i data-lucide="maximize" class="w-4 h-4"></i>
+      </button>
+      <button onclick="toggleWireframe()" id="btn-wireframe" class="p-2 rounded-lg border border-slate-800 bg-slate-900/80 text-slate-400 hover:text-accentCyan transition" title="Toggle Wireframe CAD Mode[cite: 2]">
+        <i data-lucide="grid" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Viewport Workspace[cite: 2] -->
+  <main class="relative flex-1 w-full h-[calc(100vh-6.5rem)] flex overflow-hidden">
+
+    <!-- 3D Canvas Area[cite: 2] -->
+    <div id="viewport-container" class="relative flex-1 h-full w-full bg-[#05070e]">
+      <canvas id="three-canvas" class="w-full h-full block cursor-grab active:cursor-grabbing"></canvas>
+
+      <!-- Viewport Information Pill[cite: 2] -->
+      <div class="absolute top-4 left-4 z-10 pointer-events-none flex flex-col gap-1.5 font-mono text-[11px]">
+        <div class="flex items-center gap-2 bg-slate-950/80 backdrop-blur px-3 py-1 rounded-md border border-slate-800/80">
+          <span class="w-2 h-2 rounded-full bg-accentCyan animate-pulse"></span>
+          <span>MODE: <span id="hud-mode-name" class="text-accentCyan font-bold">TENDON / CABLE-DRIVEN[cite: 1, 2]</span></span>
+        </div>
+        <div class="bg-slate-950/80 backdrop-blur px-3 py-1 rounded-md border border-slate-800/80 text-slate-400">
+          <span>HUMANOID PLATFORM: </span><span class="text-slate-200">AISIA-H1 BIPED TORSO[cite: 2]</span>
+        </div>
+        <div class="bg-slate-950/80 backdrop-blur px-3 py-1 rounded-md border border-slate-800/80 text-slate-400">
+          <span>LEFT: Tool Mount / Sensor Hub | RIGHT: Dexterous 5-Finger Gripper</span>
+        </div>
+      </div>
+
+      <!-- Quick Preset Grasps[cite: 2] -->
+      <div class="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 cad-blur px-3 py-2 rounded-2xl flex items-center gap-1.5 sm:gap-2 text-xs font-mono max-w-[95%] overflow-x-auto">
+        <span class="text-slate-400 text-[11px] font-bold uppercase tracking-wider mr-1 flex items-center gap-1.5 shrink-0">
+          <i data-lucide="play" class="w-3.5 h-3.5 text-accentCyan"></i> Grasps:[cite: 2]
+        </span>
+        <button onclick="applyGraspPreset('open')" class="preset-btn px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white transition shrink-0">Open Hand[cite: 2]</button>
+        <button onclick="applyGraspPreset('power')" class="preset-btn px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white transition shrink-0">Power Grasp[cite: 2]</button>
+        <button onclick="applyGraspPreset('pinch')" class="preset-btn px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white transition shrink-0">Precision Pinch[cite: 2]</button>
+        <button onclick="applyGraspPreset('tripod')" class="preset-btn px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white transition shrink-0">Tripod[cite: 2]</button>
+        <button onclick="applyGraspPreset('lateral')" class="preset-btn px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white transition shrink-0">Lateral Key[cite: 2]</button>
+        <button onclick="applyGraspPreset('rest')" class="preset-btn px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white transition shrink-0">Resting Pose[cite: 2]</button>
+      </div>
+
+      <!-- Real-time Tactile Heatmap Panel[cite: 1, 2] -->
+      <div class="hidden sm:flex absolute bottom-4 left-4 z-10 cad-blur p-3 rounded-xl flex-col gap-2 w-60 text-xs font-mono">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-1">
+          <span class="font-bold text-white flex items-center gap-1.5 text-[11px]">
+            <i data-lucide="fingerprint" class="w-3.5 h-3.5 text-accentCyan"></i> Fingertip Tactile Array[cite: 2]
+          </span>
+          <span id="tactile-live-indicator" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+        </div>
+        <div class="space-y-1 text-[11px]">
+          <div class="flex items-center justify-between">
+            <span class="text-slate-400">Thumb Tip:[cite: 2]</span>
+            <span id="readout-thumb" class="text-accentCyan font-bold">0.2 N[cite: 2]</span>
+          </div>
+          <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+            <div id="bar-thumb" class="bg-gradient-to-r from-accentCyan to-accentOrange h-full w-[2%] transition-all duration-200"></div>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <span class="text-slate-400">Index Tip:[cite: 2]</span>
+            <span id="readout-index" class="text-accentCyan font-bold">0.1 N[cite: 2]</span>
+          </div>
+          <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+            <div id="bar-index" class="bg-gradient-to-r from-accentCyan to-accentOrange h-full w-[1%] transition-all duration-200"></div>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <span class="text-slate-400">Middle Tip:[cite: 2]</span>
+            <span id="readout-middle" class="text-accentCyan font-bold">0.1 N[cite: 2]</span>
+          </div>
+          <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+            <div id="bar-middle" class="bg-gradient-to-r from-accentCyan to-accentOrange h-full w-[1%] transition-all duration-200"></div>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <span class="text-slate-400">Ring & Pinky:</span>
+            <span id="readout-ringpinky" class="text-accentCyan font-bold">0.1 N</span>
+          </div>
+          <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+            <div id="bar-ringpinky" class="bg-gradient-to-r from-accentCyan to-accentOrange h-full w-[1%] transition-all duration-200"></div>
+          </div>
+        </div>
+        <div class="text-[9px] text-slate-400 pt-1 border-t border-slate-800 flex items-center justify-between">
+          <span>Heatmap:</span>
+          <span class="text-slate-300 font-semibold">0N (Cyan) &rarr; 10N (Red)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Sidebar: Humanoid Controls, Kinematics & Anatomy[cite: 1, 2] -->
+    <aside class="w-80 sm:w-96 h-full cad-blur border-l border-slate-800 flex flex-col z-20 overflow-hidden shrink-0">
+      <div class="flex items-center border-b border-slate-800 text-xs font-semibold bg-slate-950/70">
+        <button onclick="switchTab('kinematics')" id="tab-btn-kinematics" class="flex-1 py-3 text-center border-b-2 border-accentCyan text-accentCyan flex items-center justify-center gap-1.5">
+          <i data-lucide="sliders" class="w-3.5 h-3.5"></i> Kinematics[cite: 2]
+        </button>
+        <button onclick="switchTab('anatomy')" id="tab-btn-anatomy" class="flex-1 py-3 text-center border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center justify-center gap-1.5">
+          <i data-lucide="book-open" class="w-3.5 h-3.5"></i> Anatomy & BOM[cite: 2]
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-4 space-y-4 text-sm">
+
+        <!-- KINEMATICS TAB[cite: 2] -->
+        <div id="tab-kinematics" class="space-y-4">
+          <!-- Arm Pose Slider -->
+          <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800 space-y-2">
+            <div class="flex items-center justify-between text-xs font-mono">
+              <span class="text-white font-semibold flex items-center gap-1.5">
+                <i data-lucide="crosshair" class="w-3.5 h-3.5 text-accentTeal"></i> Arm Presentation Angle
+              </span>
+              <span id="label-arm-elevation" class="text-accentTeal font-bold">25°</span>
+            </div>
+            <input type="range" id="slider-arm-elevation" min="0" max="60" value="25" class="w-full h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+            <p class="text-[11px] text-slate-400">Rotates humanoid shoulder and elbow to present the gripper for assembly or reach.</p>
+          </div>
+
+          <!-- Exploded View Slider[cite: 1, 2] -->
+          <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800 space-y-2">
+            <div class="flex items-center justify-between text-xs font-mono">
+              <span class="text-white font-semibold flex items-center gap-1.5">
+                <i data-lucide="unfold-horizontal" class="w-3.5 h-3.5 text-accentCyan"></i> Exploded Hand View[cite: 1, 2]
+              </span>
+              <span id="label-explode" class="text-accentCyan font-bold">0%[cite: 2]</span>
+            </div>
+            <input type="range" id="slider-explode" min="0" max="100" value="0" class="w-full h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+          </div>
+
+          <!-- Master Gripper Clench[cite: 2] -->
+          <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800 space-y-2">
+            <div class="flex items-center justify-between text-xs font-mono">
+              <span class="text-white font-semibold flex items-center gap-1.5">
+                <i data-lucide="gauge" class="w-3.5 h-3.5 text-accentGreen"></i> Master Gripper Clench
+              </span>
+              <span id="label-master-grasp" class="text-accentGreen font-bold">0%[cite: 2]</span>
+            </div>
+            <input type="range" id="slider-master-grasp" min="0" max="100" value="0" class="w-full h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+          </div>
+
+          <!-- Individual Finger Joint Angle Sliders[cite: 2] -->
+          <div class="space-y-2.5">
+            <div class="text-[11px] font-mono uppercase tracking-wider text-slate-400 font-bold flex items-center justify-between">
+              <span>Finger Joints[cite: 2]</span>
+              <button onclick="resetJoints()" class="text-accentCyan text-[11px] hover:underline">Reset[cite: 2]</button>
+            </div>
+
+            <!-- Thumb[cite: 2] -->
+            <div class="p-3 bg-slate-900/40 rounded-xl border border-slate-800/80 space-y-2 text-xs font-mono">
+              <div class="flex justify-between items-center text-cyan-300 font-semibold">
+                <span>Thumb Opposition[cite: 2]</span>
+                <span id="val-thumb-opp">20°[cite: 2]</span>
+              </div>
+              <input type="range" id="slider-thumb-opp" min="0" max="90" value="20" class="w-full h-1 bg-slate-800 rounded cursor-pointer">
+              
+              <div class="flex justify-between items-center text-slate-300">
+                <span>Thumb Curl[cite: 2]</span>
+                <span id="val-thumb-curl">15°[cite: 2]</span>
+              </div>
+              <input type="range" id="slider-thumb-curl" min="0" max="90" value="15" class="w-full h-1 bg-slate-800 rounded cursor-pointer">
+            </div>
+
+            <!-- Index[cite: 2] -->
+            <div class="p-2.5 bg-slate-900/40 rounded-xl border border-slate-800/80 space-y-1.5 text-xs font-mono">
+              <div class="flex justify-between items-center text-slate-200">
+                <span>Index Finger Curl[cite: 2]</span>
+                <span id="val-index" class="text-accentCyan">10°[cite: 2]</span>
+              </div>
+              <input type="range" id="slider-index" min="0" max="95" value="10" class="w-full h-1 bg-slate-800 rounded cursor-pointer">
+            </div>
+
+            <!-- Middle[cite: 2] -->
+            <div class="p-2.5 bg-slate-900/40 rounded-xl border border-slate-800/80 space-y-1.5 text-xs font-mono">
+              <div class="flex justify-between items-center text-slate-200">
+                <span>Middle Finger Curl[cite: 2]</span>
+                <span id="val-middle" class="text-accentCyan">10°[cite: 2]</span>
+              </div>
+              <input type="range" id="slider-middle" min="0" max="95" value="10" class="w-full h-1 bg-slate-800 rounded cursor-pointer">
+            </div>
+
+            <!-- Ring & Pinky[cite: 2] -->
+            <div class="p-2.5 bg-slate-900/40 rounded-xl border border-slate-800/80 space-y-1.5 text-xs font-mono">
+              <div class="flex justify-between items-center text-slate-200">
+                <span>Ring & Pinky Curl[cite: 2]</span>
+                <span id="val-ringpinky" class="text-accentCyan">10°[cite: 2]</span>
+              </div>
+              <input type="range" id="slider-ringpinky" min="0" max="95" value="10" class="w-full h-1 bg-slate-800 rounded cursor-pointer">
+            </div>
+          </div>
+        </div>
+
+        <!-- ANATOMY & BOM TAB[cite: 1, 2] -->
+        <div id="tab-anatomy" class="space-y-4 hidden">
+          <div id="inspector-card" class="p-4 bg-slate-900/80 rounded-xl border border-cyan-500/30 space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+              <h3 id="card-title" class="font-bold text-accentCyan text-sm flex items-center gap-1.5">
+                <i data-lucide="info" class="w-4 h-4"></i> Humanoid Torso & Forearm Transmission[cite: 2]
+              </h3>
+              <span id="card-tag" class="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-700/50">Humanoid Subsystem[cite: 2]</span>
+            </div>
+
+            <div class="space-y-2 text-xs">
+              <div>
+                <span class="text-slate-400 font-mono text-[10px] uppercase block">What It Is:[cite: 2]</span>
+                <p id="card-what" class="text-slate-200 leading-relaxed">
+                  Remote tendon winch spools placed within the forearm skeletal frame, connected to an anthropomorphic 5-finger gripper mounted on the right arm of the humanoid torso
