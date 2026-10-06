@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GARRF - Civil Brick & Block Robotic Gripper Lab</title>
+  <!-- Three.js & OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <style>
+    :root {
+      --primary: #1e3a8a;
+      --primary-light: #2563eb;
+      --accent: #dc2626;
+      --bg: #f8fafc;
+      --panel-bg: rgba(255, 255, 255, 0.98);
+      --border: #cbd5e1;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --success: #15803d;
+      --warning: #b45309;
+      --danger: #dc2626;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; }
+
+    /* Top Header */
+    header {
+      background: #ffffff;
+      border-bottom: 2px solid #e2e8f0;
+      padding: 10px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+      z-index: 20;
+    }
+    .header-text h1 {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: -0.01em;
+    }
+    .header-text p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin-top: 2px;
+    }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .btn-help {
+      background: #eff6ff;
+      color: var(--primary);
+      border: 1.5px solid var(--primary-light);
+      padding: 8px 16px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .btn-help:hover {
+      background: var(--primary);
+      color: #fff;
+    }
+    .logo-container {
+      width: 52px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .logo-img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    /* Main Grid Workspace */
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 340px 1fr 340px;
+      gap: 12px;
+      padding: 12px;
+      height: calc(100vh - 110px);
+      min-height: 640px;
+    }
+
+    /* Side Control Panels */
+    .panel {
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      overflow-y: auto;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .panel-title {
+      font-size: 1.02rem;
+      font-weight: 800;
+      color: var(--primary);
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .section-label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      font-weight: 800;
+    }
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .control-label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+    }
+    .control-label span.val {
+      color: var(--primary-light);
+      font-family: monospace;
+      font-size: 0.88rem;
+      font-weight: 700;
+    }
+    select, input[type="range"] {
+      width: 100%;
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #ffffff;
+      font-size: 0.85rem;
+    }
+    input[type="range"] {
+      accent-color: var(--primary-light);
+      cursor: pointer;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    /* 3D Canvas Area */
+    #canvas-container {
+      position: relative;
+      background: linear-gradient(180deg, #94a3b8 0%, #64748b 100%);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    #three-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .viewport-overlay {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      background: rgba(15, 23, 42, 0.88);
+      color: #fff;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      pointer-events: none;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .color-legend {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: rgba(255, 255, 255, 0.95);
+      border: 1px solid var(--border);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.74rem;
+      line-height: 1.5;
+      font-weight: 600;
+      pointer-events: none;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .dot { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+    
+    .status-hud {
+      position: absolute;
+      bottom: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255, 255, 255, 0.98);
+      border: 2px solid var(--border);
+      padding: 8px 22px;
+      border-radius: 30px;
+      font-size: 0.9rem;
+      font-weight: 800;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      pointer-events: none;
+      transition: all 0.3s;
+    }
+    .status-hud.safe { border-color: var(--success); color: var(--success); }
+    .status-hud.danger { border-color: var(--danger); color: var(--danger); }
+    .status-hud.neutral { border-color: var(--primary-light); color: var(--text); }
+
+    /* Action Buttons */
+    .btn {
+      width: 100%;
+      padding: 11px;
+      border-radius: 8px;
+      font-size: 0.92rem;
+      font-weight: 800;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-lift { background: #15803d; color: white; }
+    .btn-lift:hover { background: #166534; }
+    .btn-reset { background: #475569; color: white; }
+    .btn-reset:hover { background: #334155; }
+
+    /* Telemetry Cards */
+    .card-metric {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .metric-title { font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; }
+    .metric-val { font-size: 1.22rem; font-weight: 800; color: var(--text); font-family: monospace; }
+    .metric-progress {
+      width: 100%;
+      height: 7px;
+      background: #e2e8f0;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 3px;
+    }
+    .progress-bar { height: 100%; width: 0%; transition: width 0.2s, background-color 0.2s; }
+
+    /* Modal Styling */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 20px;
+    }
+    .modal-content {
+      background: #ffffff;
+      width: 100%;
+      max-width: 860px;
+      max-height: 88vh;
+      border-radius: 14px;
+      padding: 24px;
+      overflow-y: auto;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+      border: 1px solid var(--border);
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 10px;
+      margin-bottom: 14px;
+    }
+    .modal-header h2 { color: var(--primary); font-size: 1.35rem; }
+    .close-btn { background: none; border: none; font-size: 1.6rem; cursor: pointer; color: var(--text-muted); }
+    
+    .formula-box {
+      background: #f8fafc;
+      border-left: 4px solid var(--primary-light);
+      padding: 12px 16px;
+      margin: 8px 0 14px 0;
+      border-radius: 0 8px 8px 0;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      color: #1e293b;
+    }
+    .force-card-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 12px 0;
+    }
+    .force-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 0.84rem;
+      line-height: 1.5;
+    }
+    .force-card strong { color: var(--primary); display: block; margin-bottom: 4px; }
+    
+    .guide-table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.82rem; }
+    .guide-table th, .guide-table td { border: 1px solid #e2e8f0; padding: 7px 10px; text-align: left; }
+    .guide-table th { background: #f1f5f9; color: var(--primary); font-weight: 700; }
+
+    /* Footer */
+    footer {
+      background: #ffffff;
+      border-top: 1px solid #e2e8f0;
+      padding: 10px;
+      text-align: center;
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      z-index: 20;
+    }
+
+    @media (max-width: 1100px) {
+      main { grid-template-columns: 1fr; height: auto; }
+      #canvas-container { height: 460px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header -->
+  <header>
+    <div class="header-text">
+      <h1>Gopalkrishna Advanced Rural Research Foundation, India</h1>
+      <p>Virtual Lab: Civil Engineering Brick Robotic Handling (Forces, Grippers &amp; Fracture Physics)</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-help" onclick="toggleHelpModal(true)">
+        <span>📖</span> Help &amp; Engineering Theory
+      </button>
+      <div class="logo-container">
+        <img src="Logo.jpeg" alt="GARRF Logo" class="logo-img" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'52\' height=\'52\' viewBox=\'0 0 100 100\'><circle cx=\'50\' cy=\'50\' r=\'45\' fill=\'%231e3a8a\'/><text x=\'50\' y=\'58\' font-size=\'22\' fill=\'white\' font-family=\'sans-serif\' text-anchor=\'middle\' font-weight=\'bold\'>GARRF</text></svg>';">
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Grid Workspace -->
+  <main>
+    <!-- Left Column: Workpiece & Tool Setup -->
+    <div class="panel">
+      <div class="panel-title">
+        <span>1. Specimen &amp; Gripper</span>
+        <span>🧱</span>
+      </div>
+
+      <div class="control-group">
+        <label class="section-label">Robotic Gripper Case</label>
+        <select id="gripper-type" onchange="switchGripperType()">
+          <option value="parallel">Case ①: Parallel Clamps (Perpendicular Brick: L &gt; w)</option>
+          <option value="vacuum">Case ②: Vacuum Foam Gripper (Parallel Top Plate)</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label class="section-label">Standard Indian Brick Specimen</label>
+        <select id="preset-selector" onchange="applyPreset(this.value)">
+          <option value="is_modular">IS:1077 Modular Brick (190 x 90 x 90 mm)</option>
+          <option value="traditional">Traditional Brick (230 x 110 x 70 mm)</option>
+          <option value="flyash">Fly Ash Brick (230 x 110 x 75 mm)</option>
+          <option value="aac_block">Concrete Block (300 x 150 x 100 mm)</option>
+          <option value="custom">-- Custom Dimensions &amp; Mass --</option>
+        </select>
+      </div>
+
+      <div class="grid-2">
+        <div class="control-group">
+          <label class="control-label">Length (l) <span class="val" id="val-l">190 mm</span></label>
+          <input type="range" id="param-l" min="140" max="320" step="5" value="190" oninput="updateDimensions()">
+        </div>
+        <div class="control-group">
+          <label class="control-label">Width (w) <span class="val" id="val-w">90 mm</span></label>
+          <input type="range" id="param-w" min="50" max="140" step="5" value="90" oninput="updateDimensions()">
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="control-group">
+          <label class="control-label">Height (h) <span class="val" id="val-h">90 mm</span></label>
+          <input type="range" id="param-h" min="40" max="130" step="5" value="90" oninput="updateDimensions()">
+        </div>
+        <div class="control-group">
+          <label class="control-label">Mass (m) <span class="val" id="val-m">3.2 kg</span></label>
+          <input type="range" id="param-m" min="1.0" max="20.0" step="0.2" value="3.2" oninput="updateDimensions()">
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label class="section-label">Surface &amp; Porosity</label>
+        <select id="surface-type" onchange="calculatePhysics()">
+          <option value="clean_rubber">Clean Dry Surface (μ = 0.65, Low Leakage)</option>
+          <option value="dusty_clay" selected>Dusty Clay Surface (μ = 0.40, Medium Leakage)</option>
+          <option value="wet_slurry">Wet Mortar Slurry (μ = 0.22, High Leakage)</option>
+        </select>
+      </div>
+
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 10px; border-radius: 8px; font-size: 0.78rem; color: #475569; line-height: 1.4;">
+        <strong>Configuration:</strong> <span id="gripper-info">Case ①: Brick is perpendicular to arm; gripper span L clamps across width w.</span>
+      </div>
+    </div>
+
+    <!-- Center Column: 3D Visualization Viewport -->
+    <div id="canvas-container">
+      <div class="viewport-overlay" id="cell-hud-title">CASE ①: PERPENDICULAR WIDTH CLAMPING (L &gt; w)</div>
+      
+      <!-- Visual Color Legend -->
+      <div class="color-legend">
+        <div class="legend-item"><span class="dot" style="background:#dc2626;"></span> Brick (Terracotta Red)</div>
+        <div class="legend-item"><span class="dot" style="background:#ea580c;"></span> Shoulder Link (Orange)</div>
+        <div class="legend-item"><span class="dot" style="background:#eab308;"></span> Elbow Arm (Yellow)</div>
+        <div class="legend-item"><span class="dot" style="background:#2563eb;"></span> Forearm &amp; Toolhead (Blue)</div>
+        <div class="legend-item"><span class="dot" style="background:#06b6d4;"></span> 6-Axis F/T Sensor (Cyan)</div>
+        <div class="legend-item"><span class="dot" style="background:#ffffff; border:1px solid #64748b;"></span> Gripper Body &amp; Fingers (White)</div>
+      </div>
+
+      <div id="status-hud" class="status-hud neutral">Ready to Test Lift</div>
+      <div id="three-canvas"></div>
+    </div>
+
+    <!-- Right Column: Interactive Sizing & Telemetry Dashboard (NO DOLLARS) -->
+    <div class="panel">
+      <div class="panel-title">
+        <span>2. Control &amp; Telemetry</span>
+        <span>⚙</span>
+      </div>
+
+      <!-- Parallel Gripper Controls -->
+      <div id="parallel-controls">
+        <div class="control-group">
+          <label class="control-label">Pneumatic Clamping Force (F<sub>c</sub>) <span class="val" id="val-fc">120 N</span></label>
+          <input type="range" id="param-fc" min="10" max="450" step="5" value="120" oninput="calculatePhysics()">
+        </div>
+      </div>
+
+      <!-- Vacuum Gripper Controls -->
+      <div id="vacuum-controls" style="display: none;">
+        <div class="control-group">
+          <label class="control-label">Vacuum Suction Level <span class="val" id="val-vac">-55 kPa</span></label>
+          <input type="range" id="param-vac" min="-90" max="-10" step="5" value="-55" oninput="calculatePhysics()">
+        </div>
+        <div class="control-group">
+          <label class="control-label">EPDM Foam Compression <span class="val" id="val-foam">4.0 mm</span></label>
+          <input type="range" id="param-foam" min="1.0" max="8.0" step="0.5" value="4.0" oninput="calculatePhysics()">
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label class="control-label">Robot Upward Acceleration (a) <span class="val" id="val-acc">2.5 m/s²</span></label>
+        <input type="range" id="param-acc" min="0.5" max="8.0" step="0.5" value="2.5" oninput="calculatePhysics()">
+      </div>
+
+      <!-- Real-Time Metrics (Clean formatting, no raw LaTeX / dollars) -->
+      <div class="card-metric">
+        <div class="metric-title">Effective Holding Force (F<sub>h</sub>)</div>
+        <div class="metric-val" id="metric-fh">96.0 N</div>
+        <div class="metric-progress"><div class="progress-bar" id="bar-fh" style="width: 60%; background: #2563eb;"></div></div>
+      </div>
+
+      <div class="card-metric">
+        <div class="metric-title">Required Dynamic Load (F<sub>r</sub> = m(g + a))</div>
+        <div class="metric-val" id="metric-fr">39.4 N</div>
+        <div class="metric-progress"><div class="progress-bar" id="bar-fr" style="width: 40%; background: #dc2626;"></div></div>
+      </div>
+
+      <div class="card-metric">
+        <div class="metric-title">Safety Factor (S<sub>f</sub> = F<sub>h</sub> / F<sub>r</sub>)</div>
+        <div class="metric-val" id="metric-sf">2.44</div>
+        <div class="metric-progress"><div class="progress-bar" id="bar-sf" style="width: 85%; background: #16a34a;"></div></div>
+      </div>
+
+      <button class="btn btn-lift" id="btn-lift" onclick="executeLiftAction()">
+        <span>🚀</span> LIFT BRICK SPECIMEN
+      </button>
+
+      <button class="btn btn-reset" onclick="resetExperiment()">
+        <span>🔄</span> Reset Robot &amp; Specimen
+      </button>
+    </div>
+  </main>
+
+  <!-- Proper Help & Detailed Engineering Forces Dialog Box -->
+  <div class="modal-backdrop" id="help-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Robotic End-Effector Mechanics &amp; Forces Guide</h2>
+        <button class="close-btn" onclick="toggleHelpModal(false)">&times;</button>
+      </div>
+
+      <h3 style="color: var(--primary); margin-top: 6px;">1. Understanding the Forces Acting on the Brick</h3>
+      <div class="force-card-grid">
+        <div class="force-card">
+          <strong>1. Clamping Force (F<sub>c</sub>):</strong>
+          The normal compressive force delivered by the pneumatic or servo cylinder across the gripper fingers to pinch the brick.
+        </div>
+        <div class="force-card">
+          <strong>2. Tangential Friction Force (F<sub>friction</sub>):</strong>
+          The vertical resistive force generated by the contact rubber pads. With 2 active jaws:
+          <br><em>F<sub>friction</sub> = 2 &times; &mu; &times; F<sub>c</sub></em>
+        </div>
+        <div class="force-card">
+          <strong>3. Vacuum Pull Force (F<sub>vacuum</sub>):</strong>
+          The negative differential pressure acting across the sealed contact surface:
+          <br><em>F<sub>vacuum</sub> = &Delta;P &times; Area &times; &eta;</em>
+        </div>
+        <div class="force-card">
+          <strong>4. Required Dynamic Load (F<sub>r</sub>):</strong>
+          Total downward force to overcome during upward acceleration:
+          <br><em>F<sub>r</sub> = m &times; (g + a)</em>
+        </div>
+      </div>
+
+      <h3 style="color: var(--primary); margin-top: 14px;">2. Sizing Formulas &amp; Safety Factor</h3>
+      <div class="formula-box">
+        <strong>Safety Factor Criterion:</strong><br>
+        S<sub>f</sub> = F<sub>holding</sub> / F<sub>required</sub><br><br>
+        &bull; <strong>S<sub>f</sub> &ge; 1.5 :</strong> Safe, reliable robotic transfer in industrial conditions.<br>
+        &bull; <strong>1.0 &le; S<sub>f</sub> &lt; 1.5 :</strong> Critical / marginal hold; vibration or jerks cause slipping.<br>
+        &bull; <strong>S<sub>f</sub> &lt; 1.0 :</strong> Mechanical failure! The brick slips mid-air, drops, and fractures.
+      </div>
+
+      <h3 style="color: var(--primary); margin-top: 14px;">3. The Two Robotic Gripper Architectures</h3>
+      <table class="guide-table">
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th>Case ①: 2-Jaw Parallel Clamps</th>
+            <th>Case ②: Vacuum Foam Area Gripper</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Workpiece Orientation</strong></td>
+            <td><strong>Perpendicular</strong> to arm (Length l along depth)</td>
+            <td><strong>Parallel</strong> to arm (Length l along width)</td>
+          </tr>
+          <tr>
+            <td><strong>Gripping Action</strong></td>
+            <td>Pincer clamp across narrow width w (L &gt; w)</td>
+            <td>Top-surface suction seal across area (l &times; w)</td>
+          </tr>
+          <tr>
+            <td><strong>Contact Material</strong></td>
+            <td>High-friction Polyurethane Rubber Pads (&mu; = 0.40 - 0.65)</td>
+            <td>Closed-cell EPDM Porous Sealing Foam</td>
+          </tr>
+          <tr>
+            <td><strong>Best Applied For</strong></td>
+            <td>Dry bricks, unmortared blocks, high accelerations</td>
+            <td>Palletizing, bricklaying (sides free for mortar)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3 style="color: var(--primary); margin-top: 14px;">4. Indian Standard (BIS) Masonry Specifications</h3>
+      <table class="guide-table">
+        <thead>
+          <tr>
+            <th>Specimen</th>
+            <th>Standard Reference</th>
+            <th>Dimensions (l &times; w &times; h)</th>
+            <th>Typical Mass</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Modular Brick</td>
+            <td>IS:1077 (BIS)</td>
+            <td>190 &times; 90 &times; 90 mm</td>
+            <td>3.0 - 3.4 kg</td>
+          </tr>
+          <tr>
+            <td>Traditional Red Brick</td>
+            <td>Non-modular Indian</td>
+            <td>230 &times; 110 &times; 70 mm</td>
+            <td>3.5 - 4.2 kg</td>
+          </tr>
+          <tr>
+            <td>Fly Ash Lime Brick</td>
+            <td>IS:12894</td>
+            <td>230 &times; 110 &times; 75 mm</td>
+            <td>3.2 - 3.8 kg</td>
+          </tr>
+          <tr>
+            <td>AAC / Concrete Block</td>
+            <td>IS:2185</td>
+            <td>300 &times; 150 &times; 100 mm</td>
+            <td>10.0 - 14.0 kg</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Footer Credits -->
+  <footer>
+    Copyright @ Dr Annamdas Venu Gopal Madhav &amp; Shantanu Vasudev Krishna Annamdas
+  </footer>
+
+  <script>
+    /* =========================================================================
+       AUDIO SYNTHESIZER (Web Audio API)
+       ========================================================================= */
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+    function getAudio() {
+      if (!audioCtx) audioCtx = new AudioCtx();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+    function playTone(freq, dur, type = 'sine') {
+      try {
+        const ctx = getAudio();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        gain.gain.setValueAtTime(0.12, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + dur);
+      } catch(e){}
+    }
+    function playClack() { playTone(360, 0.08, 'triangle'); }
+    function playLiftMotor() { playTone(130, 1.3, 'sawtooth'); }
+    function playSuccessChime() {
+      setTimeout(() => playTone(523.25, 0.25, 'sine'), 0);
+      setTimeout(() => playTone(659.25, 0.35, 'sine'), 120);
+    }
+    function playFractureCrash() {
+      try {
+        const ctx = getAudio();
+        const node = ctx.createBufferSource();
+        const buffer = ctx.createBuffer(1, ctx.sampleRate * 0.5, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < buffer.length; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.12));
+        }
+        node.buffer = buffer;
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.4, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+        node.connect(gain);
+        gain.connect(ctx.destination);
+        node.start();
+      } catch(e){}
+    }
+
+    /* =========================================================================
+       THREE.JS SETUP: SCENE, LIGHTS, TABLE
+       ========================================================================= */
+    const container = document.getElementById('three-canvas');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xa0aec0);
+    scene.fog = new THREE.Fog(0xa0aec0, 10, 30);
+
+    const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+    camera.position.set(1.4, 1.8, 3.8);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    container.appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.target.set(0, 0.65, 0);
+    controls.maxPolarAngle = Math.PI / 2 - 0.04;
+
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x475569, 0.85);
+    scene.add(hemiLight);
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.15);
+    dirLight.position.set(4, 8, 5);
+    dirLight.castShadow = true;
+    dirLight.shadow.mapSize.width = 2048;
+    dirLight.shadow.mapSize.height = 2048;
+    dirLight.shadow.camera.near = 0.5;
+    dirLight.shadow.camera.far = 20;
+    dirLight.shadow.camera.left = -3;
+    dirLight.shadow.camera.right = 3;
+    dirLight.shadow.camera.top = 3;
+    dirLight.shadow.camera.bottom = -3;
+    scene.add(dirLight);
+
+    const tableGeo = new THREE.BoxGeometry(4.6, 0.25, 3.2);
+    const tableMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.6, metalness: 0.2 });
+    const table = new THREE.Mesh(tableGeo, tableMat);
+    table.position.set(0, -0.125, 0);
+    table.receiveShadow = true;
+    scene.add(table);
+
+    const grid = new THREE.GridHelper(4.0, 16, 0x64748b, 0x334155);
+    grid.position.y = 0.002;
+    scene.add(grid);
+
+    /* =========================================================================
+       ROBOT ARM ASSEMBLY
+       ========================================================================= */
+    const matBase     = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5, metalness: 0.5 });
+    const matJoint    = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.4, metalness: 0.8 });
+    const matShoulder = new THREE.MeshStandardMaterial({ color: 0xea580c, roughness: 0.3, metalness: 0.2 });
+    const matElbow    = new THREE.MeshStandardMaterial({ color: 0xeab308, roughness: 0.3, metalness: 0.2 });
+    const matForearm  = new THREE.MeshStandardMaterial({ color: 0x2563eb, roughness: 0.3, metalness: 0.2 });
+    const matFT       = new THREE.MeshStandardMaterial({ color: 0x06b6d4, roughness: 0.2, metalness: 0.85 });
+    const matWhite    = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2, metalness: 0.1 });
+    const matRubber   = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.95, metalness: 0.05 });
+
+    const mastGroup = new THREE.Group();
+    scene.add(mastGroup);
+
+    const baseCylinder = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.44, 0.2, 32), matBase);
+    baseCylinder.position.set(0, 0.1, -0.7);
+    baseCylinder.castShadow = true;
+    mastGroup.add(baseCylinder);
+
+    const mastCol = new THREE.Mesh(new THREE.BoxGeometry(0.24, 1.4, 0.24), matShoulder);
+    mastCol.position.set(0, 0.8, -0.7);
+    mastCol.castShadow = true;
+    mastGroup.add(mastCol);
+
+    const armCarriage = new THREE.Group();
+    armCarriage.position.set(0, 0.85, 0);
+    scene.add(armCarriage);
+
+    const boomArm = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.22, 0.72), matElbow);
+    boomArm.position.set(0, 0.15, -0.34);
+    boomArm.castShadow = true;
+    armCarriage.add(boomArm);
+
+    const toolHead = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.16, 0.36, 24), matForearm);
+    toolHead.position.set(0, 0.15, 0);
+    toolHead.castShadow = true;
+    armCarriage.add(toolHead);
+
+    const ftSensor = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.06, 32), matFT);
+    ftSensor.position.set(0, -0.06, 0);
+    ftSensor.castShadow = true;
+    armCarriage.add(ftSensor);
+
+    const toolFlange = new THREE.Group();
+    toolFlange.position.set(0, -0.09, 0);
+    armCarriage.add(toolFlange);
+
+    /* =========================================================================
+       GRIPPER 1: CASE ① PARALLEL CLAMP (Perpendicular Span L > w)
+       ========================================================================= */
+    const parallelGripper = new THREE.Group();
+    toolFlange.add(parallelGripper);
+
+    const pBody = new THREE.Mesh(new THREE.BoxGeometry(0.82, 0.16, 0.38), matWhite);
+    pBody.position.y = -0.08;
+    pBody.castShadow = true;
+    parallelGripper.add(pBody);
+
+    const fingerLeftGroup = new THREE.Group();
+    const fLeft = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.44, 0.32), matWhite);
+    fLeft.position.y = -0.22;
+    fLeft.castShadow = true;
+    fingerLeftGroup.add(fLeft);
+
+    const padLeft = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.38, 0.30), matRubber);
+    padLeft.position.set(0.035, -0.22, 0);
+    fingerLeftGroup.add(padLeft);
+    parallelGripper.add(fingerLeftGroup);
+
+    const fingerRightGroup = new THREE.Group();
+    const fRight = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.44, 0.32), matWhite);
+    fRight.position.y = -0.22;
+    fRight.castShadow = true;
+    fingerRightGroup.add(fRight);
+
+    const padRight = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.38, 0.30), matRubber);
+    padRight.position.set(-0.035, -0.22, 0);
+    fingerRightGroup.add(padRight);
+    parallelGripper.add(fingerRightGroup);
+
+    /* =========================================================================
+       GRIPPER 2: CASE ② VACUUM FOAM GRIPPER (Parallel Top Plate)
+       ========================================================================= */
+    const vacuumGripper = new THREE.Group();
+    toolFlange.add(vacuumGripper);
+    vacuumGripper.visible = false;
+
+    const vacHousing = new THREE.Mesh(new THREE.BoxGeometry(0.82, 0.12, 0.46), matWhite);
+    vacHousing.position.y = -0.06;
+    vacHousing.castShadow = true;
+    vacuumGripper.add(vacHousing);
+
+    const vacFoam = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.07, 0.42), matRubber);
+    vacFoam.position.y = -0.155;
+    vacuumGripper.add(vacFoam);
+
+    const vacPort = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.18, 16), matFT);
+    vacPort.position.set(0.25, 0.08, 0);
+    vacuumGripper.add(vacPort);
+
+    /* =========================================================================
+       CIVIL BRICK SPECIMEN
+       ========================================================================= */
+    const brickAssembly = new THREE.Group();
+    scene.add(brickAssembly);
+
+    const brickMat = new THREE.MeshStandardMaterial({
+      color: 0xdc2626,
+      roughness: 0.85,
+      metalness: 0.05
+    });
+
+    let brickMesh = null;
+    let leftHalf = null;
+    let rightHalf = null;
+
+    const BRICK_SCALE = 0.0022;
+
+    function buildBrickGeometry(l_mm, w_mm, h_mm) {
+      const gType = document.getElementById('gripper-type').value;
+
+      if (brickMesh) brickAssembly.remove(brickMesh);
+      if (leftHalf) { scene.remove(leftHalf); leftHalf = null; }
+      if (rightHalf) { scene.remove(rightHalf); rightHalf = null; }
+
+      const brickGroup = new THREE.Group();
+
+      let bx, by, bz;
+      if (gType === 'parallel') {
+        bx = w_mm * BRICK_SCALE;
+        by = h_mm * BRICK_SCALE;
+        bz = l_mm * BRICK_SCALE;
+      } else {
+        bx = l_mm * BRICK_SCALE;
+        by = h_mm * BRICK_SCALE;
+        bz = w_mm * BRICK_SCALE;
+      }
+
+      const mainBox = new THREE.Mesh(new THREE.BoxGeometry(bx, by, bz), brickMat);
+      mainBox.castShadow = true;
+      mainBox.receiveShadow = true;
+      brickGroup.add(mainBox);
+
+      const frog = new THREE.Mesh(
+        new THREE.BoxGeometry(bx * 0.65, by * 0.25, bz * 0.65),
+        new THREE.MeshStandardMaterial({ color: 0x991b1b, roughness: 0.95 })
+      );
+      frog.position.y = (by / 2) - (by * 0.12);
+      brickGroup.add(frog);
+
+      brickMesh = brickGroup;
+      brickMesh.position.set(0, by / 2, 0);
+      brickAssembly.add(brickMesh);
+
+      updateKinematics(0);
+    }
+
+    /* =========================================================================
+       SYNCHRONIZED KINEMATICS
+       ========================================================================= */
+    function updateKinematics(verticalLift) {
+      const w = parseFloat(document.getElementById('param-w').value) * BRICK_SCALE;
+      const h = parseFloat(document.getElementById('param-h').value) * BRICK_SCALE;
+      const gType = document.getElementById('gripper-type').value;
+
+      if (gType === 'parallel') {
+        fingerLeftGroup.position.x = -(w / 2 + 0.035);
+        fingerRightGroup.position.x = (w / 2 + 0.035);
+        armCarriage.position.y = (h / 2) + 0.40 + verticalLift;
+      } else {
+        armCarriage.position.y = h + 0.28 + verticalLift;
+      }
+    }
+
+    /* =========================================================================
+       DYNAMIC CALCULATIONS & METRICS
+       ========================================================================= */
+    const presets = {
+      is_modular:  { l: 190, w: 90,  h: 90,  m: 3.2 },
+      traditional: { l: 230, w: 110, h: 70,  m: 3.8 },
+      flyash:      { l: 230, w: 110, h: 75,  m: 3.4 },
+      aac_block:   { l: 300, w: 150, h: 100, m: 11.5 }
+    };
+
+    let simState = {
+      lifting: false,
+      liftProgress: 0,
+      liftSuccess: true,
+      fractured: false
+    };
+
+    function applyPreset(key) {
+      if (key === 'custom') return;
+      const p = presets[key];
+      document.getElementById('param-l').value = p.l;
+      document.getElementById('param-w').value = p.w;
+      document.getElementById('param-h').value = p.h;
+      document.getElementById('param-m').value = p.m;
+      updateDimensions();
+    }
+
+    function updateDimensions() {
+      const l = parseFloat(document.getElementById('param-l').value);
+      const w = parseFloat(document.getElementById('param-w').value);
+      const h = parseFloat(document.getElementById('param-h').value);
+      const m = parseFloat(document.getElementById('param-m').value);
+
+      document.getElementById('val-l').textContent = l + ' mm';
+      document.getElementById('val-w').textContent = w + ' mm';
+      document.getElementById('val-h').textContent = h + ' mm';
+      document.getElementById('val-m').textContent = m.toFixed(1) + ' kg';
+
+      buildBrickGeometry(l, w, h);
+      calculatePhysics();
+    }
+
+    function switchGripperType() {
+      resetExperiment();
+
+      const type = document.getElementById('gripper-type').value;
+      if (type === 'parallel') {
+        parallelGripper.visible = true;
+        vacuumGripper.visible = false;
+        document.getElementById('parallel-controls').style.display = 'block';
+        document.getElementById('vacuum-controls').style.display = 'none';
+        document.getElementById('cell-hud-title').textContent = "CASE ①: PERPENDICULAR WIDTH CLAMPING (L > w)";
+        document.getElementById('gripper-info').textContent = "Case ①: Brick is perpendicular to arm; gripper span L clamps across width w.";
+      } else {
+        parallelGripper.visible = false;
+        vacuumGripper.visible = true;
+        document.getElementById('parallel-controls').style.display = 'none';
+        document.getElementById('vacuum-controls').style.display = 'block';
+        document.getElementById('cell-hud-title').textContent = "CASE ②: VACUUM FOAM GRIPPER (PARALLEL TOP FACE)";
+        document.getElementById('gripper-info').textContent = "Case ②: Brick is parallel to arm; vacuum plate seals top face (l x w).";
+      }
+
+      const l = parseFloat(document.getElementById('param-l').value);
+      const w = parseFloat(document.getElementById('param-w').value);
+      const h = parseFloat(document.getElementById('param-h').value);
+      buildBrickGeometry(l, w, h);
+      calculatePhysics();
+    }
+
+    function calculatePhysics() {
+      const m = parseFloat(document.getElementById('param-m').value);
+      const a = parseFloat(document.getElementById('param-acc').value);
+      const g = 9.81;
+      const gType = document.getElementById('gripper-type').value;
+      const surf = document.getElementById('surface-type').value;
+
+      document.getElementById('val-acc').textContent = a.toFixed(1) + ' m/s²';
+
+      let mu = 0.40;
+      let leakFactor = 0.70;
+      if (surf === 'clean_rubber') { mu = 0.65; leakFactor = 0.88; }
+      else if (surf === 'dusty_clay') { mu = 0.40; leakFactor = 0.65; }
+      else if (surf === 'wet_slurry') { mu = 0.22; leakFactor = 0.40; }
+
+      const Fr = m * (g + a);
+      let Fh = 0;
+
+      if (gType === 'parallel') {
+        const Fc = parseFloat(document.getElementById('param-fc').value);
+        document.getElementById('val-fc').textContent = Fc + ' N';
+        Fh = 2 * mu * Fc;
+      } else {
+        const vacKPa = Math.abs(parseFloat(document.getElementById('param-vac').value));
+        const foamComp = parseFloat(document.getElementById('param-foam').value);
+        document.getElementById('val-vac').textContent = '-' + vacKPa + ' kPa';
+        document.getElementById('val-foam').textContent = foamComp.toFixed(1) + ' mm';
+
+        const l_m = parseFloat(document.getElementById('param-l').value) / 1000;
+        const w_m = parseFloat(document.getElementById('param-w').value) / 1000;
+        const Area = Math.min(l_m * w_m, 0.05);
+        const deltaP = vacKPa * 1000;
+        const sealEfficiency = (foamComp / 4.0);
+        Fh = deltaP * Area * leakFactor * sealEfficiency;
+      }
+
+      const Sf = Fh / Math.max(Fr, 0.1);
+
+      document.getElementById('metric-fh').textContent = Fh.toFixed(1) + ' N';
+      document.getElementById('metric-fr').textContent = Fr.toFixed(1) + ' N';
+      document.getElementById('metric-sf').textContent = Sf.toFixed(2);
+
+      const barFh = document.getElementById('bar-fh');
+      const barFr = document.getElementById('bar-fr');
+      const barSf = document.getElementById('bar-sf');
+
+      barFh.style.width = Math.min((Fh / 260) * 100, 100) + '%';
+      barFr.style.width = Math.min((Fr / 260) * 100, 100) + '%';
+      barSf.style.width = Math.min((Sf / 3.0) * 100, 100) + '%';
+
+      const hud = document.getElementById('status-hud');
+      if (Sf >= 1.5) {
+        hud.className = "status-hud safe";
+        hud.innerHTML = "✅ Safe Sizing &amp; Grip (Sf = " + Sf.toFixed(2) + " &ge; 1.5)";
+        barSf.style.background = "#16a34a";
+      } else if (Sf >= 1.0) {
+        hud.className = "status-hud danger";
+        hud.innerHTML = "⚠ Marginal Sizing! Slip Risk (Sf = " + Sf.toFixed(2) + " < 1.5)";
+        barSf.style.background = "#b45309";
+      } else {
+        hud.className = "status-hud danger";
+        hud.innerHTML = "❌ INSUFFICIENT FORCE! Specimen will slip &amp; break! (Sf = " + Sf.toFixed(2) + " < 1.0)";
+        barSf.style.background = "#dc2626";
+      }
+
+      return { Fh, Fr, Sf };
+    }
+
+    /* =========================================================================
+       LIFT ACTION & SHATTER ANIMATION
+       ========================================================================= */
+    function executeLiftAction() {
+      if (simState.lifting) return;
+      playClack();
+      const { Sf } = calculatePhysics();
+      simState.lifting = true;
+      simState.liftProgress = 0;
+      simState.liftSuccess = (Sf >= 1.0);
+      simState.fractured = false;
+      document.getElementById('btn-lift').disabled = true;
+
+      playLiftMotor();
+    }
+
+    function createFracturedHalves() {
+      if (brickMesh) brickMesh.visible = false;
+
+      const gType = document.getElementById('gripper-type').value;
+      const w = parseFloat(document.getElementById('param-w').value) * BRICK_SCALE;
+      const h = parseFloat(document.getElementById('param-h').value) * BRICK_SCALE;
+      const l = parseFloat(document.getElementById('param-l').value) * BRICK_SCALE;
+
+      if (gType === 'parallel') {
+        const halfGeo = new THREE.BoxGeometry(w, h, l * 0.48);
+        leftHalf = new THREE.Mesh(halfGeo, brickMat);
+        leftHalf.position.set(0, h / 2, -l * 0.28);
+        leftHalf.rotation.x = -0.22;
+        leftHalf.castShadow = true;
+        scene.add(leftHalf);
+
+        rightHalf = new THREE.Mesh(halfGeo, brickMat);
+        rightHalf.position.set(0.02, h / 2, l * 0.28);
+        rightHalf.rotation.x = 0.18;
+        rightHalf.castShadow = true;
+        scene.add(rightHalf);
+      } else {
+        const halfGeo = new THREE.BoxGeometry(l * 0.48, h, w);
+        leftHalf = new THREE.Mesh(halfGeo, brickMat);
+        leftHalf.position.set(-l * 0.28, h / 2, 0);
+        leftHalf.rotation.z = -0.22;
+        leftHalf.castShadow = true;
+        scene.add(leftHalf);
+
+        rightHalf = new THREE.Mesh(halfGeo, brickMat);
+        rightHalf.position.set(l * 0.28, h / 2, 0.02);
+        rightHalf.rotation.z = 0.18;
+        rightHalf.castShadow = true;
+        scene.add(rightHalf);
+      }
+
+      playFractureCrash();
+    }
+
+    function resetExperiment() {
+      simState.lifting = false;
+      simState.liftProgress = 0;
+      simState.fractured = false;
+      document.getElementById('btn-lift').disabled = false;
+
+      if (leftHalf) { scene.remove(leftHalf); leftHalf = null; }
+      if (rightHalf) { scene.remove(rightHalf); rightHalf = null; }
+
+      if (brickMesh) {
+        brickMesh.visible = true;
+        const h = parseFloat(document.getElementById('param-h').value) * BRICK_SCALE;
+        brickMesh.position.set(0, h / 2, 0);
+      }
+
+      updateKinematics(0);
+      calculatePhysics();
+    }
+
+    function toggleHelpModal(open) {
+      document.getElementById('help-modal').style.display = open ? 'flex' : 'none';
+      playClack();
+    }
+
+    /* =========================================================================
+       ANIMATION LOOP
+       ========================================================================= */
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = clock.getDelta();
+
+      if (simState.lifting) {
+        simState.liftProgress += delta * 0.85;
+        const h = parseFloat(document.getElementById('param-h').value) * BRICK_SCALE;
+
+        if (simState.liftSuccess) {
+          if (simState.liftProgress <= 1.0) {
+            const liftHeight = Math.sin(simState.liftProgress * (Math.PI / 2)) * 0.65;
+            brickMesh.position.y = (h / 2) + liftHeight;
+            updateKinematics(liftHeight);
+          } else {
+            simState.lifting = false;
+            document.getElementById('btn-lift').disabled = false;
+            playSuccessChime();
+          }
+        } else {
+          // Slip & Shatter
+          if (simState.liftProgress < 0.45) {
+            const partialLift = Math.sin(simState.liftProgress * Math.PI) * 0.35;
+            brickMesh.position.y = (h / 2) + partialLift;
+            updateKinematics(partialLift);
+          } else if (!simState.fractured) {
+            simState.fractured = true;
+            createFracturedHalves();
+            const hud = document.getElementById('status-hud');
+            hud.className = "status-hud danger";
+            hud.innerHTML = "💥 SPECIMEN SLIPPED &amp; BROKE INTO TWO! Safety Factor < 1.0";
+          } else {
+            if (simState.liftProgress <= 1.0) {
+              updateKinematics(0.5);
+            } else {
+              simState.lifting = false;
+              document.getElementById('btn-lift').disabled = false;
+            }
+          }
+        }
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    window.addEventListener('resize', () => {
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    });
+
+    // Start
+    updateDimensions();
+    animate();
+  </script>
+</body>
+</html>
