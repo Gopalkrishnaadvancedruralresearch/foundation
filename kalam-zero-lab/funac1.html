@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>GARRF Virtual Robotics & Mechatronics Laboratory</title>
+  <!-- Three.js, OrbitControls, and TransformControls via CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js"></script>
+  <style>
+    :root {
+      --bg-dark: #070b14;
+      --panel-bg: rgba(15, 23, 42, 0.95);
+      --accent: #f59e0b;
+      --accent-bright: #fbbf24;
+      --border: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --green: #10b981;
+      --blue: #38bdf8;
+      --danger: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      position: relative;
+    }
+
+    #canvas-container {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1;
+    }
+
+    #control-panel {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      width: 440px;
+      max-width: calc(100vw - 30px);
+      max-height: calc(100vh - 30px);
+      background: var(--panel-bg);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+      z-index: 30;
+      transition: max-height 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s ease, opacity 0.3s ease;
+    }
+
+    #control-panel.minimized {
+      max-height: 58px;
+      overflow: hidden;
+    }
+
+    #control-panel.closed {
+      transform: translateX(120%);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .panel-header {
+      padding: 10px 14px;
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      border-bottom: 2px solid var(--accent);
+      border-radius: 12px 12px 0 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .header-branding {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .header-branding img.logo-img {
+      width: 36px;
+      height: 36px;
+      object-fit: contain;
+      border-radius: 6px;
+      background: #ffffff;
+      padding: 2px;
+    }
+
+    .header-titles h1 {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--accent-bright);
+      text-transform: uppercase;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .header-titles h2 {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+    }
+
+    .india-icon-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 6px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+    }
+
+    .india-flag {
+      width: 22px;
+      height: 14px;
+      border-radius: 2px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .flag-saffron { background: #FF9933; height: 33.33%; }
+    .flag-white { background: #FFFFFF; height: 33.34%; display: flex; align-items: center; justify-content: center; }
+    .flag-green { background: #128807; height: 33.33%; }
+    .ashoka-dot { width: 3px; height: 3px; border-radius: 50%; border: 0.8px solid #000088; }
+
+    .window-actions {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .win-btn {
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      background: #334155;
+      color: #fff;
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+
+    .win-btn:hover { background: #475569; }
+    .win-btn.close:hover { background: var(--danger); }
+
+    #reopen-fab {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      z-index: 25;
+      padding: 10px 18px;
+      background: var(--accent);
+      color: #000;
+      font-weight: 700;
+      border: none;
+      border-radius: 30px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+      cursor: pointer;
+      display: none;
+    }
+
+    .content-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .card {
+      background: rgba(30, 41, 59, 0.7);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+
+    .card-title {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--blue);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 6px;
+    }
+
+    input[type="text"], select {
+      flex: 1;
+      padding: 6px 10px;
+      border-radius: 6px;
+      background: #0f172a;
+      border: 1px solid var(--border);
+      color: #fff;
+      font-size: 0.82rem;
+      outline: none;
+    }
+
+    button {
+      padding: 7px 12px;
+      border-radius: 6px;
+      border: none;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .btn-primary { background: var(--accent); color: #000; }
+    .btn-secondary { background: #334155; color: #fff; }
+    .btn-success { background: var(--green); color: #000; }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .product-list {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      max-height: 155px;
+      overflow-y: auto;
+    }
+
+    .prod-btn {
+      width: 100%;
+      text-align: left;
+      padding: 8px 10px;
+      border-radius: 6px;
+      background: #1e293b;
+      border: 1px solid var(--border);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.76rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .prod-btn.active {
+      border: 2px solid var(--accent-bright);
+      background: rgba(245, 158, 11, 0.2);
+      box-shadow: 0 0 12px rgba(245, 158, 11, 0.4);
+      transform: scale(1.02);
+    }
+
+    .badge-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      display: inline-block;
+      margin-right: 6px;
+    }
+
+    #hud-overlay {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      z-index: 10;
+    }
+
+    .hud-chip {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid var(--border);
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 0.74rem;
+      color: var(--accent-bright);
+      backdrop-filter: blur(8px);
+    }
+
+    .hud-chip span { color: #fff; font-weight: 600; }
+
+    .legal-footer {
+      padding: 8px 12px;
+      font-size: 0.62rem;
+      color: #64748b;
+      border-top: 1px solid var(--border);
+      background: #090d16;
+      line-height: 1.3;
+      border-radius: 0 0 12px 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="canvas-container"></div>
+
+  <button id="reopen-fab" onclick="togglePanelVisibility(true)">⚙️ Open Lab Controls</button>
+
+  <div id="hud-overlay">
+    <div class="hud-chip">Phase: <span id="hud-phase">4-Quadrant Workcell Setup</span></div>
+    <div class="hud-chip">Operator: <span id="hud-student">Aarav Sharma</span></div>
+    <div class="hud-chip">Active Mode: <span id="hud-state">Standby</span></div>
+    <div class="hud-chip">3D Direct Touch/Click: <span id="hud-touch" style="color:var(--green);">Ready (Click parts to drag/rotate)</span></div>
+  </div>
+
+  <div id="control-panel">
+    <div class="panel-header">
+      <div class="header-branding">
+        <img src="logo.jpeg" alt="GARRF Logo" class="logo-img" onerror="this.src='https://via.placeholder.com/36x36/1e293b/f59e0b?text=GARRF'" />
+        <div class="header-titles">
+          <h1>Gopalkrishna Foundation</h1>
+          <h2>Virtual Robotics & Mechatronics Lab</h2>
+        </div>
+      </div>
+      <div class="india-icon-group" title="Republic of India">
+        <div class="india-flag">
+          <div class="flag-saffron"></div>
+          <div class="flag-white"><div class="ashoka-dot"></div></div>
+          <div class="flag-green"></div>
+        </div>
+      </div>
+      <div class="window-actions">
+        <button class="win-btn" title="Minimize Window" onclick="toggleMinimize()">_</button>
+        <button class="win-btn close" title="Close Window" onclick="togglePanelVisibility(false)">✕</button>
+      </div>
+    </div>
+
+    <div class="content-scroll">
+      <!-- Visitor Onboarding -->
+      <div class="card">
+        <div class="card-title">👨‍🎓 Student Onboarding</div>
+        <div class="input-group">
+          <input type="text" id="visitor-name" placeholder="Your Name..." value="Aarav Sharma" />
+          <button class="btn-primary" onclick="setVisitorName()">Update</button>
+        </div>
+      </div>
+
+      <!-- Robot Model Selection & Assembly -->
+      <div class="card">
+        <div class="card-title">🦾 FANUC Robot Selection & Assembly</div>
+        <div style="margin-bottom: 8px;">
+          <select id="robot-model-select" onchange="changeRobotModel()">
+            <option value="LRMate">FANUC LR Mate 200iD (6-Axis Articulated)</option>
+            <option value="M10">FANUC M-10iD (Heavy Industrial Arm)</option>
+            <option value="SCARA">FANUC SR-3iA (High-Speed SCARA)</option>
+            <option value="DELTA">FANUC M-1iA (Parallel Delta Picker)</option>
+          </select>
+        </div>
+        <div class="grid-2">
+          <button class="btn-secondary" id="btn-step" onclick="assembleStep()">Step Build</button>
+          <button class="btn-primary" id="btn-auto" onclick="autoAssemble()">Auto Build</button>
+        </div>
+        <div id="assembly-status" style="font-size: 0.72rem; color: var(--accent-bright); margin-top: 6px;">
+          Status: Parts spread across Left workbench.
+        </div>
+      </div>
+
+      <!-- Sorting Target Controller -->
+      <div class="card">
+        <div class="card-title">📦 Conveyor Smart Sort (Products made in:)</div>
+        <div class="product-list" id="product-list-container"></div>
+      </div>
+
+      <!-- Python Code Download -->
+      <div class="card">
+        <div class="card-title">💻 Trajectory Math Code</div>
+        <button class="btn-success" style="width: 100%;" onclick="downloadPythonScript()">
+          📥 Download Python Trajectory (.py)
+        </button>
+      </div>
+    </div>
+
+    <div class="legal-footer">
+      <div><strong>Copyright © Dr Annamdas Venu Gopal Madhav, Shantanu Vasudev Krishna Annamdas @garrf.in 2026.</strong></div>
+      <div style="color: var(--danger); margin-top:2px;">⚠️ Strictly protected IP. Legal action will be taken if copied.</div>
+    </div>
+  </div>
+
+  <script>
+    /* =========================================================================
+       1. GLOBAL STATE & INSTITUTION DATA (ALL PRODUCTS SPAWNED CONTINUOUSLY)
+       ========================================================================= */
+    const STATE = {
+      visitorName: "Aarav Sharma",
+      selectedModel: "LRMate",
+      assemblyStage: 0,
+      isAssembled: false,
+      activeTarget: null,
+      robotBusy: false,
+      conveyorSpeed: 0.014,
+      leftPlacedCount: 0,
+      rightPlacedCount: 0,
+      holdingItem: null
+    };
+
+    // Full 10 products catalog - Every single item is actively present on the conveyor belt
+    const PRODUCTS = [
+      { id: "iisc", label: "IISc", institution: "IISc Bangalore", dest: "left", color: "#eab308", shape: "box", width: 0.65, height: 0.5, depth: 0.65 },
+      { id: "rit", label: "Rochester", institution: "Rochester Institute of Tech", dest: "right", color: "#ec4899", shape: "cylinder", radius: 0.32, height: 0.7 },
+      { id: "iitm", label: "IITM", institution: "IIT Madras", dest: "left", color: "#06b6d4", shape: "box", width: 0.6, height: 0.55, depth: 0.6 },
+      { id: "pitt", label: "Pittsburgh", institution: "University of Pittsburgh", dest: "right", color: "#f87171", shape: "box", width: 0.7, height: 0.4, depth: 0.5 },
+      { id: "iitk", label: "IITK", institution: "IIT Kanpur", dest: "left", color: "#84cc16", shape: "box", width: 0.6, height: 0.6, depth: 0.6 },
+      { id: "ntu", label: "NTU Singapore", institution: "NTU Singapore", dest: "right", color: "#2563eb", shape: "cylinder", radius: 0.35, height: 0.65 },
+      { id: "iitd", label: "IITD", institution: "IIT Delhi", dest: "left", color: "#ef4444", shape: "box", width: 0.65, height: 0.6, depth: 0.65 },
+      { id: "pmp", label: "PMP", institution: "PMP Industrial Product", dest: "right", color: "#f97316", shape: "box", width: 0.7, height: 0.5, depth: 0.5 },
+      { id: "iitkgp", label: "IITKgp", institution: "IIT Kharagpur", dest: "left", color: "#d97706", shape: "box", width: 0.7, height: 0.45, depth: 0.65 },
+      { id: "iitt", label: "IIT Tir", institution: "IIT Tirupati", dest: "left", color: "#10b981", shape: "cylinder", radius: 0.32, height: 0.6 }
+    ];
+
+    /* =========================================================================
+       2. THREE.JS SCENE SETUP & ELEVATED LIGHTING
+       ========================================================================= */
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x070b14);
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(0, 7.5, 14.5);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    container.appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.maxPolarAngle = Math.PI / 2 - 0.02;
+    controls.target.set(0, 1.8, 0);
+
+    const transformControl = new THREE.TransformControls(camera, renderer.domElement);
+    transformControl.size = 0.65;
+    scene.add(transformControl);
+
+    transformControl.addEventListener('dragging-changed', function (event) {
+      controls.enabled = !event.value;
+    });
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.55);
+    scene.add(ambientLight);
+
+    const highSpot = new THREE.SpotLight(0xffffff, 1.8, 30, Math.PI / 3, 0.4);
+    highSpot.position.set(0, 12, 0);
+    highSpot.castShadow = true;
+    scene.add(highSpot);
+
+    const highLedBar = new THREE.Mesh(
+      new THREE.BoxGeometry(11, 0.15, 0.8),
+      new THREE.MeshBasicMaterial({ color: 0xe0f2fe })
+    );
+    highLedBar.position.set(0, 11.9, 0);
+    scene.add(highLedBar);
+
+    /* =========================================================================
+       3. 4-QUADRANT WORKCELL ENVIRONMENT
+       - FRONT: Extended Conveyor Belt (Z = +2.4, Length = 15m)
+       - BACK:  Caricatures Walkway (Z = -2.8)
+       - LEFT:  Table A (X = -3.8)
+       - RIGHT: Table B (X = +3.8)
+       ========================================================================= */
+    const floor = new THREE.Mesh(
+      new THREE.PlaneGeometry(38, 38),
+      new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.6 })
+    );
+    floor.rotation.x = -Math.PI / 2;
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    const grid = new THREE.GridHelper(38, 38, 0xf59e0b, 0x1e293b);
+    grid.position.y = 0.01;
+    scene.add(grid);
+
+    const legGeo = new THREE.CylinderGeometry(0.08, 0.08, 1.6);
+    const legMat = new THREE.MeshStandardMaterial({ color: 0x0f172a });
+
+    function createTable(x, z, label) {
+      const g = new THREE.Group();
+      const top = new THREE.Mesh(
+        new THREE.BoxGeometry(2.6, 0.25, 3.4),
+        new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.5 })
+      );
+      top.position.set(x, 1.6, z);
+      g.add(top);
+
+      [[-1.1, -1.5], [1.1, -1.5], [-1.1, 1.5], [1.1, 1.5]].forEach(([ox, oz]) => {
+        const leg = new THREE.Mesh(legGeo, legMat);
+        leg.position.set(x + ox, 0.8, z + oz);
+        g.add(leg);
+      });
+
+      const rim = new THREE.Mesh(
+        new THREE.BoxGeometry(2.4, 0.1, 3.2),
+        new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.3 })
+      );
+      rim.position.set(x, 1.7, z);
+      g.add(rim);
+
+      const cv = document.createElement('canvas');
+      cv.width = 256; cv.height = 64;
+      const ctx = cv.getContext('2d');
+      ctx.fillStyle = 'rgba(15,23,42,0.95)'; ctx.fillRect(0,0,256,64);
+      ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 4; ctx.strokeRect(0,0,256,64);
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 24px Arial'; ctx.textAlign = 'center';
+      ctx.fillText(label, 128, 42);
+
+      const sign = new THREE.Mesh(
+        new THREE.PlaneGeometry(1.6, 0.4),
+        new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(cv), side: THREE.DoubleSide })
+      );
+      sign.position.set(x, 1.9, z + (z > 0 ? 1.75 : -1.75));
+      if (z <= 0) sign.rotation.y = Math.PI;
+      g.add(sign);
+
+      scene.add(g);
+      return g;
+    }
+
+    const leftTable = createTable(-3.8, 0, "LEFT TRAY: Indian Inst.");
+    const rightTable = createTable(3.8, 0, "RIGHT TRAY: Global Inst.");
+
+    // FRONT: Conveyor Belt System (Z = +2.4, Extended to 15m to smoothly display all 10 products simultaneously)
+    const conveyorGroup = new THREE.Group();
+    const conveyorBody = new THREE.Mesh(
+      new THREE.BoxGeometry(15, 0.4, 1.3),
+      new THREE.MeshStandardMaterial({ color: 0x1e293b })
+    );
+    conveyorBody.position.set(0, 1.4, 2.4);
+    conveyorGroup.add(conveyorBody);
+
+    const belt = new THREE.Mesh(
+      new THREE.BoxGeometry(14.8, 0.05, 1.1),
+      new THREE.MeshStandardMaterial({ color: 0x050811, roughness: 0.8 })
+    );
+    belt.position.set(0, 1.62, 2.4);
+    conveyorGroup.add(belt);
+
+    [-6.5, -3.5, 0, 3.5, 6.5].forEach(x => {
+      const leg = new THREE.Mesh(legGeo, legMat);
+      leg.position.set(x, 0.7, 2.4);
+      conveyorGroup.add(leg);
+    });
+    scene.add(conveyorGroup);
+
+    const targetBracket = new THREE.Mesh(
+      new THREE.RingGeometry(0.48, 0.58, 32),
+      new THREE.MeshBasicMaterial({ color: 0xfbbf24, side: THREE.DoubleSide })
+    );
+    targetBracket.rotation.x = -Math.PI / 2;
+    targetBracket.visible = false;
+    scene.add(targetBracket);
+
+    /* =========================================================================
+       4. PROCEDURAL CARICATURES - STANDING AT THE BACK (Z = -2.8)
+       ========================================================================= */
+    function buildCaricature(name, coatColor) {
+      const g = new THREE.Group();
+      const skin = new THREE.MeshStandardMaterial({ color: 0xffdfc4 });
+      const coat = new THREE.MeshStandardMaterial({ color: coatColor });
+
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.35, 20, 20), skin);
+      head.position.y = 2.4;
+      g.add(head);
+
+      const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.35, 1.0, 16), coat);
+      torso.position.y = 1.6;
+      g.add(torso);
+
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 1.1), new THREE.MeshStandardMaterial({ color: 0x111827 }));
+      leg.position.set(-0.14, 0.55, 0);
+      const leg2 = leg.clone();
+      leg2.position.x = 0.14;
+      g.add(leg, leg2);
+
+      const cv = document.createElement('canvas');
+      cv.width = 300; cv.height = 65;
+      const ctx = cv.getContext('2d');
+      ctx.fillStyle = 'rgba(15,23,42,0.9)'; ctx.fillRect(0,0,300,65);
+      ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 4; ctx.strokeRect(0,0,300,65);
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 22px Arial'; ctx.textAlign = 'center';
+      ctx.fillText(name, 150, 42);
+
+      const banner = new THREE.Mesh(
+        new THREE.PlaneGeometry(1.6, 0.35),
+        new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(cv), side: THREE.DoubleSide, transparent: true })
+      );
+      banner.position.y = 3.05;
+      g.add(banner);
+
+      return { group: g, banner };
+    }
+
+    const venuCar = buildCaricature("Dr. Venu Gopal", 0x1e3a8a);
+    venuCar.group.position.set(-1.8, 0, -2.8);
+    scene.add(venuCar.group);
+
+    const shantanuCar = buildCaricature("Shantanu Bro", 0x047857);
+    shantanuCar.group.position.set(1.8, 0, -2.8);
+    scene.add(shantanuCar.group);
+
+    let studentCar = buildCaricature(STATE.visitorName, 0xd97706);
+    studentCar.group.position.set(0, 0, -3.2);
+    scene.add(studentCar.group);
+
+    function setVisitorName() {
+      const val = document.getElementById('visitor-name').value.trim();
+      if (val) {
+        STATE.visitorName = val;
+        scene.remove(studentCar.group);
+        studentCar = buildCaricature(STATE.visitorName, 0xd97706);
+        studentCar.group.position.set(0, 0, -3.2);
+        scene.add(studentCar.group);
+        document.getElementById('hud-student').innerText = val;
+      }
+    }
+
+    /* =========================================================================
+       5. CENTERED FANUC ROBOT HIERARCHY & ASSEMBLY (X = 0, Z = 0)
+       ========================================================================= */
+    const robotYellow = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.3, metalness: 0.5 });
+    const metalDark = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.3, metalness: 0.8 });
+
+    const basePedestal = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.75, 1.6, 24), metalDark);
+    basePedestal.position.set(0, 0.8, 0);
+    scene.add(basePedestal);
+
+    const robotAssembly = new THREE.Group();
+    robotAssembly.position.set(0, 1.6, 0);
+    scene.add(robotAssembly);
+
+    let j1, j2, j3, j4, tcpNode;
+    let interactiveLinks = [];
+    let benchParts = [];
+
+    const STANDARD_SAFE_POSE = [0.0, -0.22, -0.42, 0.18];
+
+    function buildRobotModel(modelType) {
+      while (robotAssembly.children.length > 0) {
+        robotAssembly.remove(robotAssembly.children[0]);
+      }
+      benchParts.forEach(p => scene.remove(p));
+      benchParts = [];
+      interactiveLinks = [];
+
+      if (modelType === "SCARA") {
+        j1 = new THREE.Group();
+        const baseMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.5, 0.4, 20), metalDark);
+        robotAssembly.add(baseMesh);
+
+        const j1Mesh = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 1.2), robotYellow);
+        j1Mesh.position.set(0, 0.3, 0.4);
+        j1.add(j1Mesh);
+        robotAssembly.add(j1);
+
+        j2 = new THREE.Group();
+        j2.position.set(0, 0.3, 0.9);
+        const j2Mesh = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.35, 1.0), robotYellow);
+        j2Mesh.position.set(0, 0.2, 0.4);
+        j2.add(j2Mesh);
+        j1.add(j2);
+
+        j3 = new THREE.Group();
+        j3.position.set(0, 0.2, 0.8);
+        const quill = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 1.2, 16), metalDark);
+        quill.position.y = -0.2;
+        j3.add(quill);
+        j2.add(j3);
+
+        j4 = new THREE.Group();
+        j4.position.set(0, -0.7, 0);
+        tcpNode = new THREE.Group();
+        j4.add(tcpNode);
+        j3.add(j4);
+
+        interactiveLinks.push(j1Mesh, j2Mesh, quill);
+      } else {
+        const scale = modelType === "M10" ? 1.25 : 1.0;
+        
+        j1 = new THREE.Group();
+        const j0Mesh = new THREE.Mesh(new THREE.CylinderGeometry(0.5 * scale, 0.55 * scale, 0.4 * scale, 24), metalDark);
+        robotAssembly.add(j0Mesh);
+
+        const j1Mesh = new THREE.Mesh(new THREE.CylinderGeometry(0.45 * scale, 0.48 * scale, 0.5 * scale, 24), robotYellow);
+        j1Mesh.position.y = 0.25 * scale;
+        j1.add(j1Mesh);
+        robotAssembly.add(j1);
+
+        j2 = new THREE.Group();
+        j2.position.set(0, 0.5 * scale, 0);
+        const upperArm = new THREE.Mesh(new THREE.BoxGeometry(0.35 * scale, 1.6 * scale, 0.32 * scale), robotYellow);
+        upperArm.position.y = 0.8 * scale;
+        j2.add(upperArm);
+        j1.add(j2);
+
+        j3 = new THREE.Group();
+        j3.position.set(0, 1.6 * scale, 0);
+        const forearm = new THREE.Mesh(new THREE.BoxGeometry(0.28 * scale, 1.4 * scale, 0.26 * scale), robotYellow);
+        forearm.position.y = 0.7 * scale;
+        j3.add(forearm);
+        j2.add(j3);
+
+        j4 = new THREE.Group();
+        j4.position.set(0, 1.4 * scale, 0);
+        const wrist = new THREE.Mesh(new THREE.SphereGeometry(0.2 * scale, 16, 16), metalDark);
+        j4.add(wrist);
+
+        const fingerL = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.3, 0.08), metalDark);
+        fingerL.position.set(-0.12, 0.25, 0);
+        const fingerR = fingerL.clone();
+        fingerR.position.x = 0.12;
+        j4.add(fingerL, fingerR);
+
+        tcpNode = new THREE.Group();
+        tcpNode.position.set(0, 0.35, 0);
+        j4.add(tcpNode);
+        j3.add(j4);
+
+        interactiveLinks.push(j1Mesh, upperArm, forearm, wrist);
+      }
+
+      const benchGeos = [
+        new THREE.CylinderGeometry(0.5, 0.55, 0.4, 20),
+        new THREE.BoxGeometry(0.4, 1.5, 0.3),
+        new THREE.BoxGeometry(0.3, 1.3, 0.25),
+        new THREE.SphereGeometry(0.2, 16, 16)
+      ];
+
+      benchGeos.forEach((geo, i) => {
+        const p = new THREE.Mesh(geo, i % 2 === 0 ? metalDark : robotYellow);
+        p.position.set(-3.8, 1.9, -1.0 + i * 0.7);
+        scene.add(p);
+        benchParts.push(p);
+      });
+
+      robotAssembly.visible = false;
+      STATE.assemblyStage = 0;
+      STATE.isAssembled = false;
+      document.getElementById('assembly-status').innerText = `Status: ${modelType} parts spread on Left table.`;
+      document.getElementById('hud-phase').innerText = "Assembly Stage 0/4";
+    }
+
+    function changeRobotModel() {
+      STATE.selectedModel = document.getElementById('robot-model-select').value;
+      buildRobotModel(STATE.selectedModel);
+    }
+
+    function assembleStep() {
+      if (STATE.assemblyStage < benchParts.length) {
+        benchParts[STATE.assemblyStage].visible = false;
+        STATE.assemblyStage++;
+        document.getElementById('assembly-status').innerText = `Status: Stage ${STATE.assemblyStage}/${benchParts.length} complete.`;
+        document.getElementById('hud-phase').innerText = `Assembly Stage ${STATE.assemblyStage}/${benchParts.length}`;
+        robotAssembly.visible = true;
+
+        if (STATE.assemblyStage === benchParts.length) {
+          finishAssembly();
+        }
+      }
+    }
+
+    function autoAssemble() {
+      const timer = setInterval(() => {
+        if (STATE.assemblyStage < benchParts.length) {
+          assembleStep();
+        } else {
+          clearInterval(timer);
+        }
+      }, 300);
+    }
+
+    function finishAssembly() {
+      STATE.isAssembled = true;
+      document.getElementById('assembly-status').innerText = `✅ ${STATE.selectedModel} Assembled & Active!`;
+      document.getElementById('hud-phase').innerText = "Workcell Ready (Pick/Play)";
+      robotAssembly.visible = true;
+      benchParts.forEach(p => p.visible = false);
+      setJointAngles(...STANDARD_SAFE_POSE);
+    }
+
+    /* =========================================================================
+       6. DIRECT 3D CLICK & TOUCH TO JOG
+       ========================================================================= */
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    function onPointerDown(event) {
+      if (STATE.robotBusy) return;
+
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(interactiveLinks, true);
+
+      if (intersects.length > 0) {
+        let hitObj = intersects[0].object;
+        while (hitObj.parent && hitObj.parent !== j1 && hitObj.parent !== j2 && hitObj.parent !== j3 && hitObj.parent !== j4) {
+          hitObj = hitObj.parent;
+        }
+        const targetJoint = hitObj.parent || hitObj;
+
+        transformControl.attach(targetJoint);
+        transformControl.setMode('rotate');
+        document.getElementById('hud-state').innerText = "Interactive Direct Jog Mode";
+      } else {
+        if (!transformControl.dragging) {
+          transformControl.detach();
+        }
+      }
+    }
+
+    window.addEventListener('pointerdown', onPointerDown);
+
+    /* =========================================================================
+       7. ALL 10 PRODUCTS CONVEYOR INITIALIZATION & CONTINUOUS STREAM
+       ========================================================================= */
+    const conveyorItems = [];
+
+    function createObjectLabelTexture(text, bgColor) {
+      const cv = document.createElement('canvas');
+      cv.width = 256; cv.height = 70;
+      const ctx = cv.getContext('2d');
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
+      ctx.beginPath();
+      ctx.roundRect(4, 4, 248, 62, 12);
+      ctx.fill();
+      ctx.strokeStyle = bgColor;
+      ctx.lineWidth = 5;
+      ctx.stroke();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 30px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, 128, 36);
+      return new THREE.CanvasTexture(cv);
+    }
+
+    function spawnConveyorItem(prod, startX) {
+      const group = new THREE.Group();
+
+      let geo = prod.shape === 'box' 
+        ? new THREE.BoxGeometry(prod.width, prod.height, prod.depth)
+        : new THREE.CylinderGeometry(prod.radius, prod.radius, prod.height, 20);
+
+      const mat = new THREE.MeshStandardMaterial({ color: prod.color, roughness: 0.3 });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.castShadow = true;
+      group.add(mesh);
+
+      const labelTex = createObjectLabelTexture(prod.label, prod.color);
+      const labelMat = new THREE.MeshBasicMaterial({ map: labelTex, transparent: true, side: THREE.DoubleSide });
+      const labelMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.32), labelMat);
+      
+      const itemHeight = prod.height;
+      labelMesh.position.y = itemHeight / 2 + 0.32;
+      group.add(labelMesh);
+
+      group.position.set(startX, 1.62 + itemHeight / 2, 2.4);
+      scene.add(group);
+
+      return { group, mesh, labelMesh, data: prod, picked: false };
+    }
+
+    // Spawn ALL 10 products with even 1.4m spacing across the conveyor
+    PRODUCTS.forEach((p, i) => {
+      conveyorItems.push(spawnConveyorItem(p, -6.8 + i * 1.4));
+    });
+
+    const listContainer = document.getElementById('product-list-container');
+    PRODUCTS.forEach(p => {
+      const btn = document.createElement('button');
+      btn.className = 'prod-btn';
+      btn.id = `btn-p-${p.id}`;
+      const destTag = p.dest === 'left' ? 'LEFT TRAY' : 'RIGHT TRAY';
+      btn.innerHTML = `
+        <span style="display:flex;align-items:center;">
+          <span class="badge-color" style="background:${p.color};"></span>
+          <strong>${p.institution}</strong>
+        </span>
+        <span style="font-size:0.7rem;font-weight:700;color:var(--accent-bright);background:#0f172a;padding:2px 6px;border-radius:4px;">${p.label} ➔ ${destTag}</span>
+      `;
+      btn.onclick = () => selectProduct(p);
+      listContainer.appendChild(btn);
+    });
+
+    function selectProduct(p) {
+      if (STATE.robotBusy) return;
+      if (!STATE.isAssembled) {
+        alert("Please assemble the robot first using Step Build or Auto Build!");
+        return;
+      }
+      STATE.activeTarget = p;
+
+      document.querySelectorAll('.prod-btn').forEach(b => b.classList.remove('active'));
+      const activeBtn = document.getElementById(`btn-p-${p.id}`);
+      if (activeBtn) activeBtn.classList.add('active');
+
+      targetBracket.visible = true;
+
+      bringToStandardStance(() => {
+        document.getElementById('hud-state').innerText = `Standard Stance -> Tracking ${p.label} on conveyor`;
+      });
+    }
+
+    /* =========================================================================
+       8. CONTINUOUS-MOTION BELT INTERCEPTION & CALIBRATED SURFACE PLACEMENT
+       ========================================================================= */
+    function setJointAngles(theta1, theta2, theta3, theta4) {
+      if (j1) j1.rotation.y = theta1;
+      if (j2) j2.rotation.x = theta2;
+      if (j3) j3.rotation.x = theta3;
+      if (j4) j4.rotation.x = theta4;
+    }
+
+    function getCurrentJoints() {
+      return [
+        j1 ? j1.rotation.y : 0,
+        j2 ? j2.rotation.x : 0,
+        j3 ? j3.rotation.x : 0,
+        j4 ? j4.rotation.x : 0
+      ];
+    }
+
+    function bringToStandardStance(onComplete) {
+      transformControl.detach();
+      const start = getCurrentJoints();
+      const target = STANDARD_SAFE_POSE;
+      let frame = 0;
+      const steps = 35;
+
+      function resetLoop() {
+        frame++;
+        const t = frame / steps;
+        const current = interpolateJoints(start, target, t);
+        setJointAngles(...current);
+        if (frame < steps) {
+          requestAnimationFrame(resetLoop);
+        } else {
+          if (onComplete) onComplete();
+        }
+      }
+      resetLoop();
+    }
+
+    function executePickAndPlace(item) {
+      STATE.robotBusy = true;
+      item.picked = true;
+      targetBracket.visible = false;
+      transformControl.detach();
+
+      const isLeft = item.data.dest === "left";
+      const targetYaw = isLeft ? -Math.PI / 2 : Math.PI / 2;
+      const targetTableX = isLeft ? -3.8 : 3.8;
+      const placedIdx = isLeft ? STATE.leftPlacedCount : STATE.rightPlacedCount;
+      const tableZ = -0.8 + (placedIdx % 3) * 0.7;
+
+      // Surface-Calibrated Angles (Prevents collision inside belt & table tops)
+      const frontReadyHover  = [0.0, 0.28, 0.52, -0.15];
+      const frontGripSurface = [0.0, 0.72, 0.88, -0.42]; 
+      const armChestHoldPose = [0.0, -0.42, -0.68, 0.32]; 
+      const sideTurnAir      = [targetYaw, -0.35, -0.50, 0.20];
+      const sideGripSurface  = [targetYaw, 0.74, 0.90, -0.45]; 
+
+      const startPose = getCurrentJoints();
+      let frame = 0;
+      const totalFrames = 460;
+
+      function animateTrajectory() {
+        frame++;
+        let currentPose = [0, 0, 0, 0];
+
+        // Object NEVER stops moving while on belt during approach and descent
+        if (frame <= 80) {
+          item.group.position.x += STATE.conveyorSpeed;
+        }
+
+        if (frame <= 45) {
+          const t = frame / 45;
+          currentPose = interpolateJoints(startPose, frontReadyHover, t);
+          document.getElementById('hud-state').innerText = `Intercepting Moving Item: ${item.data.label}`;
+        } 
+        else if (frame <= 80) {
+          const t = (frame - 45) / 35;
+          currentPose = interpolateJoints(frontReadyHover, frontGripSurface, t);
+          document.getElementById('hud-state').innerText = `Contacting Surface: ${item.data.label}`;
+        } 
+        else if (frame <= 125) {
+          if (!STATE.holdingItem) {
+            STATE.holdingItem = item;
+            scene.remove(item.group);
+            tcpNode.add(item.group);
+            item.group.position.set(0, 0, 0);
+          }
+          const t = (frame - 80) / 45;
+          currentPose = interpolateJoints(frontGripSurface, armChestHoldPose, t);
+          document.getElementById('hud-state').innerText = `Holding in Robot Arm: ${item.data.label}`;
+        } 
+        else if (frame <= 305) {
+          currentPose = armChestHoldPose;
+          const secondsRemaining = ((305 - frame) / 60).toFixed(1);
+          document.getElementById('hud-state').innerText = `Holding in Arm for Inspection: ${secondsRemaining}s`;
+        } 
+        else if (frame <= 365) {
+          const t = (frame - 305) / 60;
+          currentPose = interpolateJoints(armChestHoldPose, sideTurnAir, t);
+          document.getElementById('hud-state').innerText = `Rotating toward ${isLeft ? 'LEFT' : 'RIGHT'} Table...`;
+        } 
+        else if (frame <= 410) {
+          const t = (frame - 365) / 45;
+          currentPose = interpolateJoints(sideTurnAir, sideGripSurface, t);
+          document.getElementById('hud-state').innerText = `Bending to place on ${isLeft ? 'LEFT' : 'RIGHT'} Table...`;
+        } 
+        else if (frame <= 435) {
+          currentPose = sideGripSurface;
+          if (STATE.holdingItem) {
+            tcpNode.remove(item.group);
+            scene.add(item.group);
+            item.group.position.set(targetTableX, 1.73 + item.data.height / 2, tableZ);
+            STATE.holdingItem = null;
+            if (isLeft) STATE.leftPlacedCount++;
+            else STATE.rightPlacedCount++;
+          }
+        } 
+        else {
+          const t = (frame - 435) / 25;
+          currentPose = interpolateJoints(sideGripSurface, STANDARD_SAFE_POSE, t);
+          document.getElementById('hud-state').innerText = `Returning to Safe Standby`;
+        }
+
+        setJointAngles(...currentPose);
+
+        if (frame < totalFrames) {
+          requestAnimationFrame(animateTrajectory);
+        } else {
+          STATE.robotBusy = false;
+          STATE.activeTarget = null;
+          document.getElementById('hud-state').innerText = "Standby (Ready for next selection)";
+          // Remove sorted item from the active moving conveyor array
+          const idx = conveyorItems.indexOf(item);
+          if (idx > -1) conveyorItems.splice(idx, 1);
+        }
+      }
+
+      animateTrajectory();
+    }
+
+    function interpolateJoints(a, b, t) {
+      const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+      return a.map((val, i) => val + (b[i] - val) * ease);
+    }
+
+    /* =========================================================================
+       9. PYTHON CODE DOWNLOAD SCRIPT
+       ========================================================================= */
+    function downloadPythonScript() {
+      const targetLabel = STATE.activeTarget ? STATE.activeTarget.label : "IISc";
+      const destSide = STATE.activeTarget ? STATE.activeTarget.dest : "left";
+
+      const code = `"""
+===============================================================================
+Gopalkrishna Advanced Rural Research Foundation (GARRF)
+Robotics & Mechatronics Virtual Laboratory - 4-Quadrant Workcell Trajectory
+Lab Directors: Dr. Annamdas Venu Gopal Madhav, Shantanu Vasudev Krishna Annamdas
+Website: garrf.in (2026)
+
+Target: ${targetLabel} -> Sorted to ${destSide.toUpperCase()} Table
+Conveyor Stream: All 10 Institutional Products Active
+Copyright @ Dr Annamdas Venu Gopal Madhav, Shantanu Vasudev Krishna Annamdas @garrf.in 2026
+NOTE: Legal action will be taken if this architecture or design is copied.
+===============================================================================
+"""
+
+import numpy as np
+import time
+
+class QuadWorkcellController:
+    def __init__(self, model="${STATE.selectedModel}", operator="${STATE.visitorName}"):
+        self.model = model
+        self.operator = operator
+        self.front_conveyor_z = 2.4
+        self.conveyor_top_y   = 1.62
+        self.table_top_y      = 1.60
+        self.left_table_x     = -3.8
+        self.right_table_x    = 3.8
+        print(f"[*] Initialized Calibrated Workcell for {self.operator}")
+
+    def execute_sorting_cycle(self, product_label="${targetLabel}", destination="${destSide}"):
+        print(f"\\n--- Intercepting Moving Target: {product_label} ---")
+        print("[1] Continuously tracking moving belt stream at y=1.62m")
+        print("[2] Gripping item from moving stream...")
+        print("[3] Retracting to arm chest inspection pose for 3 seconds...")
+        for s in range(3, 0, -1):
+            print(f"    Inspecting... {s}s remaining")
+            time.sleep(1.0)
+            
+        yaw_angle = -90.0 if destination == "left" else 90.0
+        print(f"[4] Rotating Base Joint J1 to {yaw_angle}° ({destination.upper()} Table)")
+        table_coord = (self.left_table_x if destination == "left" else self.right_table_x, 1.73, 0.0)
+        print(f"[5] Calibrated bend to table surface at: {table_coord}")
+        print(f"[6] Released. Cycle Complete for {product_label}!\\n")
+
+if __name__ == "__main__":
+    controller = QuadWorkcellController()
+    controller.execute_sorting_cycle()
+`;
+      const blob = new Blob([code], { type: 'text/x-python' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `GARRF_4Quad_${STATE.selectedModel}_${STATE.visitorName.replace(/\s+/g, '_')}.py`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    /* =========================================================================
+       10. RESPONSIVE MODAL CONTROL
+       ========================================================================= */
+    function togglePanelVisibility(show) {
+      const panel = document.getElementById('control-panel');
+      const fab = document.getElementById('reopen-fab');
+      if (show) {
+        panel.classList.remove('closed');
+        fab.style.display = 'none';
+      } else {
+        panel.classList.add('closed');
+        fab.style.display = 'block';
+      }
+    }
+
+    function toggleMinimize() {
+      document.getElementById('control-panel').classList.toggle('minimized');
+    }
+
+    /* =========================================================================
+       11. MAIN LOOP & CONTINUOUS CONVEYOR STREAM WRAP-AROUND
+       ========================================================================= */
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const time = clock.getElapsedTime();
+
+      // All conveyor objects continuously move at uniform belt speed
+      conveyorItems.forEach((item) => {
+        if (!item.picked) {
+          item.group.position.x += STATE.conveyorSpeed;
+          item.labelMesh.quaternion.copy(camera.quaternion);
+
+          // Target bracket tracks the active item smoothly while traveling on belt
+          if (STATE.activeTarget && item.data.id === STATE.activeTarget.id) {
+            targetBracket.position.set(item.group.position.x, 1.65, 2.4);
+            const scale = 1.0 + Math.sin(time * 6) * 0.12;
+            targetBracket.scale.set(scale, scale, scale);
+
+            // Trigger pickup naturally when item crosses robot front threshold (-0.35 to 0.35)
+            if (!STATE.robotBusy && STATE.isAssembled && item.group.position.x > -0.35 && item.group.position.x < 0.35) {
+              executePickAndPlace(item);
+            }
+          }
+
+          // Loop smoothly back to conveyor start when reaching end of 15m belt
+          if (item.group.position.x > 7.2) {
+            item.group.position.x = -7.2;
+          }
+        } else {
+          item.labelMesh.quaternion.copy(camera.quaternion);
+        }
+      });
+
+      venuCar.banner.quaternion.copy(camera.quaternion);
+      shantanuCar.banner.quaternion.copy(camera.quaternion);
+      if (studentCar) studentCar.banner.quaternion.copy(camera.quaternion);
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    buildRobotModel("LRMate");
+    animate();
+  </script>
+</body>
+</html>
