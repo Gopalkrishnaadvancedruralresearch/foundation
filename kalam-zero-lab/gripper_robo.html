@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GARRF - Virtual Lab 2: Robotic Force & Tactile Sensing</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Three.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- OrbitControls CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <!-- FontAwesome CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700;800&family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Inter, sans-serif;
+      background-color: #f1f5f9;
+      color: #0f172a;
+      user-select: none;
+      -webkit-user-select: none;
+      overflow-x: hidden;
+    }
+    .view-card {
+      position: relative;
+      background: #e2e8f0;
+      border: 1px solid #cbd5e1;
+      overflow: hidden;
+    }
+    .view-banner {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(30, 41, 59, 0.92);
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 0.95rem;
+      letter-spacing: 0.05em;
+      padding: 5px 12px;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      z-index: 10;
+      text-transform: uppercase;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+    }
+    .warning-banner {
+      position: absolute;
+      top: 16%;
+      right: 8%;
+      background: rgba(255, 255, 255, 0.96);
+      border: 2px solid #ef4444;
+      color: #1e293b;
+      font-weight: 800;
+      font-size: 0.9rem;
+      padding: 10px 14px;
+      border-radius: 8px;
+      box-shadow: 0 10px 25px -5px rgba(239, 68, 68, 0.4);
+      z-index: 20;
+      line-height: 1.25;
+      max-width: 170px;
+      text-align: center;
+      animation: pulseAlert 1.2s infinite ease-in-out;
+      pointer-events: none;
+    }
+    @keyframes pulseAlert {
+      0%, 100% { transform: scale(1); box-shadow: 0 4px 15px rgba(239, 68, 68, 0.35); }
+      50% { transform: scale(1.05); box-shadow: 0 10px 25px rgba(239, 68, 68, 0.65); border-color: #dc2626; }
+    }
+    .toggle-active {
+      background-color: #0284c7 !important;
+      color: #ffffff !important;
+      font-weight: 700;
+    }
+    .tactile-cell {
+      transition: background-color 0.15s ease;
+    }
+    input[type=range] {
+      accent-color: #0284c7;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between">
+
+  <header class="w-full bg-[#e8f1f5] border-b border-slate-300 shadow-sm px-4 py-2.5">
+    <div class="max-w-[1920px] mx-auto flex items-center justify-between">
+      <div class="w-12 h-12 flex-shrink-0"></div> <!-- Balance spacer -->
+      
+      <div class="text-center flex-1">
+        <h1 class="text-xl sm:text-2xl md:text-3xl font-extrabold text-[#0d3b66] tracking-tight">
+          Gopalkrishna Advanced Rural Research Foundation, India
+        </h1>
+        <h2 class="text-sm sm:text-base md:text-lg font-semibold text-slate-700 tracking-wide mt-0.5">
+          Virtual Lab 2: Robotic Force &amp; Tactile Sensing
+        </h2>
+      </div>
+
+      <!-- Foundation Logo Container with SVG fallback -->
+      <div class="w-14 h-14 flex-shrink-0 flex items-center justify-center relative">
+        <img 
+          src="Logo.jpeg" 
+          alt="GARRF Logo" 
+          class="max-w-full max-h-full object-contain"
+          onerror="this.style.display='none'; document.getElementById('fallback-logo-svg').style.display='block';"
+        />
+        <svg id="fallback-logo-svg" class="hidden w-12 h-12 text-[#0284c7]" viewBox="0 0 100 100" fill="none" stroke="currentColor">
+          <circle cx="50" cy="50" r="42" stroke="#0369a1" stroke-width="6" stroke-dasharray="8 4"/>
+          <circle cx="50" cy="50" r="28" fill="#e0f2fe" stroke="#0284c7" stroke-width="4"/>
+          <path d="M50 24 L50 76 M24 50 L76 50 M32 32 L68 68 M32 68 L68 32" stroke="#0284c7" stroke-width="3"/>
+          <circle cx="50" cy="50" r="10" fill="#0369a1"/>
+        </svg>
+      </div>
+    </div>
+  </header>
+
+  <main class="w-full flex-1 max-w-[1920px] mx-auto p-2 sm:p-3 grid grid-cols-1 xl:grid-cols-12 gap-3 items-stretch">
+    
+    <!-- LEFT VIEWPORT: ACTION: LIFTING & SLIP -->
+    <div class="xl:col-span-4 view-card rounded-md shadow-md min-h-[440px] xl:min-h-[640px] flex flex-col">
+      <div class="view-banner">ACTION: LIFTING &amp; SLIP</div>
+
+      <!-- Warning overlay tag -->
+      <div id="slip-warning-box" class="warning-banner hidden">
+        Slipping!<br>Increase grip force to avoid dropping!
+      </div>
+
+      <!-- Three.js Canvas for Left Scene -->
+      <div class="flex-1 w-full h-full relative" id="left-canvas-container">
+        <canvas id="left-viewport" class="w-full h-full block"></canvas>
+      </div>
+    </div>
+
+    <!-- CENTER VIEWPORT: ACTION: INSERTION & COMPLIANCE -->
+    <div class="xl:col-span-5 view-card rounded-md shadow-md min-h-[440px] xl:min-h-[640px] flex flex-col">
+      <div class="view-banner">ACTION: INSERTION &amp; COMPLIANCE</div>
+
+      <!-- Wedged/Jammed overlay banner -->
+      <div id="jam-warning-box" class="warning-banner hidden" style="top: 14%; left: 8%; right: auto; border-color: #f59e0b; background: rgba(255,255,255,0.96);">
+        Wedged / Jammed!<br><span class="text-xs font-normal">Turn Compliance [On] or decrease angle to mate.</span>
+      </div>
+
+      <!-- Three.js Canvas for Center Scene -->
+      <div class="flex-1 w-full h-full relative" id="center-canvas-container">
+        <canvas id="center-viewport" class="w-full h-full block"></canvas>
+      </div>
+    </div>
+
+    <aside class="xl:col-span-3 bg-[#e9ecef] border border-slate-300 rounded-md shadow-md p-3 flex flex-col justify-between gap-2.5">
+      
+      <!-- Top Gauges Section -->
+      <div>
+        <div class="grid grid-cols-2 gap-2">
+          
+          <!-- Dual Gauges Column -->
+          <div class="bg-white border border-slate-300 rounded p-2 flex flex-col items-center justify-between shadow-sm">
+            <h3 class="font-bold text-slate-800 text-sm tracking-wide">Dashboard</h3>
+            
+            <!-- Gauge 1: Contact Force -->
+            <div class="flex flex-col items-center">
+              <canvas id="contact-gauge-canvas" width="130" height="75" class="w-[125px] h-[72px]"></canvas>
+              <div class="text-[11px] font-bold text-slate-700 -mt-1">Contact Force (N)</div>
+            </div>
+
+            <!-- Gauge 2: Pinch Force -->
+            <div class="flex flex-col items-center mt-1">
+              <canvas id="pinch-gauge-canvas" width="130" height="75" class="w-[125px] h-[72px]"></canvas>
+              <div class="text-[11px] font-bold text-slate-700 -mt-1">Pinch Force (N)</div>
+            </div>
+          </div>
+
+          <!-- Tactile Array Pressure Map Column -->
+          <div class="bg-white border border-slate-300 rounded p-2 flex flex-col items-center justify-between shadow-sm">
+            <h3 class="font-bold text-slate-800 text-xs text-center leading-tight">Tactile Array<br>Pressure Map</h3>
+            
+            <div id="tactile-matrix" class="grid grid-cols-4 gap-1 p-1 bg-slate-200 border border-slate-300 rounded w-[116px] h-[116px]">
+              <!-- 16 cells injected dynamically -->
+            </div>
+
+            <div class="text-[10px] font-semibold text-slate-600 text-center leading-tight mt-1">
+              Tactile Array<br>Pressure Map
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Real-Time Scope Chart -->
+        <div class="bg-white border border-slate-300 rounded p-2 mt-2 shadow-sm">
+          <div class="flex justify-between items-center mb-1">
+            <div class="flex items-center gap-3">
+              <span class="flex items-center text-[10px] font-bold text-sky-700">
+                <span class="w-3 h-0.5 bg-[#0284c7] inline-block mr-1"></span> Fz
+              </span>
+              <span class="flex items-center text-[10px] font-bold text-amber-600">
+                <span class="w-3 h-0.5 bg-[#f59e0b] inline-block mr-1"></span> Mx
+              </span>
+            </div>
+            <span class="text-[10px] text-slate-400 font-mono">50 Hz Real-Time</span>
+          </div>
+          <div class="w-full h-20 bg-slate-50 border border-slate-200 rounded relative overflow-hidden">
+            <canvas id="strip-chart-canvas" class="w-full h-full block"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Controls Deck -->
+      <div class="bg-white border border-slate-300 rounded p-2.5 shadow-sm space-y-2 text-xs">
+        
+        <!-- Gripper Squeeze Force Slider -->
+        <div>
+          <div class="flex justify-between items-center">
+            <label class="font-bold text-slate-800">
+              Gripper Squeeze Force: <span id="lbl-squeeze" class="font-mono text-sky-800">4.5 N</span>
+            </label>
+            <span id="lbl-slip-warning" class="text-[10px] font-bold text-rose-600">
+              (Warning: Slip Detected!)
+            </span>
+          </div>
+          <input id="slider-squeeze" type="range" min="0" max="30" step="0.5" value="4.5" class="w-full h-1 bg-slate-200 rounded">
+        </div>
+
+        <!-- Lifting Velocity Slider -->
+        <div>
+          <div class="flex justify-between items-center">
+            <label class="font-bold text-slate-800">
+              Lifting Velocity: <span id="lbl-velocity" class="font-mono text-slate-700">0.15 m/s</span>
+            </label>
+          </div>
+          <input id="slider-velocity" type="range" min="0.05" max="0.50" step="0.05" value="0.15" class="w-full h-1 bg-slate-200 rounded">
+        </div>
+
+        <!-- Mechanical Compliance Toggle Switch -->
+        <div class="flex items-center justify-between pt-1">
+          <label class="font-bold text-slate-800">Mechanical Compliance:</label>
+          <div class="inline-flex rounded border border-slate-300 overflow-hidden font-bold">
+            <button id="toggle-comp-on" class="px-3 py-0.5 bg-slate-100 text-slate-600 hover:bg-slate-200 transition">[On]</button>
+            <button id="toggle-comp-off" class="px-3 py-0.5 toggle-active transition">[Off]</button>
+          </div>
+        </div>
+
+        <!-- Part Alignment Angle Slider -->
+        <div>
+          <div class="flex justify-between items-center">
+            <label class="font-bold text-slate-800">
+              Part Alignment Angle: <span id="lbl-angle" class="font-mono text-amber-700">3.5 deg</span>
+            </label>
+          </div>
+          <input id="slider-angle" type="range" min="0" max="10" step="0.5" value="3.5" class="w-full h-1 bg-slate-200 rounded">
+        </div>
+
+        <!-- Action Pushbuttons -->
+        <div class="pt-2 space-y-1.5 font-bold">
+          <button id="btn-pick-lift" class="w-full py-2 bg-[#dbeafe] hover:bg-[#bfdbfe] active:bg-[#93c5fd] text-[#1e3a8a] border border-[#93c5fd] rounded shadow-sm transition uppercase tracking-wider text-xs">
+            PICK &amp; LIFT PART
+          </button>
+          <button id="btn-try-insert" class="w-full py-2 bg-[#e0f2fe] hover:bg-[#bae6fd] active:bg-[#7dd3fc] text-[#0369a1] border border-[#7dd3fc] rounded shadow-sm transition uppercase tracking-wider text-xs">
+            TRY INSERTION
+          </button>
+          <button id="btn-reset" class="w-full py-2 bg-slate-200 hover:bg-slate-300 active:bg-slate-400 text-slate-800 border border-slate-400 rounded shadow-sm transition uppercase tracking-wider text-xs">
+            RESET POSITION
+          </button>
+        </div>
+
+      </div>
+
+    </aside>
+  </main>
+
+  <footer class="w-full bg-[#cbd5e1] border-t border-slate-300 py-2 px-4 text-center text-xs font-semibold text-slate-700">
+    Copyright @ Dr Annamdas Venu Gopal Madhav &amp; Shantanu Vasudev Krishna Annamdas
+  </footer>
+
+  <script>
+    class SimulationAudio {
+      constructor() {
+        this.ctx = null;
+      }
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+      playMotor(dur = 0.3) {
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(220, this.ctx.currentTime);
+          osc.frequency.linearRampToValueAtTime(340, this.ctx.currentTime + dur);
+          gain.gain.setValueAtTime(0.025, this.ctx.currentTime);
+          gain.gain.linearRampToValueAtTime(0.001, this.ctx.currentTime + dur);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + dur);
+        } catch(e) {}
+      }
+      playClink() {
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(1200, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(140, this.ctx.currentTime + 0.12);
+          gain.gain.setValueAtTime(0.18, this.ctx.currentTime);
+          gain.gain.linearRampToValueAtTime(0.001, this.ctx.currentTime + 0.12);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.13);
+        } catch(e) {}
+      }
+      playThud() {
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(90, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(30, this.ctx.currentTime + 0.25);
+          gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+          gain.gain.linearRampToValueAtTime(0.001, this.ctx.currentTime + 0.25);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.26);
+        } catch(e) {}
+      }
+      playSlipBeep() {
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(750, this.ctx.currentTime);
+          osc.frequency.setValueAtTime(620, this.ctx.currentTime + 0.08);
+          gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+          gain.gain.linearRampToValueAtTime(0.001, this.ctx.currentTime + 0.16);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.17);
+        } catch(e) {}
+      }
+      playSuccessChime() {
+        this.init();
+        if (!this.ctx) return;
+        try {
+          [523.25, 659.25, 783.99].forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, this.ctx.currentTime + idx * 0.09);
+            gain.gain.setValueAtTime(0.08, this.ctx.currentTime + idx * 0.09);
+            gain.gain.linearRampToValueAtTime(0.001, this.ctx.currentTime + idx * 0.09 + 0.25);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(this.ctx.currentTime + idx * 0.09);
+            osc.stop(this.ctx.currentTime + idx * 0.09 + 0.27);
+          });
+        } catch(e) {}
+      }
+    }
+    const audioLab = new SimulationAudio();
+
+    const SIM = {
+      // Sliders & Toggles
+      squeezeForce: 4.5,     // Newtons
+      liftingVel: 0.15,       // m/s
+      compliance: false,     // false: [Off], true: [On]
+      alignAngle: 3.5,       // Degrees
+      SLIP_THRESHOLD: 8.5,   // Below 8.5 N, friction fails and peg drops
+
+      // Left Scene (Lift & Slip)
+      leftState: 'IDLE',     // 'IDLE', 'LIFTING', 'SLIPPING', 'DROPPED', 'HELD'
+      leftArmZ: 0.0,
+      targetLeftArmZ: 0.0,
+      leftPegY: 0.0,         // Local offset
+      leftPegDropped: false,
+      leftPegVelocityY: 0.0,
+      isSlipping: true,
+
+      // Center Scene (Insertion & Compliance)
+      centerState: 'IDLE',   // 'IDLE', 'INSERTING', 'JAMMED', 'SEATED'
+      centerArmZ: 0.0,
+      targetCenterArmZ: 0.0,
+      centerArmTilt: 0.0,
+      targetCenterArmTilt: 0.0,
+      contactForce: 0.0,
+      pinchForce: 0.0,
+      Fz: 0.0,
+      Mx: 0.0,
+
+      // Oscilloscope buffer
+      scopePoints: 100,
+      historyFz: new Array(100).fill(0),
+      historyMx: new Array(100).fill(0)
+    };
+  </script>
+
+  <script>
+    // Helper to generate a realistic industrial robotic manipulator arm
+    function createIndustrialRobot(hasFTSensor = false) {
+      const root = new THREE.Group();
+
+      const darkMetalMat = new THREE.MeshStandardMaterial({
+        color: 0x334155,
+        roughness: 0.35,
+        metalness: 0.75
+      });
+      const jointMat = new THREE.MeshStandardMaterial({
+        color: 0x1e293b,
+        roughness: 0.45,
+        metalness: 0.85
+      });
+      const chromeMat = new THREE.MeshStandardMaterial({
+        color: 0x94a3b8,
+        roughness: 0.2,
+        metalness: 0.95
+      });
+
+      // Robot Base Pedestal
+      const basePedestal = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.85, 0.45, 32), jointMat);
+      basePedestal.position.y = 0.225;
+      basePedestal.castShadow = true;
+      root.add(basePedestal);
+
+      // Base Flange ring
+      const baseRing = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.88, 0.08, 32), darkMetalMat);
+      baseRing.position.y = 0.04;
+      baseRing.receiveShadow = true;
+      root.add(baseRing);
+
+      // Shoulder J1 housing
+      const shoulderJ1 = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.6, 0.65, 32), darkMetalMat);
+      shoulderJ1.position.y = 0.75;
+      shoulderJ1.castShadow = true;
+      root.add(shoulderJ1);
+
+      // Shoulder joint cylinder
+      const shoulderJoint = new THREE.Mesh(new THREE.CylinderGeometry(0.48, 0.48, 0.7, 32), jointMat);
+      shoulderJoint.rotation.x = Math.PI / 2;
+      shoulderJoint.position.set(0, 1.15, 0);
+      root.add(shoulderJoint);
+
+      // Upper Arm Link 1 (tilted forward)
+      const armLink1 = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.44, 1.8, 32), darkMetalMat);
+      armLink1.position.set(0.45, 1.95, 0);
+      armLink1.rotation.z = -0.45;
+      armLink1.castShadow = true;
+      root.add(armLink1);
+
+      // Elbow joint
+      const elbowJoint = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.65, 32), jointMat);
+      elbowJoint.rotation.x = Math.PI / 2;
+      elbowJoint.position.set(0.9, 2.7, 0);
+      root.add(elbowJoint);
+
+      // Forearm Link 2 (extending forward-horizontal)
+      const armLink2 = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.38, 1.6, 32), darkMetalMat);
+      armLink2.position.set(1.65, 2.8, 0);
+      armLink2.rotation.z = Math.PI / 2;
+      armLink2.castShadow = true;
+      root.add(armLink2);
+
+      // Wrist pitch assembly
+      const wristJoint = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.55, 32), jointMat);
+      wristJoint.rotation.x = Math.PI / 2;
+      wristJoint.position.set(2.45, 2.8, 0);
+      root.add(wristJoint);
+
+      // Wrist vertical carriage (This moves up and down during action)
+      const wristAssembly = new THREE.Group();
+      wristAssembly.position.set(2.45, 2.65, 0);
+
+      // Downward wrist flange
+      const wristFlange = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.4, 32), chromeMat);
+      wristFlange.position.y = -0.15;
+      wristAssembly.add(wristFlange);
+
+      let ftSensorDisc = null;
+      let gripperMountY = -0.35;
+
+      // 6-AXIS F/T SENSOR DISC (Only in Center View)
+      if (hasFTSensor) {
+        ftSensorDisc = new THREE.Group();
+        ftSensorDisc.position.y = -0.38;
+
+        const sensorBody = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.42, 0.42, 0.18, 32),
+          new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.8, roughness: 0.25 })
+        );
+        ftSensorDisc.add(sensorBody);
+
+        const gaugeRing = new THREE.Mesh(
+          new THREE.TorusGeometry(0.43, 0.02, 16, 32),
+          new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
+        );
+        gaugeRing.rotation.x = Math.PI / 2;
+        ftSensorDisc.add(gaugeRing);
+
+        wristAssembly.add(ftSensorDisc);
+        gripperMountY = -0.52;
+      }
+
+      // 2-Finger Parallel Servo Gripper (Updated: Clean Industrial White)
+      const gripperGroup = new THREE.Group();
+      gripperGroup.position.y = gripperMountY;
+
+      // Gripper main body (High-contrast pure industrial white)
+      const gripperWhiteMat = new THREE.MeshStandardMaterial({
+        color: 0xf8fafc,
+        roughness: 0.25,
+        metalness: 0.15
+      });
+
+      const gripperBody = new THREE.Mesh(
+        new THREE.BoxGeometry(0.85, 0.28, 0.45),
+        gripperWhiteMat
+      );
+      gripperBody.position.y = -0.12;
+      gripperBody.castShadow = true;
+      gripperGroup.add(gripperBody);
+
+      // Contrast accent stripe/plate on white gripper body
+      const accentPlate = new THREE.Mesh(
+        new THREE.BoxGeometry(0.86, 0.06, 0.35),
+        new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.4, metalness: 0.5 })
+      );
+      accentPlate.position.y = -0.12;
+      gripperGroup.add(accentPlate);
+
+      // Gripper fingers (Pure White) with tactile sensor pads
+      const fingerMat = new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        roughness: 0.2,
+        metalness: 0.1
+      });
+      const fingerPadMat = new THREE.MeshStandardMaterial({
+        color: 0x0284c7,
+        emissive: 0x0284c7,
+        emissiveIntensity: 0.5
+      });
+
+      // Left Finger (White)
+      const leftFinger = new THREE.Group();
+      leftFinger.position.set(-0.35, -0.4, 0);
+      const leftUpper = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.45, 0.25), fingerMat);
+      leftFinger.add(leftUpper);
+      const leftPad = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.35, 0.2), fingerPadMat);
+      leftPad.position.set(0.05, -0.02, 0);
+      leftFinger.add(leftPad);
+      gripperGroup.add(leftFinger);
+
+      // Right Finger (White)
+      const rightFinger = new THREE.Group();
+      rightFinger.position.set(0.35, -0.4, 0);
+      const rightUpper = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.45, 0.25), fingerMat);
+      rightFinger.add(rightUpper);
+      const rightPad = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.35, 0.2), fingerPadMat);
+      rightPad.position.set(-0.05, -0.02, 0);
+      rightFinger.add(rightPad);
+      gripperGroup.add(rightFinger);
+
+      wristAssembly.add(gripperGroup);
+      root.add(wristAssembly);
+
+      return {
+        root,
+        wristAssembly,
+        ftSensorDisc,
+        leftFinger,
+        rightFinger,
+        fingerPadMat
+      };
+    }
+  </script>
+
+  <script>
+    const leftCanvas = document.getElementById('left-viewport');
+    const leftContainer = document.getElementById('left-canvas-container');
+    const leftScene = new THREE.Scene();
+    leftScene.background = new THREE.Color(0xdce5ec);
+
+    const leftCamera = new THREE.PerspectiveCamera(40, leftContainer.clientWidth / leftContainer.clientHeight, 0.1, 100);
+    leftCamera.position.set(2.4, 2.5, 4.4);
+
+    const leftRenderer = new THREE.WebGLRenderer({ canvas: leftCanvas, antialias: true });
+    leftRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    leftRenderer.setSize(leftContainer.clientWidth, leftContainer.clientHeight);
+    leftRenderer.shadowMap.enabled = true;
+
+    const leftControls = new THREE.OrbitControls(leftCamera, leftCanvas);
+    leftControls.enableDamping = true;
+    leftControls.target.set(1.9, 1.4, 0);
+
+    // Left Scene Lighting
+    const leftAmb = new THREE.AmbientLight(0xffffff, 0.85);
+    leftScene.add(leftAmb);
+    const leftDir = new THREE.DirectionalLight(0xffffff, 1.1);
+    leftDir.position.set(5, 8, 5);
+    leftDir.castShadow = true;
+    leftScene.add(leftDir);
+
+    // Dark tabletop
+    const tableMat = new THREE.MeshStandardMaterial({ color: 0x1f242d, roughness: 0.3, metalness: 0.4 });
+    const leftTable = new THREE.Mesh(new THREE.BoxGeometry(8, 0.2, 6), tableMat);
+    leftTable.position.y = -0.1;
+    leftTable.receiveShadow = true;
+    leftScene.add(leftTable);
+
+    // Left Ground Metal Fixture Plate with center hole
+    const leftPlate = new THREE.Mesh(
+      new THREE.BoxGeometry(1.9, 0.18, 1.9),
+      new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.8, roughness: 0.3 })
+    );
+    leftPlate.position.set(2.45, 0.09, 0);
+    leftPlate.receiveShadow = true;
+    leftPlate.castShadow = true;
+    leftScene.add(leftPlate);
+
+    const leftHoleRim = new THREE.Mesh(
+      new THREE.RingGeometry(0.36, 0.44, 32),
+      new THREE.MeshBasicMaterial({ color: 0x0284c7, side: THREE.DoubleSide })
+    );
+    leftHoleRim.rotation.x = -Math.PI / 2;
+    leftHoleRim.position.set(2.45, 0.182, 0);
+    leftScene.add(leftHoleRim);
+
+    // Build Left Robot (featuring White Gripper)
+    const leftRobot = createIndustrialRobot(false);
+    leftScene.add(leftRobot.root);
+
+    // Left Workpiece Peg (Updated: Distinct Clean Neutral Gray)
+    const pegGeo = new THREE.CylinderGeometry(0.32, 0.32, 1.15, 32);
+    const pegMat = new THREE.MeshStandardMaterial({
+      color: 0x9ca3af,       // High-contrast clean neutral gray
+      metalness: 0.65,       // Realistic brushed metallic appearance
+      roughness: 0.32
+    });
+    const leftPeg = new THREE.Mesh(pegGeo, pegMat);
+    leftPeg.castShadow = true;
+    leftPeg.receiveShadow = true;
+    leftPeg.position.set(2.45, 1.85, 0);
+    leftScene.add(leftPeg);
+
+    // DYNAMIC OVERLAYS FOR LEFT VIEW: Normal Force & Friction Arrows
+    const leftVectorGroup = new THREE.Group();
+    leftPeg.add(leftVectorGroup);
+
+    // Green Normal Force arrows pointing inward
+    const leftNormalArrow1 = new THREE.ArrowHelper(
+      new THREE.Vector3(1, 0, 0),
+      new THREE.Vector3(-0.85, 0.0, 0),
+      0.55,
+      0x22c55e,
+      0.15,
+      0.1
+    );
+    const leftNormalArrow2 = new THREE.ArrowHelper(
+      new THREE.Vector3(-1, 0, 0),
+      new THREE.Vector3(0.85, 0.0, 0),
+      0.55,
+      0x22c55e,
+      0.15,
+      0.1
+    );
+    leftVectorGroup.add(leftNormalArrow1);
+    leftVectorGroup.add(leftNormalArrow2);
+
+    // Red Friction / Gravity shear arrows
+    const leftFrictionArrow = new THREE.ArrowHelper(
+      new THREE.Vector3(0, 1, 0),
+      new THREE.Vector3(0, 0.0, 0.4),
+      0.5,
+      0xef4444,
+      0.16,
+      0.1
+    );
+    const leftDropArrow = new THREE.ArrowHelper(
+      new THREE.Vector3(0, -1, 0),
+      new THREE.Vector3(0.65, 0.7, 0),
+      0.9,
+      0xdc2626,
+      0.22,
+      0.15
+    );
+    leftVectorGroup.add(leftFrictionArrow);
+    leftScene.add(leftDropArrow); // Scene relative for falling indication
+  </script>
+
+  <script>
+    const centerCanvas = document.getElementById('center-viewport');
+    const centerContainer = document.getElementById('center-canvas-container');
+    const centerScene = new THREE.Scene();
+    centerScene.background = new THREE.Color(0xdce5ec);
+
+    const centerCamera = new THREE.PerspectiveCamera(40, centerContainer.clientWidth / centerContainer.clientHeight, 0.1, 100);
+    centerCamera.position.set(2.4, 2.3, 4.2);
+
+    const centerRenderer = new THREE.WebGLRenderer({ canvas: centerCanvas, antialias: true });
+    centerRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    centerRenderer.setSize(centerContainer.clientWidth, centerContainer.clientHeight);
+    centerRenderer.shadowMap.enabled = true;
+
+    const centerControls = new THREE.OrbitControls(centerCamera, centerCanvas);
+    centerControls.enableDamping = true;
+    centerControls.target.set(1.9, 1.4, 0);
+
+    // Center Scene Lighting
+    const centerAmb = new THREE.AmbientLight(0xffffff, 0.85);
+    centerScene.add(centerAmb);
+    const centerDir = new THREE.DirectionalLight(0xffffff, 1.1);
+    centerDir.position.set(5, 8, 5);
+    centerDir.castShadow = true;
+    centerScene.add(centerDir);
+
+    // Center Table
+    const centerTable = new THREE.Mesh(new THREE.BoxGeometry(8, 0.2, 6), tableMat);
+    centerTable.position.y = -0.1;
+    centerTable.receiveShadow = true;
+    centerScene.add(centerTable);
+
+    // Precision Cast Machined Fixture Base (with round collar & chamfered hole)
+    const centerFixture = new THREE.Group();
+    centerFixture.position.set(2.45, 0, 0);
+
+    const fixtureBase = new THREE.Mesh(
+      new THREE.CylinderGeometry(1.25, 1.4, 0.35, 36),
+      new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.7, roughness: 0.35 })
+    );
+    fixtureBase.position.y = 0.175;
+    fixtureBase.receiveShadow = true;
+    fixtureBase.castShadow = true;
+    centerFixture.add(fixtureBase);
+
+    const fixtureCollar = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.7, 0.85, 0.55, 36),
+      new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8, roughness: 0.3 })
+    );
+    fixtureCollar.position.y = 0.55;
+    fixtureCollar.castShadow = true;
+    centerFixture.add(fixtureCollar);
+
+    const fixtureHoleCavity = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.35, 0.35, 0.8, 32),
+      new THREE.MeshStandardMaterial({ color: 0x090d16, roughness: 0.9 })
+    );
+    fixtureHoleCavity.position.y = 0.45;
+    centerFixture.add(fixtureHoleCavity);
+
+    const centerHoleRim = new THREE.Mesh(
+      new THREE.RingGeometry(0.35, 0.45, 32),
+      new THREE.MeshBasicMaterial({ color: 0x0284c7, side: THREE.DoubleSide })
+    );
+    centerHoleRim.rotation.x = -Math.PI / 2;
+    centerHoleRim.position.y = 0.826;
+    centerFixture.add(centerHoleRim);
+
+    centerScene.add(centerFixture);
+
+    // Build Center Robot (with 6-Axis F/T Sensor)
+    const centerRobot = createIndustrialRobot(true);
+    centerScene.add(centerRobot.root);
+
+    // Center Peg
+    const centerPeg = new THREE.Mesh(pegGeo.clone(), pegMat.clone());
+    centerPeg.castShadow = true;
+    centerPeg.receiveShadow = true;
+    centerRobot.wristAssembly.add(centerPeg);
+    centerPeg.position.set(0, -0.9, 0);
+
+    // DYNAMIC WRENCH OVERLAYS (Fx, Fy, Fz and Torque Rings Mx, My)
+    const wrenchGroup = new THREE.Group();
+    wrenchGroup.position.set(0, -0.38, 0);
+    centerRobot.wristAssembly.add(wrenchGroup);
+
+    // Fz (Axial - Green)
+    const arrowFz = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 0), 0.6, 0x22c55e, 0.18, 0.12);
+    wrenchGroup.add(arrowFz);
+
+    // Fx (Transverse - Green)
+    const arrowFx = new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 0, 0), 0.55, 0x22c55e, 0.16, 0.1);
+    wrenchGroup.add(arrowFx);
+
+    // Fy (Depth - Green)
+    const arrowFy = new THREE.ArrowHelper(new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, 0), 0.55, 0x22c55e, 0.16, 0.1);
+    wrenchGroup.add(arrowFy);
+
+    // Torque Mx ring (Amber curved ring)
+    const mxTorus = new THREE.Mesh(
+      new THREE.TorusGeometry(0.55, 0.03, 16, 32, Math.PI * 1.4),
+      new THREE.MeshBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.85 })
+    );
+    mxTorus.rotation.x = Math.PI / 2;
+    wrenchGroup.add(mxTorus);
+
+    // Handle Window Resizing
+    window.addEventListener('resize', () => {
+      // Left
+      leftCamera.aspect = leftContainer.clientWidth / leftContainer.clientHeight;
+      leftCamera.updateProjectionMatrix();
+      leftRenderer.setSize(leftContainer.clientWidth, leftContainer.clientHeight);
+      // Center
+      centerCamera.aspect = centerContainer.clientWidth / centerContainer.clientHeight;
+      centerCamera.updateProjectionMatrix();
+      centerRenderer.setSize(centerContainer.clientWidth, centerContainer.clientHeight);
+    });
+  </script>
+
+  <script>
+    // 4x4 Tactile Matrix Generation
+    const tactileContainer = document.getElementById('tactile-matrix');
+    const tactileCells = [];
+    for (let i = 0; i < 16; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'tactile-cell w-full h-full rounded-[2px] bg-[#93c5fd] border border-slate-300';
+      tactileContainer.appendChild(cell);
+      tactileCells.push(cell);
+    }
+
+    function updateTactileMatrix(forceN, isSlipping) {
+      const norm = Math.min(1.0, forceN / 28.0);
+      tactileCells.forEach((cell, idx) => {
+        const row = Math.floor(idx / 4);
+        const col = idx % 4;
+        const dist = Math.sqrt(Math.pow(row - 1.5, 2) + Math.pow(col - 1.5, 2)) / 2.12;
+
+        if (isSlipping) {
+          // Micro-slip shear dynamic disturbance
+          const flicker = Math.random() * 0.3;
+          cell.style.backgroundColor = `rgb(${Math.floor(180 + flicker * 70)}, ${Math.floor(50 + flicker * 40)}, ${Math.floor(50)})`;
+        } else {
+          // Calm pressure gradient (Blue to Deep Navy / Cyan)
+          const cellIntensity = Math.max(0.1, norm * (1.15 - dist * 0.45));
+          const r = Math.floor(147 - cellIntensity * 125);
+          const g = Math.floor(197 - cellIntensity * 140);
+          const b = Math.floor(253 - cellIntensity * 110);
+          cell.style.backgroundColor = `rgb(${Math.max(15, r)}, ${Math.max(45, g)}, ${Math.max(90, b)})`;
+        }
+      });
+    }
+
+    // Dual Analog Needle Dial Gauges Canvas Renderer
+    function drawAnalogGauge(canvasId, value, maxVal = 300) {
+      const cvs = document.getElementById(canvasId);
+      const ctx = cvs.getContext('2d');
+      const w = cvs.width;
+      const h = cvs.height;
+      const cx = w / 2;
+      const cy = h - 10;
+      const r = Math.min(cx - 10, cy - 8);
+
+      ctx.clearRect(0, 0, w, h);
+
+      // Arc Sectors: Green (0-100), Yellow (100-200), Red (200-300)
+      const startAngle = Math.PI * 0.85;
+      const endAngle = Math.PI * 2.15;
+      const totalSweep = endAngle - startAngle;
+
+      function drawColorBand(fStart, fEnd, strokeColor) {
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, startAngle + totalSweep * fStart, startAngle + totalSweep * fEnd);
+        ctx.lineWidth = 9;
+        ctx.strokeStyle = strokeColor;
+        ctx.stroke();
+      }
+
+      drawColorBand(0.0, 0.333, '#22c55e');  // Green
+      drawColorBand(0.333, 0.666, '#eab308'); // Yellow
+      drawColorBand(0.666, 1.0, '#ef4444');   // Red
+
+      // Numerals (0, 100, 200, 300)
+      ctx.fillStyle = '#475569';
+      ctx.font = 'bold 9px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('0', cx - r * 0.75, cy - 2);
+      ctx.fillText('100', cx - r * 0.35, cy - r * 0.7);
+      ctx.fillText('200', cx + r * 0.35, cy - r * 0.7);
+      ctx.fillText('300', cx + r * 0.75, cy - 2);
+
+      // Needle
+      const clampedVal = Math.max(0, Math.min(maxVal, value));
+      const needleAngle = startAngle + (clampedVal / maxVal) * totalSweep;
+
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(needleAngle);
+
+      ctx.beginPath();
+      ctx.moveTo(-2, 0);
+      ctx.lineTo(0, -r + 8);
+      ctx.lineTo(2, 0);
+      ctx.fillStyle = '#0f172a';
+      ctx.fill();
+
+      // Needle center cap
+      ctx.beginPath();
+      ctx.arc(0, 0, 4, 0, Math.PI * 2);
+      ctx.fillStyle = '#0284c7';
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // Real-Time Scope Chart Strip Canvas
+    const scopeCanvas = document.getElementById('strip-chart-canvas');
+    const scopeCtx = scopeCanvas.getContext('2d');
+    function resizeScope() {
+      scopeCanvas.width = scopeCanvas.clientWidth * window.devicePixelRatio;
+      scopeCanvas.height = scopeCanvas.clientHeight * window.devicePixelRatio;
+    }
+    resizeScope();
+    window.addEventListener('resize', resizeScope);
+
+    function renderScope() {
+      const w = scopeCanvas.width;
+      const h = scopeCanvas.height;
+      scopeCtx.clearRect(0, 0, w, h);
+
+      // Grid background
+      scopeCtx.strokeStyle = '#e2e8f0';
+      scopeCtx.lineWidth = 1;
+      for (let y = 0.25; y < 1.0; y += 0.25) {
+        scopeCtx.beginPath();
+        scopeCtx.moveTo(0, y * h);
+        scopeCtx.lineTo(w, y * h);
+        scopeCtx.stroke();
+      }
+
+      // Draw Fz (Blue)
+      scopeCtx.strokeStyle = '#0284c7';
+      scopeCtx.lineWidth = 2 * window.devicePixelRatio;
+      scopeCtx.beginPath();
+      for (let i = 0; i < SIM.scopePoints; i++) {
+        const x = (i / (SIM.scopePoints - 1)) * w;
+        const norm = Math.min(1.0, SIM.historyFz[i] / 280.0);
+        const y = h - norm * (h * 0.8) - 4;
+        if (i === 0) scopeCtx.moveTo(x, y);
+        else scopeCtx.lineTo(x, y);
+      }
+      scopeCtx.stroke();
+
+      // Draw Mx (Orange)
+      scopeCtx.strokeStyle = '#f59e0b';
+      scopeCtx.lineWidth = 1.8 * window.devicePixelRatio;
+      scopeCtx.beginPath();
+      for (let i = 0; i < SIM.scopePoints; i++) {
+        const x = (i / (SIM.scopePoints - 1)) * w;
+        const norm = (SIM.historyMx[i] / 20.0);
+        const y = (h * 0.5) - norm * (h * 0.35);
+        if (i === 0) scopeCtx.moveTo(x, y);
+        else scopeCtx.lineTo(x, y);
+      }
+      scopeCtx.stroke();
+    }
+  </script>
+
+  <script>
+    // Action Buttons
+    const btnPickLift = document.getElementById('btn-pick-lift');
+    const btnTryInsert = document.getElementById('btn-try-insert');
+    const btnReset = document.getElementById('btn-reset');
+
+    // Warning Elements
+    const slipWarningBox = document.getElementById('slip-warning-box');
+    const jamWarningBox = document.getElementById('jam-warning-box');
+    const lblSlipWarning = document.getElementById('lbl-slip-warning');
+
+    // UI Sliders & Values
+    const sliderSqueeze = document.getElementById('slider-squeeze');
+    const sliderVel = document.getElementById('slider-velocity');
+    const sliderAngle = document.getElementById('slider-angle');
+    const toggleCompOn = document.getElementById('toggle-comp-on');
+    const toggleCompOff = document.getElementById('toggle-comp-off');
+
+    function updateSlipWarningState() {
+      if (SIM.squeezeForce < SIM.SLIP_THRESHOLD) {
+        lblSlipWarning.classList.remove('hidden');
+        slipWarningBox.classList.remove('hidden');
+        SIM.isSlipping = true;
+      } else {
+        lblSlipWarning.classList.add('hidden');
+        slipWarningBox.classList.add('hidden');
+        SIM.isSlipping = false;
+      }
+    }
+
+    sliderSqueeze.addEventListener('input', (e) => {
+      SIM.squeezeForce = parseFloat(e.target.value);
+      document.getElementById('lbl-squeeze').textContent = `${SIM.squeezeForce.toFixed(1)} N`;
+      updateSlipWarningState();
+    });
+
+    sliderVel.addEventListener('input', (e) => {
+      SIM.liftingVel = parseFloat(e.target.value);
+      document.getElementById('lbl-velocity').textContent = `${SIM.liftingVel.toFixed(2)} m/s`;
+    });
+
+    sliderAngle.addEventListener('input', (e) => {
+      SIM.alignAngle = parseFloat(e.target.value);
+      document.getElementById('lbl-angle').textContent = `${SIM.alignAngle.toFixed(1)} deg`;
+    });
+
+    toggleCompOn.addEventListener('click', () => {
+      SIM.compliance = true;
+      toggleCompOn.className = 'px-3 py-0.5 toggle-active transition';
+      toggleCompOff.className = 'px-3 py-0.5 bg-slate-100 text-slate-600 hover:bg-slate-200 transition';
+      audioLab.playMotor(0.15);
+      jamWarningBox.classList.add('hidden');
+    });
+
+    toggleCompOff.addEventListener('click', () => {
+      SIM.compliance = false;
+      toggleCompOff.className = 'px-3 py-0.5 toggle-active transition';
+      toggleCompOn.className = 'px-3 py-0.5 bg-slate-100 text-slate-600 hover:bg-slate-200 transition';
+      audioLab.playMotor(0.15);
+    });
+
+    // ACTION: Pick & Lift Part
+    btnPickLift.addEventListener('click', () => {
+      audioLab.playMotor(0.35);
+      SIM.leftState = 'LIFTING';
+      SIM.targetLeftArmZ = 0.75; // Raise arm
+      SIM.leftPegDropped = false;
+      SIM.leftPegVelocityY = 0.0;
+    });
+
+    // ACTION: Try Insertion
+    btnTryInsert.addEventListener('click', () => {
+      audioLab.playMotor(0.4);
+      SIM.centerState = 'INSERTING';
+      SIM.targetCenterArmZ = -0.7; // Push downwards into socket
+      jamWarningBox.classList.add('hidden');
+    });
+
+    // ACTION: Reset Position
+    function resetAll() {
+      audioLab.playMotor(0.2);
+      SIM.leftState = 'IDLE';
+      SIM.targetLeftArmZ = 0.0;
+      SIM.leftArmZ = 0.0;
+      SIM.leftPegY = 0.0;
+      SIM.leftPegDropped = false;
+      SIM.leftPegVelocityY = 0.0;
+      leftPeg.position.set(2.45, 1.85, 0);
+      leftPeg.rotation.set(0, 0, 0);
+
+      SIM.centerState = 'IDLE';
+      SIM.targetCenterArmZ = 0.0;
+      SIM.centerArmZ = 0.0;
+      SIM.centerArmTilt = 0.0;
+      SIM.targetCenterArmTilt = 0.0;
+      centerRobot.wristAssembly.position.y = 2.65;
+      centerRobot.wristAssembly.rotation.z = 0.0;
+
+      SIM.contactForce = 0.0;
+      SIM.Fz = 0.0;
+      SIM.Mx = 0.0;
+
+      jamWarningBox.classList.add('hidden');
+      updateSlipWarningState();
+    }
+    btnReset.addEventListener('click', resetAll);
+  </script>
+
+  <script>
+    let lastTimestamp = performance.now();
+
+    function labAnimationLoop(now) {
+      requestAnimationFrame(labAnimationLoop);
+      const dt = Math.min(0.05, (now - lastTimestamp) / 1000);
+      lastTimestamp = now;
+
+      /* 1. LEFT SCENE PHYSICS: LIFTING & SLIP MECHANICS */
+      SIM.leftArmZ += (SIM.targetLeftArmZ - SIM.leftArmZ) * (SIM.liftingVel * 8.0) * dt;
+      leftRobot.wristAssembly.position.y = 2.65 + SIM.leftArmZ;
+
+      // Finger clamping position
+      const fingerAperture = (SIM.leftState === 'IDLE' && !SIM.leftPegDropped) ? 0.36 : 0.32;
+      leftRobot.leftFinger.position.x = -fingerAperture;
+      leftRobot.rightFinger.position.x = fingerAperture;
+
+      if (!SIM.leftPegDropped) {
+        if (SIM.leftState === 'LIFTING') {
+          if (SIM.squeezeForce < SIM.SLIP_THRESHOLD) {
+            // Insufficient normal force -> Gravity overcomes friction shear!
+            SIM.leftPegVelocityY += 9.8 * dt * 0.45;
+            leftPeg.position.y -= SIM.leftPegVelocityY * dt;
+
+            // Micro-slip audio chirp
+            if (Math.random() < 0.08) audioLab.playSlipBeep();
+
+            // Hit tabletop / dropped
+            if (leftPeg.position.y <= 0.65) {
+              leftPeg.position.y = 0.65;
+              leftPeg.rotation.z = 0.42; // Tumble on table
+              SIM.leftPegDropped = true;
+              SIM.leftState = 'DROPPED';
+              audioLab.playThud();
+            }
+          } else {
+            // Peg holds firmly and moves upward synchronously with wrist
+            leftPeg.position.y = 1.85 + SIM.leftArmZ;
+            leftPeg.rotation.set(0, 0, 0);
+            if (SIM.leftArmZ > 0.65 && SIM.leftState === 'LIFTING') {
+              SIM.leftState = 'HELD';
+              audioLab.playSuccessChime();
+            }
+          }
+        }
+      }
+
+      // Left Falling Vector Animation
+      if (SIM.squeezeForce < SIM.SLIP_THRESHOLD && !SIM.leftPegDropped) {
+        leftDropArrow.visible = true;
+        leftDropArrow.position.set(2.45 + 0.65, leftPeg.position.y + 0.2, 0);
+      } else {
+        leftDropArrow.visible = false;
+      }
+
+      /* 2. CENTER SCENE PHYSICS: INSERTION & COMPLIANCE */
+      centerControls.update();
+      leftControls.update();
+
+      if (SIM.centerState === 'INSERTING') {
+        const penetrationZ = Math.max(0, -SIM.centerArmZ);
+
+        if (!SIM.compliance) {
+          /* MECHANICAL COMPLIANCE: [OFF] -> RIGID POSITION CONTROL */
+          if (SIM.alignAngle > 0.8) {
+            // Part collision & jamming against the socket rim
+            SIM.centerState = 'JAMMED';
+            SIM.targetCenterArmZ = -0.32; // Physical mechanical stop
+            SIM.centerArmTilt = (SIM.alignAngle * Math.PI) / 180;
+            
+            // Spike contact force and alignment torque
+            SIM.contactForce = 240.0 + Math.random() * 25.0;
+            SIM.Fz = SIM.contactForce;
+            SIM.Mx = 14.5 + Math.random() * 2.5;
+
+            jamWarningBox.classList.remove('hidden');
+            if (Math.random() < 0.05) audioLab.playClink();
+          } else {
+            // Near 0 angle insertion
+            SIM.contactForce = 35.0;
+            SIM.Fz = 35.0;
+            SIM.Mx = 0.5;
+            if (SIM.centerArmZ <= -0.68) {
+              SIM.centerState = 'SEATED';
+              audioLab.playSuccessChime();
+            }
+          }
+        } else {
+          /* MECHANICAL COMPLIANCE: [ON] -> ACTIVE IMPEDANCE AUTO-ALIGNMENT */
+          jamWarningBox.classList.add('hidden');
+          // Self-correct angle smoothly towards perpendicular
+          SIM.alignAngle = Math.max(0, SIM.alignAngle - 2.5 * dt);
+          sliderAngle.value = SIM.alignAngle.toFixed(1);
+          document.getElementById('lbl-angle').textContent = `${SIM.alignAngle.toFixed(1)} deg`;
+
+          SIM.centerArmTilt += (0.0 - SIM.centerArmTilt) * 4.0 * dt;
+          SIM.contactForce = 45.0 + Math.sin(now * 0.008) * 5.0;
+          SIM.Fz = SIM.contactForce;
+          SIM.Mx = 1.2 * (SIM.alignAngle / 3.5);
+
+          if (SIM.centerArmZ <= -0.68) {
+            SIM.centerState = 'SEATED';
+            audioLab.playSuccessChime();
+          }
+        }
+      }
+
+      // Smooth kinematic interpolation for center robot
+      SIM.centerArmZ += (SIM.targetCenterArmZ - SIM.centerArmZ) * 3.5 * dt;
+      centerRobot.wristAssembly.position.y = 2.65 + SIM.centerArmZ;
+      centerRobot.wristAssembly.rotation.z = (SIM.centerState === 'JAMMED') ? ((SIM.alignAngle * Math.PI) / 180) : SIM.centerArmTilt;
+
+      // Pinch Force calculation
+      SIM.pinchForce = SIM.squeezeForce * 8.5;
+
+      /* 3. UPDATE TELEMETRY & STRIP CHARTS */
+      SIM.historyFz.shift();
+      SIM.historyFz.push(SIM.Fz);
+      SIM.historyMx.shift();
+      SIM.historyMx.push(SIM.Mx);
+
+      // Render Analog Gauges
+      drawAnalogGauge('contact-gauge-canvas', SIM.contactForce, 300);
+      drawAnalogGauge('pinch-gauge-canvas', SIM.pinchForce, 300);
+
+      // Render Tactile Heatmap
+      updateTactileMatrix(SIM.squeezeForce, (SIM.isSlipping && SIM.leftState === 'LIFTING' && !SIM.leftPegDropped));
+
+      // Render Dynamic Oscilloscope Chart
+      renderScope();
+
+      // Render 3D Scenes
+      leftRenderer.render(leftScene, leftCamera);
+      centerRenderer.render(centerScene, centerCamera);
+    }
+
+    // Initialize application on window load
+    window.onload = function () {
+      updateSlipWarningState();
+      resetAll();
+      requestAnimationFrame(labAnimationLoop);
+    };
+  </script>
+</body>
+</html>
