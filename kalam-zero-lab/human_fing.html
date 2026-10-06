@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>13-DoF Robotic End-Effector Kinematics Simulator</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Three.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- OrbitControls CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <!-- FontAwesome for technical UI icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    /* Custom Scrollbar for engineering control deck */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #0284c7;
+    }
+    .custom-range {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 4px;
+      border-radius: 2px;
+      background: #334155;
+      outline: none;
+    }
+    .custom-range::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #0ea5e9;
+      cursor: pointer;
+      box-shadow: 0 0 8px rgba(14, 165, 233, 0.8);
+      transition: transform 0.1s;
+    }
+    .custom-range::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.82);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(56, 189, 248, 0.15);
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 flex flex-col h-screen overflow-hidden font-sans selection:bg-cyan-500 selection:text-white">
+
+  <header class="bg-slate-900 border-b border-cyan-900/40 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shadow-lg z-20">
+    <div class="flex items-center gap-3.5">
+      <div class="relative w-12 h-12 rounded-lg overflow-hidden bg-slate-800 border border-cyan-500/30 flex items-center justify-center shadow-inner">
+        <!-- Logo image with graceful fallback -->
+        <img src="Logo.jpeg" alt="Logo" class="w-full h-full object-cover" onerror="this.style.display='none'; document.getElementById('logo-fallback').classList.remove('hidden');">
+        <div id="logo-fallback" class="hidden flex flex-col items-center justify-center text-cyan-400">
+          <i class="fa-solid fa-microchip text-xl"></i>
+          <span class="text-[8px] font-mono tracking-tighter uppercase font-bold mt-0.5">GARRF</span>
+        </div>
+      </div>
+      <div>
+        <h1 class="text-sm md:text-base font-bold tracking-tight text-white flex items-center gap-2">
+          <span>Gopalkrishna Advanced Rural Research Foundation, India</span>
+          <span class="hidden sm:inline-block px-2 py-0.5 text-[10px] bg-cyan-950 text-cyan-300 border border-cyan-700/50 rounded-full font-mono uppercase">Lab v3.2</span>
+        </h1>
+        <p class="text-xs text-slate-400 font-medium">Virtual Robotics & Structural Health Monitoring Division | <span class="text-cyan-400">Open-Access Educational Laboratory</span></p>
+      </div>
+    </div>
+
+    <!-- Quick action preset indicators -->
+    <div class="flex items-center gap-2">
+      <span class="text-xs font-mono text-slate-400 hidden lg:inline-flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> KINEMATICS ENGINE ONLINE
+      </span>
+      <button id="btn-reset-view" class="px-3 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded transition flex items-center gap-1.5 shadow-sm">
+        <i class="fa-solid fa-camera-rotate text-cyan-400"></i> Center Camera
+      </button>
+      <button id="btn-toggle-hud" class="px-3 py-1.5 text-xs bg-cyan-900/40 hover:bg-cyan-800/50 text-cyan-300 border border-cyan-700/40 rounded transition flex items-center gap-1.5">
+        <i class="fa-solid fa-sliders"></i> <span class="hidden sm:inline">Toggle Panel</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="relative flex-1 w-full overflow-hidden flex">
+    
+    <!-- 3D Three.js WebGL Container -->
+    <div id="canvas-container" class="w-full h-full relative cursor-grab active:cursor-grabbing outline-none">
+      
+      <!-- Real-time HUD overlay: Joint Telemetry & Status -->
+      <div class="absolute top-4 left-4 z-10 glass-panel p-3.5 rounded-xl max-w-xs sm:max-w-sm pointer-events-none select-none text-xs border-l-4 border-l-cyan-500 shadow-2xl">
+        <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-700/60">
+          <div class="font-bold uppercase tracking-wider text-slate-200 flex items-center gap-1.5">
+            <i class="fa-solid fa-network-wired text-cyan-400"></i> Telemetry & Gripper State
+          </div>
+          <span id="system-status-badge" class="px-1.5 py-0.5 bg-slate-800 text-[10px] font-mono text-cyan-300 rounded border border-cyan-800">READY</span>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-2 font-mono text-[11px] text-slate-300 mb-2">
+          <div>Config: <span class="text-white font-semibold">13-DoF Anthropomorphic</span></div>
+          <div>Cycle Rate: <span id="telemetry-fps" class="text-emerald-400 font-semibold">60 FPS</span></div>
+          <div>Active Task: <span id="telemetry-task" class="text-amber-300 font-semibold truncate block">Manual Override</span></div>
+          <div>Nut Position: <span id="telemetry-nut-pos" class="text-cyan-300 font-semibold">Z: +42.0 mm</span></div>
+        </div>
+
+        <div class="w-full bg-slate-800/80 rounded-full h-2 overflow-hidden border border-slate-700">
+          <div id="contact-force-bar" class="bg-cyan-500 h-full w-[12%] transition-all duration-300 rounded-full"></div>
+        </div>
+        <div class="flex justify-between items-center text-[10px] font-mono text-slate-400 mt-1">
+          <span>Estimated Pinch Force</span>
+          <span id="contact-force-text" class="text-cyan-400">1.8 N</span>
+        </div>
+      </div>
+
+      <!-- Quick Scenario Bar Floating Bottom Center of 3D Scene -->
+      <div class="absolute bottom-5 left-1/2 -translate-x-1/2 z-10 glass-panel px-3 py-2 rounded-2xl flex items-center gap-2 shadow-2xl border border-cyan-500/20 max-w-[94vw] overflow-x-auto">
+        <span class="text-[11px] font-mono text-slate-400 uppercase tracking-wider pl-1 font-bold hidden sm:inline">Scenarios:</span>
+        <button id="task-screw" class="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 active:bg-cyan-700 text-white rounded-lg text-xs font-medium flex items-center gap-1.5 shadow transition whitespace-nowrap">
+          <i class="fa-solid fa-wrench"></i> 1. Unscrew Nut Demo
+        </button>
+        <button id="task-pinch" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-200 rounded-lg text-xs font-medium flex items-center gap-1.5 border border-slate-700 transition whitespace-nowrap">
+          <i class="fa-solid fa-hand-holding"></i> 2. Precision Pinch
+        </button>
+        <button id="task-power" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-200 rounded-lg text-xs font-medium flex items-center gap-1.5 border border-slate-700 transition whitespace-nowrap">
+          <i class="fa-solid fa-hand-fist"></i> 3. Power Grasp
+        </button>
+        <button id="task-rest" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-200 rounded-lg text-xs font-medium flex items-center gap-1.5 border border-slate-700 transition whitespace-nowrap">
+          <i class="fa-solid fa-hand"></i> 4. Neutral Rest
+        </button>
+      </div>
+
+      <!-- Camera View Angle Pills Floating Top Right -->
+      <div class="absolute top-4 right-4 z-10 hidden md:flex items-center gap-1 bg-slate-900/80 backdrop-blur p-1 rounded-lg border border-slate-700/60 text-xs">
+        <button id="view-iso" class="px-2 py-1 text-slate-300 hover:text-white rounded hover:bg-slate-800 font-mono">ISO</button>
+        <button id="view-front" class="px-2 py-1 text-slate-300 hover:text-white rounded hover:bg-slate-800 font-mono">FRONT</button>
+        <button id="view-top" class="px-2 py-1 text-slate-300 hover:text-white rounded hover:bg-slate-800 font-mono">TOP</button>
+        <button id="view-close" class="px-2 py-1 text-slate-300 hover:text-white rounded hover:bg-slate-800 font-mono">NUT ZOOM</button>
+      </div>
+
+    </div>
+
+    <aside id="controls-sidebar" class="w-80 sm:w-96 bg-slate-900/95 border-l border-slate-800 flex flex-col h-full z-20 transition-all duration-300 shadow-2xl overflow-hidden shrink-0">
+      
+      <!-- Panel Header & Visual Modifiers -->
+      <div class="p-3.5 border-b border-slate-800 flex items-center justify-between bg-slate-900">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-sliders text-cyan-400 text-sm"></i>
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-100">13-DoF Joint Actuators</h2>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="btn-toggle-frames" title="Toggle Coordinate Axes" class="w-7 h-7 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs flex items-center justify-center border border-slate-700">
+            <i class="fa-solid fa-crosshairs"></i>
+          </button>
+          <button id="btn-toggle-wire" title="Toggle Wireframe" class="w-7 h-7 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs flex items-center justify-center border border-slate-700">
+            <i class="fa-solid fa-draw-polygon"></i>
+          </button>
+          <button id="btn-zero-all" title="Zero All Joint Angles" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 text-[11px] font-mono border border-slate-700">
+            Zero
+          </button>
+        </div>
+      </div>
+
+      <!-- Scrollable Joint Controls Container -->
+      <div class="flex-1 overflow-y-auto p-4 space-y-4 text-xs font-sans">
+        
+        <!-- Wrist Subassembly (2 DoF) -->
+        <div class="space-y-2.5 pb-3 border-b border-slate-800">
+          <div class="flex items-center justify-between text-slate-400 font-mono text-[11px] uppercase tracking-wide">
+            <span class="text-cyan-400 font-bold flex items-center gap-1.5"><i class="fa-solid fa-gears"></i> Wrist Subsystem</span>
+            <span>2 DoF</span>
+          </div>
+
+          <!-- J1: Wrist Roll -->
+          <div>
+            <div class="flex justify-between items-center text-slate-300 mb-1">
+              <span>q1: Wrist Roll (Screw Drive)</span>
+              <span id="val-q1" class="font-mono text-cyan-400 font-semibold">0°</span>
+            </div>
+            <input id="slider-q1" type="range" min="-180" max="180" value="0" step="1" class="custom-range">
+            <div class="flex justify-between text-[10px] font-mono text-slate-500 mt-0.5">
+              <span>-180°</span>
+              <span>Revolute CW/CCW</span>
+              <span>+180°</span>
+            </div>
+          </div>
+
+          <!-- J2: Wrist Pitch -->
+          <div>
+            <div class="flex justify-between items-center text-slate-300 mb-1">
+              <span>q2: Wrist Pitch (Flexion)</span>
+              <span id="val-q2" class="font-mono text-cyan-400 font-semibold">0°</span>
+            </div>
+            <input id="slider-q2" type="range" min="-45" max="45" value="0" step="1" class="custom-range">
+            <div class="flex justify-between text-[10px] font-mono text-slate-500 mt-0.5">
+              <span>-45°</span>
+              <span>Elevation Range</span>
+              <span>+45°</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Thumb Subassembly (3 DoF) -->
+        <div class="space-y-2.5 pb-3 border-b border-slate-800">
+          <div class="flex items-center justify-between text-slate-400 font-mono text-[11px] uppercase tracking-wide">
+            <span class="text-cyan-400 font-bold flex items-center gap-1.5"><i class="fa-solid fa-hand-pointer"></i> Thumb (Opposable)</span>
+            <span>3 DoF</span>
+          </div>
+
+          <!-- J3: CMC Abduction -->
+          <div>
+            <div class="flex justify-between items-center text-slate-300 mb-1">
+              <span>q3: CMC Abduction (Opposition)</span>
+              <span id="val-q3" class="font-mono text-cyan-400 font-semibold">20°</span>
+            </div>
+            <input id="slider-q3" type="range" min="0" max="75" value="20" step="1" class="custom-range">
+          </div>
+
+          <!-- J4: MCP Flexion -->
+          <div>
+            <div class="flex justify-between items-center text-slate-300 mb-1">
+              <span>q4: MCP Flexion (Base Pivot)</span>
+              <span id="val-q4" class="font-mono text-cyan-400 font-semibold">25°</span>
+            </div>
+            <input id="slider-q4" type="range" min="0" max="85" value="25" step="1" class="custom-range">
+          </div>
+
+          <!-- J5: IP Flexion -->
+          <div>
+            <div class="flex justify-between items-center text-slate-300 mb-1">
+              <span>q5: IP Tip Flexion (Terminal)</span>
+              <span id="val-q5" class="font-mono text-cyan-400 font-semibold">15°</span>
+            </div>
+            <input id="slider-q5" type="range" min="0" max="90" value="15" step="1" class="custom-range">
+          </div>
+        </div>
+
+        <!-- Index Finger (3 DoF) -->
+        <div class="space-y-2.5 pb-3 border-b border-slate-800">
+          <div class="flex items-center justify-between text-slate-400 font-mono text-[11px] uppercase tracking-wide">
+            <span class="text-cyan-400 font-bold flex items-center gap-1.5"><i class="fa-solid fa-fingerprint"></i> Index Finger</span>
+            <span>3 DoF</span>
+          </div>
+
+          <!-- J6: Index Abduction -->
+          <div>
+            <div class="flex justify-between items-center text-slate-300 mb-1">
+              <span>q6: MCP Abduction (Splay)</span>
+              <span id="val-q6" class="font-mono text-cyan-400 font-semibold">0°</span>
+            </div>
+            <input id="slider-q6" type="range" min="-15" max="15" value="0" step="1" class="custom-range">
+          </div>
+
+          <!-- J7: Index MCP Flexion -->
+          <div>
+            <div class="flex justify-between items-center text-slate-300 mb-1">
+              <span>q7: MCP Flexion (Knuckle)</span>
+              <span id="val-q7" class="font-mono text-cyan-400 font-semibold">20°</span>
+            </div>
+            <input id="slider-q7" type="range" min="0" max="90" value="20" step="1" class="custom-range">
+          </div>
+
+          <!-- J8: Index PIP/DIP Flexion -->
+          <div>
+            <div class="flex justify-between items-center text-slate-300 mb-1">
+              <span>q8: PIP/DIP Coupled Flexion</span>
+              <span id="val-q8" class="font-mono text-cyan-400 font-semibold">25°</span>
+            </div>
+            <input id="slider-q8" type="range" min="0" max="90" value="25" step="1" class="custom-range">
+          </div>
+        </div>
+
+        <!-- Middle Finger (2 DoF) -->
+        <div class="space-y-2.5 pb-3 border-b border-slate-800">
+          <div class="flex items-center justify-between text-slate-400 font-mono text-[11px] uppercase tracking-wide">
+            <span class="text-cyan-400 font-bold flex items-center gap-1.5"><i class="fa-solid fa-hand-back-fist"></i> Middle Finger</span>
+            <span>2 DoF</span>
+          </div>
+
+          <!-- J9: Middle MCP Flexion -->
+          <div>
+            <div class="flex justify-between items-center text-slate-300 mb-1">
+              <span>q9: MCP Flexion (Knuckle)</span>
+              <span id="val-q9" class="font-mono text-cyan-400 font-semibold">20°</span>
+            </div>
+            <input id="slider-q9" type="range" min="0" max="90" value="20" step="1" class="custom-range">
+          </div>
+
+          <!-- J10: Middle PIP/DIP Flexion -->
+          <div>
+            <div class="flex justify-between items-center text-slate-300 mb-1">
+              <span>q10: PIP/DIP Coupled Flexion</span>
+              <span id="val-q10" class="font-mono text-cyan-400 font-semibold">25°</span>
+            </div>
+            <input id="slider-q10" type="range" min="0" max="90" value="25" step="1" class="custom-range">
+          </div>
+        </div>
+
+        <!-- Ring & Pinky Dual-Unit (3 DoF) -->
+        <div class="space-y-2.5 pb-1">
+          <div class="flex items-center justify-between text-slate-400 font-mono text-[11px] uppercase tracking-wide">
+            <span class="text-cyan-400 font-bold flex items-center gap-1.5"><i class="fa-solid fa-hand"></i> Ring / Auxiliary Finger</span>
+            <span>3 DoF</span>
+          </div>
+
+          <!-- J11: Ring Abduction -->
+          <div>
+            <div class="flex justify-between items-center text-slate-300 mb-1">
+              <span>q11: MCP Abduction (Splay)</span>
+              <span id="val-q11" class="font-mono text-cyan-400 font-semibold">-5°</span>
+            </div>
+            <input id="slider-q11" type="range" min="-15" max="15" value="-5" step="1" class="custom-range">
+          </div>
+
+          <!-- J12: Ring MCP Flexion -->
+          <div>
+            <div class="flex justify-between items-center text-slate-300 mb-1">
+              <span>q12: MCP Flexion (Knuckle)</span>
+              <span id="val-q12" class="font-mono text-cyan-400 font-semibold">20°</span>
+            </div>
+            <input id="slider-q12" type="range" min="0" max="90" value="20" step="1" class="custom-range">
+          </div>
+
+          <!-- J13: Ring PIP/DIP Flexion -->
+          <div>
+            <div class="flex justify-between items-center text-slate-300 mb-1">
+              <span>q13: PIP/DIP Coupled Flexion</span>
+              <span id="val-q13" class="font-mono text-cyan-400 font-semibold">25°</span>
+            </div>
+            <input id="slider-q13" type="range" min="0" max="90" value="25" step="1" class="custom-range">
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Manual Workpiece Adjustment Section -->
+      <div class="p-3 bg-slate-950/80 border-t border-slate-800 text-[11px] space-y-2">
+        <div class="flex justify-between items-center text-slate-400 font-mono">
+          <span class="font-semibold text-slate-200">Workpiece Thread Position</span>
+          <span id="val-nut-manual" class="text-cyan-400">42 mm</span>
+        </div>
+        <input id="slider-nut-height" type="range" min="10" max="75" value="42" step="0.5" class="custom-range">
+      </div>
+    </aside>
+
+  </main>
+
+  <footer class="bg-slate-900 border-t border-slate-800/80 px-4 py-3 text-xs text-slate-400 flex flex-col md:flex-row items-center justify-between gap-2.5 z-20 shadow-inner">
+    <div class="text-center md:text-left">
+      <p class="font-medium text-slate-200">
+        Copyright of Virtual Experiment © <span class="text-cyan-400 font-semibold">Annamdas Venu Gopal Madhav</span> & <span class="text-cyan-400 font-semibold">Shantanu Vasudev Krishna Annamdas</span> (Educational Purpose).
+      </p>
+      <p class="text-[11px] text-slate-400 mt-0.5">
+        Educational 13-DoF kinematic simulation developed for open-access research and robotics learning. Inspired by modern humanoid end-effector configurations (e.g., Atlas GR3). Non-commercial open educational resource.
+      </p>
+    </div>
+    
+    <div class="flex items-center gap-3 shrink-0 font-mono text-[11px]">
+      <span class="flex items-center gap-1.5 px-2 py-1 bg-slate-800 rounded border border-slate-700 text-slate-300">
+        <i class="fa-solid fa-code-branch text-cyan-400"></i> Forward Kinematics (FK)
+      </span>
+      <span class="px-2 py-1 bg-cyan-950 text-cyan-300 rounded border border-cyan-800">
+        WebGL 3D
+      </span>
+    </div>
+  </footer>
+
+  <script>
+    // --- Application State & Configuration ---
+    const STATE = {
+      // 13 DoF joint values stored in degrees
+      joints: {
+        q1: 0,    // Wrist Roll (-180 to 180)
+        q2: 0,    // Wrist Pitch (-45 to 45)
+        q3: 20,   // Thumb CMC Abduction (0 to 75)
+        q4: 25,   // Thumb MCP Flexion (0 to 85)
+        q5: 15,   // Thumb IP Flexion (0 to 90)
+        q6: 0,    // Index MCP Splay (-15 to 15)
+        q7: 20,   // Index MCP Flexion (0 to 90)
+        q8: 25,   // Index PIP/DIP Flexion (0 to 90)
+        q9: 20,   // Middle MCP Flexion (0 to 90)
+        q10: 25,  // Middle PIP/DIP Flexion (0 to 90)
+        q11: -5,  // Ring MCP Splay (-15 to 15)
+        q12: 20,  // Ring MCP Flexion (0 to 90)
+        q13: 25   // Ring PIP/DIP Flexion (0 to 90)
+      },
+      nutHeight: 42.0, // mm along bolt axis
+      nutRotation: 0,  // deg
+      animationMode: null, // 'screw_sequence', 'interpolating', null
+      animProgress: 0,
+      showFrames: false,
+      wireframe: false,
+      baseHandPos: new THREE.Vector3(0, 92, 0),
+      currentHandPos: new THREE.Vector3(0, 92, 0)
+    };
+
+    // Predefined Presets
+    const PRESETS = {
+      rest: {
+        q1: 0, q2: 0, q3: 15, q4: 15, q5: 10,
+        q6: 0, q7: 15, q8: 15, q9: 15, q10: 15,
+        q11: -4, q12: 15, q13: 15
+      },
+      pinch: {
+        q1: -8, q2: 5, q3: 52, q4: 62, q5: 58,
+        q6: 4, q7: 58, q8: 62, q9: 45, q10: 45,
+        q11: -8, q12: 40, q13: 40
+      },
+      power: {
+        q1: 0, q2: 10, q3: 65, q4: 75, q5: 75,
+        q6: 0, q7: 75, q8: 80, q9: 78, q10: 82,
+        q11: -5, q12: 80, q13: 82
+      },
+      readyGrasp: {
+        q1: 0, q2: 0, q3: 38, q4: 35, q5: 25,
+        q6: 2, q7: 40, q8: 40, q9: 38, q10: 40,
+        q11: -5, q12: 38, q13: 40
+      }
+    };
+
+    // --- Scene, Camera, Renderer Setup ---
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0b1120);
+    scene.fog = new THREE.FogExp2(0x0b1120, 0.0035);
+
+    const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 1, 2000);
+    camera.position.set(160, 140, 180);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    container.appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.06;
+    controls.target.set(0, 50, 0);
+    controls.maxPolarAngle = Math.PI / 2 + 0.05; // prevent going below ground
+    controls.minDistance = 40;
+    controls.maxDistance = 600;
+
+    // --- High-Tech Material Definitions ---
+    const materials = {
+      darkChassis: new THREE.MeshStandardMaterial({
+        color: 0x1e293b,
+        metalness: 0.85,
+        roughness: 0.28,
+        flatShading: false
+      }),
+      titaniumLink: new THREE.MeshStandardMaterial({
+        color: 0x94a3b8,
+        metalness: 0.9,
+        roughness: 0.2
+      }),
+      chromeShaft: new THREE.MeshStandardMaterial({
+        color: 0xe2e8f0,
+        metalness: 0.95,
+        roughness: 0.1
+      }),
+      brassPivot: new THREE.MeshStandardMaterial({
+        color: 0xd97706,
+        metalness: 0.8,
+        roughness: 0.35
+      }),
+      siliconeGrip: new THREE.MeshStandardMaterial({
+        color: 0x0284c7, // Tactile high-friction polymer cyan pad
+        roughness: 0.85,
+        metalness: 0.05
+      }),
+      boltSteel: new THREE.MeshStandardMaterial({
+        color: 0x64748b,
+        metalness: 0.88,
+        roughness: 0.32
+      }),
+      hexNutGold: new THREE.MeshStandardMaterial({
+        color: 0xfbbf24,
+        metalness: 0.75,
+        roughness: 0.25
+      }),
+      fixtureBase: new THREE.MeshStandardMaterial({
+        color: 0x0f172a,
+        metalness: 0.4,
+        roughness: 0.6
+      }),
+      accentGlow: new THREE.MeshBasicMaterial({
+        color: 0x38bdf8
+      })
+    };
+
+    // --- Studio Lighting Setup ---
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
+    scene.add(ambientLight);
+
+    const mainKeyLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    mainKeyLight.position.set(120, 200, 100);
+    mainKeyLight.castShadow = true;
+    mainKeyLight.shadow.mapSize.width = 2048;
+    mainKeyLight.shadow.mapSize.height = 2048;
+    mainKeyLight.shadow.bias = -0.0005;
+    mainKeyLight.shadow.camera.near = 10;
+    mainKeyLight.shadow.camera.far = 500;
+    mainKeyLight.shadow.camera.left = -120;
+    mainKeyLight.shadow.camera.right = 120;
+    mainKeyLight.shadow.camera.top = 120;
+    mainKeyLight.shadow.camera.bottom = -120;
+    scene.add(mainKeyLight);
+
+    const rimCyanLight = new THREE.DirectionalLight(0x0ea5e9, 0.85);
+    rimCyanLight.position.set(-150, 90, -100);
+    scene.add(rimCyanLight);
+
+    const fillWarmLight = new THREE.PointLight(0xf59e0b, 0.4, 300);
+    fillWarmLight.position.set(0, 10, 80);
+    scene.add(fillWarmLight);
+
+    // Laboratory Floor with Circular Grid
+    const floorGeo = new THREE.PlaneGeometry(1200, 1200);
+    const floorMat = new THREE.MeshStandardMaterial({
+      color: 0x070d19,
+      roughness: 0.85,
+      metalness: 0.2
+    });
+    const floor = new THREE.Mesh(floorGeo, floorMat);
+    floor.rotation.x = -Math.PI / 2;
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    const gridHelper = new THREE.GridHelper(300, 30, 0x0284c7, 0x1e293b);
+    gridHelper.position.y = 0.1;
+    scene.add(gridHelper);
+
+    // --- Workpiece: Industrial Bolt & Threaded Hex Nut Fixture ---
+    const fixtureGroup = new THREE.Group();
+
+    // Heavy Mounting Stand
+    const fixtureBase = new THREE.Mesh(
+      new THREE.CylinderGeometry(28, 34, 10, 32),
+      materials.fixtureBase
+    );
+    fixtureBase.position.y = 5;
+    fixtureBase.receiveShadow = true;
+    fixtureBase.castShadow = true;
+    fixtureGroup.add(fixtureBase);
+
+    // Chamfered Collar
+    const fixtureCollar = new THREE.Mesh(
+      new THREE.CylinderGeometry(14, 18, 6, 24),
+      materials.darkChassis
+    );
+    fixtureCollar.position.y = 13;
+    fixtureGroup.add(fixtureCollar);
+
+    // Vertical Threaded Steel Stud (Bolt)
+    const studHeight = 85;
+    const studRadius = 5.0;
+    const boltMesh = new THREE.Mesh(
+      new THREE.CylinderGeometry(studRadius, studRadius, studHeight, 32),
+      materials.boltSteel
+    );
+    boltMesh.position.y = 16 + studHeight / 2;
+    boltMesh.castShadow = true;
+    boltMesh.receiveShadow = true;
+    fixtureGroup.add(boltMesh);
+
+    // Procedural Thread Ridges
+    const threadCount = 28;
+    for (let i = 0; i < threadCount; i++) {
+      const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(studRadius + 0.2, 0.45, 8, 32),
+        materials.chromeShaft
+      );
+      ring.rotation.x = Math.PI / 2;
+      ring.position.y = 18 + i * 2.5;
+      fixtureGroup.add(ring);
+    }
+
+    // Threaded Hex Nut Workpiece
+    const nutGroup = new THREE.Group();
+    const hexOuterRadius = 12.0;
+    const nutHeightVal = 10.0;
+    
+    // Create hexagonal prism for the nut
+    const nutShape = new THREE.CylinderGeometry(hexOuterRadius, hexOuterRadius, nutHeightVal, 6);
+    const nutMesh = new THREE.Mesh(nutShape, materials.hexNutGold);
+    nutMesh.castShadow = true;
+    nutMesh.receiveShadow = true;
+    nutGroup.add(nutMesh);
+
+    // Internal chamfer ring
+    const nutHole = new THREE.Mesh(
+      new THREE.CylinderGeometry(studRadius + 0.35, studRadius + 0.35, nutHeightVal + 0.2, 24),
+      materials.boltSteel
+    );
+    nutGroup.add(nutHole);
+
+    // Beveled indicator groove to visualize rotation
+    const nutNotch = new THREE.Mesh(
+      new THREE.BoxGeometry(2, nutHeightVal + 0.5, 3),
+      materials.darkChassis
+    );
+    nutNotch.position.set(hexOuterRadius - 1.2, 0, 0);
+    nutGroup.add(nutNotch);
+
+    nutGroup.position.set(0, STATE.nutHeight, 0);
+    fixtureGroup.add(nutGroup);
+    scene.add(fixtureGroup);
+
+    // --- Procedural 13-DoF Robotic End-Effector Kinematic Chain ---
+    const robotRig = new THREE.Group();
+    robotRig.position.copy(STATE.baseHandPos);
+    scene.add(robotRig);
+
+    // Hierarchy Nodes & References
+    const joints = {};
+    const framesList = [];
+
+    // Helper: Create miniature coordinate axes helper
+    function createCoordFrame(size = 8) {
+      const axes = new THREE.AxesHelper(size);
+      axes.visible = STATE.showFrames;
+      framesList.push(axes);
+      return axes;
+    }
+
+    // Base Mounting Arm Connector
+    const armMount = new THREE.Mesh(
+      new THREE.CylinderGeometry(15, 17, 18, 24),
+      materials.darkChassis
+    );
+    armMount.castShadow = true;
+    robotRig.add(armMount);
+
+    // Joint 1: Wrist Roll Node (q1)
+    const wristRollGroup = new THREE.Group();
+    wristRollGroup.position.set(0, -9, 0);
+    robotRig.add(wristRollGroup);
+    joints.q1 = wristRollGroup;
+    wristRollGroup.add(createCoordFrame(12));
+
+    const wristRollBearing = new THREE.Mesh(
+      new THREE.CylinderGeometry(14, 14, 6, 24),
+      materials.chromeShaft
+    );
+    wristRollBearing.position.y = -3;
+    wristRollGroup.add(wristRollBearing);
+
+    // Joint 2: Wrist Pitch Pivot Node (q2)
+    const wristPitchPivot = new THREE.Group();
+    wristPitchPivot.position.set(0, -7, 0);
+    wristRollGroup.add(wristPitchPivot);
+    joints.q2 = wristPitchPivot;
+    wristPitchPivot.add(createCoordFrame(10));
+
+    // Pitch Hinge cylinder geometry
+    const pitchHinge = new THREE.Mesh(
+      new THREE.CylinderGeometry(7, 7, 24, 20),
+      materials.brassPivot
+    );
+    pitchHinge.rotation.z = Math.PI / 2;
+    wristPitchPivot.add(pitchHinge);
+
+    // Central Palm Subassembly
+    const palmGroup = new THREE.Group();
+    palmGroup.position.set(0, -10, 0);
+    wristPitchPivot.add(palmGroup);
+
+    // Main Ergonomic Palm Housing
+    const palmBody = new THREE.Mesh(
+      new THREE.BoxGeometry(28, 26, 16),
+      materials.darkChassis
+    );
+    palmBody.position.set(0, -10, 0);
+    palmBody.castShadow = true;
+    palmGroup.add(palmBody);
+
+    // High-tech Palm Face Plate & Accent
+    const palmPlate = new THREE.Mesh(
+      new THREE.BoxGeometry(24, 20, 2),
+      materials.titaniumLink
+    );
+    palmPlate.position.set(0, -10, 8.5);
+    palmGroup.add(palmPlate);
+
+    const palmGlow = new THREE.Mesh(
+      new THREE.BoxGeometry(10, 3, 0.5),
+      materials.accentGlow
+    );
+    palmGlow.position.set(0, -4, 9.6);
+    palmGroup.add(palmGlow);
+
+    // Helper: Build a modular articulated finger chain
+    function buildFinger(config) {
+      const {
+        rootPos,
+        mcpSplayJointKey,  // Abduction DoF (Z or Y rotation)
+        mcpFlexJointKey,   // Knuckle Flexion DoF (X rotation)
+        pipFlexJointKey,   // Coupled DIP/PIP Flexion DoF
+        phalanxLengths,
+        isThumb = false
+      } = config;
+
+      // Base Splay / Abduction Joint
+      const splayGroup = new THREE.Group();
+      splayGroup.position.copy(rootPos);
+      palmGroup.add(splayGroup);
+      if (mcpSplayJointKey) {
+        joints[mcpSplayJointKey] = splayGroup;
+        splayGroup.add(createCoordFrame(6));
+      }
+
+      // MCP Knuckle Flexion Joint
+      const mcpGroup = new THREE.Group();
+      splayGroup.add(mcpGroup);
+      joints[mcpFlexJointKey] = mcpGroup;
+      mcpGroup.add(createCoordFrame(7));
+
+      // Knuckle Pivot Pin
+      const knucklePin = new THREE.Mesh(
+        new THREE.CylinderGeometry(2.8, 2.8, 6.5, 14),
+        materials.brassPivot
+      );
+      knucklePin.rotation.z = Math.PI / 2;
+      mcpGroup.add(knucklePin);
+
+      // Proximal Phalanx
+      const proxLen = phalanxLengths[0];
+      const proxPhalanx = new THREE.Mesh(
+        new THREE.BoxGeometry(5.4, proxLen, 6.0),
+        materials.titaniumLink
+      );
+      proxPhalanx.position.set(0, -proxLen / 2, 0);
+      proxPhalanx.castShadow = true;
+      mcpGroup.add(proxPhalanx);
+
+      // PIP/DIP Articulation Joint
+      const pipGroup = new THREE.Group();
+      pipGroup.position.set(0, -proxLen, 0);
+      mcpGroup.add(pipGroup);
+      joints[pipFlexJointKey] = pipGroup;
+      pipGroup.add(createCoordFrame(6));
+
+      const pipPin = new THREE.Mesh(
+        new THREE.CylinderGeometry(2.2, 2.2, 5.5, 14),
+        materials.brassPivot
+      );
+      pipPin.rotation.z = Math.PI / 2;
+      pipGroup.add(pipPin);
+
+      // Distal Phalanx & Fingertip
+      const distLen = phalanxLengths[1];
+      const distPhalanx = new THREE.Mesh(
+        new THREE.BoxGeometry(4.8, distLen, 5.4),
+        materials.darkChassis
+      );
+      distPhalanx.position.set(0, -distLen / 2, 0);
+      distPhalanx.castShadow = true;
+      pipGroup.add(distPhalanx);
+
+      // Compliant Silicone Fingertip Grip Pad (Pinch Contact Point)
+      const tipGeo = new THREE.SphereGeometry(3.2, 16, 16);
+      const fingertipPad = new THREE.Mesh(tipGeo, materials.siliconeGrip);
+      fingertipPad.scale.set(0.9, 1.1, 0.9);
+      fingertipPad.position.set(0, -distLen, isThumb ? 1.0 : -1.0);
+      pipGroup.add(fingertipPad);
+
+      return { splayGroup, mcpGroup, pipGroup, fingertipPad };
+    }
+
+    // --- Build 4 Multi-DoF Digits (Totaling 13 DoF system) ---
+
+    // 1. Opposable Thumb (q3: Abduction, q4: MCP Flexion, q5: IP Flexion)
+    const thumbRig = (function() {
+      // Thumb CMC Abduction Base
+      const cmcGroup = new THREE.Group();
+      cmcGroup.position.set(-12, -8, 4);
+      cmcGroup.rotation.set(0, 0, Math.PI / 4); // tilted inward
+      palmGroup.add(cmcGroup);
+      joints.q3 = cmcGroup;
+      cmcGroup.add(createCoordFrame(7));
+
+      // Thumb MCP Flexion
+      const mcpGroup = new THREE.Group();
+      cmcGroup.add(mcpGroup);
+      joints.q4 = mcpGroup;
+
+      const mcpPin = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, 7, 14), materials.brassPivot);
+      mcpPin.rotation.z = Math.PI / 2;
+      mcpGroup.add(mcpPin);
+
+      const proxLen = 14;
+      const prox = new THREE.Mesh(new THREE.BoxGeometry(6, proxLen, 6.5), materials.darkChassis);
+      prox.position.set(0, -proxLen / 2, 0);
+      prox.castShadow = true;
+      mcpGroup.add(prox);
+
+      // Thumb IP Joint (q5)
+      const ipGroup = new THREE.Group();
+      ipGroup.position.set(0, -proxLen, 0);
+      mcpGroup.add(ipGroup);
+      joints.q5 = ipGroup;
+      ipGroup.add(createCoordFrame(6));
+
+      const ipPin = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.4, 6, 14), materials.brassPivot);
+      ipPin.rotation.z = Math.PI / 2;
+      ipGroup.add(ipPin);
+
+      const distLen = 12;
+      const dist = new THREE.Mesh(new THREE.BoxGeometry(5.2, distLen, 5.8), materials.titaniumLink);
+      dist.position.set(0, -distLen / 2, 0);
+      dist.castShadow = true;
+      ipGroup.add(dist);
+
+      // Tactile Thumb Pad
+      const thumbPad = new THREE.Mesh(new THREE.SphereGeometry(3.5, 16, 16), materials.siliconeGrip);
+      thumbPad.position.set(0, -distLen, 1.2);
+      ipGroup.add(thumbPad);
+
+      return { cmcGroup, mcpGroup, ipGroup, thumbPad };
+    })();
+
+    // 2. Index Finger (q6: Splay, q7: MCP, q8: PIP/DIP)
+    const indexDigit = buildFinger({
+      rootPos: new THREE.Vector3(-8, -23, 0),
+      mcpSplayJointKey: 'q6',
+      mcpFlexJointKey: 'q7',
+      pipFlexJointKey: 'q8',
+      phalanxLengths: [16, 14]
+    });
+
+    // 3. Middle Finger (q9: MCP, q10: PIP/DIP)
+    const middleDigit = buildFinger({
+      rootPos: new THREE.Vector3(0, -23, 0),
+      mcpSplayJointKey: null, // fixed splay reference center
+      mcpFlexJointKey: 'q9',
+      pipFlexJointKey: 'q10',
+      phalanxLengths: [18, 15]
+    });
+
+    // 4. Ring / Pinky Synergy Digit (q11: Splay, q12: MCP, q13: PIP/DIP)
+    const ringDigit = buildFinger({
+      rootPos: new THREE.Vector3(8, -23, 0),
+      mcpSplayJointKey: 'q11',
+      mcpFlexJointKey: 'q12',
+      pipFlexJointKey: 'q13',
+      phalanxLengths: [15, 13]
+    });
+
+    // --- Forward Kinematics Update & Constraint Solver ---
+    const DEG_TO_RAD = Math.PI / 180;
+
+    function applyKinematics() {
+      // Wrist
+      joints.q1.rotation.y = STATE.joints.q1 * DEG_TO_RAD; // Axial roll
+      joints.q2.rotation.x = STATE.joints.q2 * DEG_TO_RAD; // Pitch tilt
+
+      // Thumb
+      // q3 CMC Abduction (Y-axis twist and outward roll)
+      joints.q3.rotation.y = STATE.joints.q3 * DEG_TO_RAD * 0.9;
+      joints.q3.rotation.z = (Math.PI / 4) + (STATE.joints.q3 * DEG_TO_RAD * 0.4);
+      // q4 MCP Flexion
+      joints.q4.rotation.x = STATE.joints.q4 * DEG_TO_RAD;
+      // q5 IP Flexion
+      joints.q5.rotation.x = STATE.joints.q5 * DEG_TO_RAD;
+
+      // Index Finger
+      joints.q6.rotation.z = STATE.joints.q6 * DEG_TO_RAD; // Splay (MCP Abduction)
+      joints.q7.rotation.x = -STATE.joints.q7 * DEG_TO_RAD; // MCP Flexion
+      joints.q8.rotation.x = -STATE.joints.q8 * DEG_TO_RAD; // PIP/DIP Coupled
+
+      // Middle Finger
+      joints.q9.rotation.x = -STATE.joints.q9 * DEG_TO_RAD; // MCP Flexion
+      joints.q10.rotation.x = -STATE.joints.q10 * DEG_TO_RAD; // PIP/DIP Coupled
+
+      // Ring Finger
+      joints.q11.rotation.z = STATE.joints.q11 * DEG_TO_RAD; // Splay
+      joints.q12.rotation.x = -STATE.joints.q12 * DEG_TO_RAD; // MCP Flexion
+      joints.q13.rotation.x = -STATE.joints.q13 * DEG_TO_RAD; // PIP/DIP Coupled
+
+      // Workpiece Nut State
+      nutGroup.position.y = STATE.nutHeight;
+      nutGroup.rotation.y = STATE.nutRotation * DEG_TO_RAD;
+
+      // Hand Global Position (allows lowering onto nut)
+      robotRig.position.copy(STATE.currentHandPos);
+    }
+
+    // Initialize initial state
+    applyKinematics();
+
+    // --- Synchronize UI Sliders & Labels ---
+    for (let i = 1; i <= 13; i++) {
+      const key = 'q' + i;
+      const slider = document.getElementById('slider-' + key);
+      const label = document.getElementById('val-' + key);
+
+      if (slider) {
+        slider.addEventListener('input', (e) => {
+          // Interrupt automated demos on user touch
+          STATE.animationMode = null;
+          document.getElementById('system-status-badge').textContent = 'MANUAL';
+          document.getElementById('system-status-badge').className = 'px-1.5 py-0.5 bg-amber-950 text-[10px] font-mono text-amber-300 rounded border border-amber-800';
+          document.getElementById('telemetry-task').textContent = 'Manual Operator Control';
+
+          STATE.joints[key] = parseFloat(e.target.value);
+          label.textContent = STATE.joints[key].toFixed(0) + '°';
+          applyKinematics();
+          updatePinchForceEstimate();
+        });
+      }
+    }
+
+    // Nut Height manual slider
+    const nutSlider = document.getElementById('slider-nut-height');
+    const nutLabel = document.getElementById('val-nut-manual');
+    nutSlider.addEventListener('input', (e) => {
+      STATE.nutHeight = parseFloat(e.target.value);
+      nutLabel.textContent = STATE.nutHeight.toFixed(1) + ' mm';
+      document.getElementById('telemetry-nut-pos').textContent = `Z: +${STATE.nutHeight.toFixed(1)} mm`;
+      applyKinematics();
+    });
+
+    function syncSlidersFromState() {
+      for (let i = 1; i <= 13; i++) {
+        const key = 'q' + i;
+        const slider = document.getElementById('slider-' + key);
+        const label = document.getElementById('val-' + key);
+        if (slider && label) {
+          slider.value = STATE.joints[key];
+          label.textContent = Math.round(STATE.joints[key]) + '°';
+        }
+      }
+    }
+
+    function updatePinchForceEstimate() {
+      // Approximate physical grip force based on closure of index & thumb
+      const closure = (STATE.joints.q4 + STATE.joints.q5 + STATE.joints.q7 + STATE.joints.q8) / 3.4;
+      let force = Math.max(0, (closure - 35) * 0.12).toFixed(1);
+      if (closure < 35) force = "0.0";
+      
+      const pct = Math.min(100, Math.max(8, (force / 8.0) * 100));
+      document.getElementById('contact-force-bar').style.width = pct + '%';
+      document.getElementById('contact-force-text').textContent = force + ' N';
+    }
+
+    // --- Smooth Joint Interpolation Engine ---
+    let tweenTarget = null;
+    let tweenStart = null;
+    let tweenDuration = 1000;
+    let tweenStartTime = 0;
+    let onTweenComplete = null;
+
+    function transitionToPose(targetPose, durationMs = 800, callback = null) {
+      tweenStart = { ...STATE.joints };
+      tweenTarget = { ...targetPose };
+      tweenDuration = durationMs;
+      tweenStartTime = performance.now();
+      onTweenComplete = callback;
+      STATE.animationMode = 'interpolating';
+    }
+
+    // --- Scenario 1: Precision Screw & Nut Removal Sequencing ---
+    let screwPhase = 0;
+    let screwPhaseStartTime = 0;
+    const initialNutHeight = 42.0;
+
+    function startUnscrewDemo() {
+      STATE.animationMode = 'screw_sequence';
+      screwPhase = 0;
+      screwPhaseStartTime = performance.now();
+      document.getElementById('system-status-badge').textContent = 'AUTO DEMO';
+      document.getElementById('system-status-badge').className = 'px-1.5 py-0.5 bg-cyan-950 text-[10px] font-mono text-cyan-300 rounded border border-cyan-800';
+      document.getElementById('telemetry-task').textContent = 'Screw Removal Sequence';
+    }
+
+    function updateScrewSequence(now) {
+      const elapsed = now - screwPhaseStartTime;
+
+      switch(screwPhase) {
+        case 0: // Phase 0: Approach & Open Fingers
+          document.getElementById('telemetry-task').textContent = 'Step 1/5: Approach & Finger Pre-Alignment';
+          const p0 = Math.min(1, elapsed / 900);
+          lerpJoints(PRESETS.readyGrasp, p0);
+          STATE.currentHandPos.y = THREE.MathUtils.lerp(92, 74, p0);
+          if (p0 >= 1) {
+            screwPhase = 1;
+            screwPhaseStartTime = now;
+          }
+          break;
+
+        case 1: // Phase 1: Firm Pinch Grasp on Hex Nut Flats
+          document.getElementById('telemetry-task').textContent = 'Step 2/5: Dual-Finger Tactile Pinch on Nut';
+          const p1 = Math.min(1, elapsed / 700);
+          const pinchGraspPose = {
+            q1: 0, q2: 4, q3: 48, q4: 52, q5: 48,
+            q6: 2, q7: 48, q8: 54, q9: 38, q10: 42,
+            q11: -4, q12: 35, q13: 35
+          };
+          lerpJoints(pinchGraspPose, p1);
+          if (p1 >= 1) {
+            screwPhase = 2;
+            screwPhaseStartTime = now;
+          }
+          break;
+
+        case 2: // Phase 2: Coordinated CCW Wrist Rotation & Nut Thread Travel
+          document.getElementById('telemetry-task').textContent = 'Step 3/5: Coordinated CCW Unscrewing Rotation';
+          const rotDuration = 3200;
+          const p2 = Math.min(1, elapsed / rotDuration);
+          
+          // Rotate Wrist Roll J1 counter-clockwise by -120 degrees
+          STATE.joints.q1 = -120 * p2;
+          
+          // Nut rotates along with hand, climbing upward along the threads
+          STATE.nutRotation = -120 * p2;
+          STATE.nutHeight = initialNutHeight + (18 * p2); // Thread pitch climb
+          STATE.currentHandPos.y = 74 + (18 * p2); // Hand tracks nut elevation
+
+          if (p2 >= 1) {
+            screwPhase = 3;
+            screwPhaseStartTime = now;
+          }
+          break;
+
+        case 3: // Phase 3: Lift Nut clear off the stud
+          document.getElementById('telemetry-task').textContent = 'Step 4/5: Lifting Nut Clear of Threaded Stud';
+          const p3 = Math.min(1, elapsed / 1200);
+          STATE.nutHeight = initialNutHeight + 18 + (34 * p3);
+          STATE.currentHandPos.y = 74 + 18 + (34 * p3);
+          if (p3 >= 1) {
+            screwPhase = 4;
+            screwPhaseStartTime = now;
+          }
+          break;
+
+        case 4: // Phase 4: Hold in Air & Presentation
+          document.getElementById('telemetry-task').textContent = 'Step 5/5: Nut Extracted Successfully (Holding)';
+          if (elapsed > 2000) {
+            // Reset workpiece back for repeatable experimentation
+            STATE.nutHeight = initialNutHeight;
+            STATE.nutRotation = 0;
+            STATE.currentHandPos.copy(STATE.baseHandPos);
+            lerpJoints(PRESETS.rest, 1.0);
+            startUnscrewDemo(); // Loop demonstration smoothly
+          }
+          break;
+      }
+
+      applyKinematics();
+      syncSlidersFromState();
+      updatePinchForceEstimate();
+      document.getElementById('telemetry-nut-pos').textContent = `Z: +${STATE.nutHeight.toFixed(1)} mm`;
+      nutSlider.value = STATE.nutHeight;
+      nutLabel.textContent = STATE.nutHeight.toFixed(1) + ' mm';
+    }
+
+    function lerpJoints(target, t) {
+      for (const k in target) {
+        if (STATE.joints[k] !== undefined) {
+          STATE.joints[k] = THREE.MathUtils.lerp(STATE.joints[k], target[k], t);
+        }
+      }
+    }
+
+    // --- Scenario Action Button Handlers ---
+    document.getElementById('task-screw').addEventListener('click', () => {
+      startUnscrewDemo();
+    });
+
+    document.getElementById('task-pinch').addEventListener('click', () => {
+      STATE.animationMode = null;
+      STATE.currentHandPos.copy(STATE.baseHandPos);
+      transitionToPose(PRESETS.pinch, 700);
+      document.getElementById('system-status-badge').textContent = 'PINCH';
+      document.getElementById('system-status-badge').className = 'px-1.5 py-0.5 bg-cyan-950 text-[10px] font-mono text-cyan-300 rounded border border-cyan-800';
+      document.getElementById('telemetry-task').textContent = 'Precision Pinch Configuration';
+    });
+
+    document.getElementById('task-power').addEventListener('click', () => {
+      STATE.animationMode = null;
+      STATE.currentHandPos.copy(STATE.baseHandPos);
+      transitionToPose(PRESETS.power, 700);
+      document.getElementById('system-status-badge').textContent = 'POWER';
+      document.getElementById('system-status-badge').className = 'px-1.5 py-0.5 bg-cyan-950 text-[10px] font-mono text-cyan-300 rounded border border-cyan-800';
+      document.getElementById('telemetry-task').textContent = 'Power Wrap Grasp Configuration';
+    });
+
+    document.getElementById('task-rest').addEventListener('click', () => {
+      STATE.animationMode = null;
+      STATE.currentHandPos.copy(STATE.baseHandPos);
+      transitionToPose(PRESETS.rest, 600);
+      document.getElementById('system-status-badge').textContent = 'REST';
+      document.getElementById('system-status-badge').className = 'px-1.5 py-0.5 bg-slate-800 text-[10px] font-mono text-slate-300 rounded border border-slate-700';
+      document.getElementById('telemetry-task').textContent = 'Neutral Resting Posture';
+    });
+
+    // Zero all angles button
+    document.getElementById('btn-zero-all').addEventListener('click', () => {
+      STATE.animationMode = null;
+      const zeroPose = {};
+      for (let i = 1; i <= 13; i++) zeroPose['q' + i] = 0;
+      transitionToPose(zeroPose, 500);
+    });
+
+    // Toggle Coordinate Axes Helper
+    document.getElementById('btn-toggle-frames').addEventListener('click', () => {
+      STATE.showFrames = !STATE.showFrames;
+      framesList.forEach(f => f.visible = STATE.showFrames);
+      document.getElementById('btn-toggle-frames').classList.toggle('text-cyan-400', STATE.showFrames);
+    });
+
+    // Toggle Wireframe Mode
+    document.getElementById('btn-toggle-wire').addEventListener('click', () => {
+      STATE.wireframe = !STATE.wireframe;
+      for (const m in materials) {
+        materials[m].wireframe = STATE.wireframe;
+      }
+      document.getElementById('btn-toggle-wire').classList.toggle('text-cyan-400', STATE.wireframe);
+    });
+
+    // Reset Camera & Preset Views
+    document.getElementById('btn-reset-view').addEventListener('click', () => {
+      animateCameraTo(160, 140, 180, 0, 50, 0);
+    });
+    document.getElementById('view-iso').addEventListener('click', () => {
+      animateCameraTo(160, 140, 180, 0, 50, 0);
+    });
+    document.getElementById('view-front').addEventListener('click', () => {
+      animateCameraTo(0, 70, 240, 0, 60, 0);
+    });
+    document.getElementById('view-top').addEventListener('click', () => {
+      animateCameraTo(0, 260, 20, 0, 50, 0);
+    });
+    document.getElementById('view-close').addEventListener('click', () => {
+      animateCameraTo(45, 65, 55, 0, 50, 0);
+    });
+
+    // Collapsible Sidebar Panel Toggle
+    const sidebar = document.getElementById('controls-sidebar');
+    document.getElementById('btn-toggle-hud').addEventListener('click', () => {
+      sidebar.classList.toggle('hidden');
+      setTimeout(() => onWindowResize(), 150);
+    });
+
+    // Camera Smooth Transition Helper
+    function animateCameraTo(cx, cy, cz, tx, ty, tz) {
+      const startCam = camera.position.clone();
+      const startTgt = controls.target.clone();
+      const endCam = new THREE.Vector3(cx, cy, cz);
+      const endTgt = new THREE.Vector3(tx, ty, tz);
+      const startTime = performance.now();
+      const duration = 750;
+
+      function stepCam(now) {
+        const p = Math.min(1, (now - startTime) / duration);
+        const ease = 0.5 - Math.cos(p * Math.PI) / 2;
+        camera.position.lerpVectors(startCam, endCam, ease);
+        controls.target.lerpVectors(startTgt, endTgt, ease);
+        if (p < 1) {
+          requestAnimationFrame(stepCam);
+        }
+      }
+      requestAnimationFrame(stepCam);
+    }
+
+    // --- Responsive Canvas Resizing ---
+    function onWindowResize() {
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    }
+    window.addEventListener('resize', onWindowResize);
+
+    // --- Main Render & Simulation Loop ---
+    let lastTime = performance.now();
+    let frameCount = 0;
+    let lastFpsUpdate = performance.now();
+
+    function renderLoop(currentTime) {
+      requestAnimationFrame(renderLoop);
+
+      // FPS Telemetry counter
+      frameCount++;
+      if (currentTime - lastFpsUpdate > 1000) {
+        document.getElementById('telemetry-fps').textContent = frameCount + ' FPS';
+        frameCount = 0;
+        lastFpsUpdate = currentTime;
+      }
+
+      // Handle Pose Interpolations
+      if (STATE.animationMode === 'interpolating') {
+        const elapsed = currentTime - tweenStartTime;
+        const progress = Math.min(1, elapsed / tweenDuration);
+        const ease = 0.5 - Math.cos(progress * Math.PI) / 2;
+
+        for (const k in tweenTarget) {
+          STATE.joints[k] = THREE.MathUtils.lerp(tweenStart[k], tweenTarget[k], ease);
+        }
+
+        applyKinematics();
+        syncSlidersFromState();
+        updatePinchForceEstimate();
+
+        if (progress >= 1) {
+          STATE.animationMode = null;
+          if (onTweenComplete) onTweenComplete();
+        }
+      } else if (STATE.animationMode === 'screw_sequence') {
+        updateScrewSequence(currentTime);
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    // Window Onload Dispatch
+    window.onload = function() {
+      // Trigger initial welcoming rest pose transition
+      transitionToPose(PRESETS.rest, 1000);
+      renderLoop(performance.now());
+    };
+  </script>
+</body>
+</html>
