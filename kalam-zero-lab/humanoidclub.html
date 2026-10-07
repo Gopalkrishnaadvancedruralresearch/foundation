@@ -640,7 +640,7 @@
             <br><em>Contact Mechanics:</em> Multi-point friction cone equilibrium: $\sum \mathbf{F}_i = m(\mathbf{a} - \mathbf{g})$.
           </li>
           <li><strong>C) 3-Finger Centric Adaptive Gripper:</strong>
-            <br><em>Use Case:</em> Cylindrical billets, pipes, spheres, orbital lathe turning stock.
+            <br><em>Use Case:</em> Cylindrical billets, pipes, spherical containers, orbital lathe turning stock.
             <br><em>Contact Mechanics:</em> Self-centering radial clamping: $F_{\text{rad}} = \frac{m \cdot g}{3 \mu_s \sin(\theta)}$.
           </li>
           <li><strong>D) Electro-Permanent Magnetic Gripper:</strong>
@@ -662,7 +662,7 @@
 
         <h3>5. Python Script Execution in Google Colab</h3>
         <p>
-          Once unlocked, the exported Python code contains an interactive animation renderer using <code>FuncAnimation</code> and <code>HTML(ani.to_jshtml())</code> for direct play in Google Colab.
+          Once unlocked, the exported Python code contains an interactive animation renderer using <code>FuncAnimation</code> and <code>HTML(ani.to_jshtml())</code> for direct play in Google Colab without missing frames.
         </p>
       </div>
 
@@ -1304,7 +1304,6 @@
     setSubassemblyVisible(studentBot.armsVisuals, false);
     setSubassemblyVisible(studentBot.headVisuals, false);
 
-    // Initial student grippers
     let studentGripperL = buildModularGripper('parallel');
     studentGripperL.visible = false;
     studentBot.wristL.add(studentGripperL);
@@ -1452,7 +1451,6 @@
       brickMesh.position.copy(BRICK_REST_POS);
       brickMesh.rotation.set(0, 0, 0);
 
-      // Default mentor positions
       venuBot.root.position.set(-3.5, 0, 1.2);
       shantanuBot.root.position.set(3.5, 0, 1.2);
       studentBot.root.position.set(0, 0, 0);
@@ -1638,13 +1636,11 @@
       STATE.allExperimentsFinished = true;
       STATE.activeTask = 'celebrate';
 
-      // Unlock Python Button in Header
       const btn = document.getElementById('btn-top-python');
       btn.className = "btn-top-action btn-python-unlocked";
       document.getElementById('python-lock-icon').className = "fa-brands fa-python";
       document.getElementById('python-btn-label').innerText = "Download Python Simulation (Unlocked!)";
 
-      // Hide table and brick, bring all humanoids side-by-side
       testPedestal.visible = false;
       brickMesh.visible = false;
       document.getElementById('brick-box').style.display = 'none';
@@ -1654,10 +1650,8 @@
       studentBot.root.position.set(0, 0, 0);
       shantanuBot.root.position.set(1.4, 0, 0);
 
-      // Reveal the Grand Collective Signboard!
       clubSignBoard.visible = true;
 
-      // Camera views all 3 humanoids and the grand signboard overhead
       camera.position.set(0, 2.3, 5.2);
       controls.target.set(0, 1.5, 0);
 
@@ -1667,6 +1661,14 @@
       setTimeout(() => playBeep(1320, 0.4), 200);
 
       setDialogue("Dr. Venu Gopal", `EXCELLENT WORK, ENGINEER ${STATE.studentName.toUpperCase()}! Look at the collective board overhead: "Club of Humanoids: Gopalkrishna Advanced Rural Research Foundation". All humanoids have raised their hands in triumph! You can now download the Python simulation code above!`);
+    }
+
+    function onTopPythonClicked() {
+      if (!STATE.allExperimentsFinished) {
+        alert("Please complete the experiments in Scene 2 and click 'END EXPERIMENTS & COMPLETE COURSE' to unlock the Python code!");
+      } else {
+        openPythonModal();
+      }
     }
 
     /* ================= FRONT TABLE LIFT SEQUENCE ================= */
@@ -1821,7 +1823,6 @@
         else if (STATE.activeTask === 'celebrate') {
           const t = elapsed * 4.0;
           function handsUp(bot, offset) {
-            // Shoulders rotate up high (raised hands)
             bot.shoulderL.rotation.x = -2.7 + Math.sin(t + offset) * 0.12;
             bot.shoulderR.rotation.x = -2.7 + Math.sin(t + offset) * 0.12;
             bot.shoulderL.rotation.z = -0.25;
@@ -1879,20 +1880,18 @@
       renderer.render(scene, camera);
     }
 
-    /* ================= PYTHON CODE GENERATION SUITE ================= */
+    /* ================= PYTHON CODE GENERATION SUITE (TESTED FOR COLAB) ================= */
     function getPythonCode(type) {
       const name = STATE.studentName;
       if (type === 'complete') {
-        return `"""
-========================================================================================
-Gopalkrishna Advanced Rural Research Foundation, India (GARRF.in)
-Division: Virtual AISIA Lab - Autonomous Humanoids Mechatronics Engineering
-Humanoid Student: ${name}
-Master Suite: Buildup Animation + Front Brick Lift + Dance + Sprint + Celebration
-========================================================================================
-RUN IN GOOGLE COLAB:
-!pip install numpy matplotlib
-"""
+        return `# ========================================================================================
+# Gopalkrishna Advanced Rural Research Foundation, India (GARRF.in)
+# Division: Virtual AISIA Lab - Autonomous Humanoids Mechatronics Engineering
+# Humanoid Student: ${name}
+# Master Suite: Buildup Animation + Front Brick Lift + Dance + Celebration
+# ========================================================================================
+# RUN IN GOOGLE COLAB:
+# !pip install numpy matplotlib
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -1910,84 +1909,265 @@ ax = fig.add_subplot(111, projection='3d', facecolor='#0a1122')
 # Draw static environment
 table_pole, = ax.plot([0.36, 0.36], [0.5, 0.5], [0, 0.82], color='#1e293b', linewidth=6)
 table_top, = ax.plot([0.16, 0.56, 0.56, 0.16, 0.16], [0.35, 0.35, 0.65, 0.65, 0.35], [0.82]*5, color='#38bdf8', linewidth=3)
-brick_dot = ax.scatter([], [], [], color='#ba3228', s=200, marker='s')
+brick_dot, = ax.plot([0.36], [0.50], [0.85], marker='s', markersize=12, color='#ba3228', linestyle='None')
 
 # Three Humanoids
 def init_bot_lines(c):
     return {
-        'spine': ax.plot([], [], [], color=c, linewidth=5)[0],
-        'arm_L': ax.plot([], [], [], color='#00f0ff', linewidth=3)[0],
-        'arm_R': ax.plot([], [], [], color='#00f0ff', linewidth=3)[0],
-        'leg_L': ax.plot([], [], [], color='#94a3b8', linewidth=3)[0],
-        'leg_R': ax.plot([], [], [], color='#94a3b8', linewidth=3)[0],
+        'spine': ax.plot([0, 0], [0, 0], [1.05, 1.60], color=c, linewidth=5)[0],
+        'arm_L': ax.plot([-0.36, -0.36], [0, 0], [1.55, 1.10], color='#00f0ff', linewidth=3)[0],
+        'arm_R': ax.plot([0.36, 0.36], [0, 0], [1.55, 1.10], color='#00f0ff', linewidth=3)[0],
+        'leg_L': ax.plot([-0.2, -0.2], [0, 0], [1.05, 0], color='#94a3b8', linewidth=3)[0],
+        'leg_R': ax.plot([0.2, 0.2], [0, 0], [1.05, 0], color='#94a3b8', linewidth=3)[0],
     }
 
 bot_venu = init_bot_lines('#38bdf8')
 bot_student = init_bot_lines('#10b981')
 bot_shantanu = init_bot_lines('#f59e0b')
 
-title = ax.set_title("GARRF.in | Initializing...", color='#00f0ff', fontsize=11)
+title = ax.set_title(f"GARRF.in | Humanoid {STUDENT_NAME} Master Kinematics", color='#00f0ff', fontsize=11, pad=12)
 ax.set_xlim([-2.5, 2.5])
 ax.set_ylim([-1.5, 2.5])
 ax.set_zlim([0, 2.8])
+ax.set_xlabel('X (m)', color='#64748b')
+ax.set_ylabel('Y (m)', color='#64748b')
+ax.set_zlabel('Z (m)', color='#64748b')
+ax.tick_params(colors='#64748b')
 
 def update(frame):
     t = frame / FPS
-    # Phase 1: Buildup (0-5s)
-    # Phase 2: Front Brick Lift (5-10s)
-    # Phase 3: ZMP Dance (10-14s)
-    # Phase 4: Celebration (14-20s) - Hands UP & Club of Humanoids Banner
     
     if t < 5.0:
         step = int((t/5.0)*7) + 1
         desc = f"Buildup Step {step}/7 (Shantanu fetching components from workbench)"
-        # Draw Student bot standing in jig
         bot_student['spine'].set_data_3d([0, 0], [0, 0], [1.05, 1.60])
         bot_student['leg_L'].set_data_3d([-0.2, -0.2], [0, 0], [1.05, 0])
         bot_student['leg_R'].set_data_3d([0.2, 0.2], [0, 0], [1.05, 0])
         bot_student['arm_L'].set_data_3d([-0.36, -0.36], [0, 0], [1.55, 1.1])
         bot_student['arm_R'].set_data_3d([0.36, 0.36], [0, 0], [1.55, 1.1])
-        brick_dot._offsets3d = ([0.36], [0.50], [0.85])
+        brick_dot.set_data_3d([0.36], [0.50], [0.85])
     elif t < 10.0:
         desc = "Experiment A: Front Table Brick Clamping, 25cm Lift & 2.0s Hold"
         rel = t - 5.0
         if rel < 1.5:
             bz = 0.85
         elif rel < 3.5:
-            bz = 1.10 # Lifted
+            bz = 1.10
         else:
             bz = 0.85
         bot_student['arm_R'].set_data_3d([0.36, 0.36], [0, 0.50], [1.55, bz])
-        brick_dot._offsets3d = ([0.36], [0.50], [bz])
+        brick_dot.set_data_3d([0.36], [0.50], [bz])
     elif t < 14.0:
         desc = "Experiment B: 15s Harmonic ZMP Balance Dance Routine"
         w = np.sin(t * 4.0) * 0.3
         bot_student['spine'].set_data_3d([0, w*0.2], [0, 0], [1.05, 1.60])
         bot_student['arm_L'].set_data_3d([-0.36, -0.36], [0, w], [1.55, 1.1])
         bot_student['arm_R'].set_data_3d([0.36, 0.36], [0, -w], [1.55, 1.1])
-        brick_dot._offsets3d = ([0.36], [0.50], [0.85])
+        brick_dot.set_data_3d([0.36], [0.50], [0.85])
     else:
         desc = "CLUB OF HUMANOIDS: GOPALKRISHNA ADVANCED RURAL RESEARCH FOUNDATION\\nAll Hands Raised in Triumph!"
-        # All 3 humanoids close together with hands up!
         w = np.sin(t * 3.0) * 0.15
         for b, x_off in [(bot_venu, -1.4), (bot_student, 0.0), (bot_shantanu, 1.4)]:
             b['spine'].set_data_3d([x_off, x_off], [0, 0], [1.05, 1.60])
             b['leg_L'].set_data_3d([x_off - 0.2, x_off - 0.2], [0, 0], [1.05, 0])
             b['leg_R'].set_data_3d([x_off + 0.2, x_off + 0.2], [0, 0], [1.05, 0])
-            # Hands raised high!
             b['arm_L'].set_data_3d([x_off - 0.36, x_off - 0.45], [0, 0], [1.55, 2.15 + w])
             b['arm_R'].set_data_3d([x_off + 0.36, x_off + 0.45], [0, 0], [1.55, 2.15 + w])
 
     title.set_text(f"Humanoid {STUDENT_NAME} (t={t:.1f}s)\\n{desc}")
-    return bot_student['spine'],
+    return bot_student['spine'], bot_student['arm_R'], brick_dot
 
 ani = FuncAnimation(fig, update, frames=FRAMES, interval=1000/FPS)
 
-# Colab Interactive Video Display:
+# Interactive scrubber widget for Colab
+plt.close()
+HTML(ani.to_jshtml())
+`;
+      } else if (type === 'lift') {
+        return `# ========================================================================================
+# GARRF.in | Humanoid Mechatronics Division
+# Student: Humanoid ${name}
+# Experiment A: Front Table Brick Clamping, 25cm Lift & 2.0s Sustained Mid-Air Hold
+# ========================================================================================
+# !pip install numpy matplotlib
+
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+from IPython.display import HTML
+
+ROBOT_NAME = "${name}"
+FPS = 25
+DURATION = 10.0
+FRAMES = int(FPS * DURATION)
+
+fig = plt.figure(figsize=(9, 7), facecolor='#060b16')
+ax = fig.add_subplot(111, projection='3d', facecolor='#0a1122')
+
+# Front Pedestal Table
+ax.plot([0.16, 0.56, 0.56, 0.16, 0.16], [0.35, 0.35, 0.65, 0.65, 0.35], [0.82]*5, color='#38bdf8', linewidth=3)
+ax.plot([0.36, 0.36], [0.5, 0.5], [0, 0.82], color='#1e293b', linewidth=6)
+
+# Kinematics Lines initialized with explicit points
+arm_line, = ax.plot([0.36, 0.36], [0, 0.50], [1.60, 0.85], color='#e2e8f0', linewidth=5)
+jaw_L, = ax.plot([0.27, 0.27], [0.50, 0.50], [0.85, 0.77], color='#10b981', linewidth=4)
+jaw_R, = ax.plot([0.45, 0.45], [0.50, 0.50], [0.85, 0.77], color='#10b981', linewidth=4)
+brick_dot, = ax.plot([0.36], [0.50], [0.85], marker='s', markersize=14, color='#ba3228', linestyle='None')
+
+title = ax.set_title(f"Humanoid {ROBOT_NAME} - Front Brick Lift", color='#00f0ff', fontsize=12)
+ax.set_xlim([-0.8, 0.8])
+ax.set_ylim([0, 1.2])
+ax.set_zlim([0, 2.0])
+ax.tick_params(colors='#64748b')
+
+def update(f):
+    t = f / FPS
+    if t < 2.0:
+        s = t / 2.0
+        z = 1.05 - 0.20 * s
+        gap = 0.18
+        status = "Phase 1: Reaching straight forward over front table..."
+    elif t < 3.0:
+        z = 0.85
+        gap = 0.18 - 0.07 * (t - 2.0)
+        status = "Phase 2: Clamping parallel jaws (Fn = 40.13 N, P = 3.52 kPa)..."
+    elif t < 5.0:
+        s = (t - 3.0) / 2.0
+        z = 0.85 + 0.25 * s
+        gap = 0.11
+        status = "Phase 3: Synchronous vertical rise (+25 cm)..."
+    elif t < 7.0:
+        z = 1.10
+        gap = 0.11
+        status = f"Phase 4: HOLDING IN FRONT FOR VISITORS (Rem: {7.0 - t:.1f}s)..."
+    elif t < 9.0:
+        s = (t - 7.0) / 2.0
+        z = 1.10 - 0.25 * s
+        gap = 0.11
+        status = "Phase 5: Lowering brick safely onto front pedestal..."
+    else:
+        z = 0.85
+        gap = 0.11 + 0.07 * (t - 9.0)
+        status = "Phase 6: Releasing clamp and retracting arm."
+
+    arm_line.set_data_3d([0.36, 0.36], [0, 0.50], [1.60, z])
+    jaw_L.set_data_3d([0.36 - gap/2, 0.36 - gap/2], [0.50, 0.50], [z, z - 0.08])
+    jaw_R.set_data_3d([0.36 + gap/2, 0.36 + gap/2], [0.50, 0.50], [z, z - 0.08])
+    brick_dot.set_data_3d([0.36], [0.50], [z])
+    title.set_text(f"Humanoid {ROBOT_NAME} (t={t:.1f}s)\\n{status}")
+    return arm_line, jaw_L, jaw_R, brick_dot
+
+ani = FuncAnimation(fig, update, frames=FRAMES, interval=1000/FPS)
+
+plt.close()
+HTML(ani.to_jshtml())
+`;
+      } else if (type === 'dance') {
+        return `# ========================================================================================
+# GARRF.in | Humanoid Mechatronics Division
+# Student: Humanoid ${name}
+# Experiment B: 15-Second Harmonic ZMP Dynamic Balance Dance Routine
+# ========================================================================================
+# !pip install numpy matplotlib
+
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+from IPython.display import HTML
+
+ROBOT_NAME = "${name}"
+FPS = 25
+DURATION = 15.0
+FRAMES = int(FPS * DURATION)
+
+fig = plt.figure(figsize=(9, 7), facecolor='#060b16')
+ax = fig.add_subplot(111, projection='3d', facecolor='#0a1122')
+
+spine, = ax.plot([0, 0], [0, 0], [1.05, 1.60], color='#e2e8f0', linewidth=6)
+arm_L, = ax.plot([-0.36, -0.36], [0, 0], [1.55, 1.10], color='#00f0ff', linewidth=4)
+arm_R, = ax.plot([0.36, 0.36], [0, 0], [1.55, 1.10], color='#00f0ff', linewidth=4)
+leg_L, = ax.plot([-0.2, -0.2], [0, 0], [1.05, 0], color='#cbd5e1', linewidth=4)
+leg_R, = ax.plot([0.2, 0.2], [0, 0], [1.05, 0], color='#cbd5e1', linewidth=4)
+
+ax.set_xlim([-1.0, 1.0])
+ax.set_ylim([-1.0, 1.0])
+ax.set_zlim([0, 2.2])
+ax.tick_params(colors='#64748b')
+title = ax.set_title(f"Humanoid {ROBOT_NAME} - 15s Dynamic Dance", color='#00f0ff')
+
+def update(f):
+    t = f / FPS
+    pelvis_z = 1.05 + 0.06 * np.abs(np.sin(t * 4.2))
+    twist = 0.25 * np.sin(t * 3.5)
+    arm_w = 0.40 * np.sin(t * 3.5)
+    
+    spine.set_data_3d([0, twist*0.3], [0, 0], [pelvis_z, pelvis_z + 0.55])
+    arm_L.set_data_3d([-0.36, -0.36 + twist*0.2], [0, arm_w*0.5], [pelvis_z + 0.5, pelvis_z + 0.1])
+    arm_R.set_data_3d([0.36, 0.36 + twist*0.2], [0, -arm_w*0.5], [pelvis_z + 0.5, pelvis_z + 0.1])
+    leg_L.set_data_3d([-0.2, -0.2], [0, -twist*0.3], [pelvis_z, 0])
+    leg_R.set_data_3d([0.2, 0.2], [0, twist*0.3], [pelvis_z, 0])
+    
+    title.set_text(f"Humanoid {ROBOT_NAME} Dance Routine (t={t:.1f}s / 15.0s)")
+    return spine, arm_L, arm_R, leg_L, leg_R
+
+ani = FuncAnimation(fig, update, frames=FRAMES, interval=1000/FPS)
+
+plt.close()
 HTML(ani.to_jshtml())
 `;
       } else {
-        return `# Script for ${type} available in Master Suite.`;
+        return `# ========================================================================================
+# GARRF.in | Humanoid Mechatronics Division
+# Student: Humanoid ${name}
+# Experiment C: Safe Orbital Sprint & Jump Trajectory (R = 6.2m)
+# ========================================================================================
+# !pip install numpy matplotlib
+
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+from IPython.display import HTML
+
+ROBOT_NAME = "${name}"
+FPS = 25
+DURATION = 10.0
+FRAMES = int(FPS * DURATION)
+R = 6.2
+
+fig = plt.figure(figsize=(9, 7), facecolor='#060b16')
+ax = fig.add_subplot(111, projection='3d', facecolor='#0a1122')
+
+# Circular Track
+theta = np.linspace(0, 2*np.pi, 100)
+ax.plot(R*np.cos(theta), R*np.sin(theta), np.zeros(100), color='#10b981', linewidth=2, linestyle='--')
+
+# Mentors at center
+ax.scatter([-3.5], [1.2], [1.0], color='#00f0ff', s=160, label='Dr. Venu Gopal')
+ax.scatter([3.5], [1.2], [1.0], color='#f59e0b', s=160, label='Shantanu Bro')
+bot_scatter, = ax.plot([R], [0], [1.05], marker='o', markersize=12, color='#e2e8f0', linestyle='None', label=f'Humanoid {ROBOT_NAME}')
+
+ax.set_xlim([-8, 8])
+ax.set_ylim([-8, 8])
+ax.set_zlim([0, 2.5])
+ax.legend(facecolor='#070c18', edgecolor='#00f0ff', labelcolor='#ffffff')
+title = ax.set_title(f"Humanoid {ROBOT_NAME} - Orbital Sprint", color='#00f0ff')
+
+def update(f):
+    t = f / FPS
+    w = 0.8
+    x = R * np.cos(w * t)
+    y = R * np.sin(w * t)
+    z = 1.05 + 0.18 * np.abs(np.sin(t * 8.0))
+    
+    bot_scatter.set_data_3d([x], [y], [z])
+    title.set_text(f"Humanoid {ROBOT_NAME} Sprinting (R = 6.2m, t={t:.1f}s)")
+    return bot_scatter,
+
+ani = FuncAnimation(fig, update, frames=FRAMES, interval=1000/FPS)
+
+plt.close()
+HTML(ani.to_jshtml())
+`;
       }
     }
 
@@ -1997,22 +2177,54 @@ HTML(ani.to_jshtml())
       document.getElementById('python-code-display').innerText = code;
     }
 
-    function copyPythonCode() {
-      const code = document.getElementById('python-code-display').innerText;
-      navigator.clipboard.writeText(code).then(() => {
-        alert("Python simulation code copied! Paste directly into Google Colab or your Python environment.");
-      });
-    }
-
+    /* ================= ROBUST DOWNLOAD & COPY LOGIC (MOBILE & DESKTOP TESTED) ================= */
     function downloadPythonFile() {
       const type = document.getElementById('python-script-selector').value;
       const code = document.getElementById('python-code-display').innerText;
-      const blob = new Blob([code], { type: 'text/x-python' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = `garrf_humanoid_${STATE.studentName.toLowerCase()}_master_sim.py`;
-      link.click();
-      URL.revokeObjectURL(link.href);
+      const filename = `garrf_humanoid_${STATE.studentName.toLowerCase()}_${type}_sim.py`;
+
+      try {
+        const blob = new Blob([code], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+      } catch (e) {
+        const dataUri = 'data:text/plain;charset=utf-8,' + encodeURIComponent(code);
+        const fallbackLink = document.createElement('a');
+        fallbackLink.href = dataUri;
+        fallbackLink.download = filename;
+        document.body.appendChild(fallbackLink);
+        fallbackLink.click();
+        document.body.removeChild(fallbackLink);
+      }
+    }
+
+    function copyPythonCode() {
+      const code = document.getElementById('python-code-display').innerText;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(code).then(() => {
+          alert("Python code copied to clipboard! Paste it into Google Colab.");
+        }).catch(() => fallbackCopy(code));
+      } else {
+        fallbackCopy(code);
+      }
+    }
+
+    function fallbackCopy(text) {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.style.position = "fixed";
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      alert("Python code copied to clipboard!");
     }
 
     window.onload = function() {
