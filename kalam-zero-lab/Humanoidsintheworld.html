@@ -1,0 +1,2234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GARRF Humanoid Robotics Virtual Kinematics Laboratory</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Three.js & OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500;700&display=swap');
+
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background-color: #080c14;
+      color: #e2e8f0;
+      overflow-x: hidden;
+    }
+
+    .font-mono-code {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0b1120;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #0284c7;
+    }
+
+    .hud-panel {
+      background: rgba(11, 17, 32, 0.88);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(56, 189, 248, 0.18);
+    }
+    .hud-panel:hover {
+      border-color: rgba(56, 189, 248, 0.38);
+    }
+    
+    .glow-cyan {
+      box-shadow: 0 0 20px -3px rgba(14, 165, 233, 0.35);
+    }
+  </style>
+</head>
+
+<body class="h-screen w-screen flex flex-col overflow-hidden bg-[#070b12] text-slate-200 select-none">
+
+  <!-- Top Foundation Header -->
+  <header class="h-16 border-b border-slate-800 bg-slate-950/90 backdrop-blur px-4 flex items-center justify-between z-20 shrink-0">
+    <div class="flex items-center space-x-3.5">
+      <!-- Fallback-safe Foundation Logo -->
+      <div class="relative w-10 h-10 rounded-xl overflow-hidden bg-slate-900 border border-sky-500/30 flex items-center justify-center shrink-0 shadow-lg shadow-sky-950/40">
+        <img 
+          src="logo.jpeg" 
+          alt="GARRF Logo" 
+          class="w-full h-full object-cover"
+          onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\' fill=\'%230ea5e9\'><circle cx=\'50\' cy=\'50\' r=\'45\' fill=\'%230f172a\' stroke=\'%230ea5e9\' stroke-width=\'5\'/><path d=\'M50 20 L75 75 L25 75 Z\' fill=\'none\' stroke=\'%2338bdf8\' stroke-width=\'5\'/><circle cx=\'50\' cy=\'50\' r=\'12\' fill=\'%2338bdf8\'/></svg>';"
+        />
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-sm font-bold tracking-wide text-white leading-tight">
+            Gopalkrishna Advanced Rural Research Foundation
+          </h1>
+          <span class="text-[9px] uppercase font-mono px-1.5 py-0.5 rounded bg-sky-950 text-sky-400 border border-sky-800/60 font-semibold tracking-wider">India</span>
+        </div>
+        <p class="text-[11px] text-sky-400/90 font-mono flex items-center gap-1.5 mt-0.5">
+          <i class="fa-solid fa-microchip text-[10px]"></i> Virtual Robotics & Humanoid Kinematics Laboratory
+        </p>
+      </div>
+    </div>
+
+    <!-- Active Humanoid Badge & Lab Controls -->
+    <div class="flex items-center gap-3">
+      <div class="hidden lg:flex items-center gap-2 bg-slate-900/90 border border-slate-800 px-3 py-1.5 rounded-lg text-xs font-mono">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+        <span class="text-slate-400">ACTIVE PLATFORM:</span>
+        <span id="activeRobotBadge" class="text-sky-300 font-bold">Tesla Optimus Gen 2</span>
+      </div>
+
+      <!-- Studio / Selfie Modal Trigger -->
+      <button id="openSelfieModalBtn" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white shadow-md shadow-sky-950 flex items-center gap-2 transition transform active:scale-95">
+        <i class="fa-solid fa-camera-retro"></i>
+        <span>Visitor Studio & 10s Video</span>
+      </button>
+
+      <button id="openSpecModalBtn" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700/80 transition flex items-center gap-1.5">
+        <i class="fa-solid fa-table-list text-sky-400"></i>
+        <span class="hidden sm:inline">Spec Matrix</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Workbench Split -->
+  <div class="flex-1 flex overflow-hidden relative">
+
+    <!-- Left Controls Panel -->
+    <aside class="w-80 md:w-88 border-r border-slate-800 bg-slate-950/80 backdrop-blur z-10 flex flex-col shrink-0 overflow-y-auto">
+      
+      <!-- Platform Selector -->
+      <div class="p-3.5 border-b border-slate-800">
+        <label class="block text-xs uppercase tracking-wider text-slate-400 font-mono mb-2 flex items-center justify-between font-bold">
+          <span>Humanoid Selection</span>
+          <i class="fa-solid fa-robot text-sky-400"></i>
+        </label>
+        <div class="grid grid-cols-2 gap-2" id="robotSelectorContainer">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Kinematics & Experiment Modes -->
+      <div class="p-3.5 border-b border-slate-800">
+        <label class="block text-xs uppercase tracking-wider text-slate-400 font-mono mb-2 flex items-center justify-between font-bold">
+          <span>Experiments & Motions</span>
+          <span class="text-[10px] text-emerald-400 font-normal">Real-Time Kinematics</span>
+        </label>
+        
+        <div class="grid grid-cols-2 gap-1.5" id="experimentBtnsContainer">
+          <button data-experiment="idle" class="exp-btn active px-2.5 py-2 text-xs rounded-lg border border-sky-500/60 bg-sky-950/70 text-sky-200 text-left transition flex items-center gap-2 font-medium">
+            <i class="fa-solid fa-lungs text-sky-400 text-xs"></i> Idle Stance
+          </button>
+          <button data-experiment="walk" class="exp-btn px-2.5 py-2 text-xs rounded-lg border border-slate-800 hover:border-slate-700 bg-slate-900/90 text-slate-300 text-left transition flex items-center gap-2 font-medium">
+            <i class="fa-solid fa-person-walking text-sky-400 text-xs"></i> Bipedal Walk
+          </button>
+          <button data-experiment="jump" class="exp-btn px-2.5 py-2 text-xs rounded-lg border border-slate-800 hover:border-slate-700 bg-slate-900/90 text-slate-300 text-left transition flex items-center gap-2 font-medium">
+            <i class="fa-solid fa-arrow-up-from-bracket text-amber-400 text-xs"></i> 1. Jump Dynamic
+          </button>
+          <button data-experiment="circleRun" class="exp-btn px-2.5 py-2 text-xs rounded-lg border border-slate-800 hover:border-slate-700 bg-slate-900/90 text-slate-300 text-left transition flex items-center gap-2 font-medium">
+            <i class="fa-solid fa-arrows-spin text-emerald-400 text-xs"></i> 2. Circle Sprint
+          </button>
+          <button data-experiment="squat" class="exp-btn px-2.5 py-2 text-xs rounded-lg border border-slate-800 hover:border-slate-700 bg-slate-900/90 text-slate-300 text-left transition flex items-center gap-2 font-medium">
+            <i class="fa-solid fa-arrows-down-to-line text-sky-400 text-xs"></i> Deep Squat
+          </button>
+          <button data-experiment="balance" class="exp-btn px-2.5 py-2 text-xs rounded-lg border border-slate-800 hover:border-slate-700 bg-slate-900/90 text-slate-300 text-left transition flex items-center gap-2 font-medium">
+            <i class="fa-solid fa-scale-balanced text-indigo-400 text-xs"></i> Single-Leg ZMP
+          </button>
+        </div>
+
+        <!-- Simulation Speed -->
+        <div class="mt-3 flex items-center justify-between text-xs font-mono text-slate-400">
+          <span>Gait Playback Rate</span>
+          <span id="speedVal" class="text-sky-300 font-bold">1.0x</span>
+        </div>
+        <input type="range" id="animSpeed" min="0.2" max="2.0" step="0.1" value="1.0" class="w-full mt-1 h-1.5 bg-slate-800 rounded-lg cursor-pointer accent-sky-500">
+      </div>
+
+      <!-- End-Effector & Gripper Testing -->
+      <div class="p-3.5 border-b border-slate-800 bg-slate-900/30">
+        <label class="block text-xs uppercase tracking-wider text-slate-400 font-mono mb-2 flex items-center justify-between font-bold">
+          <span>3. Gripper Testing Lab</span>
+          <i class="fa-solid fa-hand-back-fist text-sky-400"></i>
+        </label>
+        
+        <!-- Gripper Type Picker -->
+        <div class="space-y-1.5 font-mono text-xs">
+          <label class="text-[11px] text-slate-400 block mb-1">Active End-Effector Architecture:</label>
+          <select id="gripperTypeSelect" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-sky-300 focus:outline-none focus:border-sky-500 font-sans">
+            <option value="dexterous">1. Anthropomorphic 5-Finger Tactile Hand</option>
+            <option value="parallel">2. Two-Jaw Parallel Industrial Gripper</option>
+            <option value="adaptive">3. Three-Finger Adaptive Power Grasper</option>
+            <option value="vacuum">4. Soft Vacuum Suction / Fin-Ray Bellows</option>
+          </select>
+
+          <!-- Gripper Aperture / Gesture -->
+          <div class="mt-2.5 pt-2 border-t border-slate-800/80">
+            <div class="flex justify-between items-center text-[11px] text-slate-400 mb-1">
+              <span>Gripper Stroke / Finger Flexion:</span>
+              <span id="gripperFlexVal" class="text-sky-400 font-bold">30%</span>
+            </div>
+            <input type="range" id="gripperFlexSlider" min="0" max="100" value="30" class="w-full h-1 bg-slate-800 rounded accent-sky-500 cursor-pointer">
+          </div>
+
+          <!-- Gripper Gesture Presets -->
+          <div class="flex gap-1.5 mt-2">
+            <button data-gesture="relaxed" class="gesture-btn active px-2 py-1 text-[10px] rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex-1">Open</button>
+            <button data-gesture="pinch" class="gesture-btn px-2 py-1 text-[10px] rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex-1">Pinch</button>
+            <button data-gesture="fist" class="gesture-btn px-2 py-1 text-[10px] rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex-1">Fist</button>
+            <button data-gesture="point" class="gesture-btn px-2 py-1 text-[10px] rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex-1">Point</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Manual Joint Trims -->
+      <div class="p-3.5 flex-1">
+        <div class="flex items-center justify-between mb-2">
+          <label class="text-xs uppercase tracking-wider text-slate-400 font-mono font-bold">Manual DOF Trims</label>
+          <button id="resetJointsBtn" class="text-[10px] text-sky-400 hover:underline font-mono">Reset Trims</button>
+        </div>
+
+        <div class="space-y-2.5 font-mono text-xs">
+          <div>
+            <div class="flex justify-between text-slate-300 text-[11px] mb-0.5">
+              <span>Head Yaw (Pan)</span>
+              <span id="valHeadYaw" class="text-sky-400 font-bold">0°</span>
+            </div>
+            <input type="range" id="jointHeadYaw" min="-60" max="60" value="0" class="w-full h-1 bg-slate-800 rounded accent-sky-500">
+          </div>
+
+          <div>
+            <div class="flex justify-between text-slate-300 text-[11px] mb-0.5">
+              <span>Torso Lean (Pitch)</span>
+              <span id="valTorsoPitch" class="text-sky-400 font-bold">0°</span>
+            </div>
+            <input type="range" id="jointTorsoPitch" min="-25" max="35" value="0" class="w-full h-1 bg-slate-800 rounded accent-sky-500">
+          </div>
+
+          <div>
+            <div class="flex justify-between text-slate-300 text-[11px] mb-0.5">
+              <span>Shoulder Pitch</span>
+              <span id="valShoulderPitch" class="text-sky-400 font-bold">0°</span>
+            </div>
+            <input type="range" id="jointShoulderPitch" min="-90" max="90" value="0" class="w-full h-1 bg-slate-800 rounded accent-sky-500">
+          </div>
+        </div>
+
+        <!-- Overlays Checkboxes -->
+        <div class="mt-4 pt-3 border-t border-slate-800 space-y-1.5 text-xs text-slate-300">
+          <label class="flex items-center gap-2 cursor-pointer hover:text-white">
+            <input type="checkbox" id="chkCoM" checked class="rounded bg-slate-800 border-slate-700 text-sky-500">
+            <span>Center of Mass (CoM) Projection</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer hover:text-white">
+            <input type="checkbox" id="chkForceVectors" checked class="rounded bg-slate-800 border-slate-700 text-sky-500">
+            <span>Ground Reaction Force (GRF)</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer hover:text-white">
+            <input type="checkbox" id="chkJointAxes" checked class="rounded bg-slate-800 border-slate-700 text-sky-500">
+            <span>Kinematic Joint Coordinate Frames</span>
+          </label>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Center 3D Simulation Canvas -->
+    <main class="flex-1 relative flex flex-col overflow-hidden bg-slate-950">
+      
+      <!-- 3D Canvas -->
+      <div id="canvasContainer" class="w-full h-full relative cursor-grab active:cursor-grabbing"></div>
+
+      <!-- Top Telemetry Overlays -->
+      <div class="absolute top-4 left-4 right-4 pointer-events-none flex flex-wrap justify-between gap-3">
+        
+        <!-- Center of Mass & Kinematics Monitor -->
+        <div class="hud-panel pointer-events-auto p-3 rounded-xl text-xs font-mono w-72 shadow-xl">
+          <div class="flex items-center justify-between border-b border-slate-800/80 pb-1.5 mb-2">
+            <span class="text-slate-300 flex items-center gap-1.5 font-bold">
+              <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> Dynamic CoM Estimator
+            </span>
+            <span id="stabilityBadge" class="text-[10px] text-emerald-400 bg-emerald-950/70 px-1.5 py-0.5 rounded border border-emerald-800/50">ZMP Balanced</span>
+          </div>
+          <div class="grid grid-cols-3 gap-1.5 text-center mb-2">
+            <div class="bg-slate-900/80 p-1.5 rounded-lg border border-slate-800">
+              <div class="text-[9px] text-slate-400">CoM X</div>
+              <div id="hudComX" class="font-bold text-sky-400 text-xs">0.00 m</div>
+            </div>
+            <div class="bg-slate-900/80 p-1.5 rounded-lg border border-slate-800">
+              <div class="text-[9px] text-slate-400">CoM Y</div>
+              <div id="hudComY" class="font-bold text-emerald-400 text-xs">0.96 m</div>
+            </div>
+            <div class="bg-slate-900/80 p-1.5 rounded-lg border border-slate-800">
+              <div class="text-[9px] text-slate-400">CoM Z</div>
+              <div id="hudComZ" class="font-bold text-indigo-400 text-xs">0.02 m</div>
+            </div>
+          </div>
+          
+          <div class="flex justify-between items-center text-[10px] text-slate-300">
+            <span>Dynamic Status:</span>
+            <span id="experimentStatusText" class="text-amber-400 font-bold">Nominal Equilibrium</span>
+          </div>
+        </div>
+
+        <!-- Live Experiment Telemetry Specifics (Jump / Circle / Gripper) -->
+        <div class="hud-panel pointer-events-auto p-3 rounded-xl text-xs font-mono w-80 shadow-xl" id="experimentTelemetryPanel">
+          <div class="flex items-center justify-between border-b border-slate-800/80 pb-1.5 mb-2">
+            <span class="text-slate-300 flex items-center gap-1.5 font-bold">
+              <i class="fa-solid fa-gauge-high text-sky-400"></i> Experiment Telemetry
+            </span>
+            <span id="telemetryModeName" class="text-[10px] text-sky-400 bg-sky-950/70 px-1.5 py-0.5 rounded border border-sky-800/50">Stance</span>
+          </div>
+
+          <div class="space-y-1.5 text-[11px]">
+            <div class="flex justify-between">
+              <span class="text-slate-400" id="statParam1Label">Foot Balance (L / R):</span>
+              <span class="text-sky-300 font-bold" id="statParam1Val">50% / 50%</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-400" id="statParam2Label">Total Ground Force:</span>
+              <span class="text-emerald-400 font-bold" id="statParam2Val">549 N</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-400" id="statParam3Label">Centrifugal / Bank Lean:</span>
+              <span class="text-purple-300 font-bold" id="statParam3Val">0.0°</span>
+            </div>
+          </div>
+
+          <div class="w-full h-1.5 bg-slate-800 rounded-full mt-2 overflow-hidden flex">
+            <div id="loadLeftBar" class="h-full bg-sky-500 transition-all duration-75" style="width: 50%"></div>
+            <div id="loadRightBar" class="h-full bg-indigo-500 transition-all duration-75" style="width: 50%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Viewport Bottom Controls -->
+      <div class="absolute bottom-4 left-1/2 -translate-x-1/2 hud-panel px-4 py-2 rounded-full flex items-center gap-3 shadow-2xl z-10">
+        <button id="camFrontBtn" class="px-2.5 py-1 text-xs rounded-full hover:bg-slate-800 text-slate-300 transition">Front</button>
+        <button id="camSideBtn" class="px-2.5 py-1 text-xs rounded-full hover:bg-slate-800 text-slate-300 transition">Side</button>
+        <button id="camTopBtn" class="px-2.5 py-1 text-xs rounded-full hover:bg-slate-800 text-slate-300 transition">Top</button>
+        <button id="camIsoBtn" class="px-2.5 py-1 text-xs rounded-full bg-sky-900/60 text-sky-200 transition">Isometric</button>
+        <div class="w-px h-4 bg-slate-700"></div>
+        <button id="togglePlayBtn" class="px-3 py-1 text-xs rounded-full bg-sky-600 hover:bg-sky-500 text-white flex items-center gap-1.5 transition">
+          <i id="playIcon" class="fa-solid fa-pause text-[10px]"></i>
+          <span id="playText">Pause</span>
+        </button>
+      </div>
+    </main>
+
+    <!-- Right Specifications Panel -->
+    <aside class="w-80 md:w-84 border-l border-slate-800 bg-slate-950/80 backdrop-blur z-10 flex flex-col shrink-0 overflow-y-auto">
+      <div class="p-3.5 border-b border-slate-800">
+        <h2 class="text-xs uppercase tracking-wider text-slate-400 font-mono font-bold flex items-center justify-between">
+          <span>Technical Parameters</span>
+          <i class="fa-solid fa-microchip text-sky-400"></i>
+        </h2>
+      </div>
+
+      <div class="p-3.5 space-y-3.5 text-xs font-mono">
+        <!-- Physical Specs Card -->
+        <div class="hud-panel p-3 rounded-xl border border-slate-800/80">
+          <div class="text-[11px] text-slate-300 uppercase tracking-wider mb-2 font-bold flex items-center gap-1.5">
+            <i class="fa-solid fa-ruler-combined text-sky-400"></i> Biomechanical Profile
+          </div>
+          <div class="space-y-1.5 text-slate-300">
+            <div class="flex justify-between">
+              <span class="text-slate-400">Height:</span>
+              <span id="specHeight" class="text-slate-200 font-semibold">173 cm (5'8")</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-400">Total Mass:</span>
+              <span id="specWeight" class="text-slate-200 font-semibold">56 kg (123 lbs)</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-400">Degrees of Freedom:</span>
+              <span id="specDof" class="text-sky-300 font-bold">28 DoF (+11 Hands)</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-400">Payload Max:</span>
+              <span id="specPayload" class="text-emerald-400 font-semibold">20 kg (44 lbs)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actuator Specifications -->
+        <div class="hud-panel p-3 rounded-xl border border-slate-800/80">
+          <div class="text-[11px] text-slate-300 uppercase tracking-wider mb-2 font-bold flex items-center gap-1.5">
+            <i class="fa-solid fa-gears text-sky-400"></i> Actuation & Power
+          </div>
+          <div class="space-y-1.5">
+            <div>
+              <span class="text-slate-400 block text-[10px]">Actuator Class:</span>
+              <span id="specActuators" class="text-slate-200 text-[11px]">Custom Rotary & Linear Electromechanical</span>
+            </div>
+            <div class="flex justify-between pt-1">
+              <span class="text-slate-400">Pack Capacity:</span>
+              <span id="specBattery" class="text-emerald-400 font-semibold">2.3 kWh (~4 hrs)</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-400">Peak Velocity:</span>
+              <span id="specSpeed" class="text-slate-200">2.2 m/s (~8 km/h)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Foundation Educational Note -->
+        <div class="p-3 rounded-xl bg-sky-950/40 border border-sky-800/50 text-[11px] text-slate-300 space-y-1.5">
+          <div class="font-bold text-sky-400 flex items-center gap-1.5">
+            <i class="fa-solid fa-graduation-cap"></i> GARRF Educational Insight
+          </div>
+          <p id="kinematicInsightText" class="leading-relaxed text-slate-400 text-[10px]">
+            Zero Moment Point (ZMP) control dictates that the aggregate inertial and gravitational ground torque remains within the support foot convex hull.
+          </p>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Educational Disclaimer Footer -->
+  <footer class="h-10 border-t border-slate-800 bg-slate-950 px-4 flex items-center justify-between text-[11px] text-slate-400 font-mono z-20 shrink-0">
+    <div class="truncate mr-4">
+      <span class="text-sky-400 font-semibold">Educational purpose only.</span>
+      Credit to original companies (Tesla, Boston Dynamics, Figure AI, Unitree Robotics, Agility Robotics, Sanctuary AI). We are providing simulators for visitors & researchers to study them.
+    </div>
+    <div class="hidden md:flex items-center gap-3 shrink-0 text-slate-400">
+      <span>Gopalkrishna Advanced Rural Research Foundation, India</span>
+      <span class="w-1.5 h-1.5 rounded-full bg-sky-500"></span>
+      <span class="text-sky-400 font-semibold">Open Simulator v3.5</span>
+    </div>
+  </footer>
+
+  <!-- Visitor Selfie & 10s Video Recording Studio Modal -->
+  <div id="selfieStudioModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+      <!-- Modal Header -->
+      <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/50">
+        <div>
+          <h2 class="text-base font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-camera-retro text-sky-400"></i>
+            Visitor Studio: Selfie & 10-Second Encirclement Video Generator
+          </h2>
+          <p class="text-xs text-slate-400 font-mono">Create your custom visitor caricature, stand alongside your favorite humanoid, and export a commemorative 10s video!</p>
+        </div>
+        <button id="closeSelfieModalBtn" class="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-800 transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Studio Workflow Grid -->
+      <div class="p-6 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        <!-- Left: Caricature Customization -->
+        <div class="space-y-4">
+          <div class="text-xs uppercase tracking-wider text-sky-400 font-mono font-bold flex items-center gap-1.5">
+            <i class="fa-solid fa-user-pen"></i> Step 1: Customize Your Visitor Caricature
+          </div>
+
+          <!-- Visitor Name Input -->
+          <div>
+            <label class="block text-xs font-mono text-slate-300 mb-1">Your Full Name / Researcher Title:</label>
+            <input type="text" id="visitorNameInput" value="Dr. Arjun Sharma" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500 font-sans">
+          </div>
+
+          <!-- Caricature Attributes -->
+          <div class="grid grid-cols-2 gap-3 text-xs font-mono">
+            <div>
+              <label class="block text-slate-400 mb-1">Skin Tone:</label>
+              <select id="caricatureSkinTone" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-slate-200">
+                <option value="#f8d9b6">Warm Beige</option>
+                <option value="#d2996c" selected>Golden Honey</option>
+                <option value="#8d5524">Deep Bronze</option>
+                <option value="#ffd1aa">Fair Peach</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-slate-400 mb-1">Hairstyle & Beard:</label>
+              <select id="caricatureHairStyle" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-slate-200">
+                <option value="curly">Curly Black Crop</option>
+                <option value="straight" selected>Short Professional</option>
+                <option value="long">Long Tied Locks</option>
+                <option value="bald">Sleek Shaved</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-slate-400 mb-1">Eyewear:</label>
+              <select id="caricatureGlasses" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-slate-200">
+                <option value="none">No Glasses</option>
+                <option value="round" selected>Round Tech Frames</option>
+                <option value="rect">Academic Square</option>
+                <option value="cyber">AR Hologram Visor</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-slate-400 mb-1">Visitor Attire:</label>
+              <select id="caricatureOutfit" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-slate-200">
+                <option value="labCoat" selected>White GARRF Lab Coat</option>
+                <option value="hoodie">Cyber Blue Hoodie</option>
+                <option value="suit">Formal Blazer</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Live 2D Caricature Canvas Preview -->
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 flex flex-col items-center justify-center">
+            <span class="text-[10px] font-mono text-slate-400 mb-2">Visitor Caricature Avatar Preview</span>
+            <canvas id="caricature2dCanvas" width="180" height="180" class="rounded-xl border border-slate-700 bg-slate-900 shadow-inner"></canvas>
+          </div>
+        </div>
+
+        <!-- Right: 3D Staging & 10-Second Recording Control -->
+        <div class="space-y-4 flex flex-col justify-between">
+          <div>
+            <div class="text-xs uppercase tracking-wider text-sky-400 font-mono font-bold flex items-center gap-1.5 mb-2">
+              <i class="fa-solid fa-video"></i> Step 2: 10-Second Encirclement Video Generator
+            </div>
+            
+            <p class="text-xs text-slate-300 leading-relaxed">
+              When triggered, your 3D caricature avatar will spawn directly in the arena next to your selected humanoid (<span id="studioTargetRobotName" class="text-sky-300 font-bold">Tesla Optimus Gen 2</span>). The camera will smoothly orbit 360° around both of you for exactly 10 seconds, recording a high-definition commemorative video!
+            </p>
+
+            <!-- Recording Progress HUD Box -->
+            <div class="mt-4 p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3 font-mono text-xs">
+              <div class="flex justify-between items-center">
+                <span class="text-slate-400 flex items-center gap-2">
+                  <span id="recordingLed" class="w-2.5 h-2.5 rounded-full bg-slate-600"></span> Recording Engine:
+                </span>
+                <span id="recordingStatusLabel" class="text-slate-400">Ready</span>
+              </div>
+
+              <!-- Progress Bar -->
+              <div>
+                <div class="flex justify-between text-[11px] mb-1">
+                  <span class="text-slate-400">10s Cinematic Orbit Timer:</span>
+                  <span id="recordingTimeText" class="text-sky-400 font-bold">0.0s / 10.0s</span>
+                </div>
+                <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                  <div id="recordingProgressBar" class="h-full bg-gradient-to-r from-sky-500 to-indigo-500 rounded-full transition-all duration-100" style="width: 0%"></div>
+                </div>
+              </div>
+
+              <div class="text-[10px] text-slate-400">
+                Format: <span class="text-slate-300">WebM / MP4 (HTML5 Canvas CaptureStream 30FPS)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="space-y-2 pt-2">
+            <button id="start10sRecordingBtn" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-950 transition transform active:scale-98">
+              <i class="fa-solid fa-circle-play text-sm"></i>
+              <span>Generate & Record 10s Encirclement Video</span>
+            </button>
+
+            <div class="grid grid-cols-2 gap-2">
+              <button id="downloadVideoBtn" disabled class="py-2.5 px-3 rounded-xl bg-slate-800 text-slate-500 border border-slate-700/60 font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-not-allowed">
+                <i class="fa-solid fa-download"></i>
+                <span>Download Video (.webm)</span>
+              </button>
+              
+              <button id="downloadSelfieImgBtn" class="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 font-semibold text-xs flex items-center justify-center gap-1.5 transition">
+                <i class="fa-solid fa-image"></i>
+                <span>Download Selfie (.png)</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Footer watermark note -->
+      <div class="px-6 py-2.5 bg-slate-950 border-t border-slate-800 text-[11px] text-slate-400 font-mono flex justify-between items-center">
+        <span>Includes GARRF commemorative diploma watermark certificate on downloaded media.</span>
+        <button id="closeSelfieFooterBtn" class="text-slate-400 hover:text-white">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Comparative Specification Matrix Modal -->
+  <div id="specModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-5xl max-h-[88vh] flex flex-col shadow-2xl overflow-hidden">
+      <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+        <h2 class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-table-list text-sky-400"></i>
+          Humanoid Comparative Specification Matrix
+        </h2>
+        <button id="closeSpecModalBtn" class="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-800 transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+      <div class="p-6 overflow-x-auto overflow-y-auto">
+        <table class="w-full text-left text-xs font-mono border-collapse">
+          <thead>
+            <tr class="border-b border-slate-700 text-slate-400 uppercase tracking-wider text-[11px]">
+              <th class="p-3 bg-slate-950/60">Platform</th>
+              <th class="p-3 bg-slate-950/60">Manufacturer</th>
+              <th class="p-3 bg-slate-950/60">Height / Weight</th>
+              <th class="p-3 bg-slate-950/60">Total DoF</th>
+              <th class="p-3 bg-slate-950/60">Actuator Class</th>
+              <th class="p-3 bg-slate-950/60">Grip End-Effector</th>
+              <th class="p-3 bg-slate-950/60">Primary Target Domain</th>
+            </tr>
+          </thead>
+          <tbody id="matrixTableBody" class="divide-y divide-slate-800 text-slate-300">
+            <!-- Populated via JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Database of humanoid models
+    const ROBOT_MODELS = {
+      optimus: {
+        id: "optimus",
+        name: "Optimus Gen 2",
+        maker: "Tesla",
+        release: "2024",
+        height: "173 cm (5'8\")",
+        weight: "56 kg (123 lbs)",
+        heightMeters: 1.73,
+        weightKg: 56,
+        dof: "28 DoF (+11 Hands)",
+        actuatorType: "Custom Tesla Rotary & Linear Ball-Screw Actuators",
+        battery: "2.3 kWh battery pack (~4-5 hrs)",
+        speed: "2.2 m/s (~8 km/h)",
+        payload: "20 kg (44 lbs)",
+        morphology: "humanoid",
+        colorway: {
+          torso: 0xf1f5f9,
+          accents: 0x0f172a,
+          joints: 0x334155,
+          glow: 0x38bdf8,
+          metalness: 0.85,
+          roughness: 0.25
+        },
+        proportions: { shoulderWidth: 0.42, torsoHeight: 0.55, armLength: 0.65, legLength: 0.88, headScale: 1.0 }
+      },
+      atlas: {
+        id: "atlas",
+        name: "Electric Atlas",
+        maker: "Boston Dynamics",
+        release: "2024 (Electric)",
+        height: "152 cm (5'0\")",
+        weight: "89 kg (196 lbs)",
+        heightMeters: 1.52,
+        weightKg: 89,
+        dof: "360° Infinite Continuous Swivel Joints",
+        actuatorType: "High-power electric cycloidal rotary drives",
+        battery: "Modular high-discharge Li-ion (~3.5 hrs)",
+        speed: "2.5 m/s (Superhuman agility)",
+        payload: "25 kg (55 lbs)",
+        morphology: "humanoid",
+        colorway: {
+          torso: 0x2563eb,
+          accents: 0x090d16,
+          joints: 0xd97706,
+          glow: 0x60a5fa,
+          metalness: 0.7,
+          roughness: 0.35
+        },
+        proportions: { shoulderWidth: 0.48, torsoHeight: 0.52, armLength: 0.68, legLength: 0.80, headScale: 1.15 }
+      },
+      figure02: {
+        id: "figure02",
+        name: "Figure 02",
+        maker: "Figure AI",
+        release: "2024",
+        height: "168 cm (5'6\")",
+        weight: "60 kg (132 lbs)",
+        heightMeters: 1.68,
+        weightKg: 60,
+        dof: "16 DoF Hands + 22 Major Joints",
+        actuatorType: "Integrated brushless frameless motors + harmonic drives",
+        battery: "2.25 kWh Integrated Spine Pack (~5 hrs)",
+        speed: "1.2 m/s (~4.3 km/h)",
+        payload: "20 kg (44 lbs)",
+        morphology: "humanoid",
+        colorway: {
+          torso: 0x1e293b,
+          accents: 0x05070c,
+          joints: 0x64748b,
+          glow: 0xa855f7,
+          metalness: 0.9,
+          roughness: 0.15
+        },
+        proportions: { shoulderWidth: 0.44, torsoHeight: 0.54, armLength: 0.66, legLength: 0.84, headScale: 1.0 }
+      },
+      unitreeG1: {
+        id: "unitreeG1",
+        name: "Unitree G1 / H1",
+        maker: "Unitree Robotics",
+        release: "2024-2025",
+        height: "132 cm (G1) / 180 cm (H1)",
+        weight: "35 kg (G1) / 47 kg (H1)",
+        heightMeters: 1.50,
+        weightKg: 40,
+        dof: "23-43 DoF Configurable",
+        actuatorType: "High-torque M107 high-dynamic joint modules",
+        battery: "9000 mAh quick-release battery pack",
+        speed: "3.3 m/s (World record sprint capable)",
+        payload: "12 kg (26 lbs)",
+        morphology: "humanoid",
+        colorway: {
+          torso: 0x475569,
+          accents: 0x0f172a,
+          joints: 0xef4444,
+          glow: 0x22c55e,
+          metalness: 0.6,
+          roughness: 0.4
+        },
+        proportions: { shoulderWidth: 0.38, torsoHeight: 0.48, armLength: 0.60, legLength: 0.78, headScale: 0.9 }
+      },
+      digit: {
+        id: "digit",
+        name: "Digit v4",
+        maker: "Agility Robotics",
+        release: "v4 Commercial",
+        height: "175 cm (5'9\")",
+        weight: "65 kg (143 lbs)",
+        heightMeters: 1.75,
+        weightKg: 65,
+        dof: "30 DoF (Digitigrade bird-legged configuration)",
+        actuatorType: "Electric motor driven four-bar link compliant springs",
+        battery: "Hot-swappable 1.2 kWh LiFePO4 (~3 hrs)",
+        speed: "1.5 m/s (~5.4 km/h)",
+        payload: "16 kg (35 lbs)",
+        morphology: "digitigrade",
+        colorway: {
+          torso: 0x0284c7,
+          accents: 0x090d16,
+          joints: 0x94a3b8,
+          glow: 0x38bdf8,
+          metalness: 0.5,
+          roughness: 0.45
+        },
+        proportions: { shoulderWidth: 0.42, torsoHeight: 0.58, armLength: 0.62, legLength: 0.92, headScale: 1.1 }
+      },
+      sanctuary: {
+        id: "sanctuary",
+        name: "Phoenix Gen 7",
+        maker: "Sanctuary AI",
+        release: "2024",
+        height: "170 cm (5'7\")",
+        weight: "70 kg (155 lbs)",
+        heightMeters: 1.70,
+        weightKg: 70,
+        dof: "20 DoF Dexterous Micro-Hydraulic Hands",
+        actuatorType: "Hydraulic-electric hybrid high-fidelity actuators",
+        battery: "Tethered or 1.8 kWh Internal Pack",
+        speed: "1.0 m/s (Manipulation priority)",
+        payload: "25 kg (55 lbs)",
+        morphology: "humanoid",
+        colorway: {
+          torso: 0xe2e8f0,
+          accents: 0x1e293b,
+          joints: 0x0ea5e9,
+          glow: 0x06b6d4,
+          metalness: 0.8,
+          roughness: 0.2
+        },
+        proportions: { shoulderWidth: 0.43, torsoHeight: 0.56, armLength: 0.67, legLength: 0.82, headScale: 1.05 }
+      }
+    };
+
+    // State
+    let currentRobotId = 'optimus';
+    let currentExperiment = 'idle'; // idle, walk, jump, circleRun, squat, balance
+    let currentGripperType = 'dexterous'; // dexterous, parallel, adaptive, vacuum
+    let currentGesture = 'relaxed';
+    let gripperFlexionPct = 30;
+    let animSpeedFactor = 1.0;
+    let isPlaying = true;
+    let animClock = new THREE.Clock();
+    let simTime = 0;
+
+    // Caricature avatar state
+    const visitorProfile = {
+      name: "Dr. Arjun Sharma",
+      skinTone: "#d2996c",
+      hairStyle: "straight",
+      glasses: "round",
+      outfit: "labCoat"
+    };
+
+    // Manual joint trim values
+    const manualJoints = {
+      headYaw: 0,
+      torsoPitch: 0,
+      shoulderPitch: 0
+    };
+
+    // Visual indicators toggles
+    const visualSettings = {
+      com: true,
+      forces: true,
+      jointAxes: true
+    };
+  </script>
+
+  <script>
+    const container = document.getElementById('canvasContainer');
+    let scene, camera, renderer, controls;
+    let robotRoot, visitorCaricatureRig = null;
+    let comGroup, forceVectorsGroup, jointAxesGroup, sprintTrackCircle;
+    let materialsMap = {};
+
+    function initScene() {
+      // Scene
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x070b12);
+      scene.fog = new THREE.FogExp2(0x070b12, 0.035);
+
+      // Camera
+      camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+      camera.position.set(0, 1.45, 3.4);
+
+      // Renderer
+      renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.2;
+      container.appendChild(renderer.domElement);
+
+      // Controls
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.target.set(0, 0.95, 0);
+      controls.maxPolarAngle = Math.PI / 2 + 0.03;
+      controls.minDistance = 0.7;
+      controls.maxDistance = 8.0;
+
+      // Lights
+      const ambient = new THREE.AmbientLight(0xffffff, 0.75);
+      scene.add(ambient);
+
+      const mainLight = new THREE.DirectionalLight(0xffffff, 1.3);
+      mainLight.position.set(4, 7, 5);
+      mainLight.castShadow = true;
+      mainLight.shadow.mapSize.width = 2048;
+      mainLight.shadow.mapSize.height = 2048;
+      scene.add(mainLight);
+
+      const cyanRim = new THREE.DirectionalLight(0x38bdf8, 0.6);
+      cyanRim.position.set(-4, 3, -3);
+      scene.add(cyanRim);
+
+      const floorFill = new THREE.DirectionalLight(0x818cf8, 0.5);
+      floorFill.position.set(0, 5, -4);
+      scene.add(floorFill);
+
+      // Scientific Laboratory Floor Grid
+      const grid = new THREE.GridHelper(20, 40, 0x0284c7, 0x1e293b);
+      grid.position.y = 0;
+      scene.add(grid);
+
+      // Concentric Calibration Rings
+      const ringGeo = new THREE.RingGeometry(0.3, 0.32, 48);
+      ringGeo.rotateX(-Math.PI / 2);
+      const ringMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide, opacity: 0.3, transparent: true });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.position.y = 0.002;
+      scene.add(ring);
+
+      // Circle sprint track helper ring
+      const sprintTrackGeo = new THREE.RingGeometry(1.48, 1.52, 64);
+      sprintTrackGeo.rotateX(-Math.PI / 2);
+      const sprintTrackMat = new THREE.MeshBasicMaterial({ color: 0x10b981, side: THREE.DoubleSide, opacity: 0.5, transparent: true });
+      sprintTrackCircle = new THREE.Mesh(sprintTrackGeo, sprintTrackMat);
+      sprintTrackCircle.position.y = 0.003;
+      sprintTrackCircle.visible = false;
+      scene.add(sprintTrackCircle);
+
+      // Floor Shadow Plane
+      const shadowPlaneGeo = new THREE.PlaneGeometry(20, 20);
+      shadowPlaneGeo.rotateX(-Math.PI / 2);
+      const shadowPlaneMat = new THREE.ShadowMaterial({ opacity: 0.5 });
+      const shadowPlane = new THREE.Mesh(shadowPlaneGeo, shadowPlaneMat);
+      shadowPlane.receiveShadow = true;
+      shadowPlane.position.y = 0.001;
+      scene.add(shadowPlane);
+
+      // Rig groups
+      robotRoot = new THREE.Group();
+      scene.add(robotRoot);
+
+      comGroup = new THREE.Group();
+      scene.add(comGroup);
+
+      forceVectorsGroup = new THREE.Group();
+      scene.add(forceVectorsGroup);
+
+      jointAxesGroup = new THREE.Group();
+      scene.add(jointAxesGroup);
+
+      initTelemetryVisualizers();
+
+      window.addEventListener('resize', onWindowResize);
+    }
+
+    function onWindowResize() {
+      if (!renderer || !camera || !container) return;
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    }
+  </script>
+
+  <script>
+    let rig = {
+      pelvis: null, torso: null, chest: null, head: null,
+      leftShoulder: null, leftElbow: null, leftWrist: null,
+      rightShoulder: null, rightElbow: null, rightWrist: null,
+      leftHip: null, leftKnee: null, leftAnkle: null,
+      rightHip: null, rightKnee: null, rightAnkle: null,
+      leftGripperNodes: [], rightGripperNodes: []
+    };
+
+    function updateMaterialPalette(colorway) {
+      materialsMap.torso = new THREE.MeshStandardMaterial({
+        color: colorway.torso,
+        metalness: colorway.metalness,
+        roughness: colorway.roughness
+      });
+      materialsMap.accent = new THREE.MeshStandardMaterial({
+        color: colorway.accents,
+        metalness: 0.7,
+        roughness: 0.3
+      });
+      materialsMap.joint = new THREE.MeshStandardMaterial({
+        color: colorway.joints,
+        metalness: 0.9,
+        roughness: 0.25
+      });
+      materialsMap.glow = new THREE.MeshBasicMaterial({
+        color: colorway.glow
+      });
+      materialsMap.glass = new THREE.MeshPhysicalMaterial({
+        color: 0x0b1120,
+        metalness: 0.2,
+        roughness: 0.1,
+        transmission: 0.85,
+        thickness: 0.4,
+        transparent: true
+      });
+      materialsMap.gripper = new THREE.MeshStandardMaterial({
+        color: 0x475569,
+        metalness: 0.85,
+        roughness: 0.2
+      });
+      materialsMap.gripperPad = new THREE.MeshStandardMaterial({
+        color: 0x0284c7,
+        metalness: 0.2,
+        roughness: 0.7
+      });
+    }
+
+    function constructHumanoid(modelId) {
+      // Clear previous children
+      while (robotRoot.children.length > 0) {
+        robotRoot.remove(robotRoot.children[0]);
+      }
+      rig.leftGripperNodes = [];
+      rig.rightGripperNodes = [];
+
+      const model = ROBOT_MODELS[modelId];
+      updateMaterialPalette(model.colorway);
+      const p = model.proportions;
+
+      // Base Pelvis Root
+      const pelvis = new THREE.Group();
+      pelvis.position.y = 0.94;
+      robotRoot.add(pelvis);
+      rig.pelvis = pelvis;
+
+      const pelvisMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.10, 0.12, 16), materialsMap.accent);
+      pelvisMesh.castShadow = true;
+      pelvis.add(pelvisMesh);
+
+      // Torso & Chest
+      const torso = new THREE.Group();
+      torso.position.y = 0.08;
+      pelvis.add(torso);
+      rig.torso = torso;
+
+      const torsoMesh = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.22, 0.18), materialsMap.torso);
+      torsoMesh.position.y = 0.11;
+      torsoMesh.castShadow = true;
+      torso.add(torsoMesh);
+
+      const chest = new THREE.Group();
+      chest.position.y = 0.22;
+      torso.add(chest);
+      rig.chest = chest;
+
+      const chestMesh = new THREE.Mesh(new THREE.BoxGeometry(p.shoulderWidth * 0.74, 0.22, 0.20), materialsMap.torso);
+      chestMesh.position.y = 0.11;
+      chestMesh.castShadow = true;
+      chest.add(chestMesh);
+
+      // Chest plate badge
+      const chestPlate = new THREE.Mesh(new THREE.BoxGeometry(p.shoulderWidth * 0.48, 0.10, 0.02), materialsMap.accent);
+      chestPlate.position.set(0, 0.12, 0.105);
+      chest.add(chestPlate);
+
+      // Head & Neck
+      const neck = new THREE.Group();
+      neck.position.y = 0.23;
+      chest.add(neck);
+
+      const head = new THREE.Group();
+      head.position.y = 0.08;
+      neck.add(head);
+      rig.head = head;
+
+      let headMesh;
+      if (model.id === 'atlas') {
+        headMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.14, 24), materialsMap.joint);
+        const halo = new THREE.Mesh(new THREE.TorusGeometry(0.08, 0.012, 16, 32), materialsMap.glow);
+        halo.position.set(0, 0.01, 0.07);
+        head.add(halo);
+      } else {
+        headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.095 * p.headScale, 24, 20), materialsMap.accent);
+        const visor = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.085, 0.07, 16, 1, false, -Math.PI / 2, Math.PI), materialsMap.glass);
+        visor.rotation.y = Math.PI / 2;
+        visor.position.set(0, 0, 0.03);
+        head.add(visor);
+      }
+      headMesh.castShadow = true;
+      head.add(headMesh);
+
+      // Arms builder
+      const buildArm = (isLeft) => {
+        const side = isLeft ? 1 : -1;
+        const shoulder = new THREE.Group();
+        shoulder.position.set(side * (p.shoulderWidth * 0.46), 0.18, 0);
+        chest.add(shoulder);
+
+        const shBall = new THREE.Mesh(new THREE.SphereGeometry(0.045, 16, 16), materialsMap.joint);
+        shoulder.add(shBall);
+
+        const upperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.03, 0.24, 16), materialsMap.torso);
+        upperArm.position.y = -0.12;
+        upperArm.castShadow = true;
+        shoulder.add(upperArm);
+
+        const elbow = new THREE.Group();
+        elbow.position.y = -0.24;
+        shoulder.add(elbow);
+
+        const elBall = new THREE.Mesh(new THREE.SphereGeometry(0.035, 16, 16), materialsMap.joint);
+        elbow.add(elBall);
+
+        const forearm = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.026, 0.22, 16), materialsMap.torso);
+        forearm.position.y = -0.11;
+        forearm.castShadow = true;
+        elbow.add(forearm);
+
+        const wrist = new THREE.Group();
+        wrist.position.y = -0.22;
+        elbow.add(wrist);
+
+        // Attach selected Gripper Mechanism
+        const gripperNodes = attachGripperMechanism(wrist, isLeft, currentGripperType);
+
+        return { shoulder, elbow, wrist, gripperNodes };
+      };
+
+      const leftArm = buildArm(true);
+      rig.leftShoulder = leftArm.shoulder;
+      rig.leftElbow = leftArm.elbow;
+      rig.leftWrist = leftArm.wrist;
+      rig.leftGripperNodes = leftArm.gripperNodes;
+
+      const rightArm = buildArm(false);
+      rig.rightShoulder = rightArm.shoulder;
+      rig.rightElbow = rightArm.elbow;
+      rig.rightWrist = rightArm.wrist;
+      rig.rightGripperNodes = rightArm.gripperNodes;
+
+      // Legs builder (Supports standard humanoid & Agility Digit digitigrade)
+      const isDigitigrade = (model.morphology === 'digitigrade');
+
+      const buildLeg = (isLeft) => {
+        const side = isLeft ? 1 : -1;
+        const hip = new THREE.Group();
+        hip.position.set(side * 0.11, -0.04, 0);
+        pelvis.add(hip);
+
+        const hipBall = new THREE.Mesh(new THREE.SphereGeometry(0.045, 16, 16), materialsMap.joint);
+        hip.add(hipBall);
+
+        const thighLength = isDigitigrade ? 0.35 : 0.40;
+        const thigh = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.038, thighLength, 16), materialsMap.torso);
+        thigh.position.y = -thighLength / 2;
+        thigh.castShadow = true;
+        hip.add(thigh);
+
+        const knee = new THREE.Group();
+        knee.position.y = -thighLength;
+        hip.add(knee);
+
+        const kneeCyl = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.06, 16), materialsMap.joint);
+        kneeCyl.rotation.z = Math.PI / 2;
+        knee.add(kneeCyl);
+
+        const shinLength = isDigitigrade ? 0.44 : 0.40;
+        const shin = new THREE.Mesh(new THREE.CylinderGeometry(0.038, 0.032, shinLength, 16), materialsMap.accent);
+        shin.position.y = -shinLength / 2;
+        shin.castShadow = true;
+        knee.add(shin);
+
+        const ankle = new THREE.Group();
+        ankle.position.y = -shinLength;
+        knee.add(ankle);
+
+        const foot = new THREE.Mesh(
+          isDigitigrade ? new THREE.CylinderGeometry(0.04, 0.03, 0.08, 16) : new THREE.BoxGeometry(0.08, 0.045, 0.20),
+          materialsMap.joint
+        );
+        foot.position.set(0, -0.02, isDigitigrade ? 0 : 0.04);
+        foot.castShadow = true;
+        ankle.add(foot);
+
+        return { hip, knee, ankle };
+      };
+
+      const leftLeg = buildLeg(true);
+      rig.leftHip = leftLeg.hip;
+      rig.leftKnee = leftLeg.knee;
+      rig.leftAnkle = leftLeg.ankle;
+
+      const rightLeg = buildLeg(false);
+      rig.rightHip = rightLeg.hip;
+      rig.rightKnee = rightLeg.knee;
+      rig.rightAnkle = rightLeg.ankle;
+
+      refreshJointAxes();
+    }
+
+    // Attach end-effector architectures (5-finger hand, 2-jaw parallel, 3-finger adaptive, vacuum bellows)
+    function attachGripperMechanism(wristGroup, isLeft, gripperType) {
+      // Clear wrist children
+      while (wristGroup.children.length > 0) {
+        wristGroup.remove(wristGroup.children[0]);
+      }
+
+      const nodes = [];
+
+      if (gripperType === 'dexterous') {
+        // 1. Anthropomorphic 5-finger tactile hand
+        const palm = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.055, 0.025), materialsMap.gripper);
+        palm.position.y = -0.03;
+        palm.castShadow = true;
+        wristGroup.add(palm);
+
+        // 4 fingers + 1 thumb
+        const fingerOffsets = [-0.018, -0.006, 0.006, 0.018];
+        fingerOffsets.forEach((offsetX) => {
+          const fingerBase = new THREE.Group();
+          fingerBase.position.set(offsetX, -0.058, 0);
+          wristGroup.add(fingerBase);
+
+          const phalanx1 = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.004, 0.025, 8), materialsMap.gripperPad);
+          phalanx1.position.y = -0.0125;
+          fingerBase.add(phalanx1);
+
+          const fingerTip = new THREE.Group();
+          fingerTip.position.y = -0.025;
+          fingerBase.add(fingerTip);
+
+          const phalanx2 = new THREE.Mesh(new THREE.CylinderGeometry(0.0035, 0.0035, 0.02, 8), materialsMap.gripper);
+          phalanx2.position.y = -0.01;
+          fingerTip.add(phalanx2);
+
+          nodes.push({ base: fingerBase, tip: fingerTip, isThumb: false });
+        });
+
+        // Thumb
+        const thumbBase = new THREE.Group();
+        thumbBase.position.set(isLeft ? 0.025 : -0.025, -0.035, 0.01);
+        thumbBase.rotation.z = isLeft ? -0.5 : 0.5;
+        wristGroup.add(thumbBase);
+
+        const thumbMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.0045, 0.004, 0.025, 8), materialsMap.gripperPad);
+        thumbMesh.position.y = -0.0125;
+        thumbBase.add(thumbMesh);
+        nodes.push({ base: thumbBase, tip: null, isThumb: true });
+
+      } else if (gripperType === 'parallel') {
+        // 2. Two-Jaw Parallel Industrial Pneumatic Gripper
+        const baseBlock = new THREE.Mesh(new THREE.BoxGeometry(0.065, 0.035, 0.04), materialsMap.gripper);
+        baseBlock.position.y = -0.02;
+        wristGroup.add(baseBlock);
+
+        // Left Jaw
+        const jawL = new THREE.Group();
+        jawL.position.set(-0.02, -0.038, 0);
+        wristGroup.add(jawL);
+        const jawLMesh = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.05, 0.025), materialsMap.gripperPad);
+        jawLMesh.position.y = -0.025;
+        jawL.add(jawLMesh);
+
+        // Right Jaw
+        const jawR = new THREE.Group();
+        jawR.position.set(0.02, -0.038, 0);
+        wristGroup.add(jawR);
+        const jawRMesh = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.05, 0.025), materialsMap.gripperPad);
+        jawRMesh.position.y = -0.025;
+        jawR.add(jawRMesh);
+
+        nodes.push({ jawL, jawR, type: 'parallel' });
+
+      } else if (gripperType === 'adaptive') {
+        // 3. Three-Finger Adaptive Grasper
+        const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.025, 0.025, 16), materialsMap.gripper);
+        hub.position.y = -0.02;
+        wristGroup.add(hub);
+
+        for (let i = 0; i < 3; i++) {
+          const angle = (i * Math.PI * 2) / 3;
+          const fingerG = new THREE.Group();
+          fingerG.position.set(Math.cos(angle) * 0.02, -0.03, Math.sin(angle) * 0.02);
+          fingerG.rotation.y = angle;
+          wristGroup.add(fingerG);
+
+          const link1 = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.03, 0.012), materialsMap.gripperPad);
+          link1.position.y = -0.015;
+          fingerG.add(link1);
+
+          nodes.push({ fingerG, type: 'adaptive' });
+        }
+
+      } else if (gripperType === 'vacuum') {
+        // 4. Soft Vacuum Suction / Fin-Ray Bellows
+        const mount = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.02, 0.03, 16), materialsMap.gripper);
+        mount.position.y = -0.018;
+        wristGroup.add(mount);
+
+        const bellows = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.05, 24, 4, true), materialsMap.gripperPad);
+        bellows.rotation.x = Math.PI;
+        bellows.position.y = -0.045;
+        wristGroup.add(bellows);
+
+        nodes.push({ bellows, type: 'vacuum' });
+      }
+
+      return nodes;
+    }
+
+    function initTelemetryVisualizers() {
+      // CoM indicator
+      const sGeo = new THREE.SphereGeometry(0.045, 16, 16);
+      const sMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b, wireframe: true });
+      const comSphere = new THREE.Mesh(sGeo, sMat);
+      comGroup.add(comSphere);
+
+      const pLineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, -1, 0)]);
+      const pLineMat = new THREE.LineDashedMaterial({ color: 0xf59e0b, dashSize: 0.04, gapSize: 0.02 });
+      const comLine = new THREE.Line(pLineGeo, pLineMat);
+      comGroup.add(comLine);
+
+      const discGeo = new THREE.RingGeometry(0.04, 0.065, 24);
+      discGeo.rotateX(-Math.PI / 2);
+      const discMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b, side: THREE.DoubleSide });
+      const comDisc = new THREE.Mesh(discGeo, discMat);
+      comDisc.position.y = 0.004;
+      comGroup.add(comDisc);
+
+      comGroup.userData = { comSphere, comLine, comDisc };
+
+      // Ground Reaction Force (GRF) vectors
+      const fL = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), new THREE.Vector3(-0.11, 0, 0), 0.3, 0x38bdf8, 0.08, 0.04);
+      const fR = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0.11, 0, 0), 0.3, 0x6366f1, 0.08, 0.04);
+      forceVectorsGroup.add(fL);
+      forceVectorsGroup.add(fR);
+      forceVectorsGroup.userData = { fL, fR };
+    }
+
+    function refreshJointAxes() {
+      while (jointAxesGroup.children.length > 0) {
+        jointAxesGroup.remove(jointAxesGroup.children[0]);
+      }
+      if (!visualSettings.jointAxes) return;
+
+      const joints = [rig.pelvis, rig.torso, rig.chest, rig.leftShoulder, rig.rightShoulder, rig.leftHip, rig.rightHip];
+      joints.forEach(j => {
+        if (!j) return;
+        const ax = new THREE.AxesHelper(0.08);
+        ax.material.depthTest = false;
+        ax.material.transparent = true;
+        ax.material.opacity = 0.7;
+        j.add(ax);
+      });
+    }
+  </script>
+
+  <script>
+    // Live Kinematic Kinematics Controller
+    function stepKinematicSimulation(delta) {
+      if (!rig.pelvis) return;
+
+      if (isPlaying) {
+        simTime += delta * animSpeedFactor * 2.8;
+      }
+      const t = simTime;
+
+      // Base resets
+      rig.pelvis.position.set(0, 0.94, 0);
+      rig.pelvis.rotation.set(0, 0, 0);
+      rig.torso.rotation.set(0, 0, 0);
+      rig.chest.rotation.set(0, 0, 0);
+      rig.head.rotation.set(0, 0, 0);
+
+      rig.leftShoulder.rotation.set(0, 0, 0.05);
+      rig.rightShoulder.rotation.set(0, 0, -0.05);
+      rig.leftElbow.rotation.set(0, 0, 0);
+      rig.rightElbow.rotation.set(0, 0, 0);
+
+      rig.leftHip.rotation.set(0, 0, 0);
+      rig.rightHip.rotation.set(0, 0, 0);
+      rig.leftKnee.rotation.set(0, 0, 0);
+      rig.rightKnee.rotation.set(0, 0, 0);
+      rig.leftAnkle.rotation.set(0, 0, 0);
+      rig.rightAnkle.rotation.set(0, 0, 0);
+
+      sprintTrackCircle.visible = (currentExperiment === 'circleRun');
+
+      let leftLoad = 0.5;
+      let rightLoad = 0.5;
+      let telemetryStatus = "Nominal ZMP Stability";
+      let p1 = "50% / 50%";
+      let p2 = "549 N";
+      let p3 = "0.0°";
+
+      const currentProfile = ROBOT_MODELS[currentRobotId];
+      const nominalWeightN = Math.round(currentProfile.weightKg * 9.81);
+
+      switch (currentExperiment) {
+        case 'idle':
+          // Breathing oscillations & micro balance
+          rig.chest.rotation.x = Math.sin(t * 0.8) * 0.03;
+          rig.head.rotation.x = -Math.sin(t * 0.8) * 0.02;
+          rig.pelvis.position.y = 0.94 + Math.sin(t * 0.8) * 0.005;
+          rig.leftElbow.rotation.x = 0.3;
+          rig.rightElbow.rotation.x = 0.3;
+          leftLoad = 0.5 + Math.sin(t * 0.4) * 0.06;
+          rightLoad = 1.0 - leftLoad;
+          telemetryStatus = "Stance Equilibrium Active";
+          p1 = `${Math.round(leftLoad * 100)}% / ${Math.round(rightLoad * 100)}%`;
+          p2 = `${nominalWeightN} N`;
+          p3 = "0.0°";
+          break;
+
+        case 'walk':
+          // Bipedal locomotion gait
+          const walkPhase = t * 1.5;
+          const stride = 0.42;
+          rig.leftHip.rotation.x = Math.sin(walkPhase) * stride;
+          rig.rightHip.rotation.x = -Math.sin(walkPhase) * stride;
+          rig.leftKnee.rotation.x = Math.max(0, -Math.sin(walkPhase) * 0.75);
+          rig.rightKnee.rotation.x = Math.max(0, Math.sin(walkPhase) * 0.75);
+
+          rig.leftShoulder.rotation.x = -Math.sin(walkPhase) * stride * 0.85;
+          rig.rightShoulder.rotation.x = Math.sin(walkPhase) * stride * 0.85;
+          rig.leftElbow.rotation.x = 0.35 + Math.abs(Math.sin(walkPhase) * 0.2);
+          rig.rightElbow.rotation.x = 0.35 + Math.abs(Math.sin(walkPhase) * 0.2);
+
+          rig.pelvis.position.y = 0.94 + Math.abs(Math.sin(walkPhase * 2)) * 0.035 - 0.02;
+          rig.pelvis.rotation.y = Math.sin(walkPhase) * 0.08;
+
+          leftLoad = 0.5 + Math.sin(walkPhase) * 0.48;
+          rightLoad = 1.0 - leftLoad;
+          telemetryStatus = "Dynamic Inverted Pendulum Gait";
+          p1 = `${Math.round(leftLoad * 100)}% / ${Math.round(rightLoad * 100)}%`;
+          p2 = `${Math.round(nominalWeightN * 1.15)} N (Peak)`;
+          p3 = "1.2° Micro-Roll";
+          break;
+
+        case 'jump':
+          // USER REQUEST #1: DYNAMIC VERTICAL LEAP EXPERIMENT
+          // 4-phase cycle: 1. Squat crouch -> 2. Explosive launch -> 3. Ballistic flight -> 4. Ground impact & recovery
+          const jumpCycle = (t * 1.2) % (Math.PI * 2); // 0 to 2PI
+          let jumpY = 0;
+          let squatCompress = 0;
+          let impactG = 1.0;
+
+          if (jumpCycle < 1.8) {
+            // Phase 1: Pre-jump compression squat
+            const crouchFactor = Math.sin((jumpCycle / 1.8) * Math.PI);
+            squatCompress = crouchFactor * 0.32;
+            rig.pelvis.position.y = 0.94 - squatCompress;
+            rig.torso.rotation.x = crouchFactor * 0.45;
+            rig.leftHip.rotation.x = -crouchFactor * 0.85;
+            rig.rightHip.rotation.x = -crouchFactor * 0.85;
+            rig.leftKnee.rotation.x = crouchFactor * 1.45;
+            rig.rightKnee.rotation.x = crouchFactor * 1.45;
+            rig.leftAnkle.rotation.x = -crouchFactor * 0.65;
+            rig.rightAnkle.rotation.x = -crouchFactor * 0.65;
+            // Swing arms back in preparation
+            rig.leftShoulder.rotation.x = crouchFactor * 0.7;
+            rig.rightShoulder.rotation.x = crouchFactor * 0.7;
+            telemetryStatus = "Phase 1: Pre-compression Crouch";
+            impactG = 0.8;
+          } else if (jumpCycle < 3.8) {
+            // Phase 2 & 3: Ballistic Airborne Flight
+            const flightProgress = (jumpCycle - 1.8) / 2.0; // 0 to 1
+            const apexHeight = 0.58; // 58 cm leap
+            jumpY = Math.sin(flightProgress * Math.PI) * apexHeight;
+            rig.pelvis.position.y = 0.94 + jumpY;
+
+            // Full leg extension in air
+            rig.leftHip.rotation.x = 0.1;
+            rig.rightHip.rotation.x = 0.1;
+            rig.leftKnee.rotation.x = 0.15;
+            rig.rightKnee.rotation.x = 0.15;
+            rig.leftAnkle.rotation.x = 0.3; // Toes pointed
+            rig.rightAnkle.rotation.x = 0.3;
+
+            // Swing arms up for momentum
+            rig.leftShoulder.rotation.x = -1.2;
+            rig.rightShoulder.rotation.x = -1.2;
+            telemetryStatus = `Phase 2: Ballistic Flight (Apex: +${(jumpY * 100).toFixed(0)} cm)`;
+            impactG = 0.0; // In freefall
+          } else {
+            // Phase 4: Touchdown landing damping & rebound
+            const landProgress = (jumpCycle - 3.8) / (Math.PI * 2 - 3.8);
+            const dampFactor = Math.sin((1 - landProgress) * Math.PI);
+            squatCompress = dampFactor * 0.22;
+            rig.pelvis.position.y = 0.94 - squatCompress;
+            rig.leftKnee.rotation.x = dampFactor * 1.1;
+            rig.rightKnee.rotation.x = dampFactor * 1.1;
+            rig.torso.rotation.x = dampFactor * 0.3;
+            telemetryStatus = "Phase 3: Ground Impact Damping";
+            impactG = 2.4; // 2.4 G shock load
+          }
+
+          leftLoad = (jumpY > 0.01) ? 0.0 : 0.5;
+          rightLoad = (jumpY > 0.01) ? 0.0 : 0.5;
+          p1 = (jumpY > 0.01) ? "0 N (Airborne Flight)" : "50% / 50%";
+          p2 = `${Math.round(nominalWeightN * impactG)} N (Peak)`;
+          p3 = `G-Impact: ${impactG.toFixed(1)} G`;
+          break;
+
+        case 'circleRun':
+          // USER REQUEST #2: RUNNING AROUND A CIRCLE EXPERIMENT
+          // Humanoid follows circular orbit radius R=1.5m, inward banking angle, high-speed cadence
+          const circleRadius = 1.5;
+          const runCadence = t * 2.8;
+          const circleTheta = t * 0.6; // Revolution around arena center
+
+          // Position robot on circle circumference
+          const posX = Math.cos(circleTheta) * circleRadius;
+          const posZ = Math.sin(circleTheta) * circleRadius;
+          robotRoot.position.set(posX, 0, posZ);
+
+          // Face tangent velocity vector + inward centrifugal bank angle
+          robotRoot.rotation.y = -circleTheta - Math.PI / 2;
+          
+          // Realistic inward centrifugal bank lean (theta = arctan(v^2 / (r*g)))
+          const bankLeanRad = -0.18; // ~10.3 degrees inward lean
+          rig.pelvis.rotation.z = bankLeanRad;
+          rig.torso.rotation.z = bankLeanRad * 0.6;
+
+          // Rapid running gait
+          rig.leftHip.rotation.x = Math.sin(runCadence) * 0.65;
+          rig.rightHip.rotation.x = -Math.sin(runCadence) * 0.65;
+          rig.leftKnee.rotation.x = Math.max(0, -Math.sin(runCadence) * 1.1);
+          rig.rightKnee.rotation.x = Math.max(0, Math.sin(runCadence) * 1.1);
+
+          // Counter arm driving motion
+          rig.leftShoulder.rotation.x = -Math.sin(runCadence) * 0.75;
+          rig.rightShoulder.rotation.x = Math.sin(runCadence) * 0.75;
+          rig.leftElbow.rotation.x = 0.8 + Math.sin(runCadence) * 0.3;
+          rig.rightElbow.rotation.x = 0.8 - Math.sin(runCadence) * 0.3;
+
+          rig.pelvis.position.y = 0.94 + Math.abs(Math.sin(runCadence * 2)) * 0.05 - 0.03;
+
+          leftLoad = 0.5 + Math.sin(runCadence) * 0.5;
+          rightLoad = 1.0 - leftLoad;
+          telemetryStatus = "Centrifugal Equilibrium (R=1.5m Sprint)";
+          p1 = `L: ${Math.round(leftLoad * 100)}% | R: ${Math.round(rightLoad * 100)}%`;
+          p2 = `${Math.round(nominalWeightN * 1.3)} N (Radial Peak)`;
+          p3 = `Bank Angle: 10.3° Inward`;
+          break;
+
+        case 'squat':
+          const sq = (Math.sin(t * 1.1) * 0.5 + 0.5);
+          rig.pelvis.position.y = 0.94 - (sq * 0.28);
+          rig.torso.rotation.x = sq * 0.38;
+          rig.leftHip.rotation.x = -sq * 0.75;
+          rig.rightHip.rotation.x = -sq * 0.75;
+          rig.leftKnee.rotation.x = sq * 1.35;
+          rig.rightKnee.rotation.x = sq * 1.35;
+          rig.leftAnkle.rotation.x = -sq * 0.60;
+          rig.rightAnkle.rotation.x = -sq * 0.60;
+          rig.leftShoulder.rotation.x = -sq * 1.0;
+          rig.rightShoulder.rotation.x = -sq * 1.0;
+          telemetryStatus = "Deep Isometric Squat Test";
+          p1 = "50% / 50%";
+          p2 = `${nominalWeightN} N`;
+          p3 = "0.0°";
+          break;
+
+        case 'balance':
+          rig.pelvis.position.x = 0.09 + Math.sin(t * 1.2) * 0.02;
+          rig.pelvis.position.y = 0.96;
+          rig.torso.rotation.z = -0.05;
+          rig.rightHip.rotation.z = 0.06;
+          rig.rightKnee.rotation.x = 0.08;
+          rig.leftHip.rotation.x = -0.65;
+          rig.leftHip.rotation.z = -0.15;
+          rig.leftKnee.rotation.x = 1.15;
+          rig.leftShoulder.rotation.z = 0.9;
+          rig.rightShoulder.rotation.z = -0.9;
+          leftLoad = 0.05;
+          rightLoad = 0.95;
+          telemetryStatus = "Single-Leg Support ZMP";
+          p1 = "L: 5% | R: 95%";
+          p2 = `${nominalWeightN} N (Right Foot Stance)`;
+          p3 = "Roll: 2.8°";
+          break;
+      }
+
+      // If not circling, ensure robotRoot is centered at 0,0,0
+      if (currentExperiment !== 'circleRun') {
+        robotRoot.position.set(0, 0, 0);
+        robotRoot.rotation.set(0, 0, 0);
+      }
+
+      // Apply Manual DOF Trims
+      const deg2rad = Math.PI / 180;
+      rig.head.rotation.y += manualJoints.headYaw * deg2rad;
+      rig.torso.rotation.x += manualJoints.torsoPitch * deg2rad;
+      rig.leftShoulder.rotation.x += manualJoints.shoulderPitch * deg2rad;
+      rig.rightShoulder.rotation.x += manualJoints.shoulderPitch * deg2rad;
+
+      // Animate Gripper Fingers / Jaws according to current flex & gesture
+      animateGrippers();
+
+      // Update Center of Mass indicator
+      const comWorld = new THREE.Vector3();
+      rig.torso.getWorldPosition(comWorld);
+      comWorld.y -= 0.05;
+
+      const { comSphere, comLine, comDisc } = comGroup.userData;
+      if (comSphere) {
+        comSphere.position.copy(comWorld);
+        comLine.position.copy(comWorld);
+        comLine.scale.set(1, Math.max(0.01, comWorld.y), 1);
+        comDisc.position.set(comWorld.x, 0.004, comWorld.z);
+        comGroup.visible = visualSettings.com;
+      }
+
+      // Update Ground Reaction Force arrows
+      const { fL, fR } = forceVectorsGroup.userData;
+      if (fL && fR) {
+        const leftWorld = new THREE.Vector3();
+        const rightWorld = new THREE.Vector3();
+        rig.leftAnkle.getWorldPosition(leftWorld);
+        rig.rightAnkle.getWorldPosition(rightWorld);
+        leftWorld.y = 0;
+        rightWorld.y = 0;
+
+        fL.position.copy(leftWorld);
+        rightWorld.y = 0;
+        fR.position.copy(rightWorld);
+
+        fL.setLength(Math.max(0.02, leftLoad * 0.55), 0.08, 0.035);
+        fR.setLength(Math.max(0.02, rightLoad * 0.55), 0.08, 0.035);
+        forceVectorsGroup.visible = visualSettings.forces;
+      }
+
+      // Update DOM Telemetry
+      document.getElementById('hudComX').textContent = `${comWorld.x.toFixed(2)} m`;
+      document.getElementById('hudComY').textContent = `${comWorld.y.toFixed(2)} m`;
+      document.getElementById('hudComZ').textContent = `${comWorld.z.toFixed(2)} m`;
+      document.getElementById('experimentStatusText').textContent = telemetryStatus;
+      document.getElementById('statParam1Val').textContent = p1;
+      document.getElementById('statParam2Val').textContent = p2;
+      document.getElementById('statParam3Val').textContent = p3;
+      document.getElementById('loadLeftBar').style.width = `${Math.round(leftLoad * 100)}%`;
+      document.getElementById('loadRightBar').style.width = `${Math.round(rightLoad * 100)}%`;
+    }
+
+    // USER REQUEST #3: Interactive gripper flexion / gesture manipulation
+    function animateGrippers() {
+      const flexRatio = gripperFlexionPct / 100; // 0 to 1
+
+      const applyToNodes = (nodes) => {
+        nodes.forEach((item, index) => {
+          if (item.base) {
+            // Dexterous hand fingers
+            let targetFlex = flexRatio * 1.4;
+
+            if (currentGesture === 'fist') targetFlex = 1.6;
+            else if (currentGesture === 'relaxed') targetFlex = 0.2;
+            else if (currentGesture === 'point') targetFlex = (index === 0) ? 0.0 : 1.6; // Index finger straight
+            else if (currentGesture === 'pinch') targetFlex = (index < 2) ? 1.2 : 0.4;
+
+            item.base.rotation.x = targetFlex;
+            if (item.tip) item.tip.rotation.x = targetFlex * 0.8;
+          } else if (item.type === 'parallel') {
+            // Parallel jaws
+            const stroke = 0.015 - (flexRatio * 0.012);
+            item.jawL.position.x = -stroke;
+            item.jawR.position.x = stroke;
+          } else if (item.type === 'adaptive') {
+            // Adaptive grasper
+            item.fingerG.rotation.z = (flexRatio * 0.8);
+          } else if (item.type === 'vacuum') {
+            // Suction bellows compliance compression
+            const comp = 1.0 - (flexRatio * 0.4);
+            item.bellows.scale.set(1, comp, 1);
+          }
+        });
+      };
+
+      applyToNodes(rig.leftGripperNodes);
+      applyToNodes(rig.rightGripperNodes);
+    }
+  </script>
+
+  <script>
+    // USER REQUEST #4: VISITOR CARICATURE 2D DRAWING & 3D RIG & 10s VIDEO RECORDER
+    function draw2dCaricature() {
+      const canvas = document.getElementById('caricature2dCanvas');
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+
+      ctx.clearRect(0, 0, w, h);
+
+      // Background gradient
+      const grad = ctx.createLinearGradient(0, 0, 0, h);
+      grad.addColorStop(0, '#0f172a');
+      grad.addColorStop(1, '#0284c7');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+
+      // Head shape (Caricature style: exaggerated cute proportions)
+      ctx.fillStyle = visitorProfile.skinTone;
+      ctx.beginPath();
+      ctx.arc(w / 2, 85, 45, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Cheeks blush
+      ctx.fillStyle = 'rgba(239, 68, 68, 0.25)';
+      ctx.beginPath();
+      ctx.arc(w / 2 - 25, 95, 10, 0, Math.PI * 2);
+      ctx.arc(w / 2 + 25, 95, 10, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Eyes
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.arc(w / 2 - 16, 80, 5, 0, Math.PI * 2);
+      ctx.arc(w / 2 + 16, 80, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Eye highlights
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(w / 2 - 18, 78, 1.8, 0, Math.PI * 2);
+      ctx.arc(w / 2 + 14, 78, 1.8, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Big warm smile
+      ctx.strokeStyle = '#831843';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(w / 2, 95, 16, 0.15 * Math.PI, 0.85 * Math.PI);
+      ctx.stroke();
+
+      // Hair
+      ctx.fillStyle = '#1e293b';
+      if (visitorProfile.hairStyle === 'curly') {
+        for (let i = -4; i <= 4; i++) {
+          ctx.beginPath();
+          ctx.arc(w / 2 + i * 10, 48 - Math.abs(i) * 2, 14, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else if (visitorProfile.hairStyle === 'straight') {
+        ctx.beginPath();
+        ctx.arc(w / 2, 70, 48, Math.PI, Math.PI * 2);
+        ctx.fill();
+      } else if (visitorProfile.hairStyle === 'long') {
+        ctx.beginPath();
+        ctx.arc(w / 2, 70, 48, Math.PI * 0.9, Math.PI * 2.1);
+        ctx.fill();
+        ctx.fillRect(w / 2 - 48, 70, 18, 55);
+        ctx.fillRect(w / 2 + 30, 70, 18, 55);
+      }
+
+      // Glasses
+      if (visitorProfile.glasses === 'round') {
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(w / 2 - 16, 80, 12, 0, Math.PI * 2);
+        ctx.arc(w / 2 + 16, 80, 12, 0, Math.PI * 2);
+        ctx.moveTo(w / 2 - 4, 80);
+        ctx.lineTo(w / 2 + 4, 80);
+        ctx.stroke();
+      } else if (visitorProfile.glasses === 'rect') {
+        ctx.strokeStyle = '#e2e8f0';
+        ctx.lineWidth = 2.5;
+        ctx.strokeRect(w / 2 - 28, 72, 22, 16);
+        ctx.strokeRect(w / 2 + 6, 72, 22, 16);
+        ctx.beginPath();
+        ctx.moveTo(w / 2 - 6, 80);
+        ctx.lineTo(w / 2 + 6, 80);
+        ctx.stroke();
+      } else if (visitorProfile.glasses === 'cyber') {
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.7)';
+        ctx.fillRect(w / 2 - 32, 74, 64, 12);
+      }
+
+      // Attire / Body
+      if (visitorProfile.outfit === 'labCoat') {
+        ctx.fillStyle = '#f8fafc'; // White lab coat
+        ctx.beginPath();
+        ctx.moveTo(w / 2 - 40, h);
+        ctx.lineTo(w / 2 - 25, 130);
+        ctx.lineTo(w / 2 + 25, 130);
+        ctx.lineTo(w / 2 + 40, h);
+        ctx.fill();
+
+        // GARRF Blue badge on coat
+        ctx.fillStyle = '#0284c7';
+        ctx.fillRect(w / 2 + 12, 145, 12, 16);
+      } else {
+        ctx.fillStyle = '#1e3a8a';
+        ctx.fillRect(w / 2 - 35, 130, 70, 50);
+      }
+
+      // Visitor label badge
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.fillRect(10, h - 26, w - 20, 20);
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 10px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(visitorProfile.name.substring(0, 22), w / 2, h - 12);
+    }
+
+    // Build 3D Caricature Visitor Avatar to stand alongside the Humanoid
+    function spawn3dVisitorAvatar() {
+      if (visitorCaricatureRig) {
+        scene.remove(visitorCaricatureRig);
+      }
+
+      const avatarGroup = new THREE.Group();
+      avatarGroup.position.set(0.65, 0, 0.1); // Stands right next to the humanoid
+      avatarGroup.rotation.y = -0.25; // Turned slightly toward the humanoid
+
+      // Skin & Outfit materials
+      const skinMat = new THREE.MeshStandardMaterial({
+        color: new THREE.Color(visitorProfile.skinTone),
+        roughness: 0.5
+      });
+      const coatMat = new THREE.MeshStandardMaterial({
+        color: (visitorProfile.outfit === 'labCoat') ? 0xf8fafc : 0x0284c7,
+        roughness: 0.4
+      });
+      const hairMat = new THREE.MeshStandardMaterial({
+        color: 0x0f172a,
+        roughness: 0.8
+      });
+
+      // Caricature Body (Chibi / Stylized friendly proportions)
+      const bodyMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 0.55, 16), coatMat);
+      bodyMesh.position.y = 0.65;
+      bodyMesh.castShadow = true;
+      avatarGroup.add(bodyMesh);
+
+      // Legs
+      const legL = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.035, 0.42, 12), new THREE.MeshStandardMaterial({ color: 0x1e293b }));
+      legL.position.set(-0.06, 0.21, 0);
+      avatarGroup.add(legL);
+
+      const legR = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.035, 0.42, 12), new THREE.MeshStandardMaterial({ color: 0x1e293b }));
+      legR.position.set(0.06, 0.21, 0);
+      avatarGroup.add(legR);
+
+      // Oversized Caricature Head
+      const headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.17, 24, 20), skinMat);
+      headMesh.position.y = 1.08;
+      headMesh.castShadow = true;
+      avatarGroup.add(headMesh);
+
+      // Hair Mesh
+      const hairMesh = new THREE.Mesh(new THREE.SphereGeometry(0.18, 20, 16, 0, Math.PI * 2, 0, Math.PI * 0.55), hairMat);
+      hairMesh.position.set(0, 1.10, 0);
+      avatarGroup.add(hairMesh);
+
+      // Glasses mesh if chosen
+      if (visitorProfile.glasses !== 'none') {
+        const glassesMesh = new THREE.Mesh(new THREE.TorusGeometry(0.05, 0.008, 12, 24), new THREE.MeshBasicMaterial({ color: 0x38bdf8 }));
+        glassesMesh.position.set(-0.055, 1.08, 0.155);
+        avatarGroup.add(glassesMesh);
+
+        const glassesMeshR = glassesMesh.clone();
+        glassesMeshR.position.x = 0.055;
+        avatarGroup.add(glassesMeshR);
+      }
+
+      // Waving selfie arm
+      const armL = new THREE.Group();
+      armL.position.set(-0.16, 0.85, 0);
+      avatarGroup.add(armL);
+      const armMeshL = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.03, 0.32, 12), coatMat);
+      armMeshL.position.y = -0.16;
+      armL.add(armMeshL);
+
+      const armR = new THREE.Group(); // Waving right arm
+      armR.position.set(0.16, 0.85, 0);
+      armR.rotation.z = -1.2;
+      armR.rotation.x = -0.3;
+      avatarGroup.add(armR);
+      const armMeshR = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.03, 0.32, 12), coatMat);
+      armMeshR.position.y = -0.16;
+      armR.add(armMeshR);
+
+      // Floating visitor nameplate banner above head
+      const canvasName = document.createElement('canvas');
+      canvasName.width = 256;
+      canvasName.height = 64;
+      const cctx = canvasName.getContext('2d');
+      cctx.fillStyle = '#0284c7';
+      cctx.roundRect(4, 4, 248, 56, 12);
+      cctx.fill();
+      cctx.fillStyle = '#ffffff';
+      cctx.font = 'bold 24px sans-serif';
+      cctx.textAlign = 'center';
+      cctx.fillText(visitorProfile.name, 128, 40);
+
+      const nameTex = new THREE.CanvasTexture(canvasName);
+      const namePlane = new THREE.Mesh(new THREE.PlaneGeometry(0.45, 0.12), new THREE.MeshBasicMaterial({ map: nameTex, transparent: true }));
+      namePlane.position.set(0, 1.35, 0);
+      avatarGroup.add(namePlane);
+
+      scene.add(avatarGroup);
+      visitorCaricatureRig = avatarGroup;
+    }
+
+    // USER REQUEST #4: 10-SECOND 360° VIDEO GENERATOR USING MEDIARECORDER
+    let mediaRecorder = null;
+    let recordedChunks = [];
+    let isRecording10s = false;
+    let recordingStartTime = 0;
+    let generatedVideoBlob = null;
+
+    function start10SecondEncirclementRecording() {
+      if (isRecording10s) return;
+
+      // 1. Ensure Visitor Avatar is visible & staged in 3D
+      spawn3dVisitorAvatar();
+
+      // 2. Prepare HTML5 Canvas Stream
+      const stream = renderer.domElement.captureStream(30); // 30 FPS
+      recordedChunks = [];
+
+      try {
+        mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
+      } catch (e) {
+        try {
+          mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+        } catch (e2) {
+          mediaRecorder = new MediaRecorder(stream);
+        }
+      }
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          recordedChunks.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        generatedVideoBlob = new Blob(recordedChunks, { type: 'video/webm' });
+        const dlBtn = document.getElementById('downloadVideoBtn');
+        dlBtn.disabled = false;
+        dlBtn.classList.remove('bg-slate-800', 'text-slate-500', 'cursor-not-allowed');
+        dlBtn.classList.add('bg-sky-600', 'hover:bg-sky-500', 'text-white', 'cursor-pointer');
+
+        document.getElementById('recordingLed').className = 'w-2.5 h-2.5 rounded-full bg-emerald-400';
+        document.getElementById('recordingStatusLabel').textContent = 'Video Ready!';
+      };
+
+      mediaRecorder.start(100); // 100ms chunks
+      isRecording10s = true;
+      recordingStartTime = performance.now();
+
+      // UI Updates
+      document.getElementById('recordingLed').className = 'w-2.5 h-2.5 rounded-full bg-red-500 animate-ping';
+      document.getElementById('recordingStatusLabel').textContent = 'Recording 10s Orbit...';
+      document.getElementById('start10sRecordingBtn').disabled = true;
+      document.getElementById('start10sRecordingBtn').classList.add('opacity-50', 'cursor-not-allowed');
+    }
+
+    // Step the 10-second cinematic encirclement orbit camera
+    function stepEncirclementCamera(now) {
+      if (!isRecording10s) return;
+
+      const elapsed = (now - recordingStartTime) / 1000; // seconds
+      const progress = Math.min(1.0, elapsed / 10.0);
+
+      // Update timer UI
+      document.getElementById('recordingTimeText').textContent = `${elapsed.toFixed(1)}s / 10.0s`;
+      document.getElementById('recordingProgressBar').style.width = `${progress * 100}%`;
+
+      // 360-degree orbit around mid-point between Visitor and Humanoid
+      const orbitTheta = progress * Math.PI * 2;
+      const orbitRadius = 2.8;
+      const targetMidPoint = new THREE.Vector3(0.32, 0.95, 0);
+
+      camera.position.x = targetMidPoint.x + Math.sin(orbitTheta) * orbitRadius;
+      camera.position.z = targetMidPoint.z + Math.cos(orbitTheta) * orbitRadius;
+      camera.position.y = 1.35 + Math.sin(progress * Math.PI * 2) * 0.25; // Gentle cinematic crane bob
+      camera.lookAt(targetMidPoint);
+      controls.target.copy(targetMidPoint);
+
+      if (elapsed >= 10.0) {
+        // Complete 10 seconds recording
+        isRecording10s = false;
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+          mediaRecorder.stop();
+        }
+        document.getElementById('start10sRecordingBtn').disabled = false;
+        document.getElementById('start10sRecordingBtn').classList.remove('opacity-50', 'cursor-not-allowed');
+      }
+    }
+
+    // Download Commemorative 10-Second WebM Video
+    function downloadRecordedVideo() {
+      if (!generatedVideoBlob) return;
+      const url = URL.createObjectURL(generatedVideoBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      const safeName = visitorProfile.name.replace(/[^a-zA-Z0-9]/g, '_');
+      const robotName = ROBOT_MODELS[currentRobotId].name.replace(/[^a-zA-Z0-9]/g, '_');
+      a.download = `GARRF_HumanoidLab_${safeName}_with_${robotName}_10s_Encirclement.webm`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    // Download High-Res Selfie Image with GARRF Commemorative Watermark
+    function downloadWatermarkedSelfie() {
+      spawn3dVisitorAvatar();
+      renderer.render(scene, camera);
+
+      // Render on 2D offscreen canvas with diploma watermark
+      const offCanvas = document.createElement('canvas');
+      offCanvas.width = renderer.domElement.width;
+      offCanvas.height = renderer.domElement.height;
+      const octx = offCanvas.getContext('2d');
+
+      // Draw 3D scene snapshot
+      octx.drawImage(renderer.domElement, 0, 0);
+
+      // Commemorative overlay header and diploma watermark
+      const h = offCanvas.height;
+      const w = offCanvas.width;
+
+      // Banner background
+      octx.fillStyle = 'rgba(7, 11, 20, 0.88)';
+      octx.fillRect(0, h - 90, w, 90);
+      octx.fillStyle = '#0284c7';
+      octx.fillRect(0, h - 92, w, 3);
+
+      // Foundation text
+      octx.fillStyle = '#ffffff';
+      octx.font = 'bold 20px sans-serif';
+      octx.fillText("Gopalkrishna Advanced Rural Research Foundation, India", 24, h - 55);
+
+      octx.fillStyle = '#38bdf8';
+      octx.font = '15px monospace';
+      const curRobot = ROBOT_MODELS[currentRobotId].name;
+      octx.fillText(`Commemorative Visitor Selfie: ${visitorProfile.name} with ${curRobot}`, 24, h - 28);
+
+      octx.fillStyle = '#94a3b8';
+      octx.font = '12px monospace';
+      octx.textAlign = 'right';
+      octx.fillText("Educational Kinematics Lab", w - 24, h - 40);
+
+      // Export file
+      const link = document.createElement('a');
+      const safeName = visitorProfile.name.replace(/[^a-zA-Z0-9]/g, '_');
+      link.download = `GARRF_${safeName}_Humanoid_Selfie.png`;
+      link.href = offCanvas.toDataURL('image/png');
+      link.click();
+    }
+  </script>
+
+  <script>
+    function setupUI() {
+      // 1. Robot platform selector buttons
+      const container = document.getElementById('robotSelectorContainer');
+      container.innerHTML = '';
+
+      Object.values(ROBOT_MODELS).forEach(robot => {
+        const btn = document.createElement('button');
+        const isActive = robot.id === currentRobotId;
+        btn.className = `p-2 rounded-lg text-left border transition text-xs flex flex-col justify-between h-14 ${
+          isActive 
+            ? 'border-sky-500 bg-sky-950/70 text-white shadow-sm shadow-sky-900/50' 
+            : 'border-slate-800 bg-slate-900/80 text-slate-300 hover:border-slate-700'
+        }`;
+        btn.innerHTML = `
+          <div class="font-bold flex items-center justify-between">
+            <span class="truncate">${robot.name}</span>
+            <span class="w-1.5 h-1.5 rounded-full ${isActive ? 'bg-sky-400 ring-2 ring-sky-400/30' : 'bg-slate-600'}"></span>
+          </div>
+          <span class="text-[10px] text-slate-400 truncate">${robot.maker}</span>
+        `;
+        btn.addEventListener('click', () => switchPlatform(robot.id));
+        container.appendChild(btn);
+      });
+
+      // 2. Experiment / Motion buttons
+      const expBtns = document.querySelectorAll('.exp-btn');
+      expBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          expBtns.forEach(b => {
+            b.classList.remove('border-sky-500/60', 'bg-sky-950/70', 'text-sky-200');
+            b.classList.add('border-slate-800', 'bg-slate-900/90', 'text-slate-300');
+          });
+          btn.classList.add('border-sky-500/60', 'bg-sky-950/70', 'text-sky-200');
+          btn.classList.remove('border-slate-800', 'bg-slate-900/90', 'text-slate-300');
+          currentExperiment = btn.getAttribute('data-experiment');
+          document.getElementById('telemetryModeName').textContent = btn.textContent.trim();
+        });
+      });
+
+      // 3. Gripper architecture selector
+      const gripperSel = document.getElementById('gripperTypeSelect');
+      gripperSel.addEventListener('change', (e) => {
+        currentGripperType = e.target.value;
+        constructHumanoid(currentRobotId);
+      });
+
+      // Gripper flexion slider
+      const flexSlider = document.getElementById('gripperFlexSlider');
+      const flexVal = document.getElementById('gripperFlexVal');
+      flexSlider.addEventListener('input', (e) => {
+        gripperFlexionPct = parseInt(e.target.value);
+        flexVal.textContent = `${gripperFlexionPct}%`;
+      });
+
+      // Gripper gesture buttons
+      const gestureBtns = document.querySelectorAll('.gesture-btn');
+      gestureBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          gestureBtns.forEach(b => b.classList.remove('bg-sky-600', 'text-white'));
+          btn.classList.add('bg-sky-600', 'text-white');
+          currentGesture = btn.getAttribute('data-gesture');
+        });
+      });
+
+      // 4. Gait playback speed
+      const speedSlider = document.getElementById('animSpeed');
+      const speedVal = document.getElementById('speedVal');
+      speedSlider.addEventListener('input', (e) => {
+        animSpeedFactor = parseFloat(e.target.value);
+        speedVal.textContent = `${animSpeedFactor.toFixed(1)}x`;
+      });
+
+      // Play / Pause
+      const togglePlayBtn = document.getElementById('togglePlayBtn');
+      const playIcon = document.getElementById('playIcon');
+      const playText = document.getElementById('playText');
+      togglePlayBtn.addEventListener('click', () => {
+        isPlaying = !isPlaying;
+        playIcon.className = isPlaying ? 'fa-solid fa-pause text-[10px]' : 'fa-solid fa-play text-[10px]';
+        playText.textContent = isPlaying ? 'Pause' : 'Resume';
+      });
+
+      // Camera presets
+      document.getElementById('camFrontBtn').addEventListener('click', () => {
+        controls.target.set(0, 0.95, 0);
+        camera.position.set(0, 0.95, 3.2);
+      });
+      document.getElementById('camSideBtn').addEventListener('click', () => {
+        controls.target.set(0, 0.95, 0);
+        camera.position.set(3.2, 0.95, 0);
+      });
+      document.getElementById('camTopBtn').addEventListener('click', () => {
+        controls.target.set(0, 0.95, 0);
+        camera.position.set(0, 4.0, 0.1);
+      });
+      document.getElementById('camIsoBtn').addEventListener('click', () => {
+        controls.target.set(0, 0.95, 0);
+        camera.position.set(2.2, 1.8, 2.5);
+      });
+
+      // Overlays
+      document.getElementById('chkCoM').addEventListener('change', (e) => {
+        visualSettings.com = e.target.checked;
+        comGroup.visible = visualSettings.com;
+      });
+      document.getElementById('chkForceVectors').addEventListener('change', (e) => {
+        visualSettings.forces = e.target.checked;
+        forceVectorsGroup.visible = visualSettings.forces;
+      });
+      document.getElementById('chkJointAxes').addEventListener('change', (e) => {
+        visualSettings.jointAxes = e.target.checked;
+        refreshJointAxes();
+      });
+
+      // Manual Joint Sliders
+      const bindJoint = (id, labelId, key) => {
+        const slider = document.getElementById(id);
+        const label = document.getElementById(labelId);
+        slider.addEventListener('input', (e) => {
+          manualJoints[key] = parseFloat(e.target.value);
+          label.textContent = `${manualJoints[key]}°`;
+        });
+      };
+      bindJoint('jointHeadYaw', 'valHeadYaw', 'headYaw');
+      bindJoint('jointTorsoPitch', 'valTorsoPitch', 'torsoPitch');
+      bindJoint('jointShoulderPitch', 'valShoulderPitch', 'shoulderPitch');
+
+      document.getElementById('resetJointsBtn').addEventListener('click', () => {
+        manualJoints.headYaw = 0;
+        manualJoints.torsoPitch = 0;
+        manualJoints.shoulderPitch = 0;
+        document.getElementById('jointHeadYaw').value = 0;
+        document.getElementById('valHeadYaw').textContent = "0°";
+        document.getElementById('jointTorsoPitch').value = 0;
+        document.getElementById('valTorsoPitch').textContent = "0°";
+        document.getElementById('jointShoulderPitch').value = 0;
+        document.getElementById('valShoulderPitch').textContent = "0°";
+      });
+
+      // Studio / Selfie Modal Listeners
+      const selfieModal = document.getElementById('selfieStudioModal');
+      document.getElementById('openSelfieModalBtn').addEventListener('click', () => {
+        draw2dCaricature();
+        document.getElementById('studioTargetRobotName').textContent = ROBOT_MODELS[currentRobotId].name;
+        selfieModal.classList.remove('hidden');
+      });
+      document.getElementById('closeSelfieModalBtn').addEventListener('click', () => selfieModal.classList.add('hidden'));
+      document.getElementById('closeSelfieFooterBtn').addEventListener('click', () => selfieModal.classList.add('hidden'));
+
+      // Caricature customizer changes
+      document.getElementById('visitorNameInput').addEventListener('input', (e) => {
+        visitorProfile.name = e.target.value || "Visitor";
+        draw2dCaricature();
+      });
+      document.getElementById('caricatureSkinTone').addEventListener('change', (e) => {
+        visitorProfile.skinTone = e.target.value;
+        draw2dCaricature();
+      });
+      document.getElementById('caricatureHairStyle').addEventListener('change', (e) => {
+        visitorProfile.hairStyle = e.target.value;
+        draw2dCaricature();
+      });
+      document.getElementById('caricatureGlasses').addEventListener('change', (e) => {
+        visitorProfile.glasses = e.target.value;
+        draw2dCaricature();
+      });
+      document.getElementById('caricatureOutfit').addEventListener('change', (e) => {
+        visitorProfile.outfit = e.target.value;
+        draw2dCaricature();
+      });
+
+      // 10s video recording & selfie download triggers
+      document.getElementById('start10sRecordingBtn').addEventListener('click', start10SecondEncirclementRecording);
+      document.getElementById('downloadVideoBtn').addEventListener('click', downloadRecordedVideo);
+      document.getElementById('downloadSelfieImgBtn').addEventListener('click', downloadWatermarkedSelfie);
+
+      // Spec Matrix Modal
+      const specModal = document.getElementById('specModal');
+      document.getElementById('openSpecModalBtn').addEventListener('click', () => {
+        renderSpecTable();
+        specModal.classList.remove('hidden');
+      });
+      document.getElementById('closeSpecModalBtn').addEventListener('click', () => specModal.classList.add('hidden'));
+    }
+
+    function switchPlatform(id) {
+      if (!ROBOT_MODELS[id]) return;
+      currentRobotId = id;
+      const robot = ROBOT_MODELS[id];
+
+      document.getElementById('activeRobotBadge').textContent = `${robot.maker} ${robot.name}`;
+      document.getElementById('specHeight').textContent = robot.height;
+      document.getElementById('specWeight').textContent = robot.weight;
+      document.getElementById('specDof').textContent = robot.dof;
+      document.getElementById('specPayload').textContent = robot.payload;
+      document.getElementById('specActuators').textContent = robot.actuatorType;
+      document.getElementById('specBattery').textContent = robot.battery;
+      document.getElementById('specSpeed').textContent = robot.speed;
+
+      constructHumanoid(id);
+      setupUI();
+    }
+
+    function renderSpecTable() {
+      const tbody = document.getElementById('matrixTableBody');
+      tbody.innerHTML = '';
+      Object.values(ROBOT_MODELS).forEach(r => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-800/40 transition';
+        tr.innerHTML = `
+          <td class="p-3 font-bold text-sky-300">${r.name}</td>
+          <td class="p-3 text-slate-300">${r.maker}</td>
+          <td class="p-3 text-slate-300">${r.height} <br><span class="text-slate-400">${r.weight}</span></td>
+          <td class="p-3 text-emerald-400 font-semibold">${r.dof}</td>
+          <td class="p-3 text-slate-400 max-w-[200px] truncate" title="${r.actuatorType}">${r.actuatorType}</td>
+          <td class="p-3 text-slate-300">${r.id === 'digit' ? 'Tote Grippers' : 'Tactile Multimodal Hands'}</td>
+          <td class="p-3 text-slate-400">${r.release} Platform</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+  </script>
+
+  <script>
+    function renderLoop() {
+      requestAnimationFrame(renderLoop);
+
+      const delta = animClock.getDelta();
+      const now = performance.now();
+
+      // Step kinematic kinematics experiments
+      stepKinematicSimulation(delta);
+
+      // Step 10-second cinematic orbit recording if triggered
+      stepEncirclementCamera(now);
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    window.onload = function() {
+      initScene();
+      constructHumanoid(currentRobotId);
+      setupUI();
+      draw2dCaricature();
+      renderLoop();
+    };
+  </script>
+</body>
+</html>
