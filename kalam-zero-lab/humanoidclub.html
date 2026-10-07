@@ -1,0 +1,2025 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>GARRF.in | Humanoid Mechatronics Virtual Engineering Laboratory</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Three.js & OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  
+  <!-- FontAwesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- MathJax for LaTeX mathematical formulas -->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']]
+      },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  <style>
+    :root {
+      --bg-dark: #060b16;
+      --panel-bg: rgba(12, 20, 36, 0.95);
+      --border-cyan: rgba(0, 240, 255, 0.4);
+      --accent-cyan: #00f0ff;
+      --accent-amber: #f59e0b;
+      --accent-emerald: #10b981;
+      --accent-purple: #a855f7;
+      --accent-rose: #f43f5e;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      user-select: none;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow-x: hidden;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+    }
+
+    header {
+      width: 100%;
+      min-height: 60px;
+      background: rgba(10, 16, 30, 0.98);
+      border-bottom: 1.5px solid var(--border-cyan);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 20px;
+      z-index: 50;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+      gap: 10px;
+    }
+
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      width: 44px;
+      height: 44px;
+      border-radius: 8px;
+      border: 1.5px solid var(--accent-cyan);
+      background: #0c1424;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      font-weight: 800;
+      font-size: 11px;
+      color: var(--accent-cyan);
+      text-align: center;
+      box-shadow: 0 0 12px rgba(0, 240, 255, 0.4);
+    }
+
+    .brand-logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .header-titles h1 {
+      font-size: 14px;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: 0.5px;
+    }
+
+    .header-titles p {
+      font-size: 11px;
+      color: var(--accent-cyan);
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn-top-action {
+      color: #ffffff;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+
+    .btn-instructions {
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      border: 1.5px solid var(--accent-cyan);
+      box-shadow: 0 0 12px rgba(0, 240, 255, 0.3);
+    }
+
+    .btn-instructions:hover {
+      background: linear-gradient(135deg, #0369a1 0%, #0284c7 100%);
+      transform: translateY(-1px);
+    }
+
+    .btn-python-locked {
+      background: #1e293b;
+      border: 1.5px solid #475569;
+      color: #94a3b8;
+      cursor: not-allowed;
+      opacity: 0.65;
+    }
+
+    .btn-python-unlocked {
+      background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+      border: 1.5px solid var(--accent-purple);
+      box-shadow: 0 0 16px rgba(168, 85, 247, 0.6);
+      animation: pulseBtn 1.8s infinite;
+      cursor: pointer;
+      color: #fff;
+    }
+
+    @keyframes pulseBtn {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.03); }
+    }
+
+    .visitor-badge-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #111b2f;
+      border: 1px solid var(--border-cyan);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+    }
+
+    .visitor-badge-box input {
+      background: #070c18;
+      border: 1px solid var(--accent-cyan);
+      color: var(--accent-cyan);
+      font-weight: bold;
+      padding: 4px 8px;
+      border-radius: 4px;
+      width: 120px;
+      outline: none;
+    }
+
+    /* 75% MODAL OVERLAYS */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(4, 8, 18, 0.88);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-content {
+      width: 75%;
+      height: 75%;
+      background: #0a1122;
+      border: 2px solid var(--accent-cyan);
+      border-radius: 14px;
+      box-shadow: 0 0 45px rgba(0, 240, 255, 0.5);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .modal-header {
+      padding: 16px 22px;
+      background: #070d1b;
+      border-bottom: 1.5px solid var(--border-cyan);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-header h2 {
+      font-size: 16px;
+      color: var(--accent-cyan);
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-close-modal {
+      background: #1e293b;
+      border: 1px solid #475569;
+      color: #cbd5e1;
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .btn-close-modal:hover {
+      background: #ef4444;
+      border-color: #ef4444;
+      color: #fff;
+    }
+
+    .modal-body {
+      padding: 24px;
+      overflow-y: auto;
+      flex: 1;
+      color: #cbd5e1;
+      font-size: 13px;
+      line-height: 1.65;
+      user-select: text;
+    }
+
+    .modal-body h3 {
+      color: var(--accent-cyan);
+      font-size: 14px;
+      margin: 18px 0 8px 0;
+      border-left: 3px solid var(--accent-cyan);
+      padding-left: 8px;
+      text-transform: uppercase;
+    }
+
+    .modal-body h3:first-child { margin-top: 0; }
+    .modal-body ul, .modal-body ol { margin-left: 24px; margin-bottom: 12px; }
+    .modal-body li { margin-bottom: 6px; }
+
+    .modal-highlight-box {
+      background: rgba(0, 240, 255, 0.08);
+      border: 1px solid var(--border-cyan);
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin: 12px 0;
+      font-family: monospace;
+      font-size: 12px;
+      color: #e2e8f0;
+    }
+
+    .modal-footer {
+      padding: 12px 22px;
+      background: #070d1b;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .btn-action-emerald {
+      background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+      color: #ffffff;
+      border: 1.5px solid #34d399;
+      padding: 8px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-action-emerald:hover {
+      box-shadow: 0 0 16px rgba(16, 185, 129, 0.6);
+      transform: translateY(-1px);
+    }
+
+    .code-container {
+      background: #030712;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 14px;
+      font-family: "JetBrains Mono", Consolas, "Courier New", monospace;
+      font-size: 12px;
+      color: #38bdf8;
+      overflow-x: auto;
+      white-space: pre;
+      line-height: 1.45;
+      user-select: text;
+    }
+
+    /* WORKSPACE */
+    main {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      max-width: 1920px;
+      margin: 0 auto;
+      padding: 12px;
+      gap: 12px;
+    }
+
+    @media (min-width: 1024px) {
+      main {
+        flex-direction: row;
+        height: calc(100vh - 120px);
+      }
+    }
+
+    .controls-deck {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      z-index: 10;
+    }
+
+    @media (min-width: 1024px) {
+      .controls-deck {
+        width: 480px;
+        flex-shrink: 0;
+        overflow-y: auto;
+      }
+    }
+
+    .card {
+      background: var(--panel-bg);
+      border: 1px solid var(--border-cyan);
+      border-radius: 12px;
+      padding: 14px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    }
+
+    .card-title {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--accent-cyan);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 8px;
+      margin-bottom: 10px;
+    }
+
+    .btn-build-master {
+      width: 100%;
+      background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%);
+      color: #ffffff;
+      border: 1.5px solid var(--accent-cyan);
+      padding: 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      text-transform: uppercase;
+      box-shadow: 0 0 16px rgba(0, 240, 255, 0.4);
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 10px 0;
+    }
+
+    .btn-build-master:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 24px rgba(0, 240, 255, 0.7);
+    }
+
+    .btn-congrats {
+      background: linear-gradient(135deg, #059669 0%, #10b981 100%) !important;
+      border-color: #34d399 !important;
+      box-shadow: 0 0 24px rgba(16, 185, 129, 0.6) !important;
+      animation: pulseBtn 1.6s infinite;
+    }
+
+    .step-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      background: #070c18;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      font-size: 11px;
+      margin-bottom: 6px;
+    }
+
+    .step-item.active {
+      border-color: var(--accent-cyan);
+      background: rgba(0, 240, 255, 0.08);
+    }
+
+    .step-item.done {
+      border-color: var(--accent-emerald);
+      background: rgba(16, 185, 129, 0.08);
+    }
+
+    .badge-pill {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+    }
+
+    .badge-next { background: #78350f; color: #fde68a; }
+    .badge-done { background: #064e3b; color: #6ee7b7; }
+    .badge-queued { background: #1e293b; color: #64748b; }
+
+    .viewport-container {
+      width: 100%;
+      height: 520px;
+      background: #040812;
+      border: 1.5px solid var(--border-cyan);
+      border-radius: 12px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.9);
+    }
+
+    @media (min-width: 1024px) {
+      .viewport-container {
+        flex: 1;
+        height: 100%;
+      }
+    }
+
+    #webgl-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .hud-overlay {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      right: 12px;
+      display: flex;
+      justify-content: space-between;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .hud-chip {
+      background: rgba(12, 20, 36, 0.9);
+      border: 1px solid var(--border-cyan);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: bold;
+      pointer-events: auto;
+    }
+
+    .scene2-tasks-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .btn-task {
+      background: #111b2f;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: bold;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .btn-task.active {
+      background: #064e3b;
+      border-color: var(--accent-emerald);
+      color: #6ee7b7;
+    }
+
+    .btn-end-all-experiments {
+      width: 100%;
+      background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+      border: 1.5px solid #f87171;
+      color: #ffffff;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 0 16px rgba(239, 68, 68, 0.4);
+      transition: all 0.2s;
+    }
+
+    .btn-end-all-experiments:hover {
+      background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 0 24px rgba(239, 68, 68, 0.7);
+    }
+
+    footer {
+      width: 100%;
+      padding: 10px 20px;
+      background: #040812;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-brand">
+      <div class="brand-logo">
+        <img src="logo.jpeg" alt="GARRF Logo" onerror="this.style.display='none'; this.parentElement.innerText='GARRF';">
+      </div>
+      <div class="header-titles">
+        <h1>Gopalkrishna Advanced Rural Research Foundation, India</h1>
+        <p>Virtual AISIA Lab &bull; Autonomous Humanoid Mechatronics Division</p>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <button id="btn-top-python" class="btn-top-action btn-python-locked" onclick="onTopPythonClicked()">
+        <i class="fa-solid fa-lock" id="python-lock-icon"></i>
+        <span id="python-btn-label">Python Script (Locked)</span>
+      </button>
+
+      <button class="btn-top-action btn-instructions" onclick="openInstructionsModal()">
+        <i class="fa-solid fa-circle-question"></i> Lab Manual
+      </button>
+
+      <div class="visitor-badge-box">
+        <label for="visitor-name-input">Student Name:</label>
+        <input type="text" id="visitor-name-input" value="Aditya" maxlength="16" oninput="updateStudentName(this.value)">
+      </div>
+    </div>
+  </header>
+
+  <!-- 75% INSTRUCTIONS & LAB MANUAL MODAL -->
+  <div class="modal-overlay" id="instructions-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2><i class="fa-solid fa-book-atlas"></i> Student Engineering Manual &amp; Gripper Compendium</h2>
+        <button class="btn-close-modal" onclick="closeInstructionsModal()" title="Close manual">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <h3>1. Identity Binding &amp; Pedagogical Roadmap</h3>
+        <p>
+          Enter your first name in the <strong>Student Name</strong> input box to initialize your custom humanoid telemetry and 3D floating badge (e.g., <em>Humanoid Aditya</em>).
+        </p>
+
+        <h3>2. Scene 1: Physical Cleanroom Workbench Buildup</h3>
+        <p>
+          All 7 subassemblies are physically laid out on Shantanu Bro's laboratory workbench table ($x = 7.8\text{ m}$). When you click the primary command button:
+        </p>
+        <ol>
+          <li><strong>Dual-Axis Feet (4 DOF):</strong> Equipped with multi-axis force-torque load cells for Zero Moment Point (ZMP) ground reaction sensing.</li>
+          <li><strong>Harmonic Legs &amp; Knees (6 DOF):</strong> High-torque brushless cycloidal drives supporting structural payload.</li>
+          <li><strong>Pelvis &amp; Power Spine Battery (3 DOF):</strong> Core 48V ternary lithium power management system and kinematic root.</li>
+          <li><strong>Carbon Fiber Torso &amp; Core IMU (3 DOF):</strong> High-rigidity chassis integrating the central processing computer.</li>
+          <li><strong>Articulated Bionic Arms (14 DOF):</strong> Dual 7-DOF symmetric upper-limb kinematic chains.</li>
+          <li><strong>Heavy-Duty Parallel Gripper on Right Arm:</strong> Mounted specifically on the right hand for masonry lifting.</li>
+          <li><strong>Perception Head (LiDAR &amp; Stereo Depth Array):</strong> Spatial depth-sensing arrays completing the robot.</li>
+        </ol>
+
+        <h3>3. Scene 2: Testing Suite &amp; The 5 Industrial Grippers</h3>
+        <p>
+          In Experiment 4, test and evaluate the 5 industrial end-effectors fitted to all hands across all three humanoids (Dr. Venu Gopal, Shantanu Bro, and the student's humanoid):
+        </p>
+        <ul>
+          <li><strong>A) 2-Jaw Linear Parallel Gripper:</strong>
+            <br><em>Use Case:</em> Rigid rectangular objects, burnt clay bricks, machine tool CNC loading, warehousing.
+            <br><em>Contact Mechanics:</em> Squeezes parallel faces with normal clamping force $F_N \ge \frac{m \cdot g}{2 \mu_s} \times \text{SF} = 40.13\text{ N}$ ($P \approx 3.52\text{ kPa}$).
+          </li>
+          <li><strong>B) 13-DOF Anthropomorphic 5-Finger Bionic Hand:</strong>
+            <br><em>Use Case:</em> Human-centric tasks, tool handling, delicate instrumentation, prosthetic robotics.
+            <br><em>Contact Mechanics:</em> Multi-point friction cone equilibrium: $\sum \mathbf{F}_i = m(\mathbf{a} - \mathbf{g})$.
+          </li>
+          <li><strong>C) 3-Finger Centric Adaptive Gripper:</strong>
+            <br><em>Use Case:</em> Cylindrical billets, pipes, spheres, orbital lathe turning stock.
+            <br><em>Contact Mechanics:</em> Self-centering radial clamping: $F_{\text{rad}} = \frac{m \cdot g}{3 \mu_s \sin(\theta)}$.
+          </li>
+          <li><strong>D) Electro-Permanent Magnetic Gripper:</strong>
+            <br><em>Use Case:</em> Ferrous steel sheet metal, automotive body panels, cast iron ingots.
+            <br><em>Contact Mechanics:</em> Maxwell magnetic flux traction: $F_{\text{mag}} = \frac{B^2 \cdot A}{2 \mu_0}$. Non-ferrous clay bricks cannot be gripped.
+          </li>
+          <li><strong>E) Soft Compliant Silicone Fin-Ray Gripper:</strong>
+            <br><em>Use Case:</em> Delicate agricultural produce (tomatoes, mangoes), eggs, fragile glass vials.
+            <br><em>Contact Mechanics:</em> Bio-inspired passive envelope wrapping at low pressure ($P < 2.5\text{ kPa}$). Buckles under heavy bricks ($>3.0\text{ kg}$).
+          </li>
+        </ul>
+
+        <h3>4. The Club of Humanoids &amp; Graduation</h3>
+        <p>
+          When you press <strong>END EXPERIMENTS &amp; COMPLETE COURSE</strong>, Dr. Venu Gopal, Shantanu Bro, and your humanoid step forward together into a unified triumvirate formation, raise both hands high in celebration, and display the official banner:
+          <br>
+          <strong style="color:var(--accent-cyan);">"Club of Humanoids: Gopalkrishna Advanced Rural Research Foundation"</strong>.
+        </p>
+
+        <h3>5. Python Script Execution in Google Colab</h3>
+        <p>
+          Once unlocked, the exported Python code contains an interactive animation renderer using <code>FuncAnimation</code> and <code>HTML(ani.to_jshtml())</code> for direct play in Google Colab.
+        </p>
+      </div>
+
+      <div class="modal-footer">
+        <div></div>
+        <button class="btn-action-emerald" onclick="closeInstructionsModal()">
+          <i class="fa-solid fa-check"></i> I Understand &bull; Proceed to Lab
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 75% PYTHON CODE EXPORT & DOWNLOAD MODAL -->
+  <div class="modal-overlay" id="python-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2><i class="fa-brands fa-python text-purple-400"></i> Python 3D Kinematics Simulation Code (Google Colab / Local Python)</h2>
+        <button class="btn-close-modal" onclick="closePythonModal()" title="Close">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div style="margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+          <div>
+            <strong>Select Python Kinematics Simulation:</strong>
+            <p style="font-size: 11px; color: var(--text-muted);">Fully self-contained script formatted for Google Colab and local Python.</p>
+          </div>
+          <select id="python-script-selector" onchange="renderSelectedPythonCode()" style="background:#111b2f; color:#00f0ff; border:1px solid #00f0ff; padding:6px 12px; border-radius:6px; font-weight:bold; font-size:12px; outline:none;">
+            <option value="complete">1. Master Suite: Humanoid Buildup + All Experiments (Colab Ready)</option>
+            <option value="lift">2. Experiment A: Front Brick Clamping, Lift &amp; 2.0s Hold</option>
+            <option value="dance">3. Experiment B: 15-Second ZMP Balance Dance Routine</option>
+            <option value="sprint">4. Experiment C: Safe Orbital Sprint &amp; Jump (R = 6.2m)</option>
+          </select>
+        </div>
+
+        <div class="code-container" id="python-code-display"># Generating Python Code...</div>
+      </div>
+
+      <div class="modal-footer">
+        <div style="font-size: 11px; color: var(--text-muted);">
+          <span>Runs in Google Colab, Jupyter, or VS Code: <code>!pip install numpy matplotlib</code></span>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn-action-emerald" onclick="copyPythonCode()">
+            <i class="fa-regular fa-copy"></i> Copy Code
+          </button>
+          <button class="btn-action-emerald" style="background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%); border-color: var(--accent-purple);" onclick="downloadPythonFile()">
+            <i class="fa-solid fa-download"></i> Download .py File
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WORKSPACE -->
+  <main>
+    <div class="controls-deck">
+      <div class="card">
+        <div class="card-title">
+          <span><i class="fa-solid fa-terminal"></i> Guidance Comms</span>
+          <span id="speaker-role-tag" style="color:var(--accent-cyan);">DR. VENU GOPAL</span>
+        </div>
+        <p id="dialogue-text" style="font-size:12px; line-height:1.5; color:#cbd5e1;">
+          "Welcome! Open the Lab Manual above anytime. Enter your first name and press the primary command button to assemble your humanoid step-by-step!"
+        </p>
+      </div>
+
+      <!-- SCENE 1 ASSEMBLY -->
+      <div id="scene1-panel" class="card">
+        <div class="card-title">
+          <span><i class="fa-solid fa-wrench"></i> Assembly Progress</span>
+          <span id="progress-tag" style="color:var(--accent-cyan);">0 / 7 Fitted</span>
+        </div>
+
+        <button id="master-build-btn" class="btn-build-master" onclick="handlePrimaryBuildClick()">
+          <span id="build-btn-text">Aditya, Press to build Step 1: Biomechanical Feet</span>
+          <i class="fa-solid fa-bolt"></i>
+        </button>
+
+        <div id="step-checklist-box">
+          <div class="step-item active" id="chk-0">
+            <span>1. Biomechanical Dual-Axis Feet (4 DOF)</span>
+            <span class="badge-pill badge-next" id="badg-0">Next</span>
+          </div>
+          <div class="step-item" id="chk-1">
+            <span>2. Harmonic Legs &amp; Knees (6 DOF)</span>
+            <span class="badge-pill badge-queued" id="badg-1">Queued</span>
+          </div>
+          <div class="step-item" id="chk-2">
+            <span>3. Pelvis &amp; Power Spine Battery (3 DOF)</span>
+            <span class="badge-pill badge-queued" id="badg-2">Queued</span>
+          </div>
+          <div class="step-item" id="chk-3">
+            <span>4. Carbon Fiber Torso &amp; Core IMU (3 DOF)</span>
+            <span class="badge-pill badge-queued" id="badg-3">Queued</span>
+          </div>
+          <div class="step-item" id="chk-4">
+            <span>5. Articulated Bionic Arms (14 DOF)</span>
+            <span class="badge-pill badge-queued" id="badg-4">Queued</span>
+          </div>
+          <div class="step-item" id="chk-5">
+            <span>6. Heavy-Duty Parallel Gripper (Right Arm)</span>
+            <span class="badge-pill badge-queued" id="badg-5">Queued</span>
+          </div>
+          <div class="step-item" id="chk-6">
+            <span>7. Perception Head (LiDAR &amp; Stereo)</span>
+            <span class="badge-pill badge-queued" id="badg-6">Queued</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCENE 2 PROVING GROUND -->
+      <div id="scene2-panel" class="card" style="display:none;">
+        <div class="card-title">
+          <span><i class="fa-solid fa-flag-checkered"></i> Outdoor Proving Ground (Turf)</span>
+          <span style="color:var(--accent-emerald);">LUSH GREEN ACTIVE</span>
+        </div>
+
+        <div class="scene2-tasks-grid">
+          <button class="btn-task active" id="btn-task-lift" onclick="setProvingTask('lift')">
+            <i class="fa-solid fa-cube"></i> Exp 1: Front Brick Lift
+          </button>
+          <button class="btn-task" id="btn-task-dance" onclick="setProvingTask('dance')">
+            <i class="fa-solid fa-music"></i> Exp 2: 15s Dance
+          </button>
+          <button class="btn-task" id="btn-task-run" onclick="setProvingTask('run')">
+            <i class="fa-solid fa-person-running"></i> Exp 3: Orbit Sprint
+          </button>
+          <button class="btn-task" id="btn-task-grippers" onclick="setProvingTask('grippers')">
+            <i class="fa-solid fa-hand"></i> Exp 4: Gripper Study
+          </button>
+        </div>
+
+        <!-- SUB-PANEL 1: BRICK LIFT -->
+        <div id="brick-box" style="background:#070c18; padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.1);">
+          <div style="font-size:11px; margin-bottom:8px; color:#6ee7b7;">
+            Grip Physics: $F_N \ge \frac{m \cdot g}{2 \mu_s} \cdot \text{SF} = 40.13\text{ N}$ &bull; Pressure: $P \approx 3.52\text{ kPa}$
+          </div>
+          <button id="btn-execute-lift" class="btn-build-master" style="background:#059669; border-color:#34d399; margin:0;" onclick="triggerBrickLift()">
+            <span id="lift-btn-label">Lift Brick in Front &amp; Show to Visitors</span>
+            <i class="fa-solid fa-play"></i>
+          </button>
+        </div>
+
+        <!-- SUB-PANEL 2: MODULAR GRIPPER STUDY -->
+        <div id="gripper-study-box" style="background:#070c18; padding:12px; border-radius:8px; border:1px solid rgba(0,240,255,0.3); display:none;">
+          <label style="font-size:11px; color:#94a3b8; display:block; margin-bottom:6px; font-weight:bold;">
+            Equip &amp; Synchronize End-Effectors on ALL Hands:
+          </label>
+          <select id="gripper-selector" onchange="onGripperSelected(this.value)" style="width:100%; background:#111b2f; color:#00f0ff; border:1px solid #00f0ff; padding:8px; border-radius:6px; font-weight:bold; font-size:11px; outline:none; margin-bottom:10px;">
+            <option value="parallel" selected>1. 2-Jaw Linear Parallel Gripper (Brick &amp; Masonry)</option>
+            <option value="bionic5">2. 13-DOF Anthropomorphic 5-Finger Bionic Hand (Dexterous Picking)</option>
+            <option value="centric3">3. 3-Finger Centric Adaptive Gripper (Cylinders &amp; Spheres)</option>
+            <option value="magnetic">4. Electro-Permanent Magnetic Gripper (Ferrous Steel Plates)</option>
+            <option value="finray">5. Soft Silicone Fin-Ray Gripper (Fragile Produce &amp; Vials)</option>
+          </select>
+          <div id="gripper-details-card" style="font-size:11px; line-height:1.5; color:#cbd5e1; background:rgba(0,240,255,0.05); padding:10px; border-radius:6px; border:1px solid rgba(0,240,255,0.2);">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+
+        <!-- THE FINAL END BUTTON -->
+        <button class="btn-end-all-experiments" onclick="finishAllExperiments()">
+          <i class="fa-solid fa-flag-checkered"></i> END EXPERIMENTS &amp; COMPLETE COURSE
+        </button>
+
+        <button onclick="returnToScene1()" style="margin-top:10px; width:100%; background:none; border:1px solid #334155; color:#94a3b8; padding:8px; border-radius:6px; cursor:pointer; font-size:11px;">
+          &larr; Return to Cleanroom Lab (Scene 1)
+        </button>
+      </div>
+
+    </div>
+
+    <!-- 3D VIEWPORT -->
+    <div class="viewport-container">
+      <div class="hud-overlay">
+        <div class="hud-chip" id="hud-scene-name">SCENE 1: CLEANROOM LAB</div>
+        <div class="hud-chip" id="hud-status-badge" style="color:var(--accent-emerald);">Table Placed In Front &bull; Parts on Workbench</div>
+      </div>
+      <canvas id="webgl-canvas"></canvas>
+    </div>
+  </main>
+
+  <footer>
+    <div>Gopalkrishna Advanced Rural Research Foundation, India</div>
+    <div style="color:var(--accent-cyan);">Copyright &copy; GARRF.in</div>
+    <div>Autonomous Humanoids Engineering</div>
+  </footer>
+
+  <script>
+    const STATE = {
+      studentName: 'Aditya',
+      currentScene: 1,
+      assemblyStep: 0,
+      isShantanuBusy: false,
+      activeTask: 'lift',
+      brickLiftPhase: 'idle',
+      brickLiftTimer: 0,
+      allExperimentsFinished: false,
+      currentGripperType: 'parallel'
+    };
+
+    const ASSEMBLY_STEPS = [
+      "Biomechanical Dual-Axis Feet",
+      "Harmonic Legs & Knees",
+      "Pelvis & Power Spine Battery",
+      "Carbon Fiber Torso & IMU Hub",
+      "Articulated Bionic Arms",
+      "Heavy-Duty Parallel Gripper (Right Arm)",
+      "LiDAR Perception Head"
+    ];
+
+    /* ================= MODAL HANDLERS ================= */
+    const instructionsModal = document.getElementById('instructions-modal');
+    function openInstructionsModal() { instructionsModal.classList.add('active'); }
+    function closeInstructionsModal() { instructionsModal.classList.remove('active'); }
+
+    const pythonModal = document.getElementById('python-modal');
+    function openPythonModal() {
+      renderSelectedPythonCode();
+      pythonModal.classList.add('active');
+    }
+    function closePythonModal() { pythonModal.classList.remove('active'); }
+
+    /* ================= THREE.JS SETUP ================= */
+    const canvas = document.getElementById('webgl-canvas');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.35;
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x060b16);
+
+    const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+    camera.position.set(0, 2.6, 6.0);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.target.set(0, 1.2, 0);
+
+    function resizeViewport() {
+      const container = canvas.parentElement;
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+      if (w > 0 && h > 0) {
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h);
+      }
+    }
+    window.addEventListener('resize', resizeViewport);
+
+    // Environment Lighting
+    const pmremGen = new THREE.PMREMGenerator(renderer);
+    pmremGen.compileEquirectangularShader();
+    const envScene = new THREE.Scene();
+    envScene.background = new THREE.Color(0x192742);
+    const envL1 = new THREE.DirectionalLight(0x00f0ff, 4); envL1.position.set(2, 4, 3); envScene.add(envL1);
+    const envL2 = new THREE.DirectionalLight(0xffffff, 5); envL2.position.set(-3, 6, -2); envScene.add(envL2);
+    scene.environment = pmremGen.fromScene(envScene).texture;
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.4);
+    scene.add(ambientLight);
+
+    const keyLight = new THREE.DirectionalLight(0xffffff, 2.2);
+    keyLight.position.set(6, 12, 7);
+    keyLight.castShadow = true;
+    keyLight.shadow.mapSize.width = 2048;
+    keyLight.shadow.mapSize.height = 2048;
+    scene.add(keyLight);
+
+    const cyanRim = new THREE.DirectionalLight(0x00f0ff, 1.6);
+    cyanRim.position.set(-7, 8, -6);
+    scene.add(cyanRim);
+
+    /* ================= MATERIALS ================= */
+    const matArmor = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.12, metalness: 0.94, envMapIntensity: 2.2 });
+    const matJoint = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.35, metalness: 0.85, envMapIntensity: 1.4 });
+    const matCyanGlow = new THREE.MeshStandardMaterial({ color: 0x00f0ff, emissive: 0x00d4e5, emissiveIntensity: 1.2, roughness: 0.1 });
+    const matAmberGlow = new THREE.MeshStandardMaterial({ color: 0xf59e0b, emissive: 0xd97706, emissiveIntensity: 1.2, roughness: 0.1 });
+    const matEmeraldGlow = new THREE.MeshStandardMaterial({ color: 0x10b981, emissive: 0x059669, emissiveIntensity: 1.2, roughness: 0.1 });
+    const matBrick = new THREE.MeshStandardMaterial({ color: 0xba3228, roughness: 0.85, metalness: 0.05 });
+
+    /* ================= DECKS & STATIONS ================= */
+    const cleanroomDeck = new THREE.Group();
+    const labFloor = new THREE.Mesh(new THREE.CylinderGeometry(11, 11, 0.3, 64), new THREE.MeshStandardMaterial({ color: 0x0c1424, roughness: 0.25, metalness: 0.6 }));
+    labFloor.position.y = -0.15;
+    labFloor.receiveShadow = true;
+    cleanroomDeck.add(labFloor);
+
+    const labRing = new THREE.Mesh(new THREE.RingGeometry(2.5, 2.56, 64), new THREE.MeshBasicMaterial({ color: 0x00f0ff, side: THREE.DoubleSide }));
+    labRing.rotation.x = -Math.PI / 2;
+    labRing.position.y = 0.005;
+    cleanroomDeck.add(labRing);
+    scene.add(cleanroomDeck);
+
+    const outdoorDeck = new THREE.Group();
+    outdoorDeck.visible = false;
+    const outdoorFloor = new THREE.Mesh(new THREE.CylinderGeometry(18, 18, 0.3, 64), new THREE.MeshStandardMaterial({ color: 0x164e29, roughness: 0.85 }));
+    outdoorFloor.position.y = -0.15;
+    outdoorFloor.receiveShadow = true;
+    outdoorDeck.add(outdoorFloor);
+
+    const trackRing = new THREE.Mesh(new THREE.RingGeometry(6.15, 6.25, 64), new THREE.MeshBasicMaterial({ color: 0x10b981, side: THREE.DoubleSide }));
+    trackRing.rotation.x = -Math.PI / 2;
+    trackRing.position.y = 0.005;
+    outdoorDeck.add(trackRing);
+    scene.add(outdoorDeck);
+
+    // Workbench Table on Shantanu's side (x = 7.8)
+    const partsTable = new THREE.Group();
+    partsTable.position.set(7.8, 0, -0.4);
+    const tableTop = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.88, 1.4), matJoint);
+    tableTop.position.y = 0.44;
+    partsTable.add(tableTop);
+
+    const tray = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.04, 1.2), new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.5 }));
+    tray.position.y = 0.90;
+    partsTable.add(tray);
+
+    /* ================= SCENE 1: PHYSICAL PARTS DISPLAY ON WORKBENCH ================= */
+    const tablePartsGroup = new THREE.Group();
+    tablePartsGroup.position.set(7.8, 0.92, -0.4);
+
+    const tFoot = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.08, 0.32), matArmor);
+    tFoot.position.set(-1.0, 0.04, -0.2);
+    tablePartsGroup.add(tFoot);
+
+    const tLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.07, 0.45, 16), matArmor);
+    tLeg.rotation.z = Math.PI / 2;
+    tLeg.position.set(-0.6, 0.07, 0.2);
+    tablePartsGroup.add(tLeg);
+
+    const tPelvis = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.16, 0.22), matJoint);
+    tPelvis.position.set(-0.2, 0.08, -0.2);
+    tablePartsGroup.add(tPelvis);
+
+    const tTorso = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.28, 0.24), matArmor);
+    tTorso.position.set(0.2, 0.14, 0.2);
+    tablePartsGroup.add(tTorso);
+
+    const tArm = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.05, 0.42, 16), matArmor);
+    tArm.rotation.x = Math.PI / 2;
+    tArm.position.set(0.6, 0.06, -0.2);
+    tablePartsGroup.add(tArm);
+
+    const tGripper = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.08, 0.14), matJoint);
+    tGripper.position.set(0.95, 0.06, 0.2);
+    tablePartsGroup.add(tGripper);
+
+    const tHeadGroup = new THREE.Group();
+    tHeadGroup.position.set(0, 0.10, 0);
+    const tHeadBox = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.20, 0.20), matArmor);
+    tHeadGroup.add(tHeadBox);
+    const tVisor = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.06, 0.06), matCyanGlow);
+    tVisor.position.set(0, 0.02, 0.09);
+    tHeadGroup.add(tVisor);
+    tablePartsGroup.add(tHeadGroup);
+
+    cleanroomDeck.add(partsTable);
+    cleanroomDeck.add(tablePartsGroup);
+
+    const workbenchPartItems = [tFoot, tLeg, tPelvis, tTorso, tArm, tGripper, tHeadGroup];
+
+    // Central Jig
+    const centralJig = new THREE.Group();
+    const jigBase = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.9, 0.1, 32), matJoint);
+    jigBase.position.y = 0.05;
+    centralJig.add(jigBase);
+    for (let s of [-0.85, 0.85]) {
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 2.2), matJoint);
+      pole.position.set(s, 1.1, 0);
+      centralJig.add(pole);
+    }
+    cleanroomDeck.add(centralJig);
+
+    /* ================= SCENE 2: PEDESTAL TABLE IN FRONT ================= */
+    const FRONT_TABLE_X = 0.36;
+    const FRONT_TABLE_Z = 0.50;
+    const FRONT_TABLE_Y = 0.82;
+
+    const testPedestal = new THREE.Group();
+    testPedestal.position.set(FRONT_TABLE_X, 0, FRONT_TABLE_Z);
+    testPedestal.visible = false;
+    const pedTop = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.06, 0.5), matJoint);
+    pedTop.position.y = FRONT_TABLE_Y;
+    testPedestal.add(pedTop);
+    const pedCol = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, FRONT_TABLE_Y, 24), matJoint);
+    pedCol.position.y = FRONT_TABLE_Y / 2;
+    testPedestal.add(pedCol);
+    scene.add(testPedestal);
+
+    const brickMesh = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.07, 0.23), matBrick);
+    brickMesh.castShadow = true;
+    brickMesh.receiveShadow = true;
+    const BRICK_REST_POS = new THREE.Vector3(FRONT_TABLE_X, FRONT_TABLE_Y + 0.03 + 0.035, FRONT_TABLE_Z);
+    brickMesh.position.copy(BRICK_REST_POS);
+    brickMesh.visible = false;
+    scene.add(brickMesh);
+
+    /* ================= COLLECTIVE SIGNBOARD: CLUB OF HUMANOIDS ================= */
+    const clubSignBoard = new THREE.Group();
+    clubSignBoard.position.set(0, 3.2, -0.2);
+    clubSignBoard.visible = false;
+
+    const boardBack = new THREE.Mesh(new THREE.BoxGeometry(4.8, 0.8, 0.08), new THREE.MeshStandardMaterial({ color: 0x070e1e, metalness: 0.8, roughness: 0.2 }));
+    clubSignBoard.add(boardBack);
+
+    const boardFrame = new THREE.Mesh(new THREE.BoxGeometry(4.9, 0.9, 0.06), matCyanGlow);
+    boardFrame.position.z = -0.01;
+    clubSignBoard.add(boardFrame);
+
+    const sCanvas = document.createElement('canvas');
+    sCanvas.width = 1024;
+    sCanvas.height = 256;
+    const sCtx = sCanvas.getContext('2d');
+    sCtx.fillStyle = '#0a1428';
+    sCtx.fillRect(0, 0, 1024, 256);
+    sCtx.strokeStyle = '#00f0ff';
+    sCtx.lineWidth = 10;
+    sCtx.strokeRect(8, 8, 1008, 240);
+
+    sCtx.fillStyle = '#f59e0b';
+    sCtx.font = 'bold 52px Inter, sans-serif';
+    sCtx.textAlign = 'center';
+    sCtx.fillText('CLUB OF HUMANOIDS', 512, 90);
+
+    sCtx.fillStyle = '#ffffff';
+    sCtx.font = 'bold 36px Inter, sans-serif';
+    sCtx.fillText('GOPALKRISHNA ADVANCED RURAL RESEARCH FOUNDATION', 512, 160);
+
+    sCtx.fillStyle = '#10b981';
+    sCtx.font = '600 28px JetBrains Mono, monospace';
+    sCtx.fillText('Dr. APJ Abdul Kalam Zero Funding Research Projects - Mechatronics Division', 512, 215);
+
+    const sTex = new THREE.CanvasTexture(sCanvas);
+    const sMat = new THREE.MeshBasicMaterial({ map: sTex });
+    const sMesh = new THREE.Mesh(new THREE.PlaneGeometry(4.7, 0.72), sMat);
+    sMesh.position.z = 0.045;
+    clubSignBoard.add(sMesh);
+
+    scene.add(clubSignBoard);
+
+    /* ================= MODULAR GRIPPER BUILDER FUNCTION ================= */
+    function buildModularGripper(type) {
+      const g = new THREE.Group();
+      g.gripperType = type;
+
+      if (type === 'parallel') {
+        const base = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.05, 0.10), matJoint);
+        base.position.y = -0.025;
+        g.add(base);
+        const rail = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.22, 16), matJoint);
+        rail.rotation.z = Math.PI / 2;
+        rail.position.y = -0.025;
+        g.add(rail);
+
+        const jawL = new THREE.Mesh(new THREE.BoxGeometry(0.024, 0.14, 0.12), matArmor);
+        jawL.position.set(-0.09, -0.095, 0);
+        g.add(jawL);
+        const jawR = new THREE.Mesh(new THREE.BoxGeometry(0.024, 0.14, 0.12), matArmor);
+        jawR.position.set(0.09, -0.095, 0);
+        g.add(jawR);
+
+        const padL = new THREE.Mesh(new THREE.BoxGeometry(0.006, 0.12, 0.10), matEmeraldGlow);
+        padL.position.set(0.015, 0, 0);
+        jawL.add(padL);
+        const padR = new THREE.Mesh(new THREE.BoxGeometry(0.006, 0.12, 0.10), matEmeraldGlow);
+        padR.position.set(-0.015, 0, 0);
+        jawR.add(padR);
+
+        g.jawL = jawL;
+        g.jawR = jawR;
+      } else if (type === 'bionic5') {
+        const palm = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.08, 0.06), matArmor);
+        palm.position.y = -0.04;
+        g.add(palm);
+        for (let i = -2; i <= 2; i++) {
+          const f = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.008, 0.08, 8), matJoint);
+          f.position.set(i * 0.024, -0.11, 0.01);
+          g.add(f);
+        }
+      } else if (type === 'centric3') {
+        const base = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.04, 16), matJoint);
+        g.add(base);
+        for (let i = 0; i < 3; i++) {
+          const ang = (i * 2 * Math.PI) / 3;
+          const jaw = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.12, 0.03), matArmor);
+          jaw.position.set(Math.cos(ang) * 0.05, -0.08, Math.sin(ang) * 0.05);
+          g.add(jaw);
+        }
+      } else if (type === 'magnetic') {
+        const core = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.05, 24), matJoint);
+        g.add(core);
+        const plate = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.02, 24), new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.9 }));
+        plate.position.y = -0.035;
+        g.add(plate);
+      } else if (type === 'finray') {
+        const base = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.04, 0.06), matJoint);
+        g.add(base);
+        const finMat = new THREE.MeshStandardMaterial({ color: 0x06b6d4, roughness: 0.6 });
+        const finL = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.12, 0.05), finMat);
+        finL.position.set(-0.04, -0.08, 0);
+        finL.rotation.z = -0.18;
+        g.add(finL);
+        const finR = finL.clone();
+        finR.position.x = 0.04;
+        finR.rotation.z = 0.18;
+        g.add(finR);
+      }
+
+      return g;
+    }
+
+    /* ================= RIGID FORWARD-KINEMATIC RIGGING ================= */
+    function buildRigidHumanoid(name, glowMat, posX, posZ) {
+      const root = new THREE.Group();
+      root.position.set(posX, 0, posZ);
+
+      const pelvisNode = new THREE.Group();
+      pelvisNode.position.set(0, 1.05, 0);
+      root.add(pelvisNode);
+
+      const pelMesh = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.18, 0.26), matJoint);
+      pelvisNode.add(pelMesh);
+
+      const hipL = new THREE.Group(); hipL.position.set(-0.2, -0.09, 0); pelvisNode.add(hipL);
+      const thighL = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.06, 0.42, 16), matArmor);
+      thighL.position.y = -0.21; hipL.add(thighL);
+      const kneeL = new THREE.Group(); kneeL.position.set(0, -0.42, 0); hipL.add(kneeL);
+      const kneeMeshL = new THREE.Mesh(new THREE.SphereGeometry(0.075, 14, 14), matJoint); kneeL.add(kneeMeshL);
+      const shinL = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.055, 0.42, 16), matArmor);
+      shinL.position.y = -0.21; kneeL.add(shinL);
+      const ankleL = new THREE.Group(); ankleL.position.set(0, -0.42, 0); kneeL.add(ankleL);
+      const footL = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.08, 0.28), matArmor);
+      footL.position.set(0, -0.04, 0.04); ankleL.add(footL);
+
+      const hipR = new THREE.Group(); hipR.position.set(0.2, -0.09, 0); pelvisNode.add(hipR);
+      const thighR = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.06, 0.42, 16), matArmor);
+      thighR.position.y = -0.21; hipR.add(thighR);
+      const kneeR = new THREE.Group(); kneeR.position.set(0, -0.42, 0); hipR.add(kneeR);
+      const kneeMeshR = new THREE.Mesh(new THREE.SphereGeometry(0.075, 14, 14), matJoint); kneeR.add(kneeMeshR);
+      const shinR = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.055, 0.42, 16), matArmor);
+      shinR.position.y = -0.21; kneeR.add(shinR);
+      const ankleR = new THREE.Group(); ankleR.position.set(0, -0.42, 0); kneeR.add(ankleR);
+      const footR = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.08, 0.28), matArmor);
+      footR.position.set(0, -0.04, 0.04); ankleR.add(footR);
+
+      const torsoNode = new THREE.Group();
+      torsoNode.position.set(0, 0.09, 0);
+      pelvisNode.add(torsoNode);
+
+      const spineMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.09, 0.16, 16), matJoint);
+      spineMesh.position.y = 0.08; torsoNode.add(spineMesh);
+      const chestMesh = new THREE.Mesh(new THREE.BoxGeometry(0.54, 0.44, 0.3), matArmor);
+      chestMesh.position.y = 0.36; torsoNode.add(chestMesh);
+      const puck = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.04, 24), glowMat);
+      puck.rotation.x = Math.PI / 2; puck.position.set(0, 0.40, 0.155); torsoNode.add(puck);
+
+      const headNode = new THREE.Group();
+      headNode.position.set(0, 0.58, 0);
+      torsoNode.add(headNode);
+      const neckMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 0.1), matJoint);
+      neckMesh.position.y = 0.05; headNode.add(neckMesh);
+      const headBox = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.26, 0.24), matArmor);
+      headBox.position.y = 0.22; headNode.add(headBox);
+      const visor = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.08, 0.08), glowMat);
+      visor.position.set(0, 0.24, 0.11); headNode.add(visor);
+
+      const canvas = document.createElement('canvas'); canvas.width = 384; canvas.height = 96;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = 'rgba(12, 20, 36, 0.9)'; ctx.roundRect(4, 4, 376, 88, 16); ctx.fill();
+      ctx.strokeStyle = '#00f0ff'; ctx.lineWidth = 4; ctx.stroke();
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 32px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(name, 192, 58);
+      const badgeTex = new THREE.CanvasTexture(canvas);
+      const badge = new THREE.Sprite(new THREE.SpriteMaterial({ map: badgeTex }));
+      badge.scale.set(1.4, 0.35, 1);
+      badge.position.set(0, 0.55, 0);
+      headNode.add(badge);
+
+      const shoulderL = new THREE.Group(); shoulderL.position.set(-0.36, 0.50, 0); torsoNode.add(shoulderL);
+      const shoulderBallL = new THREE.Mesh(new THREE.SphereGeometry(0.075, 14, 14), matJoint); shoulderL.add(shoulderBallL);
+      const upperArmL = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.055, 0.40, 16), matArmor);
+      upperArmL.position.y = -0.20; shoulderL.add(upperArmL);
+      const elbowL = new THREE.Group(); elbowL.position.set(0, -0.40, 0); shoulderL.add(elbowL);
+      const forearmL = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.05, 0.38, 16), matArmor);
+      forearmL.position.y = -0.19; elbowL.add(forearmL);
+      const wristL = new THREE.Group(); wristL.position.set(0, -0.38, 0); elbowL.add(wristL);
+
+      const shoulderR = new THREE.Group(); shoulderR.position.set(0.36, 0.50, 0); torsoNode.add(shoulderR);
+      const shoulderBallR = new THREE.Mesh(new THREE.SphereGeometry(0.075, 14, 14), matJoint); shoulderR.add(shoulderBallR);
+      const upperArmR = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.055, 0.40, 16), matArmor);
+      upperArmR.position.y = -0.20; shoulderR.add(upperArmR);
+      const elbowR = new THREE.Group(); elbowR.position.set(0, -0.40, 0); shoulderR.add(elbowR);
+      const forearmR = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.05, 0.38, 16), matArmor);
+      forearmR.position.y = -0.19; elbowR.add(forearmR);
+      const wristR = new THREE.Group(); wristR.position.set(0, -0.38, 0); elbowR.add(wristR);
+
+      return {
+        root, pelvisNode, torsoNode, headNode,
+        hipL, hipR, kneeL, kneeR, ankleL, ankleR,
+        shoulderL, shoulderR, elbowL, elbowR, wristL, wristR,
+        badge, badgeCanvas: canvas, badgeTex,
+        feetVisuals: [footL, footR],
+        legsVisuals: [thighL, thighR, kneeMeshL, kneeMeshR, shinL, shinR],
+        pelvisVisuals: [pelMesh, spineMesh],
+        torsoVisuals: [chestMesh, puck],
+        armsVisuals: [shoulderBallL, shoulderBallR, upperArmL, upperArmR, forearmL, forearmR],
+        headVisuals: [neckMesh, headBox, visor, badge]
+      };
+    }
+
+    // Master Humanoids
+    const venuBot = buildRigidHumanoid("Dr. Venu Gopal", matCyanGlow, -4.0, 0.6);
+    scene.add(venuBot.root);
+    venuBot.wristL.add(buildModularGripper('parallel'));
+    venuBot.wristR.add(buildModularGripper('parallel'));
+
+    const shantanuBot = buildRigidHumanoid("Shantanu Bro", matAmberGlow, 3.6, 0.6);
+    scene.add(shantanuBot.root);
+    shantanuBot.wristL.add(buildModularGripper('parallel'));
+    shantanuBot.wristR.add(buildModularGripper('parallel'));
+
+    // Student Humanoid
+    const studentBot = buildRigidHumanoid("Humanoid Aditya", matEmeraldGlow, 0, 0);
+    scene.add(studentBot.root);
+
+    function setSubassemblyVisible(meshArray, visible) {
+      meshArray.forEach(m => m.visible = visible);
+    }
+    setSubassemblyVisible(studentBot.feetVisuals, false);
+    setSubassemblyVisible(studentBot.legsVisuals, false);
+    setSubassemblyVisible(studentBot.pelvisVisuals, false);
+    setSubassemblyVisible(studentBot.torsoVisuals, false);
+    setSubassemblyVisible(studentBot.armsVisuals, false);
+    setSubassemblyVisible(studentBot.headVisuals, false);
+
+    // Initial student grippers
+    let studentGripperL = buildModularGripper('parallel');
+    studentGripperL.visible = false;
+    studentBot.wristL.add(studentGripperL);
+
+    let studentGripperR = buildModularGripper('parallel');
+    studentGripperR.visible = false;
+    studentBot.wristR.add(studentGripperR);
+
+    /* ================= AUDIO FEEDBACK ================= */
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+    function playBeep(f = 600, d = 0.1) {
+      try {
+        if (!audioCtx) audioCtx = new AudioCtx();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.frequency.setValueAtTime(f, audioCtx.currentTime);
+        g.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + d);
+        o.connect(g);
+        g.connect(audioCtx.destination);
+        o.start();
+        o.stop(audioCtx.currentTime + d);
+      } catch (e) {}
+    }
+
+    /* ================= UI & ASSEMBLY ================= */
+    function setDialogue(speaker, msg) {
+      document.getElementById('speaker-role-tag').innerText = speaker.toUpperCase();
+      document.getElementById('dialogue-text').innerText = `"${msg}"`;
+    }
+
+    function updateStudentName(name) {
+      STATE.studentName = name.trim() || 'Aditya';
+      const ctx = studentBot.badgeCanvas.getContext('2d');
+      ctx.clearRect(0, 0, 384, 96);
+      ctx.fillStyle = 'rgba(12, 20, 36, 0.9)'; ctx.roundRect(4, 4, 376, 88, 16); ctx.fill();
+      ctx.strokeStyle = '#10b981'; ctx.lineWidth = 4; ctx.stroke();
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 32px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(`Humanoid ${STATE.studentName}`, 192, 58);
+      studentBot.badgeTex.needsUpdate = true;
+      updateButtonUI();
+    }
+
+    function updateButtonUI() {
+      const btn = document.getElementById('master-build-btn');
+      const txt = document.getElementById('build-btn-text');
+      if (STATE.assemblyStep < 7) {
+        txt.innerText = `${STATE.studentName}, Press to build Step ${STATE.assemblyStep + 1}: ${ASSEMBLY_STEPS[STATE.assemblyStep]}`;
+      } else {
+        txt.innerText = `Congrats, You Built a Humanoid on Your Name! (${STATE.studentName}) - Click to Test in Scene 2`;
+        btn.classList.add('btn-congrats');
+      }
+    }
+
+    function handlePrimaryBuildClick() {
+      if (STATE.isShantanuBusy) return;
+      if (STATE.assemblyStep >= 7) {
+        enterScene2();
+        return;
+      }
+
+      STATE.isShantanuBusy = true;
+      document.getElementById('master-build-btn').disabled = true;
+      playBeep(880, 0.12);
+
+      const part = ASSEMBLY_STEPS[STATE.assemblyStep];
+      setDialogue("Shantanu Bro", `Order received from ${STATE.studentName}! Walking to workbench to pick up the ${part}...`);
+
+      let t = 0;
+      const interval = setInterval(() => {
+        t += 0.05;
+        if (t < 0.7) {
+          shantanuBot.root.position.x = 3.6 + (t / 0.7) * (6.8 - 3.6);
+        } else if (t < 1.4) {
+          shantanuBot.root.position.x = 6.8 - ((t - 0.7) / 0.7) * (6.8 - 1.1);
+          shantanuBot.shoulderR.rotation.x = -0.5;
+        } else if (t < 1.9) {
+          shantanuBot.root.position.x = 1.1;
+          shantanuBot.shoulderR.rotation.x = -0.9;
+          if (Math.sin(t * 30) > 0.5) playBeep(1100, 0.02);
+        } else {
+          shantanuBot.root.position.x = 3.6;
+          shantanuBot.shoulderR.rotation.x = 0;
+          clearInterval(interval);
+          STATE.isShantanuBusy = false;
+          document.getElementById('master-build-btn').disabled = false;
+          mountPart(STATE.assemblyStep);
+        }
+      }, 40);
+    }
+
+    function mountPart(stepIdx) {
+      if (stepIdx === 0) setSubassemblyVisible(studentBot.feetVisuals, true);
+      if (stepIdx === 1) setSubassemblyVisible(studentBot.legsVisuals, true);
+      if (stepIdx === 2) setSubassemblyVisible(studentBot.pelvisVisuals, true);
+      if (stepIdx === 3) setSubassemblyVisible(studentBot.torsoVisuals, true);
+      if (stepIdx === 4) setSubassemblyVisible(studentBot.armsVisuals, true);
+      if (stepIdx === 5) {
+        studentGripperR.visible = true;
+        studentGripperL.visible = true;
+      }
+      if (stepIdx === 6) setSubassemblyVisible(studentBot.headVisuals, true);
+
+      if (workbenchPartItems[stepIdx]) {
+        workbenchPartItems[stepIdx].visible = false;
+      }
+
+      const chk = document.getElementById(`chk-${stepIdx}`);
+      chk.className = "step-item done";
+      const badg = document.getElementById(`badg-${stepIdx}`);
+      badg.className = "badge-pill badge-done";
+      badg.innerText = "Mounted \u2713";
+
+      STATE.assemblyStep++;
+      document.getElementById('progress-tag').innerText = `${STATE.assemblyStep} / 7 Fitted`;
+      playBeep(960, 0.15);
+
+      if (STATE.assemblyStep < 7) {
+        const nextChk = document.getElementById(`chk-${STATE.assemblyStep}`);
+        nextChk.className = "step-item active";
+        const nextBadg = document.getElementById(`badg-${STATE.assemblyStep}`);
+        nextBadg.className = "badge-pill badge-next";
+        nextBadg.innerText = "Next";
+        setDialogue("Dr. Venu Gopal", `Mounted securely. Press to build Step ${STATE.assemblyStep + 1}: ${ASSEMBLY_STEPS[STATE.assemblyStep]}.`);
+      } else {
+        setDialogue("Dr. Venu Gopal", `Synthesis complete! Humanoid ${STATE.studentName} is equipped with its parallel gripper. Click the celebration button to enter Scene 2!`);
+      }
+      updateButtonUI();
+    }
+
+    /* ================= SCENE 2 CONTROLS ================= */
+    function enterScene2() {
+      STATE.currentScene = 2;
+      document.getElementById('scene1-panel').style.display = 'none';
+      document.getElementById('scene2-panel').style.display = 'block';
+      document.getElementById('hud-scene-name').innerText = "SCENE 2: OUTDOOR PROVING GROUND";
+
+      cleanroomDeck.visible = false;
+      outdoorDeck.visible = true;
+      testPedestal.visible = true;
+      brickMesh.visible = true;
+      scene.attach(brickMesh);
+      brickMesh.position.copy(BRICK_REST_POS);
+      brickMesh.rotation.set(0, 0, 0);
+
+      // Default mentor positions
+      venuBot.root.position.set(-3.5, 0, 1.2);
+      shantanuBot.root.position.set(3.5, 0, 1.2);
+      studentBot.root.position.set(0, 0, 0);
+      clubSignBoard.visible = false;
+
+      camera.position.set(0.36, 1.8, 3.4);
+      controls.target.set(0.36, 1.15, 0.4);
+
+      setDialogue("Dr. Venu Gopal", `The pedestal table is placed directly in front of your humanoid! Press 'Lift Brick in Front & Show to Visitors' to execute!`);
+    }
+
+    function returnToScene1() {
+      STATE.currentScene = 1;
+      document.getElementById('scene1-panel').style.display = 'block';
+      document.getElementById('scene2-panel').style.display = 'none';
+      document.getElementById('hud-scene-name').innerText = "SCENE 1: CLEANROOM LAB";
+      document.getElementById('hud-status-badge').innerText = "Table Placed In Front • Parts on Workbench";
+
+      cleanroomDeck.visible = true;
+      outdoorDeck.visible = false;
+      testPedestal.visible = false;
+      brickMesh.visible = false;
+      clubSignBoard.visible = false;
+
+      venuBot.root.position.set(-4.0, 0, 0.6);
+      shantanuBot.root.position.set(3.6, 0, 0.6);
+      studentBot.root.position.set(0, 0, 0);
+
+      resetRobotFK();
+
+      camera.position.set(0, 2.6, 6.0);
+      controls.target.set(0, 1.2, 0);
+    }
+
+    function setProvingTask(task) {
+      STATE.activeTask = task;
+      resetRobotFK();
+      clubSignBoard.visible = false;
+
+      document.getElementById('btn-task-lift').className = "btn-task" + (task === 'lift' ? ' active' : '');
+      document.getElementById('btn-task-dance').className = "btn-task" + (task === 'dance' ? ' active' : '');
+      document.getElementById('btn-task-run').className = "btn-task" + (task === 'run' ? ' active' : '');
+      document.getElementById('btn-task-grippers').className = "btn-task" + (task === 'grippers' ? ' active' : '');
+
+      const brickBox = document.getElementById('brick-box');
+      const gripperBox = document.getElementById('gripper-study-box');
+
+      if (task === 'lift') {
+        brickBox.style.display = 'block';
+        gripperBox.style.display = 'none';
+        testPedestal.visible = true;
+        brickMesh.visible = true;
+        scene.attach(brickMesh);
+        brickMesh.position.copy(BRICK_REST_POS);
+        venuBot.root.position.set(-3.5, 0, 1.2);
+        shantanuBot.root.position.set(3.5, 0, 1.2);
+        studentBot.root.position.set(0, 0, 0);
+        camera.position.set(0.36, 1.8, 3.4);
+        controls.target.set(0.36, 1.15, 0.4);
+        setDialogue("Dr. Venu Gopal", `Experiment 1: Front table brick lift. Press the green execute button below to start!`);
+      } else if (task === 'dance') {
+        brickBox.style.display = 'none';
+        gripperBox.style.display = 'none';
+        testPedestal.visible = false;
+        brickMesh.visible = false;
+        venuBot.root.position.set(-3.5, 0, 1.2);
+        shantanuBot.root.position.set(3.5, 0, 1.2);
+        studentBot.root.position.set(0, 0, 0);
+        setDialogue("Shantanu Bro", `Experiment 2: 15-Second Harmonic ZMP Balance Dance routine active! Evaluating dynamic balance.`);
+      } else if (task === 'run') {
+        brickBox.style.display = 'none';
+        gripperBox.style.display = 'none';
+        testPedestal.visible = false;
+        brickMesh.visible = false;
+        venuBot.root.position.set(-3.5, 0, 1.2);
+        shantanuBot.root.position.set(3.5, 0, 1.2);
+        studentBot.root.position.set(0, 0, 0);
+        setDialogue("Dr. Venu Gopal", `Experiment 3: Orbital sprint & jump along the safe outer perimeter (R = 6.2m) clearing both mentors!`);
+      } else if (task === 'grippers') {
+        // EXPERIMENT 4: BRING ALL HUMANOIDS CLOSE TOGETHER & SYNC ALL HANDS
+        brickBox.style.display = 'none';
+        gripperBox.style.display = 'block';
+        testPedestal.visible = false;
+        brickMesh.visible = false;
+
+        // Bring them close together side by side!
+        venuBot.root.position.set(-1.4, 0, 0);
+        studentBot.root.position.set(0, 0, 0);
+        shantanuBot.root.position.set(1.4, 0, 0);
+
+        camera.position.set(0, 2.0, 4.4);
+        controls.target.set(0, 1.2, 0);
+
+        onGripperSelected(document.getElementById('gripper-selector').value);
+        setDialogue("Dr. Venu Gopal", `Experiment 4: Modular Gripper Harmonization! Notice Shantanu Bro, ${STATE.studentName}, and I have stepped side-by-side with synchronized tooling on ALL hands. Try changing grippers from the dropdown!`);
+      }
+    }
+
+    // EQUIP GRIPPERS TO ALL HANDS ACROSS ALL 3 HUMANOIDS
+    function setAllHandsGrippers(type) {
+      STATE.currentGripperType = type;
+
+      function replaceGripper(bot, armSide) {
+        const mount = (armSide === 'L') ? bot.wristL : bot.wristR;
+        while (mount.children.length > 0) mount.remove(mount.children[0]);
+        const newG = buildModularGripper(type);
+        newG.visible = true;
+        mount.add(newG);
+        return newG;
+      }
+
+      replaceGripper(venuBot, 'L');
+      replaceGripper(venuBot, 'R');
+      replaceGripper(shantanuBot, 'L');
+      replaceGripper(shantanuBot, 'R');
+      studentGripperL = replaceGripper(studentBot, 'L');
+      studentGripperR = replaceGripper(studentBot, 'R');
+    }
+
+    function onGripperSelected(type) {
+      setAllHandsGrippers(type);
+
+      const card = document.getElementById('gripper-details-card');
+      if (type === 'parallel') {
+        card.innerHTML = `<strong>2-Jaw Linear Parallel Gripper (Fitted to All 6 Hands):</strong><br>
+        &bull; <strong>Used for:</strong> Rigid masonry blocks, clay bricks, automotive CNC machine loading.<br>
+        &bull; <strong>Physics:</strong> Clamping Force $F_N \\ge \\frac{m \\cdot g}{2 \\mu_s} \\cdot \\text{SF} = 40.13\\text{ N}$, Contact Pressure $P = 3.52\\text{ kPa}$. High normal force prevents slip.`;
+      } else if (type === 'bionic5') {
+        card.innerHTML = `<strong>13-DOF Anthropomorphic 5-Finger Bionic Hand (Fitted to All 6 Hands):</strong><br>
+        &bull; <strong>Used for:</strong> Dexterous manipulation, human tools, lab instrumentation, prosthetic robotics.<br>
+        &bull; <strong>Physics:</strong> Multi-contact friction cone equilibrium $\\sum \\mathbf{F}_i = m(\\mathbf{a} - \\mathbf{g})$. Flexible picking with fine tactile resolution.`;
+      } else if (type === 'centric3') {
+        card.innerHTML = `<strong>3-Finger Centric Adaptive Gripper (Fitted to All 6 Hands):</strong><br>
+        &bull; <strong>Used for:</strong> Cylindrical billets, pipes, spherical objects, lathe turning stock.<br>
+        &bull; <strong>Physics:</strong> Radial self-centering equilibrium $F_{\\text{rad}} = \\frac{m \\cdot g}{3 \\mu_s \\sin(\\theta)}$. Superior kinematic centering on curved stock.`;
+      } else if (type === 'magnetic') {
+        card.innerHTML = `<strong>Electro-Permanent Magnetic Gripper (Fitted to All 6 Hands):</strong><br>
+        &bull; <strong>Used for:</strong> Ferrous steel plates, stamping blanks, iron castings.<br>
+        &bull; <strong>Physics:</strong> Maxwell flux traction $F_{\\text{mag}} = \\frac{B^2 \\cdot A}{2 \\mu_0}$. Non-ferrous clay bricks produce zero magnetic attraction!`;
+      } else if (type === 'finray') {
+        card.innerHTML = `<strong>Soft Silicone Fin-Ray Gripper (Fitted to All 6 Hands):</strong><br>
+        &bull; <strong>Used for:</strong> Delicate agricultural produce (apples, mangoes), eggs, fragile glass test tubes.<br>
+        &bull; <strong>Physics:</strong> Compliant passive envelope wrapping at minimal contact pressure ($P < 2.5\\text{ kPa}$).`;
+      }
+
+      if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise();
+      playBeep(840, 0.12);
+    }
+
+    function resetRobotFK() {
+      function resetBotPoses(bot) {
+        bot.pelvisNode.position.set(0, 1.05, 0);
+        bot.pelvisNode.rotation.set(0, 0, 0);
+        bot.torsoNode.rotation.set(0, 0, 0);
+        bot.headNode.rotation.set(0, 0, 0);
+        bot.shoulderL.rotation.set(0, 0, 0);
+        bot.shoulderR.rotation.set(0, 0, 0);
+        bot.elbowL.rotation.set(0, 0, 0);
+        bot.elbowR.rotation.set(0, 0, 0);
+        bot.hipL.rotation.set(0, 0, 0);
+        bot.hipR.rotation.set(0, 0, 0);
+        bot.kneeL.rotation.set(0, 0, 0);
+        bot.kneeR.rotation.set(0, 0, 0);
+      }
+
+      resetBotPoses(studentBot);
+      resetBotPoses(venuBot);
+      resetBotPoses(shantanuBot);
+
+      if (studentGripperR && studentGripperR.jawL && studentGripperR.jawR) {
+        studentGripperR.jawL.position.x = -0.09;
+        studentGripperR.jawR.position.x = 0.09;
+      }
+
+      scene.attach(brickMesh);
+      brickMesh.position.copy(BRICK_REST_POS);
+      brickMesh.rotation.set(0, 0, 0);
+      STATE.brickLiftPhase = 'idle';
+    }
+
+    /* ================= THE GRAND FINALE: ALL HANDS UP & CLUB SIGNBOARD ================= */
+    function finishAllExperiments() {
+      STATE.allExperimentsFinished = true;
+      STATE.activeTask = 'celebrate';
+
+      // Unlock Python Button in Header
+      const btn = document.getElementById('btn-top-python');
+      btn.className = "btn-top-action btn-python-unlocked";
+      document.getElementById('python-lock-icon').className = "fa-brands fa-python";
+      document.getElementById('python-btn-label').innerText = "Download Python Simulation (Unlocked!)";
+
+      // Hide table and brick, bring all humanoids side-by-side
+      testPedestal.visible = false;
+      brickMesh.visible = false;
+      document.getElementById('brick-box').style.display = 'none';
+      document.getElementById('gripper-study-box').style.display = 'none';
+
+      venuBot.root.position.set(-1.4, 0, 0);
+      studentBot.root.position.set(0, 0, 0);
+      shantanuBot.root.position.set(1.4, 0, 0);
+
+      // Reveal the Grand Collective Signboard!
+      clubSignBoard.visible = true;
+
+      // Camera views all 3 humanoids and the grand signboard overhead
+      camera.position.set(0, 2.3, 5.2);
+      controls.target.set(0, 1.5, 0);
+
+      document.getElementById('hud-status-badge').innerText = "CLUB OF HUMANOIDS: ALL HANDS UP!";
+
+      playBeep(1100, 0.3);
+      setTimeout(() => playBeep(1320, 0.4), 200);
+
+      setDialogue("Dr. Venu Gopal", `EXCELLENT WORK, ENGINEER ${STATE.studentName.toUpperCase()}! Look at the collective board overhead: "Club of Humanoids: Gopalkrishna Advanced Rural Research Foundation". All humanoids have raised their hands in triumph! You can now download the Python simulation code above!`);
+    }
+
+    /* ================= FRONT TABLE LIFT SEQUENCE ================= */
+    function triggerBrickLift() {
+      if (STATE.brickLiftPhase !== 'idle') return;
+
+      STATE.brickLiftPhase = 'reach_front';
+      STATE.brickLiftTimer = 0;
+      document.getElementById('btn-execute-lift').disabled = true;
+      playBeep(640, 0.15);
+
+      const jL = studentGripperR.jawL;
+      const jR = studentGripperR.jawR;
+
+      if (jL && jR) {
+        jL.position.x = -0.09;
+        jR.position.x = 0.09;
+      }
+
+      scene.attach(brickMesh);
+      brickMesh.position.copy(BRICK_REST_POS);
+      brickMesh.rotation.set(0, 0, 0);
+
+      const plungeShoulderX = -0.52;
+      const plungeElbowX = -1.18;
+
+      const liftLoop = setInterval(() => {
+        STATE.brickLiftTimer += 0.04;
+        const t = STATE.brickLiftTimer;
+
+        // PHASE 1: REACH STRAIGHT FORWARD OVER FRONT TABLE
+        if (STATE.brickLiftPhase === 'reach_front') {
+          const s = Math.min(t / 1.0, 1.0);
+          studentBot.shoulderR.rotation.x = plungeShoulderX * s;
+          studentBot.elbowR.rotation.x = plungeElbowX * s;
+          studentBot.shoulderR.rotation.z = 0;
+
+          if (t >= 1.0) {
+            STATE.brickLiftPhase = 'clamp';
+            STATE.brickLiftTimer = 0;
+            playBeep(720, 0.1);
+            setDialogue("Shantanu Bro", `Gripper throat seated around front brick. Clamping parallel pads...`);
+          }
+        }
+
+        // PHASE 2: SQUEEZE & CLAMP BRICK (VISIBLE MECHANICAL CONTACT)
+        else if (STATE.brickLiftPhase === 'clamp') {
+          const s = Math.min(t / 0.6, 1.0);
+          if (jL && jR) {
+            jL.position.x = THREE.MathUtils.lerp(-0.09, -0.055, s);
+            jR.position.x = THREE.MathUtils.lerp(0.09, 0.055, s);
+          }
+
+          if (t >= 0.6) {
+            studentGripperR.add(brickMesh);
+            brickMesh.position.set(0, -0.095, 0);
+            brickMesh.rotation.set(0, 0, 0);
+
+            STATE.brickLiftPhase = 'lift_front';
+            STATE.brickLiftTimer = 0;
+            playBeep(980, 0.18, 'triangle');
+            setDialogue("Dr. Venu Gopal", `Grip verified! Lifting vertically to showcase to visitors.`);
+          }
+        }
+
+        // PHASE 3: LIFT UPWARD TO SHOWCASE TO VISITORS (+25cm elevation)
+        else if (STATE.brickLiftPhase === 'lift_front') {
+          const s = Math.min(t / 1.2, 1.0);
+          studentBot.shoulderR.rotation.x = plungeShoulderX + (0.35 * s);
+          studentBot.elbowR.rotation.x = plungeElbowX + (0.20 * s);
+
+          if (t >= 1.2) {
+            STATE.brickLiftPhase = 'hold';
+            STATE.brickLiftTimer = 0;
+          }
+        }
+
+        // PHASE 4: SUSTAINED PRESENTATION TO VISITORS (2.0 FULL SECONDS)
+        else if (STATE.brickLiftPhase === 'hold') {
+          const rem = Math.max(0, 2.0 - t).toFixed(1);
+          document.getElementById('lift-btn-label').innerText = `SHOWING TO VISITORS: ${rem}s`;
+
+          if (t >= 2.0) {
+            STATE.brickLiftPhase = 'lower_front';
+            STATE.brickLiftTimer = 0;
+            setDialogue("Dr. Venu Gopal", `2.0-second showcase finished. Returning brick to front table surface.`);
+          }
+        }
+
+        // PHASE 5: LOWER SAFELY TO FRONT TABLE SURFACE
+        else if (STATE.brickLiftPhase === 'lower_front') {
+          const s = Math.min(t / 1.2, 1.0);
+          studentBot.shoulderR.rotation.x = (plungeShoulderX + 0.35) - (0.35 * s);
+          studentBot.elbowR.rotation.x = (plungeElbowX + 0.20) - (0.20 * s);
+
+          if (t >= 1.2) {
+            STATE.brickLiftPhase = 'release';
+            STATE.brickLiftTimer = 0;
+
+            scene.attach(brickMesh);
+            brickMesh.position.copy(BRICK_REST_POS);
+            brickMesh.rotation.set(0, 0, 0);
+            playBeep(520, 0.1);
+          }
+        }
+
+        // PHASE 6: OPEN JAWS & RETRACT ARM TO NEUTRAL STANCE
+        else if (STATE.brickLiftPhase === 'release') {
+          const s = Math.min(t / 0.8, 1.0);
+          if (jL && jR) {
+            jL.position.x = THREE.MathUtils.lerp(-0.055, -0.09, s);
+            jR.position.x = THREE.MathUtils.lerp(0.055, 0.09, s);
+          }
+
+          studentBot.shoulderR.rotation.x = THREE.MathUtils.lerp(plungeShoulderX, 0, s);
+          studentBot.elbowR.rotation.x = THREE.MathUtils.lerp(plungeElbowX, 0, s);
+
+          if (t >= 0.8) {
+            clearInterval(liftLoop);
+            STATE.brickLiftPhase = 'idle';
+            document.getElementById('btn-execute-lift').disabled = false;
+            document.getElementById('lift-btn-label').innerText = "Lift Brick in Front & Show to Visitors";
+            setDialogue("Shantanu Bro", `Showcase cycle complete! Brick gripped from front table, lifted, presented, and returned safely.`);
+          }
+        }
+      }, 40);
+    }
+
+    /* ================= MAIN ANIMATION LOOP ================= */
+    const clock = new THREE.Clock();
+
+    function renderLoop() {
+      requestAnimationFrame(renderLoop);
+      const elapsed = clock.getElapsedTime();
+
+      if (STATE.currentScene === 2) {
+        // EXPERIMENT 4: SYNCHRONIZED SIMILAR BEHAVIOR FOR ALL 3 HUMANOIDS
+        if (STATE.activeTask === 'grippers') {
+          const t = elapsed * 3.0;
+          function syncFlex(bot) {
+            bot.shoulderL.rotation.x = -0.4 + Math.sin(t) * 0.15;
+            bot.shoulderR.rotation.x = -0.4 + Math.sin(t) * 0.15;
+            bot.elbowL.rotation.x = -0.8 + Math.cos(t) * 0.2;
+            bot.elbowR.rotation.x = -0.8 + Math.cos(t) * 0.2;
+          }
+          syncFlex(venuBot);
+          syncFlex(studentBot);
+          syncFlex(shantanuBot);
+        }
+
+        // CELEBRATION FINALE: ALL HANDS UP IN TRIUMPH WITH HARMONIC WAVING!
+        else if (STATE.activeTask === 'celebrate') {
+          const t = elapsed * 4.0;
+          function handsUp(bot, offset) {
+            // Shoulders rotate up high (raised hands)
+            bot.shoulderL.rotation.x = -2.7 + Math.sin(t + offset) * 0.12;
+            bot.shoulderR.rotation.x = -2.7 + Math.sin(t + offset) * 0.12;
+            bot.shoulderL.rotation.z = -0.25;
+            bot.shoulderR.rotation.z = 0.25;
+            bot.elbowL.rotation.x = -0.3 + Math.cos(t + offset) * 0.15;
+            bot.elbowR.rotation.x = -0.3 + Math.cos(t + offset) * 0.15;
+            bot.pelvisNode.position.y = 1.05 + Math.abs(Math.sin(t + offset)) * 0.05;
+          }
+          handsUp(venuBot, 0);
+          handsUp(studentBot, 0.4);
+          handsUp(shantanuBot, 0.8);
+        }
+
+        else if (STATE.activeTask === 'dance') {
+          const t = elapsed * 4.2;
+          studentBot.pelvisNode.position.y = 1.05 + Math.abs(Math.sin(t * 2)) * 0.05;
+          studentBot.pelvisNode.rotation.y = Math.sin(t) * 0.22;
+          studentBot.torsoNode.rotation.y = Math.sin(t * 1.2) * 0.25;
+          studentBot.headNode.rotation.y = -Math.sin(t * 1.2) * 0.15;
+
+          studentBot.shoulderL.rotation.z = -0.3 + Math.sin(t) * 0.35;
+          studentBot.shoulderR.rotation.z = 0.3 - Math.sin(t) * 0.35;
+          studentBot.elbowL.rotation.x = -Math.abs(Math.sin(t)) * 0.7;
+          studentBot.elbowR.rotation.x = -Math.abs(Math.cos(t)) * 0.7;
+
+          studentBot.hipL.rotation.x = Math.sin(t) * 0.2;
+          studentBot.hipR.rotation.x = -Math.sin(t) * 0.2;
+          studentBot.kneeL.rotation.x = Math.abs(Math.sin(t)) * 0.3;
+          studentBot.kneeR.rotation.x = Math.abs(Math.cos(t)) * 0.3;
+        } 
+        
+        else if (STATE.activeTask === 'run') {
+          const R = 6.2;
+          const theta = elapsed * 1.2;
+          studentBot.root.position.x = Math.sin(theta) * R;
+          studentBot.root.position.z = Math.cos(theta) * R;
+          studentBot.root.rotation.y = theta + Math.PI / 2;
+
+          const stride = Math.sin(elapsed * 12);
+          studentBot.hipL.rotation.x = stride * 0.65;
+          studentBot.hipR.rotation.x = -stride * 0.65;
+          studentBot.kneeL.rotation.x = Math.max(0, -stride * 0.8);
+          studentBot.kneeR.rotation.x = Math.max(0, stride * 0.8);
+
+          studentBot.shoulderL.rotation.x = -stride * 0.6;
+          studentBot.shoulderR.rotation.x = stride * 0.6;
+          studentBot.elbowL.rotation.x = -0.6;
+          studentBot.elbowR.rotation.x = -0.6;
+
+          studentBot.pelvisNode.position.y = 1.05 + Math.abs(Math.sin(elapsed * 12)) * 0.12;
+        }
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    /* ================= PYTHON CODE GENERATION SUITE ================= */
+    function getPythonCode(type) {
+      const name = STATE.studentName;
+      if (type === 'complete') {
+        return `"""
+========================================================================================
+Gopalkrishna Advanced Rural Research Foundation, India (GARRF.in)
+Division: Virtual AISIA Lab - Autonomous Humanoids Mechatronics Engineering
+Humanoid Student: ${name}
+Master Suite: Buildup Animation + Front Brick Lift + Dance + Sprint + Celebration
+========================================================================================
+RUN IN GOOGLE COLAB:
+!pip install numpy matplotlib
+"""
+
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+from IPython.display import HTML
+
+STUDENT_NAME = "${name}"
+FPS = 25
+DURATION = 20
+FRAMES = FPS * DURATION
+
+fig = plt.figure(figsize=(10, 8), facecolor='#060b16')
+ax = fig.add_subplot(111, projection='3d', facecolor='#0a1122')
+
+# Draw static environment
+table_pole, = ax.plot([0.36, 0.36], [0.5, 0.5], [0, 0.82], color='#1e293b', linewidth=6)
+table_top, = ax.plot([0.16, 0.56, 0.56, 0.16, 0.16], [0.35, 0.35, 0.65, 0.65, 0.35], [0.82]*5, color='#38bdf8', linewidth=3)
+brick_dot = ax.scatter([], [], [], color='#ba3228', s=200, marker='s')
+
+# Three Humanoids
+def init_bot_lines(c):
+    return {
+        'spine': ax.plot([], [], [], color=c, linewidth=5)[0],
+        'arm_L': ax.plot([], [], [], color='#00f0ff', linewidth=3)[0],
+        'arm_R': ax.plot([], [], [], color='#00f0ff', linewidth=3)[0],
+        'leg_L': ax.plot([], [], [], color='#94a3b8', linewidth=3)[0],
+        'leg_R': ax.plot([], [], [], color='#94a3b8', linewidth=3)[0],
+    }
+
+bot_venu = init_bot_lines('#38bdf8')
+bot_student = init_bot_lines('#10b981')
+bot_shantanu = init_bot_lines('#f59e0b')
+
+title = ax.set_title("GARRF.in | Initializing...", color='#00f0ff', fontsize=11)
+ax.set_xlim([-2.5, 2.5])
+ax.set_ylim([-1.5, 2.5])
+ax.set_zlim([0, 2.8])
+
+def update(frame):
+    t = frame / FPS
+    # Phase 1: Buildup (0-5s)
+    # Phase 2: Front Brick Lift (5-10s)
+    # Phase 3: ZMP Dance (10-14s)
+    # Phase 4: Celebration (14-20s) - Hands UP & Club of Humanoids Banner
+    
+    if t < 5.0:
+        step = int((t/5.0)*7) + 1
+        desc = f"Buildup Step {step}/7 (Shantanu fetching components from workbench)"
+        # Draw Student bot standing in jig
+        bot_student['spine'].set_data_3d([0, 0], [0, 0], [1.05, 1.60])
+        bot_student['leg_L'].set_data_3d([-0.2, -0.2], [0, 0], [1.05, 0])
+        bot_student['leg_R'].set_data_3d([0.2, 0.2], [0, 0], [1.05, 0])
+        bot_student['arm_L'].set_data_3d([-0.36, -0.36], [0, 0], [1.55, 1.1])
+        bot_student['arm_R'].set_data_3d([0.36, 0.36], [0, 0], [1.55, 1.1])
+        brick_dot._offsets3d = ([0.36], [0.50], [0.85])
+    elif t < 10.0:
+        desc = "Experiment A: Front Table Brick Clamping, 25cm Lift & 2.0s Hold"
+        rel = t - 5.0
+        if rel < 1.5:
+            bz = 0.85
+        elif rel < 3.5:
+            bz = 1.10 # Lifted
+        else:
+            bz = 0.85
+        bot_student['arm_R'].set_data_3d([0.36, 0.36], [0, 0.50], [1.55, bz])
+        brick_dot._offsets3d = ([0.36], [0.50], [bz])
+    elif t < 14.0:
+        desc = "Experiment B: 15s Harmonic ZMP Balance Dance Routine"
+        w = np.sin(t * 4.0) * 0.3
+        bot_student['spine'].set_data_3d([0, w*0.2], [0, 0], [1.05, 1.60])
+        bot_student['arm_L'].set_data_3d([-0.36, -0.36], [0, w], [1.55, 1.1])
+        bot_student['arm_R'].set_data_3d([0.36, 0.36], [0, -w], [1.55, 1.1])
+        brick_dot._offsets3d = ([0.36], [0.50], [0.85])
+    else:
+        desc = "CLUB OF HUMANOIDS: GOPALKRISHNA ADVANCED RURAL RESEARCH FOUNDATION\\nAll Hands Raised in Triumph!"
+        # All 3 humanoids close together with hands up!
+        w = np.sin(t * 3.0) * 0.15
+        for b, x_off in [(bot_venu, -1.4), (bot_student, 0.0), (bot_shantanu, 1.4)]:
+            b['spine'].set_data_3d([x_off, x_off], [0, 0], [1.05, 1.60])
+            b['leg_L'].set_data_3d([x_off - 0.2, x_off - 0.2], [0, 0], [1.05, 0])
+            b['leg_R'].set_data_3d([x_off + 0.2, x_off + 0.2], [0, 0], [1.05, 0])
+            # Hands raised high!
+            b['arm_L'].set_data_3d([x_off - 0.36, x_off - 0.45], [0, 0], [1.55, 2.15 + w])
+            b['arm_R'].set_data_3d([x_off + 0.36, x_off + 0.45], [0, 0], [1.55, 2.15 + w])
+
+    title.set_text(f"Humanoid {STUDENT_NAME} (t={t:.1f}s)\\n{desc}")
+    return bot_student['spine'],
+
+ani = FuncAnimation(fig, update, frames=FRAMES, interval=1000/FPS)
+
+# Colab Interactive Video Display:
+HTML(ani.to_jshtml())
+`;
+      } else {
+        return `# Script for ${type} available in Master Suite.`;
+      }
+    }
+
+    function renderSelectedPythonCode() {
+      const type = document.getElementById('python-script-selector').value;
+      const code = getPythonCode(type);
+      document.getElementById('python-code-display').innerText = code;
+    }
+
+    function copyPythonCode() {
+      const code = document.getElementById('python-code-display').innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        alert("Python simulation code copied! Paste directly into Google Colab or your Python environment.");
+      });
+    }
+
+    function downloadPythonFile() {
+      const type = document.getElementById('python-script-selector').value;
+      const code = document.getElementById('python-code-display').innerText;
+      const blob = new Blob([code], { type: 'text/x-python' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `garrf_humanoid_${STATE.studentName.toLowerCase()}_master_sim.py`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+
+    window.onload = function() {
+      resizeViewport();
+      updateButtonUI();
+      renderLoop();
+    };
+  </script>
+</body>
+</html>
