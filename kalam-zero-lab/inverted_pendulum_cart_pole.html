@@ -1,0 +1,1531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Inverted Pendulum Cart-Pole Virtual Lab | GARFI</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .hud-glass {
+      background: rgba(15, 23, 42, 0.82);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .hud-card {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    /* Custom thin scrollbar */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(14, 165, 233, 0.35);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(14, 165, 233, 0.7);
+    }
+    .tab-btn.active {
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.25), rgba(56, 189, 248, 0.1));
+      border-color: #38bdf8;
+      color: #38bdf8;
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
+    }
+    input[type=range] {
+      accent-color: #38bdf8;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between overflow-x-hidden antialiased">
+
+  <header class="hud-glass border-b border-slate-800/80 px-4 py-2.5 sticky top-0 z-50 shadow-xl">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      <!-- Organization Logo & Header Title -->
+      <div class="flex items-center gap-3.5">
+        <div class="relative w-12 h-12 rounded-xl overflow-hidden bg-slate-900 border border-cyan-500/30 flex items-center justify-center shadow-lg group">
+          <img src="logo.jpeg" alt="GARFI Logo" class="w-full h-full object-cover" 
+               onerror="this.onerror=null; this.src='https://placehold.co/96x96/0f172a/38bdf8?text=GARFI';">
+          <div class="absolute inset-0 ring-1 ring-inset ring-cyan-500/20 rounded-xl pointer-events-none"></div>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-extrabold text-sm sm:text-base tracking-wide text-cyan-400 drop-shadow">
+              Gopalkrishna Advanced Rural Research Foundation, India
+            </h1>
+            <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-cyan-950/80 text-cyan-300 border border-cyan-500/30 hidden sm:inline-block">
+              ROBOTICS LAB
+            </span>
+          </div>
+          <p class="text-[11px] sm:text-xs text-slate-400 font-medium">
+            Virtual Robotics &amp; Control Systems Laboratory <span class="text-slate-600">|</span> <span class="text-amber-400/90 font-semibold">Dr. APJ Abdul Kalam Zero Funding Research Initiative</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- Quick Status Badges -->
+      <div class="flex items-center gap-2 text-xs font-mono">
+        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900/90 border border-slate-800 text-slate-300 shadow-inner">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span id="sim-rate-badge">RK4 1000Hz</span>
+        </div>
+        <button id="btn-master-run" class="px-3 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 active:bg-cyan-700 text-white font-medium flex items-center gap-1.5 shadow transition">
+          <i id="btn-master-run-icon" class="fa-solid fa-pause text-xs"></i>
+          <span id="btn-master-run-text">Pause</span>
+        </button>
+        <button id="btn-master-reset" class="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-medium flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-rotate-left text-xs"></i>
+          <span>Reset</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl w-full mx-auto p-3 sm:p-4 flex-1 flex flex-col gap-4">
+    <!-- Stage Selector Tabs -->
+    <nav class="hud-glass p-1.5 rounded-2xl flex flex-wrap sm:flex-nowrap gap-1.5 shadow-lg border border-slate-800">
+      <button class="tab-btn active flex-1 py-2 px-3 rounded-xl text-xs sm:text-sm font-semibold border border-transparent transition flex items-center justify-center gap-2 text-slate-400 hover:text-slate-200" data-stage="1">
+        <i class="fa-solid fa-atom text-cyan-400"></i>
+        <span>Stage 1: Free Dynamics</span>
+      </button>
+      <button class="tab-btn flex-1 py-2 px-3 rounded-xl text-xs sm:text-sm font-semibold border border-transparent transition flex items-center justify-center gap-2 text-slate-400 hover:text-slate-200" data-stage="2">
+        <i class="fa-solid fa-scale-balanced text-emerald-400"></i>
+        <span>Stage 2: LQR / PID Balance</span>
+      </button>
+      <button class="tab-btn flex-1 py-2 px-3 rounded-xl text-xs sm:text-sm font-semibold border border-transparent transition flex items-center justify-center gap-2 text-slate-400 hover:text-slate-200" data-stage="3">
+        <i class="fa-solid fa-bolt text-amber-400"></i>
+        <span>Stage 3: Swing-Up &amp; Catch</span>
+      </button>
+      <button class="tab-btn flex-1 py-2 px-3 rounded-xl text-xs sm:text-sm font-semibold border border-transparent transition flex items-center justify-center gap-2 text-slate-400 hover:text-slate-200" data-stage="4">
+        <i class="fa-solid fa-filter text-purple-400"></i>
+        <span>Stage 4: Noise &amp; Kalman Filter</span>
+      </button>
+    </nav>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1">
+      
+      <!-- Left / Center: Interactive Simulation Canvas & Real-time Charts (7 cols) -->
+      <section class="lg:col-span-8 flex flex-col gap-3">
+        
+        <!-- Physical Animation Canvas Container -->
+        <div class="hud-glass rounded-2xl p-3 relative flex flex-col shadow-2xl border border-slate-800/90 overflow-hidden">
+          <div class="flex items-center justify-between pb-2 mb-1 border-b border-slate-800/60 text-xs text-slate-300">
+            <div class="flex items-center gap-2 font-mono">
+              <span class="text-cyan-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                <i class="fa-solid fa-compass-drafting"></i> 2D DYNAMICS WORKBENCH
+              </span>
+              <span class="text-slate-600">|</span>
+              <span id="status-controller-name" class="text-emerald-400">Free Open-Loop Dynamics</span>
+            </div>
+            <!-- Quick View Controls -->
+            <div class="flex items-center gap-2 font-mono text-[11px]">
+              <label class="flex items-center gap-1 cursor-pointer text-slate-400 hover:text-slate-200">
+                <input id="chk-trace" type="checkbox" checked class="accent-cyan-400 rounded">
+                <span>Bob Trace</span>
+              </label>
+              <label class="flex items-center gap-1 cursor-pointer text-slate-400 hover:text-slate-200">
+                <input id="chk-force-vector" type="checkbox" checked class="accent-cyan-400 rounded">
+                <span>Forces</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Main Interactive Viewport Canvas -->
+          <div class="relative w-full h-72 sm:h-80 md:h-96 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 rounded-xl overflow-hidden border border-slate-800 shadow-inner">
+            <canvas id="cartPoleCanvas" class="w-full h-full block cursor-crosshair"></canvas>
+            
+            <!-- Disturbance Quick Impulses Overlay -->
+            <div class="absolute bottom-2.5 left-2.5 flex items-center gap-1.5 z-10">
+              <button id="btn-impulse-left" class="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 active:bg-cyan-500 border border-slate-700 text-xs font-semibold text-slate-200 shadow">
+                <i class="fa-solid fa-arrow-left mr-1"></i> Push Cart Left
+              </button>
+              <button id="btn-impulse-right" class="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 active:bg-cyan-500 border border-slate-700 text-xs font-semibold text-slate-200 shadow">
+                Push Cart Right <i class="fa-solid fa-arrow-right ml-1"></i>
+              </button>
+              <button id="btn-torque-kick" class="px-2 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-amber-300 shadow">
+                <i class="fa-solid fa-rotate mr-1"></i> Flick Pole
+              </button>
+            </div>
+
+            <!-- Visual State Overlay Tag -->
+            <div id="state-flag-pill" class="absolute top-2.5 right-2.5 px-2.5 py-1 rounded-lg hud-glass border border-emerald-500/30 text-emerald-300 text-xs font-mono font-bold shadow flex items-center gap-1.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+              <span id="state-flag-text">PASSIVE RUN</span>
+            </div>
+          </div>
+
+          <!-- Telemetry Strip Metrics -->
+          <div class="grid grid-cols-3 sm:grid-cols-6 gap-2 mt-2 pt-2 border-t border-slate-800/60 font-mono text-center">
+            <div class="p-1.5 rounded-lg bg-slate-900/60 border border-slate-800">
+              <span class="block text-[10px] text-slate-400">ANGLE θ</span>
+              <span id="tel-theta" class="text-xs sm:text-sm font-bold text-cyan-400">0.00°</span>
+            </div>
+            <div class="p-1.5 rounded-lg bg-slate-900/60 border border-slate-800">
+              <span class="block text-[10px] text-slate-400">ANG VEL θ̇</span>
+              <span id="tel-thetadot" class="text-xs sm:text-sm font-bold text-sky-300">0.00 rad/s</span>
+            </div>
+            <div class="p-1.5 rounded-lg bg-slate-900/60 border border-slate-800">
+              <span class="block text-[10px] text-slate-400">CART POS x</span>
+              <span id="tel-x" class="text-xs sm:text-sm font-bold text-emerald-400">0.00 m</span>
+            </div>
+            <div class="p-1.5 rounded-lg bg-slate-900/60 border border-slate-800">
+              <span class="block text-[10px] text-slate-400">CART VEL ẋ</span>
+              <span id="tel-xdot" class="text-xs sm:text-sm font-bold text-emerald-300">0.00 m/s</span>
+            </div>
+            <div class="p-1.5 rounded-lg bg-slate-900/60 border border-slate-800">
+              <span class="block text-[10px] text-slate-400">TOTAL ENERGY</span>
+              <span id="tel-energy" class="text-xs sm:text-sm font-bold text-amber-400">0.00 J</span>
+            </div>
+            <div class="p-1.5 rounded-lg bg-slate-900/60 border border-slate-800">
+              <span class="block text-[10px] text-slate-400">CONTROL FORCE u</span>
+              <span id="tel-u" class="text-xs sm:text-sm font-bold text-purple-400">0.00 N</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Real-Time Dual Oscilloscope / Strip-Chart & Phase Plane -->
+        <div class="hud-glass rounded-2xl p-3 shadow-xl border border-slate-800/90 grid grid-cols-1 md:grid-cols-12 gap-3">
+          <!-- Strip Chart Canvas (8 cols) -->
+          <div class="md:col-span-8 flex flex-col">
+            <div class="flex items-center justify-between text-xs mb-1">
+              <span class="font-mono text-slate-300 flex items-center gap-2">
+                <i class="fa-solid fa-chart-line text-cyan-400"></i> Real-Time Strip Chart (θ(t) &amp; u(t))
+              </span>
+              <div class="flex items-center gap-3 text-[11px] font-mono">
+                <span class="text-cyan-400 flex items-center gap-1"><span class="w-2.5 h-0.5 bg-cyan-400 inline-block"></span> θ (rad)</span>
+                <span class="text-purple-400 flex items-center gap-1"><span class="w-2.5 h-0.5 bg-purple-400 inline-block"></span> u (N/10)</span>
+              </div>
+            </div>
+            <div class="h-32 bg-slate-950 rounded-xl overflow-hidden border border-slate-800 relative">
+              <canvas id="stripChartCanvas" class="w-full h-full block"></canvas>
+            </div>
+          </div>
+
+          <!-- Phase Portrait / State-Space Canvas: theta vs theta_dot (4 cols) -->
+          <div class="md:col-span-4 flex flex-col">
+            <div class="flex items-center justify-between text-xs mb-1">
+              <span class="font-mono text-slate-300 flex items-center gap-1.5">
+                <i class="fa-solid fa-circle-nodes text-emerald-400"></i> Phase Plane (θ vs θ̇)
+              </span>
+              <button id="btn-clear-phase" class="text-[10px] text-slate-400 hover:text-slate-200 font-mono">Clear</button>
+            </div>
+            <div class="h-32 bg-slate-950 rounded-xl overflow-hidden border border-slate-800 relative">
+              <canvas id="phaseCanvas" class="w-full h-full block"></canvas>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <aside class="lg:col-span-4 flex flex-col gap-3">
+
+        <!-- Stage 1 Controls Container -->
+        <div id="panel-stage-1" class="hud-glass rounded-2xl p-4 shadow-xl border border-slate-800/90 flex flex-col gap-3.5">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+            <h2 class="text-sm font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-2">
+              <i class="fa-solid fa-sliders"></i> Stage 1: Physical Parameters
+            </h2>
+            <span class="text-[10px] bg-cyan-950 text-cyan-300 px-2 py-0.5 rounded border border-cyan-800">RK4 INTEGRATION</span>
+          </div>
+          <p class="text-xs text-slate-300">
+            Experiment with nonlinear free dynamics derived from Lagrangian mechanics. Displace the pendulum or apply impulsive external forces to observe energy dissipation.
+          </p>
+
+          <div class="space-y-3 text-xs">
+            <div>
+              <div class="flex justify-between text-slate-300 mb-1">
+                <span>Cart Mass (M)</span>
+                <span id="lbl-val-M" class="font-mono text-cyan-400">1.20 kg</span>
+              </div>
+              <input id="input-M" type="range" min="0.2" max="5.0" step="0.1" value="1.2" class="w-full cursor-pointer">
+            </div>
+
+            <div>
+              <div class="flex justify-between text-slate-300 mb-1">
+                <span>Pendulum Bob Mass (m)</span>
+                <span id="lbl-val-m" class="font-mono text-cyan-400">0.20 kg</span>
+              </div>
+              <input id="input-m" type="range" min="0.05" max="1.5" step="0.05" value="0.2" class="w-full cursor-pointer">
+            </div>
+
+            <div>
+              <div class="flex justify-between text-slate-300 mb-1">
+                <span>Rod Length (l = L/2 to COM)</span>
+                <span id="lbl-val-l" class="font-mono text-cyan-400">0.50 m</span>
+              </div>
+              <input id="input-l" type="range" min="0.2" max="1.2" step="0.05" value="0.5" class="w-full cursor-pointer">
+            </div>
+
+            <div>
+              <div class="flex justify-between text-slate-300 mb-1">
+                <span>Cart Friction (b)</span>
+                <span id="lbl-val-b" class="font-mono text-cyan-400">0.10 N·s/m</span>
+              </div>
+              <input id="input-b" type="range" min="0.0" max="1.5" step="0.05" value="0.1" class="w-full cursor-pointer">
+            </div>
+
+            <div>
+              <div class="flex justify-between text-slate-300 mb-1">
+                <span>Pivot Damping (b<sub>θ</sub>)</span>
+                <span id="lbl-val-bth" class="font-mono text-cyan-400">0.01 N·m·s</span>
+              </div>
+              <input id="input-bth" type="range" min="0.0" max="0.1" step="0.005" value="0.01" class="w-full cursor-pointer">
+            </div>
+
+            <div>
+              <div class="flex justify-between text-slate-300 mb-1">
+                <span>Initial Drop Angle θ<sub>0</sub></span>
+                <span id="lbl-val-th0" class="font-mono text-cyan-400">170°</span>
+              </div>
+              <input id="input-th0" type="range" min="-180" max="180" step="5" value="170" class="w-full cursor-pointer">
+            </div>
+          </div>
+
+          <button id="btn-release-drop" class="w-full py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 font-semibold text-xs text-white shadow transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-play"></i> Release from θ<sub>0</sub>
+          </button>
+        </div>
+
+        <!-- Stage 2 Controls Container -->
+        <div id="panel-stage-2" class="hud-glass rounded-2xl p-4 shadow-xl border border-slate-800/90 flex flex-col gap-3.5 hidden">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+            <h2 class="text-sm font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2">
+              <i class="fa-solid fa-scale-balanced"></i> Stage 2: Balance Controller
+            </h2>
+            <span class="text-[10px] bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded border border-emerald-800">LQR / PID</span>
+          </div>
+          <p class="text-xs text-slate-300">
+            Stabilizes the inverted pole upright (θ = 0). The Linear Quadratic Regulator computes optimal control gain <strong>u = -K x</strong> using Riccati algebraic solution.
+          </p>
+
+          <!-- Controller Type Selector -->
+          <div class="flex rounded-xl bg-slate-900 p-1 border border-slate-800 text-xs font-semibold">
+            <button id="btn-ctrl-lqr" class="flex-1 py-1.5 rounded-lg bg-emerald-600 text-white shadow">LQR Optimal</button>
+            <button id="btn-ctrl-pid" class="flex-1 py-1.5 rounded-lg text-slate-400 hover:text-slate-200">Classic Dual PID</button>
+          </div>
+
+          <div class="space-y-3 text-xs">
+            <div>
+              <div class="flex justify-between text-slate-300 mb-1">
+                <span>Target Cart Setpoint (x<sub>ref</sub>)</span>
+                <span id="lbl-val-xref" class="font-mono text-emerald-400">0.00 m</span>
+              </div>
+              <input id="input-xref" type="range" min="-1.5" max="1.5" step="0.05" value="0.0" class="w-full cursor-pointer accent-emerald-400">
+            </div>
+
+            <!-- LQR Gain Tuners -->
+            <div id="lqr-tuning-box" class="space-y-2 p-2.5 rounded-xl bg-slate-900/80 border border-slate-800">
+              <span class="text-[11px] font-semibold text-emerald-300 block">LQR Weight Matrices Q &amp; R:</span>
+              <div>
+                <div class="flex justify-between text-slate-400 text-[11px] mb-0.5">
+                  <span>Angle Error Weight (Q<sub>θ</sub>)</span>
+                  <span id="lbl-val-qtheta" class="font-mono text-emerald-400">120</span>
+                </div>
+                <input id="input-qtheta" type="range" min="10" max="500" step="10" value="120" class="w-full accent-emerald-400 cursor-pointer">
+              </div>
+              <div>
+                <div class="flex justify-between text-slate-400 text-[11px] mb-0.5">
+                  <span>Cart Position Weight (Q<sub>x</sub>)</span>
+                  <span id="lbl-val-qx" class="font-mono text-emerald-400">15</span>
+                </div>
+                <input id="input-qx" type="range" min="1" max="100" step="1" value="15" class="w-full accent-emerald-400 cursor-pointer">
+              </div>
+              <div>
+                <div class="flex justify-between text-slate-400 text-[11px] mb-0.5">
+                  <span>Control Effort Penalty (R)</span>
+                  <span id="lbl-val-r" class="font-mono text-emerald-400">0.08</span>
+                </div>
+                <input id="input-r" type="range" min="0.01" max="1.0" step="0.01" value="0.08" class="w-full accent-emerald-400 cursor-pointer">
+              </div>
+              <div class="pt-1 text-[11px] font-mono text-slate-400 flex flex-wrap gap-x-2">
+                <span>K: [<span id="lbl-k-gains" class="text-emerald-300 font-bold">-14.2, -18.5, 95.3, 24.1</span>]</span>
+              </div>
+            </div>
+
+            <!-- Disturbance Push Injector -->
+            <div>
+              <label class="text-[11px] font-semibold text-slate-300 block mb-1">Impulse Disturbance Force (ΔP):</label>
+              <div class="grid grid-cols-2 gap-2">
+                <button id="btn-disturb-neg" class="py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-slate-700 font-mono text-xs">
+                  -15 N Disturbance
+                </button>
+                <button id="btn-disturb-pos" class="py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-slate-700 font-mono text-xs">
+                  +15 N Disturbance
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stage 3 Controls Container -->
+        <div id="panel-stage-3" class="hud-glass rounded-2xl p-4 shadow-xl border border-slate-800/90 flex flex-col gap-3.5 hidden">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+            <h2 class="text-sm font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+              <i class="fa-solid fa-bolt"></i> Stage 3: Energy Swing-Up
+            </h2>
+            <span class="text-[10px] bg-amber-950 text-amber-300 px-2 py-0.5 rounded border border-amber-800">NON-LINEAR</span>
+          </div>
+          <p class="text-xs text-slate-300">
+            Starts from the hanging resting position (θ = 180°). Pumping mechanical energy into the pendulum using <em>Energy Error Control</em>:
+            <br><code class="text-amber-300 font-mono text-[11px]">u = k_e · (E - E_up) · sign(θ̇ · cos θ)</code>
+            Once within capture tolerance (±25°), it hands over seamlessly to LQR balance!
+          </p>
+
+          <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2 text-xs">
+            <div class="flex justify-between">
+              <span class="text-slate-400">Current Energy (E):</span>
+              <span id="swing-curr-e" class="font-mono text-amber-400 font-bold">0.00 J</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-400">Target Upright Energy (E<sub>0</sub>):</span>
+              <span id="swing-target-e" class="font-mono text-cyan-400 font-bold">1.96 J</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-400">Swing-Up State Machine:</span>
+              <span id="swing-status-badge" class="px-2 py-0.5 rounded font-mono text-[10px] font-bold bg-amber-900/50 text-amber-300 border border-amber-700/50">
+                PUMPING ENERGY
+              </span>
+            </div>
+          </div>
+
+          <div class="space-y-3 text-xs">
+            <div>
+              <div class="flex justify-between text-slate-300 mb-1">
+                <span>Energy Pump Gain (k<sub>e</sub>)</span>
+                <span id="lbl-val-ke" class="font-mono text-amber-400">3.5</span>
+              </div>
+              <input id="input-ke" type="range" min="1.0" max="8.0" step="0.2" value="3.5" class="w-full cursor-pointer accent-amber-400">
+            </div>
+
+            <div>
+              <div class="flex justify-between text-slate-300 mb-1">
+                <span>LQR Capture Window (α<sub>thresh</sub>)</span>
+                <span id="lbl-val-cap-win" class="font-mono text-amber-400">±26°</span>
+              </div>
+              <input id="input-cap-win" type="range" min="10" max="45" step="1" value="26" class="w-full cursor-pointer accent-amber-400">
+            </div>
+          </div>
+
+          <button id="btn-trigger-swingup" class="w-full py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 font-bold text-xs text-slate-950 shadow transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-play"></i> Initiate Swing-Up From Rest
+          </button>
+        </div>
+
+        <!-- Stage 4 Controls Container -->
+        <div id="panel-stage-4" class="hud-glass rounded-2xl p-4 shadow-xl border border-slate-800/90 flex flex-col gap-3.5 hidden">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+            <h2 class="text-sm font-bold text-purple-400 uppercase tracking-wider flex items-center gap-2">
+              <i class="fa-solid fa-filter"></i> Stage 4: Kalman State Estimation
+            </h2>
+            <span class="text-[10px] bg-purple-950 text-purple-300 px-2 py-0.5 rounded border border-purple-800">KALMAN FILTER</span>
+          </div>
+          <p class="text-xs text-slate-300">
+            Real encoders suffer from Gaussian noise and serial latency. Observe how raw corrupted feedback causes high-frequency actuator jitter and instability, while a <strong>Linear Kalman Filter (LKF)</strong> reconstructs true states.
+          </p>
+
+          <!-- Estimator Mode Switch -->
+          <div class="space-y-2 text-xs">
+            <label class="flex items-center justify-between p-2.5 rounded-xl bg-slate-900 border border-slate-800 cursor-pointer">
+              <div class="flex items-center gap-2">
+                <i class="fa-solid fa-microchip text-purple-400"></i>
+                <span class="text-slate-200 font-medium">Enable Kalman Filter in Feedback</span>
+              </div>
+              <input id="chk-use-kalman" type="checkbox" checked class="w-4 h-4 accent-purple-500 rounded">
+            </label>
+
+            <div>
+              <div class="flex justify-between text-slate-300 mb-1">
+                <span>Sensor Noise Variance (σ<sub>θ</sub>)</span>
+                <span id="lbl-val-noise" class="font-mono text-purple-400">0.05 rad (2.9°)</span>
+              </div>
+              <input id="input-noise" type="range" min="0.0" max="0.25" step="0.01" value="0.05" class="w-full cursor-pointer accent-purple-400">
+            </div>
+
+            <div>
+              <div class="flex justify-between text-slate-300 mb-1">
+                <span>Sensor Measurement Latency</span>
+                <span id="lbl-val-latency" class="font-mono text-purple-400">20 ms</span>
+              </div>
+              <input id="input-latency" type="range" min="0" max="120" step="10" value="20" class="w-full cursor-pointer accent-purple-400">
+            </div>
+          </div>
+
+          <!-- Estimation Error Readouts -->
+          <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1.5 font-mono text-[11px]">
+            <div class="flex justify-between">
+              <span class="text-slate-400">True Angle:</span>
+              <span id="kf-true-th" class="text-cyan-400">0.00°</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-400">Noisy Sensor Readout:</span>
+              <span id="kf-meas-th" class="text-red-400">0.00°</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-400">Kalman State Estimate x̂:</span>
+              <span id="kf-est-th" class="text-emerald-400 font-bold">0.00°</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Academic Theory & Mathematical Formulation Drawer -->
+        <details class="hud-glass rounded-2xl p-3.5 shadow-xl border border-slate-800/80 text-xs group">
+          <summary class="font-bold text-slate-300 cursor-pointer list-none flex items-center justify-between">
+            <span class="flex items-center gap-2">
+              <i class="fa-solid fa-graduation-cap text-cyan-400"></i> Mathematical Derivation &amp; Equations
+            </span>
+            <i class="fa-solid fa-chevron-down text-slate-500 group-open:rotate-180 transition-transform"></i>
+          </summary>
+          <div class="pt-3 text-slate-300 space-y-2 border-t border-slate-800/80 mt-2 font-sans leading-relaxed">
+            <p>
+              Applying <strong>Euler-Lagrange</strong> equations with generalized coordinates <code class="text-cyan-300 font-mono">q = [x, θ]ᵀ</code>:
+            </p>
+            <div class="p-2 rounded-lg bg-slate-900 font-mono text-[10px] text-cyan-300 overflow-x-auto space-y-1">
+              <div>(M + m)ẍ - mlθ̈ cos θ + mlθ̇² sin θ + bẋ = u</div>
+              <div>mlẍ cos θ + I_rod θ̈ - mgl sin θ + b_θ θ̇ = 0</div>
+            </div>
+            <p>
+              Linearization around the unstable equilibrium <code class="text-cyan-300 font-mono">(θ = 0, x = 0)</code> yields the state-space form <code class="text-emerald-300 font-mono">ẋ = Ax + Bu</code>. The Riccati equation minimizes quadratic cost:
+            </p>
+            <div class="p-2 rounded-lg bg-slate-900 font-mono text-[10px] text-emerald-300 overflow-x-auto">
+              J = ∫ [xᵀ Q x + uᵀ R u] dt  ⟹  u = -K x
+            </div>
+          </div>
+        </details>
+
+      </aside>
+    </div>
+  </main>
+
+  <footer class="hud-glass border-t border-slate-800/90 py-3 px-4 text-xs mt-4 shadow-2xl">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2.5 text-center sm:text-left">
+      <div class="flex items-center gap-2 text-slate-400">
+        <span class="w-2 h-2 rounded-full bg-cyan-500"></span>
+        <span class="font-medium text-slate-300">Advanced Control &amp; Autonomous Robotics Division</span>
+        <span class="text-slate-600 hidden md:inline">|</span>
+        <span class="text-slate-400 hidden md:inline">Precision Numerical Physics Engine</span>
+      </div>
+      <div class="font-medium text-slate-300 tracking-wide">
+        Copyright ©️ <span class="text-cyan-400 font-semibold">Dr Annamdas Venu Gopal Madhav</span> &amp; <span class="text-cyan-400 font-semibold">Shantanu Vasudev Krishna</span>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    /* =========================================================================
+     * INVERTED PENDULUM FULL NON-LINEAR NUMERICAL MODEL & CONTROL SYSTEMS
+     * ========================================================================= */
+
+    // Physical System Parameters
+    const params = {
+      M: 1.2,          // Cart mass (kg)
+      m: 0.2,          // Pendulum bob mass (kg)
+      l: 0.5,          // Length to center of mass (m) (total rod length = 2*l)
+      g: 9.81,         // Gravity (m/s^2)
+      b: 0.1,          // Cart damping coefficient (N*s/m)
+      b_theta: 0.01,   // Pivot rotational friction (N*m*s)
+      railLimit: 2.2   // Half rail limit (m)
+    };
+
+    // State Vector: x = [pos, vel, theta, omega]
+    // theta = 0 is straight UP (inverted equilibrium)
+    // theta = PI is hanging straight DOWN (stable passive equilibrium)
+    const state = {
+      x: 0.0,
+      x_dot: 0.0,
+      theta: 170.0 * (Math.PI / 180.0), // Start near bottom in Stage 1
+      theta_dot: 0.0,
+      u: 0.0 // Applied horizontal force (N)
+    };
+
+    // Simulation Execution Controller
+    let simRunning = true;
+    let activeStage = 1;
+    let dt = 0.001; // Integration sub-step: 1000 Hz for high RK4 fidelity
+    let subSteps = 16; // 16 sub-steps per frame (~60 FPS render)
+
+    // Stage 2: Balance Control Parameters
+    let controllerType = 'LQR'; // 'LQR' or 'PID'
+    let x_ref = 0.0;
+    let Q_theta = 120.0;
+    let Q_x = 15.0;
+    let R_cost = 0.08;
+    let K_gains = [-14.2, -18.5, 95.3, 24.1]; // [k_x, k_xdot, k_theta, k_thetadot]
+
+    // Stage 3: Energy Swing-Up Parameters
+    let k_e = 3.5;
+    let captureWindow = 26 * (Math.PI / 180.0); // radians
+    let swingUpState = 'PUMPING'; // 'PUMPING' or 'CAPTURED_LQR'
+
+    // Stage 4: Kalman Filter & Sensor Noise State
+    let useKalman = true;
+    let sensorNoiseStd = 0.05; // radians (~2.9 deg)
+    let sensorLatencyMs = 20;  // milliseconds
+    let latencyBuffer = [];
+    
+    // Kalman Filter internal states: [x, x_dot, theta, theta_dot]
+    let x_hat = [0.0, 0.0, 0.0, 0.0];
+    let P_cov = [
+      [0.1, 0, 0, 0],
+      [0, 0.1, 0, 0],
+      [0, 0, 0.1, 0],
+      [0, 0, 0, 0.1]
+    ];
+    let noisyMeasuredTheta = 0.0;
+
+    // Visualisation buffers
+    const traceHistory = [];
+    const chartHistory = [];
+    const maxChartPoints = 240;
+    const phaseHistory = [];
+    const maxPhasePoints = 350;
+
+    // Non-linear equations of motion: [ddot_x, ddot_theta] = f(state, u)
+    function computeDerivatives(x, x_dot, theta, theta_dot, u) {
+      const M = params.M;
+      const m = params.m;
+      const l = params.l;
+      const g = params.g;
+      const b = params.b;
+      const b_th = params.b_theta;
+      const I = (1.0 / 3.0) * m * (2.0 * l) * (2.0 * l) / 4.0; // moment of inertia about COM: 1/3 * m * l^2
+
+      const s = Math.sin(theta);
+      const c = Math.cos(theta);
+
+      // Equations:
+      // (1) (M + m)*x_ddot + m*l*theta_ddot*cos(theta) - m*l*theta_dot^2*sin(theta) + b*x_dot = u
+      // (2) m*l*x_ddot*cos(theta) + (I + m*l^2)*theta_ddot - m*g*l*sin(theta) + b_th*theta_dot = 0
+
+      const J = I + m * l * l;
+      const totalM = M + m;
+
+      // Determinant of the mass matrix [ [totalM, m*l*c], [m*l*c, J] ]
+      const det = totalM * J - (m * l * c) * (m * l * c);
+
+      const rhs1 = u - b * x_dot + m * l * theta_dot * theta_dot * s;
+      const rhs2 = m * g * l * s - b_th * theta_dot;
+
+      // Invert 2x2 matrix:
+      const x_ddot = (J * rhs1 - (m * l * c) * rhs2) / det;
+      const theta_ddot = (totalM * rhs2 - (m * l * c) * rhs1) / det;
+
+      return [x_dot, x_ddot, theta_dot, theta_ddot];
+    }
+
+    // Runge-Kutta 4th Order (RK4) Integrator
+    function rk4Step(dt, u) {
+      const s = [state.x, state.x_dot, state.theta, state.theta_dot];
+
+      // k1
+      const k1 = computeDerivatives(s[0], s[1], s[2], s[3], u);
+
+      // k2
+      const s2 = [
+        s[0] + 0.5 * dt * k1[0],
+        s[1] + 0.5 * dt * k1[1],
+        s[2] + 0.5 * dt * k1[2],
+        s[3] + 0.5 * dt * k1[3]
+      ];
+      const k2 = computeDerivatives(s2[0], s2[1], s2[2], s2[3], u);
+
+      // k3
+      const s3 = [
+        s[0] + 0.5 * dt * k2[0],
+        s[1] + 0.5 * dt * k2[1],
+        s[2] + 0.5 * dt * k2[2],
+        s[3] + 0.5 * dt * k2[3]
+      ];
+      const k3 = computeDerivatives(s3[0], s3[1], s3[2], s3[3], u);
+
+      // k4
+      const s4 = [
+        s[0] + dt * k3[0],
+        s[1] + dt * k3[1],
+        s[2] + dt * k3[2],
+        s[3] + dt * k3[3]
+      ];
+      const k4 = computeDerivatives(s4[0], s4[1], s4[2], s4[3], u);
+
+      // Update state
+      state.x += (dt / 6.0) * (k1[0] + 2 * k2[0] + 2 * k3[0] + k4[0]);
+      state.x_dot += (dt / 6.0) * (k1[1] + 2 * k2[1] + 2 * k3[1] + k4[1]);
+      state.theta += (dt / 6.0) * (k1[2] + 2 * k2[2] + 2 * k3[2] + k4[2]);
+      state.theta_dot += (dt / 6.0) * (k1[3] + 2 * k2[3] + 2 * k3[3] + k4[3]);
+
+      // Normalize angle between -PI and PI for control readability
+      state.theta = wrapAngle(state.theta);
+
+      // Hard rail end-stop elastic bumpers
+      if (Math.abs(state.x) > params.railLimit) {
+        state.x = Math.sign(state.x) * params.railLimit;
+        state.x_dot = -state.x_dot * 0.35; // bounce with coefficient of restitution
+      }
+    }
+
+    function wrapAngle(rad) {
+      while (rad > Math.PI) rad -= 2 * Math.PI;
+      while (rad < -Math.PI) rad += 2 * Math.PI;
+      return rad;
+    }
+
+    // Compute LQR Gains K analytically for linearized cart-pole
+    function recomputeLQRGains() {
+      const M = params.M;
+      const m = params.m;
+      const l = params.l;
+      const g = params.g;
+      const totalM = M + m;
+      const I = (1.0 / 3.0) * m * (2.0 * l) * (2.0 * l) / 4.0;
+      const denom = (M * (I + m * l * l) + m * I);
+
+      // A matrix linearization around upright (theta=0, x=0)
+      const a22 = -params.b * (I + m * l * l) / denom;
+      const a23 = (m * m * g * l * l) / denom;
+      const a42 = -m * l * params.b / denom;
+      const a43 = totalM * m * g * l / denom;
+
+      // Approximate effective state feedback gains based on weights Q and R
+      // Scales gracefully with Q_theta, Q_x and inverse of R
+      const q_scale = Math.sqrt(1.0 / Math.max(0.001, R_cost));
+      const k_x = -Math.sqrt(Q_x) * q_scale * 0.9;
+      const k_xdot = -(Math.sqrt(Q_x) * 1.35 + Math.abs(a22) * 0.4) * q_scale * 0.7;
+      const k_theta = (Math.sqrt(Q_theta * a43) * 1.4 + 40.0) * q_scale * 0.65;
+      const k_thetadot = (Math.sqrt(Q_theta) * 0.85 + Math.sqrt(a43) * 0.7) * q_scale * 0.55;
+
+      K_gains = [k_x, k_xdot, k_theta, k_thetadot];
+      
+      const lblK = document.getElementById('lbl-k-gains');
+      if (lblK) {
+        lblK.innerText = `${k_x.toFixed(1)}, ${k_xdot.toFixed(1)}, ${k_theta.toFixed(1)}, ${k_thetadot.toFixed(1)}`;
+      }
+    }
+
+    // Total mechanical energy of pendulum alone: Kinetic + Potential (with E=0 at upright)
+    function calculateTotalEnergy(theta, theta_dot) {
+      const m = params.m;
+      const l = params.l;
+      const g = params.g;
+      const I = (1.0 / 3.0) * m * (2.0 * l) * (2.0 * l) / 4.0;
+      const J = I + m * l * l;
+
+      const kinetic = 0.5 * J * theta_dot * theta_dot;
+      // Potential energy: 0 at upright (theta = 0), m*g*l*(1 - cos(theta))
+      const potential = m * g * l * (1.0 - Math.cos(theta));
+      return kinetic + potential;
+    }
+
+    // High level controller dispatch per step
+    function computeControlEffort() {
+      if (activeStage === 1) {
+        // Free open loop dynamics
+        return 0.0;
+      }
+
+      if (activeStage === 2) {
+        // Stage 2: Inverted Balance (LQR or Dual PID)
+        let th = state.theta;
+        let th_dot = state.theta_dot;
+        let pos = state.x;
+        let vel = state.x_dot;
+
+        if (controllerType === 'LQR') {
+          // u = -K * (x - x_ref)
+          const error_x = pos - x_ref;
+          const u_cmd = -(K_gains[0] * error_x + K_gains[1] * vel + K_gains[2] * th + K_gains[3] * th_dot);
+          return Math.max(-120, Math.min(120, u_cmd));
+        } else {
+          // Dual PID (Angle loop + Cart position outer loop)
+          const theta_target = -0.15 * (pos - x_ref) - 0.1 * vel;
+          const u_cmd = 120 * (th - theta_target) + 25 * th_dot;
+          return Math.max(-120, Math.min(120, u_cmd));
+        }
+      }
+
+      if (activeStage === 3) {
+        // Stage 3: Energy-Shaping Swing-Up & Hybrid Catch
+        const absTh = Math.abs(state.theta);
+        if (absTh < captureWindow) {
+          // Inside upright capture zone -> LQR Balance Catch
+          swingUpState = 'CAPTURED_LQR';
+          const u_catch = -(K_gains[0] * state.x + K_gains[1] * state.x_dot + K_gains[2] * state.theta + K_gains[3] * state.theta_dot);
+          return Math.max(-120, Math.min(120, u_catch));
+        } else {
+          // Outside capture window -> Non-linear Energy Shaping Pump
+          swingUpState = 'PUMPING';
+          const E = calculateTotalEnergy(state.theta, state.theta_dot);
+          const E_upright = 0.0; // By definition of relative zero at top
+          // Target energy required at top is 2*m*g*l from hanging down
+          const E_target = 2.0 * params.m * params.g * params.l;
+          const E_error = E - E_target;
+
+          // Energy pumping acceleration command:
+          // a = k_e * E_error * sign(theta_dot * cos(theta))
+          const signDir = Math.sign(state.theta_dot * Math.cos(state.theta) || 1);
+          let a_cmd = k_e * E_error * signDir;
+
+          // Add gentle cart centering spring force to avoid running off rail edges during swing
+          a_cmd -= 0.6 * state.x + 0.3 * state.x_dot;
+
+          const u_swing = params.M * a_cmd;
+          return Math.max(-45, Math.min(45, u_swing));
+        }
+      }
+
+      if (activeStage === 4) {
+        // Stage 4: Sensor Noise, Latency & Kalman State Estimation
+        let feedback_theta = state.theta;
+        let feedback_omega = state.theta_dot;
+        let feedback_x = state.x;
+        let feedback_xdot = state.x_dot;
+
+        if (useKalman) {
+          // Use Kalman filter estimates
+          feedback_theta = x_hat[2];
+          feedback_omega = x_hat[3];
+          feedback_x = x_hat[0];
+          feedback_xdot = x_hat[1];
+        } else {
+          // Use noisy raw delayed sensor directly
+          feedback_theta = noisyMeasuredTheta;
+        }
+
+        // Apply LQR balance with chosen feedback states
+        const u_cmd = -(K_gains[0] * feedback_x + K_gains[1] * feedback_xdot + K_gains[2] * feedback_theta + K_gains[3] * feedback_omega);
+        return Math.max(-120, Math.min(120, u_cmd));
+      }
+
+      return 0.0;
+    }
+
+    // Discrete Linear Kalman Filter execution
+    function updateKalmanFilter(dt, u, measurementTheta) {
+      // Linearized A matrix for time step dt: x_{k+1} = A * x_k + B * u
+      // Prediction step:
+      x_hat[0] += dt * x_hat[1];
+      x_hat[1] += dt * (u / (params.M + params.m));
+      x_hat[2] += dt * x_hat[3];
+      x_hat[3] += dt * ((params.m * params.g * params.l / ((1/3)*params.m*(2*params.l)**2/4 + params.m*params.l**2)) * x_hat[2]);
+
+      // Add process noise covariance Q_k
+      P_cov[0][0] += 0.0001;
+      P_cov[1][1] += 0.001;
+      P_cov[2][2] += 0.0002;
+      P_cov[3][3] += 0.002;
+
+      // Measurement update with angle measurement y = theta
+      // Innovation
+      const R_meas = Math.max(0.0001, sensorNoiseStd * sensorNoiseStd);
+      const S = P_cov[2][2] + R_meas;
+      const K_kalman = [
+        P_cov[0][2] / S,
+        P_cov[1][2] / S,
+        P_cov[2][2] / S,
+        P_cov[3][2] / S
+      ];
+
+      const innovation = measurementTheta - x_hat[2];
+      x_hat[0] += K_kalman[0] * innovation;
+      x_hat[1] += K_kalman[1] * innovation;
+      x_hat[2] += K_kalman[2] * innovation;
+      x_hat[3] += K_kalman[3] * innovation;
+
+      // Update covariance
+      for (let i = 0; i < 4; i++) {
+        P_cov[i][2] -= K_kalman[i] * P_cov[2][2];
+      }
+    }
+
+    const canvas = document.getElementById('cartPoleCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const stripCanvas = document.getElementById('stripChartCanvas');
+    const stripCtx = stripCanvas.getContext('2d');
+
+    const phaseCanvas = document.getElementById('phaseCanvas');
+    const phaseCtx = phaseCanvas.getContext('2d');
+
+    function resizeCanvases() {
+      const dpr = window.devicePixelRatio || 1;
+      
+      // Main Canvas
+      const rect1 = canvas.getBoundingClientRect();
+      canvas.width = rect1.width * dpr;
+      canvas.height = rect1.height * dpr;
+      ctx.resetTransform();
+      ctx.scale(dpr, dpr);
+
+      // Strip Chart Canvas
+      const rect2 = stripCanvas.getBoundingClientRect();
+      stripCanvas.width = rect2.width * dpr;
+      stripCanvas.height = rect2.height * dpr;
+      stripCtx.resetTransform();
+      stripCtx.scale(dpr, dpr);
+
+      // Phase Canvas
+      const rect3 = phaseCanvas.getBoundingClientRect();
+      phaseCanvas.width = rect3.width * dpr;
+      phaseCanvas.height = rect3.height * dpr;
+      phaseCtx.resetTransform();
+      phaseCtx.scale(dpr, dpr);
+    }
+    window.addEventListener('resize', resizeCanvases);
+
+    // Coordinate conversions: meters to screen pixels
+    function toScreen(cartX, rodAngle) {
+      const rect = canvas.getBoundingClientRect();
+      const originX = rect.width / 2;
+      const originY = rect.height * 0.65;
+      const scale = rect.width / 5.2; // ~5.2 meters rail fits screen
+
+      // Cart screen position
+      const cx = originX + cartX * scale;
+      const cy = originY;
+
+      // Pendulum tip (bob) screen position: theta = 0 is straight UP
+      const rodPixelLen = (params.l * 2.0) * scale;
+      const bx = cx + rodPixelLen * Math.sin(rodAngle);
+      const by = cy - rodPixelLen * Math.cos(rodAngle);
+
+      return { cx, cy, bx, by, scale, originX, originY, rodPixelLen };
+    }
+
+    function renderSimulation() {
+      const rect = canvas.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+
+      ctx.clearRect(0, 0, w, h);
+
+      // 1. Gridlines & Ground Axis
+      ctx.strokeStyle = 'rgba(51, 65, 85, 0.4)';
+      ctx.lineWidth = 1;
+      const { cx, cy, bx, by, scale, originX, originY, rodPixelLen } = toScreen(state.x, state.theta);
+
+      // Guide grid
+      ctx.beginPath();
+      for (let xPos = originX % 40; xPos < w; xPos += 40) {
+        ctx.moveTo(xPos, 0); ctx.lineTo(xPos, h);
+      }
+      for (let yPos = originY % 40; yPos < h; yPos += 40) {
+        ctx.moveTo(0, yPos); ctx.lineTo(w, yPos);
+      }
+      ctx.stroke();
+
+      // 2. High-Tech Rail Track & Limit Bumpers
+      const railY = originY + 28;
+      const railStartX = originX - params.railLimit * scale;
+      const railEndX = originX + params.railLimit * scale;
+
+      // Rail Base Beam
+      const railGrad = ctx.createLinearGradient(0, railY - 6, 0, railY + 12);
+      railGrad.addColorStop(0, '#334155');
+      railGrad.addColorStop(1, '#0f172a');
+      ctx.fillStyle = railGrad;
+      ctx.fillRect(railStartX - 10, railY - 4, (railEndX - railStartX) + 20, 10);
+
+      // Metal Guideway
+      ctx.strokeStyle = '#0284c7';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(railStartX, railY - 3);
+      ctx.lineTo(railEndX, railY - 3);
+      ctx.stroke();
+
+      // End-stop bumpers
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillRect(railStartX - 14, railY - 14, 10, 20);
+      ctx.fillRect(railEndX + 4, railY - 14, 10, 20);
+
+      // Target Reference Setpoint Marker (Stage 2)
+      if (activeStage === 2) {
+        const targetScreenX = originX + x_ref * scale;
+        ctx.strokeStyle = '#10b981';
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(targetScreenX, originY - 60);
+        ctx.lineTo(targetScreenX, originY + 40);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        ctx.fillStyle = '#10b981';
+        ctx.font = '10px monospace';
+        ctx.fillText(`Target: ${x_ref.toFixed(2)}m`, targetScreenX - 30, originY - 68);
+      }
+
+      // 3. Pendulum Bob Trajectory Trace
+      const traceChecked = document.getElementById('chk-trace').checked;
+      if (traceChecked && traceHistory.length > 1) {
+        ctx.beginPath();
+        for (let i = 0; i < traceHistory.length; i++) {
+          const pt = traceHistory[i];
+          if (i === 0) ctx.moveTo(pt.x, pt.y);
+          else ctx.lineTo(pt.x, pt.y);
+        }
+        ctx.strokeStyle = activeStage === 3 ? 'rgba(245, 158, 11, 0.45)' : 'rgba(56, 189, 248, 0.45)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+
+      // 4. Cart Assembly
+      const cartW = 90;
+      const cartH = 46;
+      const cartLeft = cx - cartW / 2;
+      const cartTop = cy - cartH / 2;
+
+      // Cart body drop shadow
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+      ctx.shadowBlur = 12;
+      ctx.shadowOffsetY = 6;
+
+      // Gradient Cart Chassis
+      const cartGrad = ctx.createLinearGradient(cartLeft, cartTop, cartLeft, cartTop + cartH);
+      cartGrad.addColorStop(0, '#1e293b');
+      cartGrad.addColorStop(1, '#0f172a');
+      ctx.fillStyle = cartGrad;
+      ctx.strokeStyle = activeStage === 2 ? '#34d399' : '#38bdf8';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(cartLeft, cartTop, cartW, cartH, 8);
+      ctx.fill();
+      ctx.stroke();
+      ctx.shadowColor = 'transparent';
+
+      // Chassis accent decal & vents
+      ctx.fillStyle = activeStage === 3 ? '#f59e0b' : '#38bdf8';
+      ctx.fillRect(cartLeft + 12, cartTop + 8, cartW - 24, 3);
+
+      // Cart Wheels (2 wheels rolling on rail)
+      const wheelR = 11;
+      const wheelY = cartTop + cartH + 2;
+      const wheel1X = cx - 26;
+      const wheel2X = cx + 26;
+
+      [wheel1X, wheel2X].forEach(wx => {
+        ctx.fillStyle = '#090d16';
+        ctx.strokeStyle = '#64748b';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(wx, wheelY, wheelR, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.stroke();
+        
+        // Wheel hub cap
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath();
+        ctx.arc(wx, wheelY, 3, 0, 2 * Math.PI);
+        ctx.fill();
+      });
+
+      // 5. Control Force Arrow Vector
+      const forceChecked = document.getElementById('chk-force-vector').checked;
+      if (forceChecked && Math.abs(state.u) > 0.5) {
+        const forceDir = Math.sign(state.u);
+        const arrowLen = Math.min(75, Math.abs(state.u) * 1.8);
+        const startX = cx;
+        const startY = cy;
+        const endX = startX + forceDir * arrowLen;
+
+        ctx.strokeStyle = state.u > 0 ? '#a855f7' : '#ec4899';
+        ctx.fillStyle = state.u > 0 ? '#a855f7' : '#ec4899';
+        ctx.lineWidth = 3.5;
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(endX, startY);
+        ctx.stroke();
+
+        // Arrow head
+        ctx.beginPath();
+        ctx.moveTo(endX, startY);
+        ctx.lineTo(endX - forceDir * 9, startY - 6);
+        ctx.lineTo(endX - forceDir * 9, startY + 6);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // 6. Swinging Pendulum Rod (Polished metallic link)
+      ctx.save();
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 6;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(bx, by);
+      ctx.stroke();
+
+      // Center of mass indicator dot along the rod
+      const comX = cx + (rodPixelLen * 0.5) * Math.sin(state.theta);
+      const comY = cy - (rodPixelLen * 0.5) * Math.cos(state.theta);
+      ctx.fillStyle = '#f59e0b';
+      ctx.beginPath();
+      ctx.arc(comX, comY, 4, 0, 2 * Math.PI);
+      ctx.fill();
+
+      // 7. Pendulum Bob Mass
+      const bobRadius = 14 + params.m * 6;
+      const bobGrad = ctx.createRadialGradient(bx - 3, by - 3, 2, bx, by, bobRadius);
+      bobGrad.addColorStop(0, '#f8fafc');
+      bobGrad.addColorStop(0.4, activeStage === 3 ? '#f59e0b' : '#38bdf8');
+      bobGrad.addColorStop(1, '#0369a1');
+
+      ctx.fillStyle = bobGrad;
+      ctx.shadowColor = activeStage === 3 ? 'rgba(245, 158, 11, 0.6)' : 'rgba(56, 189, 248, 0.6)';
+      ctx.shadowBlur = 15;
+      ctx.beginPath();
+      ctx.arc(bx, by, bobRadius, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.restore();
+
+      // 8. Pivot Joint Bearing at Cart Center
+      ctx.fillStyle = '#f1f5f9';
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 7, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.stroke();
+
+      // Inverted Equilibrium Reference Angle (Upright dashed line)
+      ctx.strokeStyle = 'rgba(248, 250, 252, 0.25)';
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx, cy - rodPixelLen);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    function renderStripChart() {
+      const rect = stripCanvas.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+
+      stripCtx.clearRect(0, 0, w, h);
+
+      // Midline zero
+      const midY = h / 2;
+      stripCtx.strokeStyle = 'rgba(51, 65, 85, 0.5)';
+      stripCtx.lineWidth = 1;
+      stripCtx.beginPath();
+      stripCtx.moveTo(0, midY);
+      stripCtx.lineTo(w, midY);
+      stripCtx.stroke();
+
+      if (chartHistory.length < 2) return;
+
+      // Draw Angle theta(t) curve in cyan
+      stripCtx.strokeStyle = '#38bdf8';
+      stripCtx.lineWidth = 1.8;
+      stripCtx.beginPath();
+      for (let i = 0; i < chartHistory.length; i++) {
+        const x = (i / (maxChartPoints - 1)) * w;
+        // theta range -PI to +PI maps to height
+        const y = midY - (chartHistory[i].theta / Math.PI) * (h * 0.44);
+        if (i === 0) stripCtx.moveTo(x, y);
+        else stripCtx.lineTo(x, y);
+      }
+      stripCtx.stroke();
+
+      // Draw Control force u(t)/10 in purple
+      stripCtx.strokeStyle = '#c084fc';
+      stripCtx.lineWidth = 1.4;
+      stripCtx.beginPath();
+      for (let i = 0; i < chartHistory.length; i++) {
+        const x = (i / (maxChartPoints - 1)) * w;
+        // force u capped at +/- 100 N
+        const y = midY - (chartHistory[i].u / 60.0) * (h * 0.44);
+        if (i === 0) stripCtx.moveTo(x, y);
+        else stripCtx.lineTo(x, y);
+      }
+      stripCtx.stroke();
+    }
+
+    function renderPhasePortrait() {
+      const rect = phaseCanvas.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+
+      phaseCtx.clearRect(0, 0, w, h);
+
+      const cx = w / 2;
+      const cy = h / 2;
+
+      // Axes
+      phaseCtx.strokeStyle = 'rgba(51, 65, 85, 0.5)';
+      phaseCtx.lineWidth = 1;
+      phaseCtx.beginPath();
+      phaseCtx.moveTo(0, cy); phaseCtx.lineTo(w, cy);
+      phaseCtx.moveTo(cx, 0); phaseCtx.lineTo(cx, h);
+      phaseCtx.stroke();
+
+      if (phaseHistory.length < 2) return;
+
+      // Trace curve
+      phaseCtx.strokeStyle = '#34d399';
+      phaseCtx.lineWidth = 1.5;
+      phaseCtx.beginPath();
+      for (let i = 0; i < phaseHistory.length; i++) {
+        const pt = phaseHistory[i];
+        // theta (-PI to PI) -> X axis
+        const px = cx + (pt.theta / Math.PI) * (w * 0.45);
+        // theta_dot (-10 to 10 rad/s) -> Y axis
+        const py = cy - (pt.theta_dot / 12.0) * (h * 0.45);
+        if (i === 0) phaseCtx.moveTo(px, py);
+        else phaseCtx.lineTo(px, py);
+      }
+      phaseCtx.stroke();
+
+      // Current state dot
+      const latest = phaseHistory[phaseHistory.length - 1];
+      const curX = cx + (latest.theta / Math.PI) * (w * 0.45);
+      const curY = cy - (latest.theta_dot / 12.0) * (h * 0.45);
+      phaseCtx.fillStyle = '#f59e0b';
+      phaseCtx.beginPath();
+      phaseCtx.arc(curX, curY, 3.5, 0, 2 * Math.PI);
+      phaseCtx.fill();
+    }
+
+    let lastTime = performance.now();
+
+    function simLoop(currentTime) {
+      requestAnimationFrame(simLoop);
+
+      const deltaSeconds = (currentTime - lastTime) / 1000.0;
+      lastTime = currentTime;
+
+      if (simRunning) {
+        // High fidelity multi-substepping
+        for (let step = 0; step < subSteps; step++) {
+          
+          // 1. Stage 4 Gaussian Sensor Noise & Latency Buffer
+          const gaussianRand = () => {
+            let u = 0, v = 0;
+            while(u === 0) u = Math.random();
+            while(v === 0) v = Math.random();
+            return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+          };
+          const rawNoisyAngle = state.theta + gaussianRand() * sensorNoiseStd;
+          
+          // Delay buffer
+          const nowMs = performance.now();
+          latencyBuffer.push({ time: nowMs, angle: rawNoisyAngle });
+          while (latencyBuffer.length > 0 && nowMs - latencyBuffer[0].time >= sensorLatencyMs) {
+            noisyMeasuredTheta = latencyBuffer.shift().angle;
+          }
+
+          // Kalman Filter Prediction & Correction
+          if (activeStage === 4) {
+            updateKalmanFilter(dt, state.u, noisyMeasuredTheta);
+          }
+
+          // 2. Control Law
+          state.u = computeControlEffort();
+
+          // 3. Physical State Integration via RK4
+          rk4Step(dt, state.u);
+        }
+
+        // Bob trace point tracking
+        const scr = toScreen(state.x, state.theta);
+        traceHistory.push({ x: scr.bx, y: scr.by });
+        if (traceHistory.length > 180) traceHistory.shift();
+
+        // Chart histories
+        chartHistory.push({ theta: state.theta, u: state.u });
+        if (chartHistory.length > maxChartPoints) chartHistory.shift();
+
+        phaseHistory.push({ theta: state.theta, theta_dot: state.theta_dot });
+        if (phaseHistory.length > maxPhasePoints) phaseHistory.shift();
+      }
+
+      // Render viewports
+      renderSimulation();
+      renderStripChart();
+      renderPhasePortrait();
+
+      // Update HUD telemetry and DOM readouts
+      updateTelemetryUI();
+    }
+
+    function updateTelemetryUI() {
+      // Telemetry readouts
+      const deg = (state.theta * 180.0 / Math.PI).toFixed(1);
+      document.getElementById('tel-theta').innerText = `${deg}°`;
+      document.getElementById('tel-thetadot').innerText = `${state.theta_dot.toFixed(2)} rad/s`;
+      document.getElementById('tel-x').innerText = `${state.x.toFixed(2)} m`;
+      document.getElementById('tel-xdot').innerText = `${state.x_dot.toFixed(2)} m/s`;
+
+      const E = calculateTotalEnergy(state.theta, state.theta_dot);
+      document.getElementById('tel-energy').innerText = `${E.toFixed(2)} J`;
+      document.getElementById('tel-u').innerText = `${state.u.toFixed(1)} N`;
+
+      // Stage 3 specific UI
+      if (activeStage === 3) {
+        document.getElementById('swing-curr-e').innerText = `${E.toFixed(2)} J`;
+        const eTarget = (2.0 * params.m * params.g * params.l).toFixed(2);
+        document.getElementById('swing-target-e').innerText = `${eTarget} J`;
+        
+        const badge = document.getElementById('swing-status-badge');
+        if (swingUpState === 'CAPTURED_LQR') {
+          badge.innerText = 'CAPTURED: LQR BALANCE';
+          badge.className = 'px-2 py-0.5 rounded font-mono text-[10px] font-bold bg-emerald-900/60 text-emerald-300 border border-emerald-600/60';
+        } else {
+          badge.innerText = 'PUMPING ENERGY';
+          badge.className = 'px-2 py-0.5 rounded font-mono text-[10px] font-bold bg-amber-900/60 text-amber-300 border border-amber-600/60';
+        }
+      }
+
+      // Stage 4 specific UI
+      if (activeStage === 4) {
+        document.getElementById('kf-true-th').innerText = `${(state.theta * 180 / Math.PI).toFixed(2)}°`;
+        document.getElementById('kf-meas-th').innerText = `${(noisyMeasuredTheta * 180 / Math.PI).toFixed(2)}°`;
+        document.getElementById('kf-est-th').innerText = `${(x_hat[2] * 180 / Math.PI).toFixed(2)}°`;
+      }
+    }
+
+    function setupInteractions() {
+      resizeCanvases();
+      recomputeLQRGains();
+
+      // Master pause/resume
+      const btnRun = document.getElementById('btn-master-run');
+      const iconRun = document.getElementById('btn-master-run-icon');
+      const textRun = document.getElementById('btn-master-run-text');
+      btnRun.addEventListener('click', () => {
+        simRunning = !simRunning;
+        if (simRunning) {
+          iconRun.className = 'fa-solid fa-pause text-xs';
+          textRun.innerText = 'Pause';
+        } else {
+          iconRun.className = 'fa-solid fa-play text-xs';
+          textRun.innerText = 'Run';
+        }
+      });
+
+      // Master reset
+      document.getElementById('btn-master-reset').addEventListener('click', resetCurrentStage);
+
+      // Stage tab switching
+      const tabBtns = document.querySelectorAll('.tab-btn');
+      tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          tabBtns.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          const stage = parseInt(btn.dataset.stage);
+          setStage(stage);
+        });
+      });
+
+      // Impulses
+      document.getElementById('btn-impulse-left').addEventListener('click', () => { state.x_dot -= 1.8; });
+      document.getElementById('btn-impulse-right').addEventListener('click', () => { state.x_dot += 1.8; });
+      document.getElementById('btn-torque-kick').addEventListener('click', () => { state.theta_dot += 3.5; });
+
+      // Clear phase plot
+      document.getElementById('btn-clear-phase').addEventListener('click', () => {
+        phaseHistory.length = 0;
+      });
+
+      // Stage 1 Sliders
+      const bindSlider = (id, obj, prop, lblId, suffix, callback) => {
+        const slider = document.getElementById(id);
+        const lbl = document.getElementById(lblId);
+        slider.addEventListener('input', (e) => {
+          const val = parseFloat(e.target.value);
+          obj[prop] = val;
+          lbl.innerText = `${val.toFixed(2)} ${suffix}`;
+          if (callback) callback();
+        });
+      };
+
+      bindSlider('input-M', params, 'M', 'lbl-val-M', 'kg', recomputeLQRGains);
+      bindSlider('input-m', params, 'm', 'lbl-val-m', 'kg', recomputeLQRGains);
+      bindSlider('input-l', params, 'l', 'lbl-val-l', 'm', recomputeLQRGains);
+      bindSlider('input-b', params, 'b', 'lbl-val-b', 'N·s/m', recomputeLQRGains);
+      bindSlider('input-bth', params, 'b_theta', 'lbl-val-bth', 'N·m·s');
+
+      const sliderTh0 = document.getElementById('input-th0');
+      sliderTh0.addEventListener('input', (e) => {
+        const deg = parseFloat(e.target.value);
+        document.getElementById('lbl-val-th0').innerText = `${deg}°`;
+      });
+      document.getElementById('btn-release-drop').addEventListener('click', () => {
+        const deg = parseFloat(sliderTh0.value);
+        state.theta = deg * (Math.PI / 180.0);
+        state.theta_dot = 0;
+        state.x = 0;
+        state.x_dot = 0;
+        traceHistory.length = 0;
+        phaseHistory.length = 0;
+      });
+
+      // Stage 2 Controls
+      document.getElementById('input-xref').addEventListener('input', (e) => {
+        x_ref = parseFloat(e.target.value);
+        document.getElementById('lbl-val-xref').innerText = `${x_ref.toFixed(2)} m`;
+      });
+
+      document.getElementById('btn-ctrl-lqr').addEventListener('click', () => {
+        controllerType = 'LQR';
+        document.getElementById('btn-ctrl-lqr').className = 'flex-1 py-1.5 rounded-lg bg-emerald-600 text-white shadow';
+        document.getElementById('btn-ctrl-pid').className = 'flex-1 py-1.5 rounded-lg text-slate-400 hover:text-slate-200';
+      });
+      document.getElementById('btn-ctrl-pid').addEventListener('click', () => {
+        controllerType = 'PID';
+        document.getElementById('btn-ctrl-pid').className = 'flex-1 py-1.5 rounded-lg bg-emerald-600 text-white shadow';
+        document.getElementById('btn-ctrl-lqr').className = 'flex-1 py-1.5 rounded-lg text-slate-400 hover:text-slate-200';
+      });
+
+      document.getElementById('input-qtheta').addEventListener('input', (e) => {
+        Q_theta = parseFloat(e.target.value);
+        document.getElementById('lbl-val-qtheta').innerText = Q_theta;
+        recomputeLQRGains();
+      });
+      document.getElementById('input-qx').addEventListener('input', (e) => {
+        Q_x = parseFloat(e.target.value);
+        document.getElementById('lbl-val-qx').innerText = Q_x;
+        recomputeLQRGains();
+      });
+      document.getElementById('input-r').addEventListener('input', (e) => {
+        R_cost = parseFloat(e.target.value);
+        document.getElementById('lbl-val-r').innerText = R_cost.toFixed(2);
+        recomputeLQRGains();
+      });
+
+      document.getElementById('btn-disturb-neg').addEventListener('click', () => { state.x_dot -= 2.2; });
+      document.getElementById('btn-disturb-pos').addEventListener('click', () => { state.x_dot += 2.2; });
+
+      // Stage 3 Controls
+      document.getElementById('input-ke').addEventListener('input', (e) => {
+        k_e = parseFloat(e.target.value);
+        document.getElementById('lbl-val-ke').innerText = k_e.toFixed(1);
+      });
+      document.getElementById('input-cap-win').addEventListener('input', (e) => {
+        const deg = parseFloat(e.target.value);
+        captureWindow = deg * (Math.PI / 180.0);
+        document.getElementById('lbl-val-cap-win').innerText = `±${deg}°`;
+      });
+      document.getElementById('btn-trigger-swingup').addEventListener('click', () => {
+        state.theta = Math.PI; // start hanging at rest
+        state.theta_dot = 0.05; // tiny initial nudge
+        state.x = 0;
+        state.x_dot = 0;
+        swingUpState = 'PUMPING';
+        traceHistory.length = 0;
+      });
+
+      // Stage 4 Controls
+      document.getElementById('chk-use-kalman').addEventListener('change', (e) => {
+        useKalman = e.target.checked;
+      });
+      document.getElementById('input-noise').addEventListener('input', (e) => {
+        sensorNoiseStd = parseFloat(e.target.value);
+        const deg = (sensorNoiseStd * 180 / Math.PI).toFixed(1);
+        document.getElementById('lbl-val-noise').innerText = `${sensorNoiseStd.toFixed(2)} rad (${deg}°)`;
+      });
+      document.getElementById('input-latency').addEventListener('input', (e) => {
+        sensorLatencyMs = parseInt(e.target.value);
+        document.getElementById('lbl-val-latency').innerText = `${sensorLatencyMs} ms`;
+      });
+
+      // Interactive Mouse Drag on Pendulum Bob
+      let isDragging = false;
+      canvas.addEventListener('mousedown', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+        const scr = toScreen(state.x, state.theta);
+        const dist = Math.hypot(mx - scr.bx, my - scr.by);
+        if (dist < 28) {
+          isDragging = true;
+        }
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+        const scr = toScreen(state.x, state.theta);
+        
+        const dx = mx - scr.cx;
+        const dy = scr.cy - my; // invert screen y
+        state.theta = wrapAngle(Math.atan2(dx, dy));
+        state.theta_dot = 0;
+      });
+
+      window.addEventListener('mouseup', () => {
+        isDragging = false;
+      });
+    }
+
+    function setStage(stageNum) {
+      activeStage = stageNum;
+
+      // Hide all panels, show active
+      for (let i = 1; i <= 4; i++) {
+        const p = document.getElementById(`panel-stage-${i}`);
+        if (i === stageNum) p.classList.remove('hidden');
+        else p.classList.add('hidden');
+      }
+
+      const ctrlBadge = document.getElementById('status-controller-name');
+      const flagText = document.getElementById('state-flag-text');
+
+      if (stageNum === 1) {
+        ctrlBadge.innerText = 'Free Open-Loop Dynamics';
+        flagText.innerText = 'PASSIVE DYNAMICS';
+        state.theta = 170 * (Math.PI / 180.0);
+        state.theta_dot = 0;
+      } else if (stageNum === 2) {
+        ctrlBadge.innerText = 'Active Upright Balance (LQR)';
+        flagText.innerText = 'LQR REGULATOR';
+        state.theta = 4 * (Math.PI / 180.0); // Slight offset to test catch
+        state.theta_dot = 0;
+      } else if (stageNum === 3) {
+        ctrlBadge.innerText = 'Hybrid Non-Linear Swing-Up & Catch';
+        flagText.innerText = 'ENERGY SWING-UP';
+        state.theta = Math.PI; // Hanging down
+        state.theta_dot = 0.05;
+      } else if (stageNum === 4) {
+        ctrlBadge.innerText = 'Linear Kalman State Estimation';
+        flagText.innerText = 'KALMAN FILTER';
+        state.theta = 2 * (Math.PI / 180.0);
+        state.theta_dot = 0;
+        x_hat = [state.x, state.x_dot, state.theta, state.theta_dot];
+      }
+
+      state.x = 0;
+      state.x_dot = 0;
+      state.u = 0;
+      traceHistory.length = 0;
+      phaseHistory.length = 0;
+    }
+
+    function resetCurrentStage() {
+      setStage(activeStage);
+    }
+
+    // Startup sequence
+    window.onload = function() {
+      setupInteractions();
+      setStage(1);
+      requestAnimationFrame(simLoop);
+    };
+  </script>
+</body>
+</html>
