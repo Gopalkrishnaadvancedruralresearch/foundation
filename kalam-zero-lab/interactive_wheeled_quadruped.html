@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Wheeled Quadruped Robot Simulator</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Three.js and OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      user-select: none;
+      -webkit-user-select: none;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+    .hud-glass {
+      background: rgba(15, 23, 42, 0.82);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .control-btn {
+      touch-action: manipulation;
+      transition: all 0.15s ease-in-out;
+    }
+    .control-btn:active {
+      transform: scale(0.92);
+      filter: brightness(1.2);
+    }
+    /* Custom scrollbar for control panel */
+    ::-webkit-scrollbar {
+      width: 4px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(234, 179, 8, 0.4);
+      border-radius: 4px;
+    }
+    .sonar-ping {
+      animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 h-screen w-screen overflow-hidden select-none">
+
+  <div id="canvas-container" class="absolute inset-0 z-0"></div>
+
+  <!-- Header & Telemetry Bar -->
+  <header class="absolute top-3 left-3 right-3 z-10 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+    <div class="hud-glass rounded-xl px-4 py-2 pointer-events-auto flex items-center gap-3 shadow-lg border-l-4 border-yellow-400">
+      <div class="w-3 h-3 rounded-full bg-yellow-400 animate-pulse"></div>
+      <div>
+        <h1 class="text-sm font-bold tracking-wider uppercase text-yellow-400 flex items-center gap-2">
+          <span>ROBO-AI QUAD-ROVER</span>
+          <span class="text-[10px] bg-yellow-400/20 text-yellow-300 px-1.5 py-0.5 rounded border border-yellow-400/30">v2.4 SIM</span>
+        </h1>
+        <p class="text-[11px] text-slate-400">Wheeled Quadruped Hybrid Kinematics</p>
+      </div>
+    </div>
+
+    <!-- Live Telemetry Badges -->
+    <div class="hud-glass rounded-xl px-3 py-2 pointer-events-auto flex items-center gap-4 text-xs font-mono shadow-lg">
+      <div class="flex items-center gap-1.5">
+        <i class="fa-solid fa-gauge-high text-yellow-400"></i>
+        <span class="text-slate-400">SPD:</span>
+        <span id="tel-speed" class="font-bold text-white">0.0 m/s</span>
+      </div>
+      <div class="hidden sm:flex items-center gap-1.5">
+        <i class="fa-solid fa-compass text-sky-400"></i>
+        <span class="text-slate-400">YAW:</span>
+        <span id="tel-yaw" class="font-bold text-white">0°</span>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <i class="fa-solid fa-eye text-emerald-400"></i>
+        <span class="text-slate-400">SONAR:</span>
+        <span id="tel-sonar" class="font-bold text-emerald-300">--- cm</span>
+      </div>
+      <div class="hidden sm:flex items-center gap-1.5">
+        <i class="fa-solid fa-battery-half text-amber-400"></i>
+        <span class="text-slate-400">BAT:</span>
+        <span id="tel-battery" class="font-bold text-emerald-400">98%</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Left Side: Control Panel Accordion / Drawer -->
+  <aside class="absolute top-20 left-3 z-10 w-72 max-w-[85vw] max-h-[calc(100vh-140px)] overflow-y-auto hud-glass rounded-2xl p-4 shadow-2xl flex flex-col gap-4 text-xs">
+    
+    <!-- Locomotion Mode Selector -->
+    <div>
+      <label class="text-[11px] font-semibold tracking-wider uppercase text-yellow-400/90 block mb-2">
+        <i class="fa-solid fa-sliders mr-1"></i> Locomotion Mode
+      </label>
+      <div class="grid grid-cols-2 gap-1.5">
+        <button id="btn-mode-wheel" class="control-btn px-2.5 py-2 rounded-lg font-medium text-center border border-yellow-400/40 bg-yellow-500/20 text-yellow-300">
+          <i class="fa-solid fa-car-side block text-base mb-1"></i> Wheeled Drive
+        </button>
+        <button id="btn-mode-trot" class="control-btn px-2.5 py-2 rounded-lg font-medium text-center border border-slate-700 bg-slate-800/60 text-slate-300 hover:bg-slate-700/60">
+          <i class="fa-solid fa-paw block text-base mb-1"></i> Trot Gait
+        </button>
+        <button id="btn-mode-auto" class="control-btn px-2.5 py-2 rounded-lg font-medium text-center border border-slate-700 bg-slate-800/60 text-slate-300 hover:bg-slate-700/60">
+          <i class="fa-solid fa-robot block text-base mb-1"></i> Auto Patrol
+        </button>
+        <button id="btn-mode-dance" class="control-btn px-2.5 py-2 rounded-lg font-medium text-center border border-slate-700 bg-slate-800/60 text-slate-300 hover:bg-slate-700/60">
+          <i class="fa-solid fa-wave-square block text-base mb-1"></i> Body Demo
+        </button>
+      </div>
+    </div>
+
+    <!-- Active Mode Description -->
+    <div id="mode-desc" class="p-2 bg-slate-900/60 rounded-lg border border-slate-700/60 text-[11px] text-slate-300">
+      <span class="text-yellow-400 font-bold">WHEELED DRIVE:</span> High-speed smooth driving with rotating foot wheels & steering suspension.
+    </div>
+
+    <!-- Stance & Height Sliders -->
+    <div class="space-y-3 pt-1 border-t border-slate-700/50">
+      <div>
+        <div class="flex justify-between mb-1">
+          <span class="text-slate-300 font-medium">Ride Height (Suspension)</span>
+          <span id="val-height" class="text-yellow-400 font-mono">1.0x</span>
+        </div>
+        <input id="slider-height" type="range" min="0.4" max="1.5" step="0.05" value="1.0" class="w-full accent-yellow-400 cursor-pointer">
+      </div>
+
+      <div>
+        <div class="flex justify-between mb-1">
+          <span class="text-slate-300 font-medium">Stance Splay (Width)</span>
+          <span id="val-splay" class="text-yellow-400 font-mono">1.0x</span>
+        </div>
+        <input id="slider-splay" type="range" min="0.7" max="1.4" step="0.05" value="1.0" class="w-full accent-yellow-400 cursor-pointer">
+      </div>
+
+      <div>
+        <div class="flex justify-between mb-1">
+          <span class="text-slate-300 font-medium">Body Pitch Tilt</span>
+          <span id="val-pitch" class="text-yellow-400 font-mono">0°</span>
+        </div>
+        <input id="slider-pitch" type="range" min="-25" max="25" step="1" value="0" class="w-full accent-yellow-400 cursor-pointer">
+      </div>
+    </div>
+
+    <!-- Features Toggles & Sensor Beam -->
+    <div class="space-y-2 pt-1 border-t border-slate-700/50">
+      <label class="flex items-center justify-between cursor-pointer">
+        <span class="text-slate-300"><i class="fa-solid fa-radar mr-1.5 text-yellow-400"></i> Sonar Visual Beam</span>
+        <input id="chk-beam" type="checkbox" checked class="w-4 h-4 accent-yellow-400 rounded">
+      </label>
+      <label class="flex items-center justify-between cursor-pointer">
+        <span class="text-slate-300"><i class="fa-solid fa-video mr-1.5 text-sky-400"></i> Follow Camera</span>
+        <input id="chk-follow-cam" type="checkbox" checked class="w-4 h-4 accent-yellow-400 rounded">
+      </label>
+      <label class="flex items-center justify-between cursor-pointer">
+        <span class="text-slate-300"><i class="fa-solid fa-lightbulb mr-1.5 text-amber-300"></i> Front Headlights</span>
+        <input id="chk-headlights" type="checkbox" checked class="w-4 h-4 accent-yellow-400 rounded">
+      </label>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="pt-2 border-t border-slate-700/50 flex gap-2">
+      <button id="btn-reset" class="control-btn flex-1 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 font-medium text-center">
+        <i class="fa-solid fa-rotate-left mr-1"></i> Reset Pos
+      </button>
+      <button id="btn-spawn-obs" class="control-btn flex-1 py-1.5 rounded-lg bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-300 border border-yellow-500/40 font-medium text-center">
+        <i class="fa-solid fa-cubes mr-1"></i> Randomize
+      </button>
+    </div>
+  </aside>
+
+  <!-- Right / Bottom Navigation Help & Onscreen Controls -->
+  <div class="absolute bottom-4 right-4 z-10 flex flex-col items-end gap-3 pointer-events-none">
+    
+    <!-- Controls Guide / Tip badge -->
+    <div class="hud-glass rounded-xl px-3 py-2 text-[11px] text-slate-300 shadow-md border border-slate-700/60 pointer-events-auto hidden md:flex items-center gap-3">
+      <div>
+        <span class="text-yellow-400 font-bold">Drive:</span> <kbd class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700">W</kbd><kbd class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700">A</kbd><kbd class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700">S</kbd><kbd class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700">D</kbd> or <kbd class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700">Arrows</kbd>
+      </div>
+      <div class="w-px h-3 bg-slate-700"></div>
+      <div>
+        <span class="text-yellow-400 font-bold">Orbit:</span> Left Click & Drag | <span class="text-yellow-400 font-bold">Zoom:</span> Scroll
+      </div>
+    </div>
+
+    <!-- On-Screen Virtual D-PAD for Mobile / Touch -->
+    <div class="pointer-events-auto p-2 hud-glass rounded-2xl shadow-2xl border border-slate-700/80">
+      <div class="grid grid-cols-3 gap-1.5 w-36 h-36">
+        <div></div>
+        <button id="btn-fwd" class="control-btn bg-slate-800/90 active:bg-yellow-500 hover:bg-slate-700 text-yellow-400 hover:text-white rounded-xl flex items-center justify-center text-lg shadow border border-slate-600">
+          <i class="fa-solid fa-chevron-up"></i>
+        </button>
+        <div></div>
+
+        <button id="btn-left" class="control-btn bg-slate-800/90 active:bg-yellow-500 hover:bg-slate-700 text-yellow-400 hover:text-white rounded-xl flex items-center justify-center text-lg shadow border border-slate-600">
+          <i class="fa-solid fa-chevron-left"></i>
+        </button>
+        <button id="btn-stop" class="control-btn bg-slate-900 active:bg-red-600 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl flex items-center justify-center text-xs font-bold shadow border border-slate-700">
+          BRAKE
+        </button>
+        <button id="btn-right" class="control-btn bg-slate-800/90 active:bg-yellow-500 hover:bg-slate-700 text-yellow-400 hover:text-white rounded-xl flex items-center justify-center text-lg shadow border border-slate-600">
+          <i class="fa-solid fa-chevron-right"></i>
+        </button>
+
+        <div></div>
+        <button id="btn-back" class="control-btn bg-slate-800/90 active:bg-yellow-500 hover:bg-slate-700 text-yellow-400 hover:text-white rounded-xl flex items-center justify-center text-lg shadow border border-slate-600">
+          <i class="fa-solid fa-chevron-down"></i>
+        </button>
+        <div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Banner for Autonomous Alerts -->
+  <div id="sonar-alert" class="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 pointer-events-none opacity-0 transition-opacity duration-300">
+    <div class="hud-glass border border-red-500/50 bg-red-950/80 text-red-200 px-4 py-2 rounded-xl flex items-center gap-2 shadow-2xl text-xs font-semibold">
+      <i class="fa-solid fa-triangle-exclamation text-red-400 text-base animate-bounce"></i>
+      <span>OBSTACLE PROXIMITY ALERT! <span id="alert-distance" class="text-white font-mono">25</span> cm</span>
+    </div>
+  </div>
+
+  <script>
+    let scene, camera, renderer, controls;
+    let clock = new THREE.Clock();
+
+    // Scene & Environment
+    const container = document.getElementById('canvas-container');
+    const obstacles = [];
+    let robotGroup, bodyMesh, sensorConeMesh, headlightLeft, headlightRight;
+    let legs = []; // 4 legs: FL, FR, RL, RR
+
+    // Locomotion & Physics state
+    const robotState = {
+      x: 0,
+      z: 0,
+      y: 0,
+      heading: 0, // radians
+      linearSpeed: 0,
+      angularSpeed: 0,
+      maxSpeed: 4.8,
+      acceleration: 8.0,
+      friction: 4.0,
+      turnRate: 2.2,
+      mode: 'wheel', // 'wheel', 'trot', 'auto', 'dance'
+      rideHeightFactor: 1.0,
+      stanceWidthFactor: 1.0,
+      bodyPitch: 0,
+      trotCycle: 0,
+      battery: 98,
+      minObstacleDist: 999,
+      avoidanceCooldown: 0,
+      autonomousTurnDir: 1
+    };
+
+    // User input key map
+    const keys = {
+      forward: false,
+      backward: false,
+      left: false,
+      right: false
+    };
+
+    // Helper to generate a procedural industrial hazard / grip texture
+    function createTreadCanvasTexture() {
+      const c = document.createElement('canvas');
+      c.width = 128;
+      c.height = 128;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#1c1c1e';
+      ctx.fillRect(0, 0, 128, 128);
+      ctx.fillStyle = '#2d2d30';
+      for (let i = 0; i < 128; i += 16) {
+        ctx.fillRect(0, i, 128, 6);
+        ctx.fillRect(i, 0, 6, 128);
+      }
+      ctx.fillStyle = '#111';
+      ctx.fillRect(40, 0, 48, 128);
+      const tex = new THREE.CanvasTexture(c);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    }
+
+    // Material Library matching the industrial yellow & rugged black finish
+    const materials = {
+      yellowBody: new THREE.MeshStandardMaterial({
+        color: 0xf59e0b, // Bright industrial warning yellow
+        roughness: 0.35,
+        metalness: 0.2
+      }),
+      darkChassis: new THREE.MeshStandardMaterial({
+        color: 0x18181b, // Dark matte polymer
+        roughness: 0.6,
+        metalness: 0.4
+      }),
+      accentGold: new THREE.MeshStandardMaterial({
+        color: 0xd97706,
+        roughness: 0.4,
+        metalness: 0.5
+      }),
+      silverBezel: new THREE.MeshStandardMaterial({
+        color: 0xe2e8f0,
+        metalness: 0.85,
+        roughness: 0.2
+      }),
+      sonarTransducer: new THREE.MeshStandardMaterial({
+        color: 0x0f172a,
+        metalness: 0.7,
+        roughness: 0.3
+      }),
+      sonarMeshCenter: new THREE.MeshBasicMaterial({
+        color: 0xfacc15
+      }),
+      wheelRubber: new THREE.MeshStandardMaterial({
+        color: 0x1e1e24,
+        roughness: 0.85,
+        metalness: 0.1,
+        map: createTreadCanvasTexture()
+      }),
+      wheelRim: new THREE.MeshStandardMaterial({
+        color: 0xf59e0b,
+        roughness: 0.3,
+        metalness: 0.7
+      }),
+      ledGlow: new THREE.MeshBasicMaterial({
+        color: 0x38bdf8
+      }),
+      headlightLens: new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        emissive: 0xffedd5,
+        emissiveIntensity: 0.8,
+        roughness: 0.1
+      })
+    };
+
+    function buildRobot() {
+      robotGroup = new THREE.Group();
+
+      // Main Torso Container
+      const torso = new THREE.Group();
+      torso.position.y = 0.95; // Base resting chassis height
+
+      // Central Body Hull (Sculpted industrial shell)
+      const hullGeom = new THREE.BoxGeometry(0.9, 0.38, 1.3, 2, 2, 2);
+      // Slightly chamfered body via simple mesh
+      const hull = new THREE.Mesh(hullGeom, materials.yellowBody);
+      hull.castShadow = true;
+      hull.receiveShadow = true;
+      torso.add(hull);
+
+      // Lower electronics deck (dark underbelly)
+      const deckGeom = new THREE.BoxGeometry(0.82, 0.18, 1.25);
+      const deck = new THREE.Mesh(deckGeom, materials.darkChassis);
+      deck.position.y = -0.16;
+      deck.castShadow = true;
+      torso.add(deck);
+
+      // Top battery lid & heatsink grill
+      const lidGeom = new THREE.BoxGeometry(0.65, 0.08, 0.75);
+      const lid = new THREE.Mesh(lidGeom, materials.darkChassis);
+      lid.position.y = 0.21;
+      lid.castShadow = true;
+      torso.add(lid);
+
+      // Subtle top handle / roll cage
+      const handleGeom = new THREE.CylinderGeometry(0.02, 0.02, 0.6, 8);
+      const handle = new THREE.Mesh(handleGeom, materials.darkChassis);
+      handle.rotation.z = Math.PI / 2;
+      handle.position.set(0, 0.28, 0.1);
+      torso.add(handle);
+
+      // FRONT HEAD / HC-SR04 SENSOR CASING
+      // Casing box in distinctive yellow
+      const headGeom = new THREE.BoxGeometry(0.72, 0.32, 0.3);
+      const head = new THREE.Mesh(headGeom, materials.yellowBody);
+      head.position.set(0, 0.04, 0.72);
+      head.castShadow = true;
+
+      // Dark face cutout plate
+      const facePlateGeom = new THREE.BoxGeometry(0.62, 0.24, 0.03);
+      const facePlate = new THREE.Mesh(facePlateGeom, materials.darkChassis);
+      facePlate.position.set(0, 0, 0.155);
+      head.add(facePlate);
+
+      // Ultrasonic "Eyes" (Dual cylindrical transducers)
+      const eyePositions = [-0.17, 0.17];
+      eyePositions.forEach(xPos => {
+        // Outer bezel ring (silver)
+        const eyeRingGeom = new THREE.CylinderGeometry(0.095, 0.095, 0.04, 20);
+        const eyeRing = new THREE.Mesh(eyeRingGeom, materials.silverBezel);
+        eyeRing.rotation.x = Math.PI / 2;
+        eyeRing.position.set(xPos, 0, 0.17);
+        head.add(eyeRing);
+
+        // Inner transducer mesh
+        const innerGeom = new THREE.CylinderGeometry(0.075, 0.075, 0.045, 16);
+        const inner = new THREE.Mesh(innerGeom, materials.sonarTransducer);
+        inner.rotation.x = Math.PI / 2;
+        inner.position.set(xPos, 0, 0.175);
+        head.add(inner);
+
+        // Core gold resonance emitter dot
+        const dotGeom = new THREE.CircleGeometry(0.03, 16);
+        const dot = new THREE.Mesh(dotGeom, materials.sonarMeshCenter);
+        dot.position.set(xPos, 0, 0.2);
+        head.add(dot);
+      });
+
+      // Front Headlights (Bright warm LEDs)
+      headlightLeft = new THREE.SpotLight(0xffedd5, 2.5, 18, Math.PI / 5, 0.3, 1);
+      headlightLeft.position.set(-0.25, -0.05, 0.85);
+      headlightLeft.target.position.set(-0.25, -0.6, 6);
+      torso.add(headlightLeft);
+      torso.add(headlightLeft.target);
+
+      headlightRight = new THREE.SpotLight(0xffedd5, 2.5, 18, Math.PI / 5, 0.3, 1);
+      headlightRight.position.set(0.25, -0.05, 0.85);
+      headlightRight.target.position.set(0.25, -0.6, 6);
+      torso.add(headlightRight);
+      torso.add(headlightRight.target);
+
+      // Lens bulbs
+      const bulbGeom = new THREE.SphereGeometry(0.04, 12, 12);
+      const bulbL = new THREE.Mesh(bulbGeom, materials.headlightLens);
+      bulbL.position.set(-0.26, -0.06, 0.82);
+      torso.add(bulbL);
+      const bulbR = new THREE.Mesh(bulbGeom, materials.headlightLens);
+      bulbR.position.set(0.26, -0.06, 0.82);
+      torso.add(bulbR);
+
+      torso.add(head);
+
+      // Visualized Sonar Detection Cone / Ray
+      const coneGeom = new THREE.ConeGeometry(1.6, 6.0, 16, 1, true);
+      const coneMat = new THREE.MeshBasicMaterial({
+        color: 0x38bdf8,
+        transparent: true,
+        opacity: 0.18,
+        wireframe: true,
+        side: THREE.DoubleSide
+      });
+      sensorConeMesh = new THREE.Mesh(coneGeom, coneMat);
+      sensorConeMesh.rotation.x = -Math.PI / 2;
+      sensorConeMesh.position.set(0, 0, 3.8); // Points forward from eyes
+      head.add(sensorConeMesh);
+
+      robotGroup.add(torso);
+      bodyMesh = torso;
+
+      // Leg layout: Front-Left (+x, +z), Front-Right (-x, +z), Rear-Left (+x, -z), Rear-Right (-x, -z)
+      const legConfigs = [
+        { name: 'FL', xSign: 1,  zSign: 1,  hipX: 0.46,  hipZ: 0.44 },
+        { name: 'FR', xSign: -1, zSign: 1,  hipX: -0.46, hipZ: 0.44 },
+        { name: 'RL', xSign: 1,  zSign: -1, hipX: 0.46,  hipZ: -0.44 },
+        { name: 'RR', xSign: -1, zSign: -1, hipX: -0.46, hipZ: -0.44 }
+      ];
+
+      legs = legConfigs.map(cfg => {
+        // 1. Hip Joint (Rotates yaw/pitch from chassis)
+        const hipJoint = new THREE.Group();
+        hipJoint.position.set(cfg.hipX, -0.08, cfg.hipZ);
+        torso.add(hipJoint);
+
+        // Hip Servo Motor Casing
+        const servoGeom = new THREE.BoxGeometry(0.18, 0.2, 0.22);
+        const servoMesh = new THREE.Mesh(servoGeom, materials.darkChassis);
+        servoMesh.castShadow = true;
+        hipJoint.add(servoMesh);
+
+        // Hip Pivot Connector
+        const hipConnectorGeom = new THREE.CylinderGeometry(0.08, 0.08, 0.18, 14);
+        const hipConnector = new THREE.Mesh(hipConnectorGeom, materials.yellowBody);
+        hipConnector.rotation.z = Math.PI / 2;
+        hipJoint.add(hipConnector);
+
+        // 2. Upper Leg (Thigh link)
+        const upperLeg = new THREE.Group();
+        upperLeg.position.set(cfg.xSign * 0.14, -0.05, 0);
+        hipJoint.add(upperLeg);
+
+        // Thigh geometry in vivid yellow
+        const thighGeom = new THREE.BoxGeometry(0.12, 0.46, 0.15);
+        const thighMesh = new THREE.Mesh(thighGeom, materials.yellowBody);
+        thighMesh.position.y = -0.22;
+        thighMesh.castShadow = true;
+        upperLeg.add(thighMesh);
+
+        // 3. Knee Servo Joint
+        const kneeJoint = new THREE.Group();
+        kneeJoint.position.set(0, -0.44, 0);
+        upperLeg.add(kneeJoint);
+
+        const kneeServoMesh = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.075, 0.075, 0.16, 14),
+          materials.darkChassis
+        );
+        kneeServoMesh.rotation.z = Math.PI / 2;
+        kneeServoMesh.castShadow = true;
+        kneeJoint.add(kneeServoMesh);
+
+        // 4. Lower Leg (Shin link)
+        const lowerLeg = new THREE.Group();
+        kneeJoint.add(lowerLeg);
+
+        const shinGeom = new THREE.BoxGeometry(0.1, 0.44, 0.13);
+        const shinMesh = new THREE.Mesh(shinGeom, materials.darkChassis);
+        shinMesh.position.y = -0.2;
+        shinMesh.castShadow = true;
+        lowerLeg.add(shinMesh);
+
+        // 5. Wheel Hub & Rugged Foot Wheel
+        const wheelHub = new THREE.Group();
+        wheelHub.position.set(cfg.xSign * 0.07, -0.4, 0);
+        lowerLeg.add(wheelHub);
+
+        // Tire Cylinder
+        const tireGeom = new THREE.CylinderGeometry(0.19, 0.19, 0.14, 24);
+        const wheelMesh = new THREE.Mesh(tireGeom, materials.wheelRubber);
+        wheelMesh.rotation.z = Math.PI / 2;
+        wheelMesh.castShadow = true;
+        wheelHub.add(wheelMesh);
+
+        // Rim / Hubcap in yellow
+        const rimGeom = new THREE.CylinderGeometry(0.11, 0.11, 0.144, 16);
+        const rimMesh = new THREE.Mesh(rimGeom, materials.wheelRim);
+        rimMesh.rotation.z = Math.PI / 2;
+        wheelHub.add(rimMesh);
+
+        // Hub bolt accents
+        const hubCap = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.04, 0.04, 0.15, 8),
+          materials.silverBezel
+        );
+        hubCap.rotation.z = Math.PI / 2;
+        wheelHub.add(hubCap);
+
+        return {
+          config: cfg,
+          hipJoint,
+          upperLeg,
+          kneeJoint,
+          lowerLeg,
+          wheelHub,
+          wheelMesh,
+          baseAngles: {
+            hipRotZ: cfg.xSign * 0.12,
+            upperRotX: 0.35,
+            kneeRotX: -0.7
+          }
+        };
+      });
+
+      scene.add(robotGroup);
+    }
+
+    function buildEnvironment() {
+      // Main Ground with high-tech grid texture
+      const groundSize = 60;
+      const groundGeom = new THREE.PlaneGeometry(groundSize, groundSize);
+      const groundMat = new THREE.MeshStandardMaterial({
+        color: 0x090d16,
+        roughness: 0.8,
+        metalness: 0.2
+      });
+      const ground = new THREE.Mesh(groundGeom, groundMat);
+      ground.rotation.x = -Math.PI / 2;
+      ground.receiveShadow = true;
+      scene.add(ground);
+
+      // Fine Grid & Major Coordinate Grids
+      const gridMajor = new THREE.GridHelper(groundSize, 30, 0xf59e0b, 0x1e293b);
+      gridMajor.position.y = 0.01;
+      scene.add(gridMajor);
+
+      // Outer boundary warning fences / curbs
+      const curbGeom = new THREE.BoxGeometry(groundSize, 0.4, 0.4);
+      const curbMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.7 });
+      
+      const curbN = new THREE.Mesh(curbGeom, curbMat);
+      curbN.position.set(0, 0.2, groundSize / 2);
+      scene.add(curbN);
+      const curbS = new THREE.Mesh(curbGeom, curbMat);
+      curbS.position.set(0, 0.2, -groundSize / 2);
+      scene.add(curbS);
+      const curbE = new THREE.Mesh(curbGeom, curbMat);
+      curbE.rotation.y = Math.PI / 2;
+      curbE.position.set(groundSize / 2, 0.2, 0);
+      scene.add(curbE);
+      const curbW = new THREE.Mesh(curbGeom, curbMat);
+      curbW.rotation.y = Math.PI / 2;
+      curbW.position.set(-groundSize / 2, 0.2, 0);
+      scene.add(curbW);
+
+      // Spawn interesting obstacles for sonar navigation
+      createObstacles();
+    }
+
+    function createObstacles() {
+      // Clear previous
+      obstacles.forEach(o => scene.remove(o.mesh));
+      obstacles.length = 0;
+
+      const obstacleMats = [
+        new THREE.MeshStandardMaterial({ color: 0xe11d48, roughness: 0.4 }), // Red cargo crate
+        new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.5 }), // Blue crate
+        new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.7 })  // Concrete barrier
+      ];
+
+      // Predefined obstacles to guarantee interesting testing paths
+      const placements = [
+        { x: 0, z: 5, size: [1.8, 1.2, 1.4], type: 'box' },
+        { x: -5, z: 8, size: [1.4, 1.0, 1.4], type: 'box' },
+        { x: 6, z: 9, size: [1.2, 1.8, 1.2], type: 'cylinder' },
+        { x: -7, z: -4, size: [2.0, 1.0, 1.2], type: 'box' },
+        { x: 4, z: -6, size: [1.5, 1.4, 1.5], type: 'box' },
+        { x: -2, z: 14, size: [2.4, 1.4, 1.2], type: 'box' },
+        { x: 8, z: 16, size: [1.6, 1.2, 1.6], type: 'box' },
+        { x: -10, z: 2, size: [1.4, 2.0, 1.4], type: 'cylinder' },
+        { x: 12, z: -3, size: [2.2, 1.2, 1.2], type: 'box' }
+      ];
+
+      placements.forEach((p, idx) => {
+        let geom;
+        if (p.type === 'cylinder') {
+          geom = new THREE.CylinderGeometry(p.size[0] / 2, p.size[0] / 2, p.size[1], 16);
+        } else {
+          geom = new THREE.BoxGeometry(p.size[0], p.size[1], p.size[2]);
+        }
+        const mat = obstacleMats[idx % obstacleMats.length];
+        const mesh = new THREE.Mesh(geom, mat);
+        mesh.position.set(p.x, p.size[1] / 2, p.z);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        scene.add(mesh);
+
+        obstacles.push({
+          mesh,
+          x: p.x,
+          z: p.z,
+          radius: Math.max(p.size[0], p.size[2]) * 0.7
+        });
+      });
+    }
+
+    function setupScene() {
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x05070f);
+      scene.fog = new THREE.FogExp2(0x05070f, 0.022);
+
+      camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 150);
+      camera.position.set(4.5, 3.8, 5.5);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      container.appendChild(renderer.domElement);
+
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.07;
+      controls.maxPolarAngle = Math.PI / 2 - 0.05; // Prevent camera going below floor
+      controls.minDistance = 1.2;
+      controls.maxDistance = 35;
+      controls.target.set(0, 0.9, 0);
+
+      // Lighting
+      const ambient = new THREE.AmbientLight(0xffffff, 0.85);
+      scene.add(ambient);
+
+      const sun = new THREE.DirectionalLight(0xfff5e6, 1.4);
+      sun.position.set(15, 25, 12);
+      sun.castShadow = true;
+      sun.shadow.mapSize.width = 2048;
+      sun.shadow.mapSize.height = 2048;
+      sun.shadow.camera.near = 1;
+      sun.shadow.camera.far = 60;
+      sun.shadow.camera.left = -20;
+      sun.shadow.camera.right = 20;
+      sun.shadow.camera.top = 20;
+      sun.shadow.camera.bottom = -20;
+      sun.shadow.bias = -0.0005;
+      scene.add(sun);
+
+      const fillLight = new THREE.DirectionalLight(0x38bdf8, 0.5);
+      fillLight.position.set(-15, 12, -15);
+      scene.add(fillLight);
+
+      // Build 3D Entities
+      buildEnvironment();
+      buildRobot();
+
+      // Window resize listener
+      window.addEventListener('resize', onWindowResize);
+    }
+
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    function updateKinematics(delta) {
+      // 1. Process Steering & Acceleration Input
+      let moveInput = 0;
+      let turnInput = 0;
+
+      if (robotState.mode === 'auto') {
+        // Autonomous Cruise & Obstacle Avoidance State Machine
+        robotState.avoidanceCooldown -= delta;
+        if (robotState.minObstacleDist < 160) {
+          // Obstacle too close: reverse & pivot away
+          moveInput = -0.4;
+          turnInput = robotState.autonomousTurnDir * 1.0;
+        } else if (robotState.minObstacleDist < 260) {
+          // Approaching obstacle: slow down and turn
+          moveInput = 0.45;
+          turnInput = robotState.autonomousTurnDir * 0.9;
+          if (robotState.avoidanceCooldown <= 0) {
+            robotState.autonomousTurnDir = Math.random() > 0.5 ? 1 : -1;
+            robotState.avoidanceCooldown = 2.0;
+          }
+        } else {
+          // Clear road: cruise forward
+          moveInput = 0.95;
+          turnInput = 0;
+        }
+      } else if (robotState.mode === 'dance') {
+        // Stance Leveling & Dynamic Articulation Test
+        const time = clock.getElapsedTime() * 3.0;
+        robotState.bodyPitch = Math.sin(time) * 16;
+        robotState.rideHeightFactor = 1.0 + Math.cos(time * 0.8) * 0.35;
+        robotState.stanceWidthFactor = 1.0 + Math.sin(time * 1.2) * 0.2;
+        moveInput = 0;
+        turnInput = Math.sin(time * 0.5) * 0.3;
+      } else {
+        // Manual Keyboard or D-Pad Control
+        if (keys.forward) moveInput += 1;
+        if (keys.backward) moveInput -= 1;
+        if (keys.left) turnInput += 1;
+        if (keys.right) turnInput -= 1;
+      }
+
+      // Linear Acceleration & Inertia
+      const targetSpeed = moveInput * robotState.maxSpeed;
+      if (Math.abs(targetSpeed) > 0.05) {
+        robotState.linearSpeed += (targetSpeed - robotState.linearSpeed) * (robotState.acceleration * delta);
+      } else {
+        robotState.linearSpeed += (0 - robotState.linearSpeed) * (robotState.friction * delta);
+        if (Math.abs(robotState.linearSpeed) < 0.01) robotState.linearSpeed = 0;
+      }
+
+      // Angular Steering
+      const targetTurn = turnInput * robotState.turnRate;
+      robotState.angularSpeed += (targetTurn - robotState.angularSpeed) * (8.0 * delta);
+      robotState.heading += robotState.angularSpeed * delta;
+
+      // Displacement & Collision check with obstacles
+      const forwardVec = new THREE.Vector3(
+        Math.sin(robotState.heading),
+        0,
+        Math.cos(robotState.heading)
+      );
+
+      const nextX = robotState.x + forwardVec.x * robotState.linearSpeed * delta;
+      const nextZ = robotState.z + forwardVec.z * robotState.linearSpeed * delta;
+
+      // Obstacle boundary collision circle check (radius 0.8m)
+      let collision = false;
+      const robotRadius = 0.8;
+      for (let obs of obstacles) {
+        const dx = nextX - obs.x;
+        const dz = nextZ - obs.z;
+        const dist = Math.sqrt(dx * dx + dz * dz);
+        if (dist < (robotRadius + obs.radius)) {
+          collision = true;
+          // Bounce slightly off obstacle
+          robotState.linearSpeed = -robotState.linearSpeed * 0.4;
+          break;
+        }
+      }
+
+      // Ground bounds clamp (-28 to 28)
+      if (!collision) {
+        robotState.x = Math.max(-28, Math.min(28, nextX));
+        robotState.z = Math.max(-28, Math.min(28, nextZ));
+      }
+
+      // Apply root robot transformation
+      robotGroup.position.set(robotState.x, 0, robotState.z);
+      robotGroup.rotation.y = robotState.heading;
+
+      // 2. Ultrasonic Sonar Raycasting Simulation
+      simulateUltrasonicSonar();
+
+      // 3. Articulate Legs & Wheels according to Mode
+      animateLimbs(delta);
+    }
+
+    function simulateUltrasonicSonar() {
+      // Robot front world position & forward direction
+      const frontPos = new THREE.Vector3();
+      sensorConeMesh.getWorldPosition(frontPos);
+
+      const forwardRay = new THREE.Vector3(
+        Math.sin(robotState.heading),
+        0,
+        Math.cos(robotState.heading)
+      ).normalize();
+
+      let closestDist = 999; // meters
+
+      // Raycast against all obstacle bounding circles
+      obstacles.forEach(obs => {
+        const toObs = new THREE.Vector3(obs.x - robotState.x, 0, obs.z - robotState.z);
+        const projection = toObs.dot(forwardRay);
+
+        // If obstacle is in front of the robot
+        if (projection > 0 && projection < 12) {
+          const closestPoint = forwardRay.clone().multiplyScalar(projection);
+          const perpDist = toObs.distanceTo(closestPoint);
+          if (perpDist < obs.radius + 0.5) {
+            const surfaceDist = Math.max(0.1, projection - obs.radius);
+            if (surfaceDist < closestDist) {
+              closestDist = surfaceDist;
+            }
+          }
+        }
+      });
+
+      // Arena boundary distance in front
+      const boundDist = 28 - Math.abs(robotState.z);
+      if (Math.abs(forwardRay.z) > 0.7 && boundDist < closestDist) {
+        closestDist = Math.max(0.2, boundDist);
+      }
+
+      const distanceCm = Math.min(600, Math.round(closestDist * 100));
+      robotState.minObstacleDist = distanceCm;
+
+      // Update Sonar Alert HUD
+      const alertEl = document.getElementById('sonar-alert');
+      const alertDistEl = document.getElementById('alert-distance');
+      const sonarTel = document.getElementById('tel-sonar');
+
+      if (distanceCm < 600) {
+        sonarTel.innerText = `${distanceCm} cm`;
+        if (distanceCm < 140) {
+          sonarTel.className = 'font-bold text-red-400 animate-pulse';
+          alertDistEl.innerText = distanceCm;
+          alertEl.classList.remove('opacity-0');
+          sensorConeMesh.material.color.setHex(0xef4444);
+        } else if (distanceCm < 280) {
+          sonarTel.className = 'font-bold text-amber-300';
+          alertEl.classList.add('opacity-0');
+          sensorConeMesh.material.color.setHex(0xf59e0b);
+        } else {
+          sonarTel.className = 'font-bold text-emerald-300';
+          alertEl.classList.add('opacity-0');
+          sensorConeMesh.material.color.setHex(0x38bdf8);
+        }
+      } else {
+        sonarTel.innerText = '> 600 cm';
+        sonarTel.className = 'font-bold text-slate-300';
+        alertEl.classList.add('opacity-0');
+        sensorConeMesh.material.color.setHex(0x38bdf8);
+      }
+    }
+
+    function animateLimbs(delta) {
+      const isMoving = Math.abs(robotState.linearSpeed) > 0.1 || Math.abs(robotState.angularSpeed) > 0.1;
+      
+      // Pitch and suspension height adjustments
+      const pitchRad = (robotState.bodyPitch * Math.PI) / 180;
+      bodyMesh.rotation.x = pitchRad;
+      bodyMesh.position.y = 0.95 * robotState.rideHeightFactor;
+
+      // Wheel rotation increment proportional to linear speed and differential steering
+      const wheelCircumference = 2 * Math.PI * 0.19;
+      const baseWheelRot = (robotState.linearSpeed * delta) / (wheelCircumference / (2 * Math.PI));
+
+      // Trot Gait phase increment
+      if (robotState.mode === 'trot' && isMoving) {
+        robotState.trotCycle += delta * Math.max(2.5, Math.abs(robotState.linearSpeed) * 3.2);
+      }
+
+      legs.forEach((leg, index) => {
+        const { config, hipJoint, upperLeg, kneeJoint, wheelMesh, baseAngles } = leg;
+        
+        // Stance width adjustment (splaying legs out/in)
+        hipJoint.rotation.z = baseAngles.hipRotZ * robotState.stanceWidthFactor;
+
+        // Differential steering wheel speeds: outer wheels spin faster when turning
+        const diffSteer = config.xSign * (robotState.angularSpeed * 0.3);
+        wheelMesh.rotation.x += baseWheelRot + diffSteer;
+
+        if (robotState.mode === 'trot') {
+          // Quadruped Trot Gait: Diagonal leg pairs (FL+RR and FR+RL) move together in antiphase
+          const isDiagonalPair1 = (config.name === 'FL' || config.name === 'RR');
+          const phase = robotState.trotCycle + (isDiagonalPair1 ? 0 : Math.PI);
+
+          const legLift = Math.max(0, Math.sin(phase)); // Step lift
+          const legSwing = Math.cos(phase);             // Forward/back stride
+
+          if (isMoving) {
+            upperLeg.rotation.x = baseAngles.upperRotX + legSwing * 0.35 - legLift * 0.25;
+            kneeJoint.rotation.x = baseAngles.kneeRotX - legLift * 0.55;
+            hipJoint.position.y = -0.08 + (legLift * 0.08); // Slight hip lift
+          } else {
+            // Standing pose
+            upperLeg.rotation.x = THREE.MathUtils.lerp(upperLeg.rotation.x, baseAngles.upperRotX, 0.1);
+            kneeJoint.rotation.x = THREE.MathUtils.lerp(kneeJoint.rotation.x, baseAngles.kneeRotX, 0.1);
+            hipJoint.position.y = -0.08;
+          }
+        } else {
+          // Wheeled Drive Mode: Stable locked suspension stance with dynamic lean into turns
+          const rollLean = -robotState.angularSpeed * 0.08 * config.xSign;
+          const accelPitch = (robotState.linearSpeed * 0.03) * config.zSign;
+
+          upperLeg.rotation.x = baseAngles.upperRotX + accelPitch;
+          kneeJoint.rotation.x = baseAngles.kneeRotX;
+          hipJoint.position.y = -0.08 + rollLean;
+        }
+      });
+    }
+
+    function updateHUDAndCamera() {
+      // Speed readout
+      const speedKmh = Math.abs(robotState.linearSpeed * 3.6).toFixed(1);
+      document.getElementById('tel-speed').innerText = `${speedKmh} km/h`;
+
+      // Heading degrees
+      const yawDeg = Math.round(((robotState.heading * 180 / Math.PI) % 360 + 360) % 360);
+      document.getElementById('tel-yaw').innerText = `${yawDeg}°`;
+
+      // Smooth Follow Camera
+      const followEnabled = document.getElementById('chk-follow-cam').checked;
+      if (followEnabled) {
+        const camOffset = new THREE.Vector3(
+          -Math.sin(robotState.heading) * 4.6,
+          2.8,
+          -Math.cos(robotState.heading) * 4.6
+        );
+        const targetCamPos = robotGroup.position.clone().add(camOffset);
+        camera.position.lerp(targetCamPos, 0.05);
+
+        const lookTarget = robotGroup.position.clone().add(new THREE.Vector3(0, 0.8, 0));
+        controls.target.lerp(lookTarget, 0.1);
+      }
+    }
+
+    function bindEventListeners() {
+      // Keyboard input
+      window.addEventListener('keydown', (e) => {
+        switch (e.code) {
+          case 'KeyW': case 'ArrowUp': keys.forward = true; break;
+          case 'KeyS': case 'ArrowDown': keys.backward = true; break;
+          case 'KeyA': case 'ArrowLeft': keys.left = true; break;
+          case 'KeyD': case 'ArrowRight': keys.right = true; break;
+          case 'Space': 
+            robotState.linearSpeed = 0; 
+            e.preventDefault(); 
+            break;
+        }
+      });
+
+      window.addEventListener('keyup', (e) => {
+        switch (e.code) {
+          case 'KeyW': case 'ArrowUp': keys.forward = false; break;
+          case 'KeyS': case 'ArrowDown': keys.backward = false; break;
+          case 'KeyA': case 'ArrowLeft': keys.left = false; break;
+          case 'KeyD': case 'ArrowRight': keys.right = false; break;
+        }
+      });
+
+      // Virtual D-Pad Touch & Mouse Buttons
+      const bindBtn = (id, keyName) => {
+        const btn = document.getElementById(id);
+        const start = (e) => { e.preventDefault(); keys[keyName] = true; };
+        const end = (e) => { e.preventDefault(); keys[keyName] = false; };
+        btn.addEventListener('mousedown', start);
+        btn.addEventListener('mouseup', end);
+        btn.addEventListener('mouseleave', end);
+        btn.addEventListener('touchstart', start, { passive: false });
+        btn.addEventListener('touchend', end, { passive: false });
+      };
+
+      bindBtn('btn-fwd', 'forward');
+      bindBtn('btn-back', 'backward');
+      bindBtn('btn-left', 'left');
+      bindBtn('btn-right', 'right');
+
+      document.getElementById('btn-stop').addEventListener('click', () => {
+        robotState.linearSpeed = 0;
+        robotState.angularSpeed = 0;
+      });
+
+      // Locomotion Mode Buttons
+      const modeButtons = {
+        wheel: document.getElementById('btn-mode-wheel'),
+        trot: document.getElementById('btn-mode-trot'),
+        auto: document.getElementById('btn-mode-auto'),
+        dance: document.getElementById('btn-mode-dance')
+      };
+
+      const setMode = (mode) => {
+        robotState.mode = mode;
+        Object.keys(modeButtons).forEach(m => {
+          if (m === mode) {
+            modeButtons[m].className = 'control-btn px-2.5 py-2 rounded-lg font-medium text-center border border-yellow-400 bg-yellow-500/25 text-yellow-300 shadow';
+          } else {
+            modeButtons[m].className = 'control-btn px-2.5 py-2 rounded-lg font-medium text-center border border-slate-700 bg-slate-800/60 text-slate-300 hover:bg-slate-700/60';
+          }
+        });
+
+        const descEl = document.getElementById('mode-desc');
+        if (mode === 'wheel') {
+          descEl.innerHTML = '<span class="text-yellow-400 font-bold">WHEELED DRIVE:</span> High-speed smooth driving with rotating foot wheels & steering suspension.';
+        } else if (mode === 'trot') {
+          descEl.innerHTML = '<span class="text-yellow-400 font-bold">TROT GAIT:</span> 4-legged articulated quadruped trot gait with wheel traction at foot contacts.';
+        } else if (mode === 'auto') {
+          descEl.innerHTML = '<span class="text-yellow-400 font-bold">AUTO PATROL:</span> Autonomous sonar cruising with real-time obstacle avoidance & detour pathing.';
+        } else if (mode === 'dance') {
+          descEl.innerHTML = '<span class="text-yellow-400 font-bold">BODY DEMO:</span> Active body posture dynamics testing pitch, height, and leg splay ranges.';
+        }
+      };
+
+      modeButtons.wheel.addEventListener('click', () => setMode('wheel'));
+      modeButtons.trot.addEventListener('click', () => setMode('trot'));
+      modeButtons.auto.addEventListener('click', () => setMode('auto'));
+      modeButtons.dance.addEventListener('click', () => setMode('dance'));
+
+      // Sliders
+      const sliderHeight = document.getElementById('slider-height');
+      sliderHeight.addEventListener('input', (e) => {
+        robotState.rideHeightFactor = parseFloat(e.target.value);
+        document.getElementById('val-height').innerText = `${robotState.rideHeightFactor.toFixed(2)}x`;
+      });
+
+      const sliderSplay = document.getElementById('slider-splay');
+      sliderSplay.addEventListener('input', (e) => {
+        robotState.stanceWidthFactor = parseFloat(e.target.value);
+        document.getElementById('val-splay').innerText = `${robotState.stanceWidthFactor.toFixed(2)}x`;
+      });
+
+      const sliderPitch = document.getElementById('slider-pitch');
+      sliderPitch.addEventListener('input', (e) => {
+        robotState.bodyPitch = parseFloat(e.target.value);
+        document.getElementById('val-pitch').innerText = `${robotState.bodyPitch}°`;
+      });
+
+      // Sonar Beam Toggle
+      document.getElementById('chk-beam').addEventListener('change', (e) => {
+        sensorConeMesh.visible = e.target.checked;
+      });
+
+      // Headlights Toggle
+      document.getElementById('chk-headlights').addEventListener('change', (e) => {
+        headlightLeft.visible = e.target.checked;
+        headlightRight.visible = e.target.checked;
+      });
+
+      // Reset Position
+      document.getElementById('btn-reset').addEventListener('click', () => {
+        robotState.x = 0;
+        robotState.z = 0;
+        robotState.heading = 0;
+        robotState.linearSpeed = 0;
+        robotState.angularSpeed = 0;
+        camera.position.set(4.5, 3.8, 5.5);
+        controls.target.set(0, 0.9, 0);
+      });
+
+      // Randomize Obstacles
+      document.getElementById('btn-spawn-obs').addEventListener('click', () => {
+        createObstacles();
+      });
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const delta = Math.min(clock.getDelta(), 0.1);
+
+      // Kinematics and simulation step
+      updateKinematics(delta);
+
+      // Follow camera and telemetry display
+      updateHUDAndCamera();
+
+      // Three.js controls & render
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    // Startup
+    window.onload = function () {
+      setupScene();
+      bindEventListeners();
+      animate();
+    };
+  </script>
+</body>
+</html>
