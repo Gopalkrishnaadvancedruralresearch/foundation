@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GARRF - Shantanu, the Humanoid: Biomechanics & Brick Grasp Simulation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background-color: #0b0f17;
+            color: #f1f5f9;
+            overflow: hidden;
+            touch-action: none;
+            user-select: none;
+        }
+        .header-font { font-family: 'Chakra Petch', sans-serif; }
+        .hud-glass {
+            background: rgba(15, 23, 42, 0.94);
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            backdrop-filter: blur(10px);
+        }
+        .collapsed {
+            display: none !important;
+        }
+        select option {
+            background-color: #0f172a;
+            color: #f1f5f9;
+        }
+        #webgl-canvas-main {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        #webgl-canvas-hand {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            touch-action: none;
+        }
+        .glow-btn {
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.45);
+            transition: all 0.25s ease;
+        }
+        .glow-btn:hover {
+            box-shadow: 0 0 25px rgba(6, 182, 212, 0.85);
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+<body class="w-screen h-screen flex flex-col justify-between overflow-hidden">
+
+    <!-- Top Header -->
+    <header class="hud-glass border-b border-t-0 border-x-0 px-3 py-2 z-30 flex items-center justify-between text-xs relative">
+        <div class="flex items-center space-x-2.5">
+            <img src="logo.jpeg" alt="GARRF Logo" onerror="this.style.display='none'; document.getElementById('fallback-logo').style.display='flex';" class="w-8 h-8 rounded-full border border-cyan-400 object-cover bg-slate-900">
+            <div id="fallback-logo" style="display:none;" class="w-8 h-8 rounded-full border border-cyan-400 items-center justify-center bg-cyan-950/70 text-[10px] font-bold text-cyan-300">
+                G
+            </div>
+            <div>
+                <h1 class="header-font text-[10px] sm:text-xs font-bold text-cyan-300 tracking-wider">
+                    GOPALKRISHNA ADVANCED RURAL RESEARCH FOUNDATION
+                </h1>
+                <p class="text-[9px] text-slate-300">DR. APJ ABDUL KALAM ZERO RESEARCH FUNDING LAB - VIRTUAL AISIA LAB</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-2">
+            <span class="text-[9px] bg-slate-900 border border-slate-700 px-1.5 py-0.5 rounded text-emerald-400 font-bold">LIVE 60Hz</span>
+            <div class="flex items-center space-x-1 px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700">
+                <svg class="w-3.5 h-2.5 rounded-sm" viewBox="0 0 640 480">
+                    <path fill="#f4c430" d="M0 0h640v160H0z"/><path fill="#fff" d="M0 160h640v160H0z"/><path fill="#090" d="M0 320h640v160H0z"/>
+                    <circle cx="320" cy="240" r="40" fill="#008"/>
+                </svg>
+                <span class="text-[9px] font-bold text-slate-300">IN</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Viewport -->
+    <main class="relative flex-1 w-full h-full overflow-hidden">
+        <canvas id="webgl-canvas-main"></canvas>
+
+        <!-- Initial Greeting / Click to Start Bubble -->
+        <div id="dialog-bubble" class="absolute top-4 left-1/2 -translate-x-1/2 z-20 pointer-events-auto max-w-[92%] sm:max-w-lg w-full">
+            <div class="hud-glass p-4 rounded-xl border border-cyan-400/50 shadow-2xl flex flex-col items-center text-center">
+                <span class="text-[11px] text-cyan-400 font-bold tracking-widest uppercase mb-1">Humanoid Kinematic Intelligence</span>
+                <h2 class="header-font text-base sm:text-lg font-bold text-slate-100 mb-1">"Hi! I am Shantanu, the Humanoid."</h2>
+                <p id="dialog-text" class="text-xs text-slate-300 mb-3">
+                    Watch my multi-joint articulated movements in full sequence (10s each), or pick any biomechanics motion from the dropdown. Then, we will lift a brick together with my left hand!
+                </p>
+                
+                <div class="w-full flex flex-col sm:flex-row items-center gap-2">
+                    <div class="w-full sm:w-1/2 flex items-center bg-slate-900/90 border border-slate-700 rounded px-2 py-1">
+                        <span class="text-[9px] text-slate-400 mr-1 whitespace-nowrap">Motion:</span>
+                        <select id="action-select-init" onchange="onSelectDropdownAction(this.value)" class="w-full bg-transparent text-cyan-300 text-xs focus:outline-none">
+                            <option value="jump">1. Jumping Test (10s)</option>
+                            <option value="dance">2. Dancing Rhythms (10s)</option>
+                            <option value="squat">3. Deep Squat Test (10s)</option>
+                            <option value="run">4. Running Stride (10s)</option>
+                            <option value="lift">5. Left Hand Brick Lift</option>
+                        </select>
+                    </div>
+                    <button onclick="startExperimentSequence()" class="glow-btn w-full sm:w-1/2 py-2 bg-cyan-600 hover:bg-cyan-500 rounded text-slate-950 font-bold text-xs tracking-wide">
+                        Click to start experiment &rarr;
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 10-Second Activity HUD & Motion Dropdown Bar -->
+        <div id="activity-hud" class="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 pointer-events-auto hidden w-[94%] max-w-xl">
+            <div class="hud-glass px-3.5 py-2 rounded-xl border border-cyan-500/50 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
+                <div class="flex items-center space-x-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                    <span id="activity-name" class="font-bold text-cyan-300 uppercase text-[11px] sm:text-xs">Jumping Motion</span>
+                    <span class="text-slate-400">|</span>
+                    <span class="text-slate-300">Time: <strong id="activity-timer" class="text-amber-400 font-mono">10s</strong></span>
+                </div>
+
+                <div class="flex items-center space-x-2 w-full sm:w-auto justify-end">
+                    <select id="action-select-hud" onchange="onSelectDropdownAction(this.value)" class="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-[10px] text-cyan-300">
+                        <option value="jump">1. Jump (10s)</option>
+                        <option value="dance">2. Dance (10s)</option>
+                        <option value="squat">3. Squat (10s)</option>
+                        <option value="run">4. Run (10s)</option>
+                        <option value="lift">5. Brick Lift</option>
+                    </select>
+
+                    <button onclick="skipActivity()" class="px-2.5 py-1 bg-cyan-700 hover:bg-cyan-600 rounded text-[10px] text-cyan-100 font-bold border border-cyan-400/50">
+                        Next &rarr;
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 75% CLOSE-UP WINDOW FOR BRICK GRASP EXPERIMENT -->
+        <div id="hand-experiment-modal" class="absolute inset-0 z-30 flex items-center justify-center p-2 sm:p-4 bg-slate-950/80 backdrop-blur-sm hidden">
+            <div class="w-full h-full max-w-[95vw] sm:max-w-[75vw] max-h-[92vh] sm:max-h-[75vh] hud-glass rounded-2xl border-2 border-cyan-400/70 shadow-[0_0_50px_rgba(6,182,212,0.35)] flex flex-col overflow-hidden relative">
+                
+                <!-- Window Header Bar -->
+                <div class="px-3 py-1.5 bg-slate-900/95 border-b border-cyan-500/30 flex items-center justify-between text-xs z-30">
+                    <div class="flex items-center space-x-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span>
+                        <span class="header-font font-bold text-cyan-300 tracking-wider text-[11px] sm:text-xs">
+                            SHANTANU'S LEFT HAND - BRICK GRASP BIOMECHANICS EXPERIMENT
+                        </span>
+                    </div>
+                    <div class="flex items-center space-x-1.5">
+                        <button onclick="orbitHandCamStep(-0.25)" class="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 rounded text-slate-300 border border-slate-600 font-bold text-[10px]" title="Orbit Left">⟲</button>
+                        <button onclick="orbitHandCamStep(0.25)" class="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 rounded text-slate-300 border border-slate-600 font-bold text-[10px]" title="Orbit Right">⟳</button>
+                        <button id="btn-reset-cam-modal" onclick="resetHandCam()" class="px-1.5 py-0.5 bg-slate-800 hover:bg-slate-700 rounded text-slate-300 border border-slate-600 text-[10px]">Reset Cam</button>
+                        <button onclick="toggleAllPanelsModal()" id="btn-toggle-hud-modal" class="px-2 py-0.5 bg-cyan-700 hover:bg-cyan-600 rounded text-cyan-100 border border-cyan-400/50 font-semibold text-[10px]">Panels</button>
+                        <button onclick="closeHandModal()" class="px-2 py-0.5 bg-rose-900/80 hover:bg-rose-800 border border-rose-500 rounded text-rose-200 text-[10px] font-bold">Close Window</button>
+                    </div>
+                </div>
+
+                <!-- Hand 3D Canvas + Overlays -->
+                <div class="relative flex-1 w-full h-full overflow-hidden" id="hand-canvas-parent">
+                    <canvas id="webgl-canvas-hand"></canvas>
+
+                    <!-- Status Top Bar -->
+                    <div class="absolute top-2 left-2 right-2 z-20 flex justify-between items-center pointer-events-none gap-2">
+                        <div class="hud-glass px-2.5 py-1 rounded-lg pointer-events-auto flex items-center space-x-3 text-[10px]">
+                            <span id="stability-badge" class="font-bold text-emerald-400 bg-emerald-950/80 px-1.5 py-0.5 rounded border border-emerald-500/40">
+                                Trial 1: Stable 2-Top (Index & Ring) / 1-Bottom Pinch
+                            </span>
+                            <span class="text-slate-300">Normal: <strong id="total-force-disp" class="text-cyan-300">18.00 N</strong></span>
+                            <span class="text-slate-300">Pressure: <strong id="mean-pressure-disp" class="text-emerald-400">30.0 kPa</strong></span>
+                            <span class="text-slate-300 hidden sm:inline">Max Shear: <strong id="max-shear-disp" class="text-amber-300">10.80 N</strong></span>
+                        </div>
+                    </div>
+
+                    <!-- Left Panel: Quantitative Telemetry -->
+                    <div id="left-panel-container" class="absolute left-2 top-11 max-w-[240px] sm:max-w-[270px] z-20 flex flex-col pointer-events-auto">
+                        <div class="hud-glass rounded-xl shadow-2xl overflow-hidden border border-slate-800">
+                            <button onclick="togglePanel('tactile-body', 'tactile-icon')" class="w-full px-2.5 py-1 flex items-center justify-between bg-slate-900/90 border-b border-slate-800 text-[10px] font-bold text-cyan-400">
+                                <span>DIGITAL TACTILE SENSORS</span>
+                                <span id="tactile-icon" class="text-slate-400 text-xs font-mono">[-]</span>
+                            </button>
+                            
+                            <div id="tactile-body" class="p-2 max-h-[350px] overflow-y-auto space-y-1 text-[9px] sm:text-[10px]">
+                                <!-- Thumb -->
+                                <div class="bg-slate-900/80 p-1.5 rounded border border-slate-800">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-slate-300 font-bold" id="label-thumb">Thumb (T1 - Bottom Face)</span>
+                                        <span id="force-thumb" class="font-bold text-cyan-400">9.00 N</span>
+                                    </div>
+                                    <div class="flex justify-between text-[8px] text-slate-400 mt-0.5">
+                                        <span>Area: <b id="area-thumb" class="text-slate-200">1.8 cm²</b></span>
+                                        <span>Pressure: <b id="press-thumb" class="text-amber-400">50.0 kPa</b></span>
+                                    </div>
+                                    <div class="w-full bg-slate-800 h-1.5 rounded-full mt-1 overflow-hidden">
+                                        <div id="bar-thumb" class="h-full bg-amber-400" style="width: 75%;"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Index -->
+                                <div class="bg-slate-900/80 p-1.5 rounded border border-slate-800">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-slate-300 font-bold" id="label-index">Index (I2 - Top Face)</span>
+                                        <span id="force-index" class="font-bold text-cyan-400">4.50 N</span>
+                                    </div>
+                                    <div class="flex justify-between text-[8px] text-slate-400 mt-0.5">
+                                        <span>Area: <b id="area-index" class="text-slate-200">1.5 cm²</b></span>
+                                        <span>Pressure: <b id="press-index" class="text-emerald-400">30.0 kPa</b></span>
+                                    </div>
+                                    <div class="w-full bg-slate-800 h-1.5 rounded-full mt-1 overflow-hidden">
+                                        <div id="bar-index" class="h-full bg-emerald-400" style="width: 37%;"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Middle -->
+                                <div class="bg-slate-900/80 p-1.5 rounded border border-slate-800">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-slate-300 font-bold" id="label-middle">Middle (M3 - Raised in Air)</span>
+                                        <span id="force-middle" class="font-bold text-sky-400">0.00 N</span>
+                                    </div>
+                                    <div class="flex justify-between text-[8px] text-slate-400 mt-0.5">
+                                        <span>Area: <b id="area-middle" class="text-slate-200">0.0 cm²</b></span>
+                                        <span>Pressure: <b id="press-middle" class="text-sky-400 font-semibold">0.0 kPa</b></span>
+                                    </div>
+                                    <div class="w-full bg-slate-800 h-1.5 rounded-full mt-1 overflow-hidden">
+                                        <div id="bar-middle" class="h-full bg-blue-700" style="width: 0%;"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Ring -->
+                                <div class="bg-slate-900/80 p-1.5 rounded border border-slate-800">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-slate-300 font-bold" id="label-ring">Ring (R4 - Top Face)</span>
+                                        <span id="force-ring" class="font-bold text-cyan-400">4.50 N</span>
+                                    </div>
+                                    <div class="flex justify-between text-[8px] text-slate-400 mt-0.5">
+                                        <span>Area: <b id="area-ring" class="text-slate-200">1.5 cm²</b></span>
+                                        <span>Pressure: <b id="press-ring" class="text-emerald-400">30.0 kPa</b></span>
+                                    </div>
+                                    <div class="w-full bg-slate-800 h-1.5 rounded-full mt-1 overflow-hidden">
+                                        <div id="bar-ring" class="h-full bg-emerald-400" style="width: 37%;"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Pinky (Dark Blue for in Air / 0.0 kPa) -->
+                                <div class="bg-slate-900/80 p-1.5 rounded border border-slate-800">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-slate-300 font-bold" id="label-pinky">Pinky (P5 - Free in Air)</span>
+                                        <span id="force-pinky" class="font-bold text-blue-500">0.00 N</span>
+                                    </div>
+                                    <div class="flex justify-between text-[8px] text-slate-400 mt-0.5">
+                                        <span>Area: <b id="area-pinky" class="text-slate-200">0.0 cm²</b></span>
+                                        <span>Pressure: <b id="press-pinky" class="text-blue-400 font-semibold">0.0 kPa</b></span>
+                                    </div>
+                                    <div class="w-full bg-slate-800 h-1.5 rounded-full mt-1 overflow-hidden">
+                                        <div id="bar-pinky" class="h-full bg-blue-900" style="width: 0%;"></div>
+                                    </div>
+                                </div>
+
+                                <div class="mt-2 pt-1 border-t border-slate-800">
+                                    <div class="flex justify-between text-[7px] text-slate-400 mb-0.5">
+                                        <span>0 kPa (Air - Dark Blue)</span><span>25 kPa</span><span>60 kPa</span><span>100+ kPa</span>
+                                    </div>
+                                    <div class="h-1.5 w-full rounded" style="background: linear-gradient(90deg, #172554 0%, #1d4ed8 15%, #06b6d4 35%, #22c55e 55%, #eab308 75%, #ef4444 100%);"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Panel: Brick Grasp Trial Selector & Parameters -->
+                    <div id="right-panel-container" class="absolute right-2 top-11 max-w-[240px] sm:max-w-[270px] z-20 flex flex-col pointer-events-auto">
+                        <div class="hud-glass rounded-xl shadow-2xl overflow-hidden border border-slate-800">
+                            <button onclick="togglePanel('controls-body', 'controls-icon')" class="w-full px-2.5 py-1 flex items-center justify-between bg-slate-900/90 border-b border-slate-800 text-[10px] font-bold text-cyan-400">
+                                <span>BRICK EXPERIMENT TRIALS</span>
+                                <span id="controls-icon" class="text-slate-400 text-xs font-mono">[-]</span>
+                            </button>
+
+                            <div id="controls-body" class="p-2 max-h-[350px] overflow-y-auto space-y-1.5 text-[9px] sm:text-[10px]">
+                                <div class="space-y-1">
+                                    <button onclick="selectTrial('pinch')" id="btn-trial-1" class="w-full p-1.5 rounded text-left bg-cyan-950 border border-cyan-500 text-cyan-300">
+                                        🧱 Trial 1: Standard Pinch
+                                        <span class="block text-[8px] text-cyan-400">Index & Ring Touch / Middle & Pinky in Air</span>
+                                    </button>
+                                    <button onclick="selectTrial('all_fingers')" id="btn-trial-2" class="w-full p-1.5 rounded text-left bg-slate-800 border border-slate-700 text-slate-300">
+                                        🖐️ Trial 2: 4-Finger Grip (Pinky in Air)
+                                        <span class="block text-[8px] text-slate-400">Thumb, Index, Middle, Ring Touch / Pinky 0.0 kPa Dark Blue</span>
+                                    </button>
+                                </div>
+
+                                <div class="pt-1 border-t border-slate-800 space-y-0.5">
+                                    <span class="text-slate-300 font-semibold block">Brick Standard:</span>
+                                    <select id="select-brick-standard" onchange="onBrickStandardChange(this.value)" class="w-full bg-slate-900 border border-slate-700 text-cyan-300 rounded px-1.5 py-1 text-[9px]">
+                                        <option value="is_red_clay">IS 1077 Standard Red Clay Brick (μ=0.60)</option>
+                                        <option value="astm_american">ASTM C62 American Common Brick (μ=0.55)</option>
+                                        <option value="is_fly_ash">IS 12894 Fly Ash Lime Brick (μ=0.58)</option>
+                                        <option value="refractory_fire">IS 8 Fire Clay Refractory Brick (μ=0.50)</option>
+                                        <option value="engineering_class_a">BS 3921 Engineering Class A Vitrified (μ=0.45)</option>
+                                    </select>
+                                </div>
+
+                                <div class="pt-1 border-t border-slate-800 space-y-0.5">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-slate-300 font-semibold">Normal Squeeze:</span>
+                                        <span id="squeeze-multiplier-label" class="text-cyan-400 font-bold">1.0x (18.0 N)</span>
+                                    </div>
+                                    <input type="range" id="slider-squeeze" min="0.2" max="3.5" step="0.1" value="1.0" class="w-full accent-cyan-400" oninput="onSqueezeSliderChange(this.value)">
+                                </div>
+
+                                <div class="pt-1 border-t border-slate-800">
+                                    <div class="flex justify-between">
+                                        <span class="text-slate-300">Grasp Actuation:</span>
+                                        <span id="grasp-pct-label" class="text-cyan-400 font-bold">100%</span>
+                                    </div>
+                                    <div class="flex gap-1.5 mt-0.5">
+                                        <button id="btn-auto-grasp" onclick="toggleAutoGrasp()" class="flex-1 py-0.5 bg-cyan-600 font-bold text-slate-900 rounded text-[9px]">RELEASE</button>
+                                    </div>
+                                    <input type="range" id="slider-grasp" min="0" max="100" value="100" class="w-full mt-1 accent-cyan-400" oninput="onGraspSliderChange(this.value)">
+                                </div>
+
+                                <div class="pt-1 border-t border-slate-800 space-y-0.5">
+                                    <div class="flex justify-between">
+                                        <span class="text-slate-300">Active Friction (μ):</span>
+                                        <span id="friction-label" class="text-cyan-400 font-bold">0.60</span>
+                                    </div>
+                                    <input type="range" id="slider-friction" min="0.10" max="1.10" step="0.01" value="0.60" class="w-full accent-cyan-400" oninput="onFrictionSliderChange(this.value)">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="hud-glass border-t border-b-0 border-x-0 px-3 py-1.5 z-30 flex flex-col sm:flex-row items-center justify-between text-[9px] text-slate-300 relative gap-1 text-center sm:text-left">
+        <span>Coulomb Friction & Brick Grasp Biomechanics Simulator</span>
+        <span>
+            Copyright &copy; Dr Annamdas Venu Gopal Madhav &amp; Shantanu Vasudev Krishna Annamdas (Educational purpose). Cite our work with suitable Links back to our experiment page.
+        </span>
+    </footer>
+
+    <!-- ENGINE SCRIPTS -->
+    <script>
+        function togglePanel(bodyId, iconId) {
+            const body = document.getElementById(bodyId);
+            const icon = document.getElementById(iconId);
+            if (body.classList.contains('collapsed')) {
+                body.classList.remove('collapsed');
+                icon.innerText = '[-]';
+            } else {
+                body.classList.add('collapsed');
+                icon.innerText = '[+]';
+            }
+        }
+
+        let panelsModalVisible = true;
+        function toggleAllPanelsModal() {
+            panelsModalVisible = !panelsModalVisible;
+            const left = document.getElementById('tactile-body');
+            const right = document.getElementById('controls-body');
+            const leftIcon = document.getElementById('tactile-icon');
+            const rightIcon = document.getElementById('controls-icon');
+
+            if (!panelsModalVisible) {
+                left.classList.add('collapsed');
+                right.classList.add('collapsed');
+                leftIcon.innerText = '[+]';
+                rightIcon.innerText = '[+]';
+            } else {
+                left.classList.remove('collapsed');
+                right.classList.remove('collapsed');
+                leftIcon.innerText = '[-]';
+                rightIcon.innerText = '[-]';
+            }
+        }
+
+        // -------------------------------------------------------------
+        // 1. FULL HUMANOID (SHANTANU) WITH 5-FINGERED HANDS ON BOTH ARMS
+        // -------------------------------------------------------------
+        const mainCanvas = document.getElementById('webgl-canvas-main');
+        const mainScene = new THREE.Scene();
+        mainScene.background = new THREE.Color(0x060913);
+
+        const mainCamera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        mainCamera.position.set(0, 1.8, 5.0);
+
+        const mainRenderer = new THREE.WebGLRenderer({ canvas: mainCanvas, antialias: true, powerPreference: 'high-performance' });
+        mainRenderer.setSize(window.innerWidth, window.innerHeight);
+        mainRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        const mainControls = new THREE.OrbitControls(mainCamera, mainCanvas);
+        mainControls.enableDamping = true;
+        mainControls.dampingFactor = 0.06;
+        mainControls.target.set(0, 1.45, 0);
+
+        mainScene.add(new THREE.GridHelper(24, 48, 0x06b6d4, 0x1e293b));
+        mainScene.add(new THREE.AmbientLight(0xffffff, 1.2));
+
+        const mainLight = new THREE.DirectionalLight(0xe0f2fe, 1.8);
+        mainLight.position.set(5, 10, 7);
+        mainScene.add(mainLight);
+
+        const mainRim = new THREE.PointLight(0x06b6d4, 2.5, 20);
+        mainRim.position.set(-4, 5, -3);
+        mainScene.add(mainRim);
+
+        const hMat = {
+            metal: new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.20, metalness: 0.90 }),
+            dark: new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.45, metalness: 0.80 }),
+            chrome: new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.10, metalness: 0.98 }),
+            cyan: new THREE.MeshBasicMaterial({ color: 0x00f0ff }),
+            tactileCyan: new THREE.MeshBasicMaterial({ color: 0x06b6d4 })
+        };
+
+        const robot = new THREE.Group();
+        mainScene.add(robot);
+
+        const pelvis = new THREE.Group();
+        pelvis.position.y = 1.45;
+        robot.add(pelvis);
+        pelvis.add(new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.20, 0.22, 16), hMat.dark));
+
+        const chest = new THREE.Group();
+        chest.position.y = 0.35;
+        pelvis.add(chest);
+        chest.add(new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.48, 0.30), hMat.metal));
+
+        const coreReactor = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.04, 16), hMat.cyan);
+        coreReactor.rotation.x = Math.PI / 2;
+        coreReactor.position.set(0, 0.05, 0.15);
+        chest.add(coreReactor);
+
+        const head = new THREE.Group();
+        head.position.y = 0.42;
+        chest.add(head);
+        const headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.16, 18, 18), hMat.metal);
+        headMesh.scale.set(1.0, 1.15, 1.05);
+        head.add(headMesh);
+        const visor = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.06, 0.08), hMat.cyan);
+        visor.position.set(0, 0.02, 0.12);
+        head.add(visor);
+
+        function makeLimb(r, h) {
+            const grp = new THREE.Group();
+            grp.add(new THREE.Mesh(new THREE.SphereGeometry(r, 14, 14), hMat.chrome));
+            const cyl = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.85, r * 0.75, h, 12), hMat.metal);
+            cyl.position.y = -h / 2;
+            grp.add(cyl);
+            return grp;
+        }
+
+        function createArticulatedHand(isLeft) {
+            const handRoot = new THREE.Group();
+            const palm = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.16, 0.06), hMat.dark);
+            palm.position.y = -0.08;
+            handRoot.add(palm);
+
+            const fingerDefs = [
+                { name: 'thumb', x: isLeft ? -0.08 : 0.08, y: -0.02, isThumb: true },
+                { name: 'index', x: isLeft ? -0.05 : 0.05, y: -0.08, isThumb: false },
+                { name: 'mid',   x: isLeft ? -0.01 : 0.01, y: -0.09, isThumb: false },
+                { name: 'ring',  x: isLeft ? 0.03 : -0.03, y: -0.08, isThumb: false },
+                { name: 'pinky', x: isLeft ? 0.07 : -0.07, y: -0.07, isThumb: false }
+            ];
+
+            const digitJoints = {};
+            fingerDefs.forEach(def => {
+                const fRoot = new THREE.Group();
+                fRoot.position.set(def.x, def.y, 0);
+                palm.add(fRoot);
+
+                const kn1 = new THREE.Mesh(new THREE.SphereGeometry(0.018, 10, 10), hMat.chrome);
+                fRoot.add(kn1);
+
+                const ph1 = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.015, 0.07, 8), hMat.metal);
+                ph1.position.y = -0.035;
+                fRoot.add(ph1);
+
+                const midJ = new THREE.Group();
+                midJ.position.y = -0.07;
+                fRoot.add(midJ);
+
+                const kn2 = new THREE.Mesh(new THREE.SphereGeometry(0.015, 10, 10), hMat.chrome);
+                midJ.add(kn2);
+
+                const ph2 = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.013, 0.06, 8), hMat.metal);
+                ph2.position.y = -0.03;
+                midJ.add(ph2);
+
+                const tipPad = new THREE.Mesh(new THREE.SphereGeometry(0.015, 10, 10), hMat.tactileCyan);
+                tipPad.position.y = -0.06;
+                midJ.add(tipPad);
+
+                digitJoints[def.name] = { fRoot, midJ };
+            });
+
+            return { handRoot, digitJoints };
+        }
+
+        // Left Arm & Articulated Left Hand
+        const lShoulder = new THREE.Group();
+        lShoulder.position.set(0.38, 0.18, 0);
+        chest.add(lShoulder);
+        const lUpperArm = makeLimb(0.09, 0.42);
+        lShoulder.add(lUpperArm);
+
+        const lElbow = new THREE.Group();
+        lElbow.position.y = -0.42;
+        lUpperArm.add(lElbow);
+        const lForearm = makeLimb(0.08, 0.38);
+        lElbow.add(lForearm);
+
+        const lWrist = new THREE.Group();
+        lWrist.position.y = -0.38;
+        lForearm.add(lWrist);
+
+        const leftHandAssembly = createArticulatedHand(true);
+        lWrist.add(leftHandAssembly.handRoot);
+
+        // Right Arm & Articulated Right Hand
+        const rShoulder = new THREE.Group();
+        rShoulder.position.set(-0.38, 0.18, 0);
+        chest.add(rShoulder);
+        const rUpperArm = makeLimb(0.09, 0.42);
+        rShoulder.add(rUpperArm);
+
+        const rElbow = new THREE.Group();
+        rElbow.position.y = -0.42;
+        rUpperArm.add(rElbow);
+        const rForearm = makeLimb(0.08, 0.38);
+        rElbow.add(rForearm);
+
+        const rWrist = new THREE.Group();
+        rWrist.position.y = -0.38;
+        rForearm.add(rWrist);
+
+        const rightHandAssembly = createArticulatedHand(false);
+        rWrist.add(rightHandAssembly.handRoot);
+
+        // Legs
+        const lHip = new THREE.Group();
+        lHip.position.set(0.16, -0.12, 0);
+        pelvis.add(lHip);
+        const lThigh = makeLimb(0.10, 0.52);
+        lHip.add(lThigh);
+        const lKnee = new THREE.Group();
+        lKnee.position.y = -0.52;
+        lThigh.add(lKnee);
+        const lShin = makeLimb(0.09, 0.50);
+        lKnee.add(lShin);
+        const lFoot = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.08, 0.28), hMat.dark);
+        lFoot.position.set(0, -0.52, 0.08);
+        lKnee.add(lFoot);
+
+        const rHip = new THREE.Group();
+        rHip.position.set(-0.16, -0.12, 0);
+        pelvis.add(rHip);
+        const rThigh = makeLimb(0.10, 0.52);
+        rHip.add(rThigh);
+        const rKnee = new THREE.Group();
+        rKnee.position.y = -0.52;
+        rThigh.add(rKnee);
+        const rShin = makeLimb(0.09, 0.50);
+        rKnee.add(rShin);
+        const rFoot = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.08, 0.28), hMat.dark);
+        rFoot.position.set(0, -0.52, 0.08);
+        rKnee.add(rFoot);
+
+        const previewBrick = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.08, 0.14), new THREE.MeshStandardMaterial({ color: 0xd9531e, roughness: 0.9 }));
+        previewBrick.position.set(0, -0.18, 0.02);
+        leftHandAssembly.handRoot.add(previewBrick);
+        previewBrick.visible = false;
+
+        // -------------------------------------------------------------
+        // 2. MOTION SEQUENCING ENGINE
+        // -------------------------------------------------------------
+        const MOTION_FLOW = ['jump', 'dance', 'squat', 'run', 'lift'];
+        let currentMotion = 'waving';
+        let currentMotionIndex = 0;
+        let motionClockTime = 0;
+        let activityRemaining = 10;
+        let activityTimerId = null;
+
+        function resetHumanoidPose() {
+            pelvis.position.set(0, 1.45, 0);
+            pelvis.rotation.set(0, 0, 0);
+            chest.rotation.set(0, 0, 0);
+            head.rotation.set(0, 0, 0);
+
+            lShoulder.rotation.set(0, 0, 0);
+            lElbow.rotation.set(0, 0, 0);
+            lWrist.rotation.set(0, 0, 0);
+
+            rShoulder.rotation.set(0, 0, 0);
+            rElbow.rotation.set(0, 0, 0);
+            rWrist.rotation.set(0, 0, 0);
+
+            lHip.rotation.set(0, 0, 0);
+            lKnee.rotation.set(0, 0, 0);
+            rHip.rotation.set(0, 0, 0);
+            rKnee.rotation.set(0, 0, 0);
+
+            previewBrick.visible = false;
+        }
+
+        function setDropdownValues(key) {
+            const d1 = document.getElementById('action-select-init');
+            const d2 = document.getElementById('action-select-hud');
+            if (d1) d1.value = key;
+            if (d2) d2.value = key;
+        }
+
+        function onSelectDropdownAction(key) {
+            document.getElementById('dialog-bubble').classList.add('hidden');
+            currentMotionIndex = MOTION_FLOW.indexOf(key);
+            executeMotion(key);
+        }
+
+        function startExperimentSequence() {
+            document.getElementById('dialog-bubble').classList.add('hidden');
+            currentMotionIndex = 0;
+            executeMotion(MOTION_FLOW[0]);
+        }
+
+        function executeMotion(key) {
+            if (activityTimerId) clearInterval(activityTimerId);
+            resetHumanoidPose();
+            currentMotion = key;
+            setDropdownValues(key);
+
+            const titles = {
+                jump: '1. Dynamic Jumping Test',
+                dance: '2. Dancing & Coordination Test',
+                squat: '3. Deep Squat Biomechanics',
+                run: '4. Running Kinematic Stride',
+                lift: '5. Left Hand Brick Lifting'
+            };
+
+            if (key === 'lift') {
+                document.getElementById('activity-hud').classList.add('hidden');
+                runLiftingSequence();
+            } else {
+                document.getElementById('activity-hud').classList.remove('hidden');
+                document.getElementById('activity-name').innerText = titles[key];
+                activityRemaining = 10;
+                document.getElementById('activity-timer').innerText = activityRemaining + "s";
+
+                activityTimerId = setInterval(() => {
+                    activityRemaining--;
+                    document.getElementById('activity-timer').innerText = activityRemaining + "s";
+                    if (activityRemaining <= 0) {
+                        clearInterval(activityTimerId);
+                        proceedNextMotion();
+                    }
+                }, 1000);
+            }
+        }
+
+        function proceedNextMotion() {
+            currentMotionIndex++;
+            if (currentMotionIndex < MOTION_FLOW.length) {
+                executeMotion(MOTION_FLOW[currentMotionIndex]);
+            } else {
+                runLiftingSequence();
+            }
+        }
+
+        function skipActivity() {
+            proceedNextMotion();
+        }
+
+        function runLiftingSequence() {
+            currentMotion = 'lift';
+            resetHumanoidPose();
+            previewBrick.visible = true;
+
+            Object.values(leftHandAssembly.digitJoints).forEach(d => {
+                d.fRoot.rotation.x = -0.5;
+                d.midJ.rotation.x = -0.6;
+            });
+
+            let t = 0;
+            const liftAnim = setInterval(() => {
+                t += 0.05;
+                lShoulder.rotation.x = THREE.MathUtils.lerp(0, -1.35, Math.min(t, 1.0));
+                lShoulder.rotation.z = THREE.MathUtils.lerp(0, 0.40, Math.min(t, 1.0));
+                lElbow.rotation.x = THREE.MathUtils.lerp(0, 0.90, Math.min(t, 1.0));
+                lWrist.rotation.y = THREE.MathUtils.lerp(0, 1.30, Math.min(t, 1.0));
+
+                if (t >= 1.25) {
+                    clearInterval(liftAnim);
+                    openHandModal();
+                }
+            }, 30);
+        }
+
+        function openHandModal() {
+            document.getElementById('hand-experiment-modal').classList.remove('hidden');
+            onHandModalResize();
+        }
+
+        function closeHandModal() {
+            document.getElementById('hand-experiment-modal').classList.add('hidden');
+            document.getElementById('dialog-bubble').classList.remove('hidden');
+            document.getElementById('dialog-text').innerText = "Brick grasp trial finished! You can choose any motion from the dropdown to replay with Shantanu.";
+            resetHumanoidPose();
+            currentMotion = 'waving';
+        }
+
+        // -------------------------------------------------------------
+        // 3. LEFT HAND BRICK GRASP EXPERIMENT
+        // -------------------------------------------------------------
+        const handCanvas = document.getElementById('webgl-canvas-hand');
+        const handScene = new THREE.Scene();
+        handScene.background = new THREE.Color(0x0b0f17);
+
+        const handCamera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+        handCamera.position.set(2.8, 2.3, 4.4);
+
+        const handRenderer = new THREE.WebGLRenderer({ canvas: handCanvas, antialias: true, powerPreference: 'high-performance' });
+        handRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        const handControls = new THREE.OrbitControls(handCamera, handCanvas);
+        handControls.enableDamping = true;
+        handControls.dampingFactor = 0.06;
+        handControls.enablePan = true;
+        handControls.enableRotate = true;
+        handControls.enableZoom = true;
+        handControls.target.set(0.05, 1.15, 0.39);
+
+        function resetHandCam() {
+            handCamera.position.set(2.8, 2.3, 4.4);
+            handControls.target.set(0.05, 1.15, 0.39);
+            handControls.update();
+        }
+
+        function orbitHandCamStep(deltaTheta) {
+            const offset = new THREE.Vector3().subVectors(handCamera.position, handControls.target);
+            const radius = Math.sqrt(offset.x * offset.x + offset.z * offset.z);
+            let angle = Math.atan2(offset.x, offset.z) + deltaTheta;
+            offset.x = radius * Math.sin(angle);
+            offset.z = radius * Math.cos(angle);
+            handCamera.position.copy(handControls.target).add(offset);
+            handCamera.lookAt(handControls.target);
+            handControls.update();
+        }
+
+        handScene.add(new THREE.GridHelper(16, 32, 0x38bdf8, 0x1e293b));
+        handScene.add(new THREE.AmbientLight(0xffffff, 1.1));
+
+        const handDirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+        handDirLight.position.set(5, 10, 7);
+        handScene.add(handDirLight);
+
+        const handFillLight = new THREE.PointLight(0x38bdf8, 1.8, 15);
+        handFillLight.position.set(-3, 3, 3);
+        handScene.add(handFillLight);
+
+        const handMaterials = {
+            darkMetal: new THREE.MeshStandardMaterial({ color: 0x18202d, roughness: 0.35, metalness: 0.85 }),
+            brightChrome: new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.12, metalness: 0.96 }),
+            carbonFiber: new THREE.MeshStandardMaterial({ color: 0x090d14, roughness: 0.5, metalness: 0.45 }),
+            acrylicShell: new THREE.MeshPhysicalMaterial({
+                color: 0x67e8f9,
+                transparent: true,
+                opacity: 0.32,
+                roughness: 0.1,
+                transmission: 0.85,
+                ior: 1.45
+            }),
+            brickMat: new THREE.MeshStandardMaterial({ color: 0xd9531e, roughness: 0.90, metalness: 0.05 }),
+            sensorPads: {
+                thumb: new THREE.MeshBasicMaterial({ color: 0x06b6d4 }),
+                index: new THREE.MeshBasicMaterial({ color: 0x06b6d4 }),
+                middle: new THREE.MeshBasicMaterial({ color: 0x0a194f }),
+                ring: new THREE.MeshBasicMaterial({ color: 0x06b6d4 }),
+                pinky: new THREE.MeshBasicMaterial({ color: 0x0a194f }) // Pure Dark Blue
+            }
+        };
+
+        const robotHandGroup = new THREE.Group();
+        handScene.add(robotHandGroup);
+
+        const armGroup = new THREE.Group();
+        armGroup.position.set(0, 0.45, -0.28);
+
+        const innerCore = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.48, 1.1, 16), handMaterials.carbonFiber);
+        innerCore.position.y = 0.55;
+        armGroup.add(innerCore);
+
+        for (let i = 0; i < 4; i++) {
+            const angle = (i / 4) * Math.PI * 2;
+            const motor = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.75, 12), handMaterials.brightChrome);
+            motor.position.set(Math.cos(angle) * 0.20, 0.55, Math.sin(angle) * 0.20);
+            armGroup.add(motor);
+        }
+
+        const outerShell = new THREE.Mesh(new THREE.CylinderGeometry(0.48, 0.56, 1.05, 24), handMaterials.acrylicShell);
+        outerShell.position.y = 0.55;
+        armGroup.add(outerShell);
+        robotHandGroup.add(armGroup);
+
+        const palmGroup = new THREE.Group();
+        palmGroup.position.set(0, 1.15, -0.20);
+
+        const palmBack = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.55, 0.16), handMaterials.darkMetal);
+        palmGroup.add(palmBack);
+
+        const thenarMount = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 0.35, 14), handMaterials.carbonFiber);
+        thenarMount.position.set(-0.48, -0.12, 0.10);
+        thenarMount.rotation.z = 0.55;
+        palmGroup.add(thenarMount);
+        robotHandGroup.add(palmGroup);
+
+        const handDigits = {};
+        function createAttachmentDigit(name, basePos, isThumb) {
+            const root = new THREE.Group();
+            root.position.copy(basePos);
+
+            const knuckle1 = new THREE.Mesh(new THREE.SphereGeometry(0.070, 14, 14), handMaterials.brightChrome);
+            root.add(knuckle1);
+
+            const pJoint = new THREE.Group();
+            const l1 = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.065, 0.36, 12), handMaterials.darkMetal);
+            l1.position.y = 0.18;
+            pJoint.add(l1);
+            root.add(pJoint);
+
+            const mid = new THREE.Group();
+            mid.position.y = 0.36;
+            const knuckle2 = new THREE.Mesh(new THREE.SphereGeometry(0.060, 14, 14), handMaterials.brightChrome);
+            mid.add(knuckle2);
+
+            const mJoint = new THREE.Group();
+            const l2 = new THREE.Mesh(new THREE.CylinderGeometry(0.046, 0.054, 0.30, 12), handMaterials.darkMetal);
+            l2.position.y = 0.15;
+            mJoint.add(l2);
+            mid.add(mJoint);
+            pJoint.add(mid);
+
+            const tip = new THREE.Group();
+            tip.position.y = 0.30;
+            const knuckle3 = new THREE.Mesh(new THREE.SphereGeometry(0.050, 14, 14), handMaterials.brightChrome);
+            tip.add(knuckle3);
+
+            const dJoint = new THREE.Group();
+            const l3 = new THREE.Mesh(new THREE.CylinderGeometry(0.038, 0.045, 0.24, 12), handMaterials.carbonFiber);
+            l3.position.y = 0.12;
+            dJoint.add(l3);
+
+            const pad = new THREE.Mesh(new THREE.SphereGeometry(0.072, 16, 16), handMaterials.sensorPads[name]);
+            pad.scale.set(1.0, 1.25, 0.85);
+            pad.position.set(0, 0.12, -0.045);
+            dJoint.add(pad);
+            tip.add(dJoint);
+            mJoint.add(tip);
+
+            robotHandGroup.add(root);
+            handDigits[name] = { root, pJoint, mid, mJoint, tip, dJoint, pad, isThumb };
+        }
+
+        createAttachmentDigit('thumb', new THREE.Vector3(-0.42, 0.98, -0.02), true);
+        createAttachmentDigit('index', new THREE.Vector3(-0.24, 1.45, -0.15), false);
+        createAttachmentDigit('middle', new THREE.Vector3(0.02, 1.48, -0.15), false);
+        createAttachmentDigit('ring', new THREE.Vector3(0.28, 1.45, -0.15), false);
+        createAttachmentDigit('pinky', new THREE.Vector3(0.52, 1.38, -0.15), false);
+
+        const objectAnchor = new THREE.Group();
+        handScene.add(objectAnchor);
+        const brickMesh = new THREE.Mesh(new THREE.BoxGeometry(1.10, 0.26, 0.48), handMaterials.brickMat);
+        objectAnchor.position.set(0.05, 1.15, 0.64);
+        objectAnchor.add(brickMesh);
+
+        const BRICK_STANDARDS = {
+            is_red_clay: { name: 'IS 1077 Red Clay Brick', color: 0xd9531e, roughness: 0.90, metalness: 0.05, friction: 0.60 },
+            astm_american: { name: 'ASTM C62 American Common', color: 0xb33927, roughness: 0.88, metalness: 0.04, friction: 0.55 },
+            is_fly_ash: { name: 'IS 12894 Fly Ash Lime', color: 0x7f8c8d, roughness: 0.80, metalness: 0.08, friction: 0.58 },
+            refractory_fire: { name: 'IS 8 Fire Clay Refractory', color: 0xdfa067, roughness: 0.85, metalness: 0.05, friction: 0.50 },
+            engineering_class_a: { name: 'BS 3921 Engineering Class A', color: 0x3d3d3d, roughness: 0.60, metalness: 0.15, friction: 0.45 }
+        };
+
+        const handState = {
+            trial: 'pinch',
+            brickStandard: 'is_red_clay',
+            graspProgress: 1.0,
+            targetGrasp: 1.0,
+            isGrasping: true,
+            squeezeMultiplier: 1.0,
+            frictionCoeff: 0.60,
+            contactForces: { thumb: 9.0, index: 4.5, middle: 0.0, ring: 4.5, pinky: 0.0 },
+            contactAreas: { thumb: 1.8, index: 1.5, middle: 0.0, ring: 1.5, pinky: 0.0 },
+            contactPressures: { thumb: 50.0, index: 30.0, middle: 0.0, ring: 30.0, pinky: 0.0 }
+        };
+
+        function getPressureHeatmapColor(pressKPa) {
+            let color = new THREE.Color();
+            if (pressKPa <= 0.05) {
+                color.setHex(0x0a194f); // Pure Dark Blue for in Air / 0.0 kPa
+            } else if (pressKPa < 18.0) {
+                color.lerpColors(new THREE.Color(0x0a194f), new THREE.Color(0x06b6d4), pressKPa / 18.0);
+            } else if (pressKPa < 45.0) {
+                color.lerpColors(new THREE.Color(0x06b6d4), new THREE.Color(0x22c55e), (pressKPa - 18.0) / 27.0);
+            } else if (pressKPa < 85.0) {
+                color.lerpColors(new THREE.Color(0x22c55e), new THREE.Color(0xfacc15), (pressKPa - 45.0) / 40.0);
+            } else {
+                color.lerpColors(new THREE.Color(0xfacc15), new THREE.Color(0xef4444), Math.min((pressKPa - 85.0) / 50.0, 1.0));
+            }
+            return color;
+        }
+
+        function computeTactilePhysics(delta) {
+            handState.graspProgress += (handState.targetGrasp - handState.graspProgress) * Math.min(delta * 7.0, 1.0);
+            const gp = handState.graspProgress;
+            const mult = handState.squeezeMultiplier;
+
+            handState.contactForces = { thumb: 0, index: 0, middle: 0, ring: 0, pinky: 0 };
+            handState.contactAreas = { thumb: 0, index: 0, middle: 0, ring: 0, pinky: 0 };
+            handState.contactPressures = { thumb: 0, index: 0, middle: 0, ring: 0, pinky: 0 };
+
+            if (handState.trial === 'pinch') {
+                // Bottom contact (Thumb)
+                handDigits.thumb.root.rotation.set(
+                    THREE.MathUtils.lerp(-0.15, 0.68, gp),
+                    THREE.MathUtils.lerp(0.35, -0.28, gp),
+                    THREE.MathUtils.lerp(0.45, -1.15, gp)
+                );
+                handDigits.thumb.pJoint.rotation.x = THREE.MathUtils.lerp(0.05, 0.54, gp);
+                handDigits.thumb.mid.rotation.x = THREE.MathUtils.lerp(0.05, -0.26, gp);
+                handDigits.thumb.dJoint.rotation.set(THREE.MathUtils.lerp(0, -0.15, gp), 0, 0);
+
+                // Index & Ring fingers in solid contact with top brick surface
+                const setTopActiveFinger = (name, xRotRoot) => {
+                    const f = handDigits[name];
+                    f.root.rotation.set(THREE.MathUtils.lerp(-0.25, xRotRoot, gp), 0, 0);
+                    f.pJoint.rotation.x = THREE.MathUtils.lerp(0.05, 0.54, gp);
+                    f.mid.rotation.x = THREE.MathUtils.lerp(0.05, 0.40, gp);
+                    f.dJoint.rotation.set(THREE.MathUtils.lerp(0, -0.10, gp), 0, 0);
+                };
+                setTopActiveFinger('index', 1.00);
+                setTopActiveFinger('ring', 1.00);
+
+                // Trial 1: Middle finger raised in air
+                handDigits.middle.root.rotation.set(THREE.MathUtils.lerp(-0.25, 0.60, gp), 0, 0);
+                handDigits.middle.pJoint.rotation.x = THREE.MathUtils.lerp(0.05, 0.20, gp);
+                handDigits.middle.mid.rotation.x = THREE.MathUtils.lerp(0.05, 0.15, gp);
+                handDigits.middle.dJoint.rotation.set(0, 0, 0);
+
+                // Trial 1: Pinky lifted in the air
+                handDigits.pinky.root.rotation.set(-0.35, 0, 0.18);
+                handDigits.pinky.pJoint.rotation.x = 0.1;
+                handDigits.pinky.mid.rotation.x = 0.1;
+                handDigits.pinky.dJoint.rotation.set(0, 0, 0);
+
+                const base = 18.0 * gp * mult;
+                handState.contactForces.thumb = base * 0.50;
+                handState.contactForces.index = base * 0.25;
+                handState.contactForces.middle = 0.0;
+                handState.contactForces.ring = base * 0.25;
+                handState.contactForces.pinky = 0.0; // In air: 0.0 N
+
+                handState.contactAreas.thumb = gp > 0.05 ? 1.6 + 0.03 * handState.contactForces.thumb : 0;
+                handState.contactAreas.index = gp > 0.05 ? 1.3 + 0.03 * handState.contactForces.index : 0;
+                handState.contactAreas.middle = 0.0;
+                handState.contactAreas.ring = gp > 0.05 ? 1.3 + 0.03 * handState.contactForces.ring : 0;
+                handState.contactAreas.pinky = 0.0;
+            } else {
+                // Trial 2: 4-Finger Grip (Thumb bottom; Index, Middle, Ring top; Pinky strictly above brick in air)
+                handDigits.thumb.root.rotation.set(
+                    THREE.MathUtils.lerp(-0.15, 0.68, gp),
+                    THREE.MathUtils.lerp(0.35, -0.26, gp),
+                    THREE.MathUtils.lerp(0.45, -1.12, gp)
+                );
+                handDigits.thumb.pJoint.rotation.x = THREE.MathUtils.lerp(0.05, 0.55, gp);
+                handDigits.thumb.mid.rotation.x = THREE.MathUtils.lerp(0.05, -0.24, gp);
+                handDigits.thumb.dJoint.rotation.set(THREE.MathUtils.lerp(0, -0.14, gp), 0, 0);
+
+                // Index finger touching top face
+                handDigits.index.root.rotation.set(THREE.MathUtils.lerp(-0.25, 1.00, gp), 0, 0);
+                handDigits.index.pJoint.rotation.x = THREE.MathUtils.lerp(0.05, 0.54, gp);
+                handDigits.index.mid.rotation.x = THREE.MathUtils.lerp(0.05, 0.40, gp);
+                handDigits.index.dJoint.rotation.set(THREE.MathUtils.lerp(0, -0.10, gp), 0, 0);
+
+                // Middle finger touching top face
+                handDigits.middle.root.rotation.set(THREE.MathUtils.lerp(-0.25, 1.01, gp), 0, 0);
+                handDigits.middle.pJoint.rotation.x = THREE.MathUtils.lerp(0.05, 0.55, gp);
+                handDigits.middle.mid.rotation.x = THREE.MathUtils.lerp(0.05, 0.41, gp);
+                handDigits.middle.dJoint.rotation.set(THREE.MathUtils.lerp(0, -0.11, gp), 0, 0);
+
+                // Ring finger touching top face
+                handDigits.ring.root.rotation.set(THREE.MathUtils.lerp(-0.25, 1.00, gp), 0, 0);
+                handDigits.ring.pJoint.rotation.x = THREE.MathUtils.lerp(0.05, 0.54, gp);
+                handDigits.ring.mid.rotation.x = THREE.MathUtils.lerp(0.05, 0.40, gp);
+                handDigits.ring.dJoint.rotation.set(THREE.MathUtils.lerp(0, -0.10, gp), 0, 0);
+
+                // Pinky in air: raised above top brick face with clear visible gap
+                handDigits.pinky.root.rotation.set(
+                    THREE.MathUtils.lerp(-0.35, 0.55, gp),
+                    THREE.MathUtils.lerp(0.0, 0.05, gp),
+                    THREE.MathUtils.lerp(0.18, 0.22, gp)
+                );
+                handDigits.pinky.pJoint.rotation.x = THREE.MathUtils.lerp(0.10, 0.20, gp);
+                handDigits.pinky.mid.rotation.x = THREE.MathUtils.lerp(0.10, 0.16, gp);
+                handDigits.pinky.dJoint.rotation.set(0, 0, 0);
+
+                // Force distributed across the 4 active touching digits; Pinky strictly 0.0 N
+                const base = 21.0 * gp * mult;
+                handState.contactForces.thumb = base * 0.50;
+                handState.contactForces.index = base * 0.17;
+                handState.contactForces.middle = base * 0.17;
+                handState.contactForces.ring = base * 0.16;
+                handState.contactForces.pinky = 0.0; // In air: 0.0 N
+
+                handState.contactAreas.thumb = gp > 0.05 ? 1.6 + 0.03 * handState.contactForces.thumb : 0;
+                handState.contactAreas.index = gp > 0.05 ? 1.3 + 0.025 * handState.contactForces.index : 0;
+                handState.contactAreas.middle = gp > 0.05 ? 1.35 + 0.025 * handState.contactForces.middle : 0;
+                handState.contactAreas.ring = gp > 0.05 ? 1.25 + 0.025 * handState.contactForces.ring : 0;
+                handState.contactAreas.pinky = 0.0; // In air: 0.0 cm²
+            }
+
+            for (let f in handState.contactForces) {
+                const force = handState.contactForces[f];
+                const area = handState.contactAreas[f];
+                const press = (area > 0 && force > 0) ? (force / area) * 10.0 : 0.0;
+                handState.contactPressures[f] = press;
+                handMaterials.sensorPads[f].color.copy(getPressureHeatmapColor(press));
+            }
+
+            // Force dark blue color when pinky is in air
+            if (handState.contactPressures.pinky <= 0.05) {
+                handMaterials.sensorPads.pinky.color.setHex(0x0a194f);
+            }
+
+            const totalForce = Object.values(handState.contactForces).reduce((a, b) => a + b, 0);
+            const activeAreas = Object.values(handState.contactAreas).filter(a => a > 0);
+            const totalArea = activeAreas.reduce((a, b) => a + b, 0);
+            const meanPress = totalArea > 0 ? (totalForce / totalArea) * 10.0 : 0.0;
+            const maxShear = totalForce * handState.frictionCoeff;
+
+            document.getElementById('total-force-disp').innerText = totalForce.toFixed(2) + " N";
+            document.getElementById('mean-pressure-disp').innerText = meanPress.toFixed(1) + " kPa";
+            document.getElementById('max-shear-disp').innerText = maxShear.toFixed(2) + " N";
+
+            const updateDigitCard = (key) => {
+                const f = handState.contactForces[key];
+                const a = handState.contactAreas[key];
+                const p = handState.contactPressures[key];
+
+                document.getElementById(`force-${key}`).innerText = f.toFixed(2) + " N";
+                document.getElementById(`area-${key}`).innerText = a.toFixed(1) + " cm²";
+                document.getElementById(`press-${key}`).innerText = p.toFixed(1) + " kPa";
+
+                const bar = document.getElementById(`bar-${key}`);
+                if (bar) {
+                    if (p <= 0.05) {
+                        bar.style.width = "0%";
+                        bar.style.backgroundColor = '#0a194f';
+                    } else {
+                        const pct = Math.min(100, (p / 90.0) * 100);
+                        bar.style.width = pct + "%";
+                        bar.style.backgroundColor = p > 75 ? '#ef4444' : p > 40 ? '#facc15' : p > 15 ? '#22c55e' : '#06b6d4';
+                    }
+                }
+            };
+            ['thumb', 'index', 'middle', 'ring', 'pinky'].forEach(updateDigitCard);
+        }
+
+        function selectTrial(key) {
+            handState.trial = key;
+            handState.targetGrasp = 1.0;
+
+            if (key === 'pinch') {
+                document.getElementById('btn-trial-1').className = 'w-full p-1.5 rounded text-left bg-cyan-950 border border-cyan-500 text-cyan-300';
+                document.getElementById('btn-trial-2').className = 'w-full p-1.5 rounded text-left bg-slate-800 border border-slate-700 text-slate-300';
+                document.getElementById('stability-badge').innerText = 'Trial 1: Stable 2-Top (Index & Ring) / 1-Bottom Pinch';
+                document.getElementById('label-middle').innerText = 'Middle (M3 - Raised in Air)';
+                document.getElementById('label-pinky').innerText = 'Pinky (P5 - Free in Air)';
+                document.getElementById('squeeze-multiplier-label').innerText = `${handState.squeezeMultiplier.toFixed(1)}x (${(18.0 * handState.squeezeMultiplier).toFixed(1)} N)`;
+            } else {
+                document.getElementById('btn-trial-1').className = 'w-full p-1.5 rounded text-left bg-slate-800 border border-slate-700 text-slate-300';
+                document.getElementById('btn-trial-2').className = 'w-full p-1.5 rounded text-left bg-cyan-950 border border-cyan-500 text-cyan-300';
+                document.getElementById('stability-badge').innerText = 'Trial 2: 4-Finger Grip (Pinky in Air)';
+                document.getElementById('label-middle').innerText = 'Middle (M3 - Top Face Touch)';
+                document.getElementById('label-pinky').innerText = 'Pinky (P5 - Free in Air)';
+                document.getElementById('squeeze-multiplier-label').innerText = `${handState.squeezeMultiplier.toFixed(1)}x (${(21.0 * handState.squeezeMultiplier).toFixed(1)} N)`;
+            }
+
+            document.getElementById('slider-grasp').value = 100;
+            document.getElementById('grasp-pct-label').innerText = "100%";
+        }
+
+        function onBrickStandardChange(standardKey) {
+            handState.brickStandard = standardKey;
+            const standard = BRICK_STANDARDS[standardKey];
+            handMaterials.brickMat.color.setHex(standard.color);
+            handMaterials.brickMat.roughness = standard.roughness;
+            handMaterials.brickMat.metalness = standard.metalness;
+            handState.frictionCoeff = standard.friction;
+            document.getElementById('friction-label').innerText = handState.frictionCoeff.toFixed(2);
+            document.getElementById('slider-friction').value = handState.frictionCoeff;
+        }
+
+        function toggleAutoGrasp() {
+            handState.isGrasping = !handState.isGrasping;
+            handState.targetGrasp = handState.isGrasping ? 1.0 : 0.0;
+            document.getElementById('btn-auto-grasp').innerText = handState.isGrasping ? "RELEASE" : "GRASP";
+            document.getElementById('slider-grasp').value = Math.round(handState.targetGrasp * 100);
+            document.getElementById('grasp-pct-label').innerText = handState.isGrasping ? "100%" : "0%";
+        }
+
+        function onGraspSliderChange(v) { 
+            handState.targetGrasp = v / 100; 
+            document.getElementById('grasp-pct-label').innerText = v + "%"; 
+        }
+
+        function onSqueezeSliderChange(v) { 
+            handState.squeezeMultiplier = parseFloat(v); 
+            const baseForce = handState.trial === 'pinch' ? 18.0 : 21.0;
+            const approxForce = (baseForce * handState.squeezeMultiplier).toFixed(1);
+            const label = document.getElementById('squeeze-multiplier-label');
+            label.innerText = `${parseFloat(v).toFixed(1)}x (${approxForce} N)`;
+            label.style.color = handState.squeezeMultiplier >= 2.0 ? '#ef4444' : handState.squeezeMultiplier >= 1.4 ? '#facc15' : '#38bdf8';
+        }
+
+        function onFrictionSliderChange(v) { 
+            handState.frictionCoeff = parseFloat(v); 
+            document.getElementById('friction-label').innerText = handState.frictionCoeff.toFixed(2); 
+        }
+
+        function onHandModalResize() {
+            const container = document.getElementById('hand-canvas-parent');
+            if (container && container.clientWidth > 0 && container.clientHeight > 0) {
+                handCamera.aspect = container.clientWidth / container.clientHeight;
+                handCamera.updateProjectionMatrix();
+                handRenderer.setSize(container.clientWidth, container.clientHeight);
+            }
+        }
+
+        window.addEventListener('resize', () => {
+            mainCamera.aspect = window.innerWidth / window.innerHeight;
+            mainCamera.updateProjectionMatrix();
+            mainRenderer.setSize(window.innerWidth, window.innerHeight);
+            onHandModalResize();
+        });
+
+        // -------------------------------------------------------------
+        // 4. MAIN ANIMATION LOOP
+        // -------------------------------------------------------------
+        const mainClock = new THREE.Clock();
+        const handClock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const dtMain = mainClock.getDelta();
+            motionClockTime += dtMain;
+
+            if (currentMotion === 'waving') {
+                lShoulder.rotation.x = -2.1;
+                lShoulder.rotation.z = 0.35;
+                lElbow.rotation.x = 0.85 + Math.sin(motionClockTime * 3.5) * 0.25;
+                lWrist.rotation.z = Math.sin(motionClockTime * 4.0) * 0.45;
+                head.rotation.y = Math.sin(motionClockTime * 1.5) * 0.12;
+
+                Object.values(leftHandAssembly.digitJoints).forEach((d, idx) => {
+                    d.fRoot.rotation.x = Math.sin(motionClockTime * 4.0 + idx) * 0.2;
+                });
+            } else if (currentMotion === 'jump') {
+                const jumpCycle = (Math.sin(motionClockTime * 5.0) + 1) / 2;
+                pelvis.position.y = 1.45 + jumpCycle * 0.45;
+                lHip.rotation.x = (1 - jumpCycle) * 0.45;
+                rHip.rotation.x = (1 - jumpCycle) * 0.45;
+                lKnee.rotation.x = -(1 - jumpCycle) * 0.85;
+                rKnee.rotation.x = -(1 - jumpCycle) * 0.85;
+                lShoulder.rotation.x = -jumpCycle * 0.8;
+                rShoulder.rotation.x = -jumpCycle * 0.8;
+            } else if (currentMotion === 'dance') {
+                const danceRhythm = Math.sin(motionClockTime * 4.5);
+                pelvis.position.y = 1.45 + Math.abs(Math.sin(motionClockTime * 4.5)) * 0.08;
+                pelvis.rotation.y = danceRhythm * 0.35;
+                chest.rotation.z = -danceRhythm * 0.15;
+                head.rotation.y = danceRhythm * 0.2;
+
+                lShoulder.rotation.x = -1.2 + Math.cos(motionClockTime * 4.5) * 0.5;
+                lShoulder.rotation.z = 0.6 + danceRhythm * 0.3;
+                rShoulder.rotation.x = -1.2 - Math.cos(motionClockTime * 4.5) * 0.5;
+                rShoulder.rotation.z = -0.6 - danceRhythm * 0.3;
+
+                lElbow.rotation.x = 1.0 + Math.sin(motionClockTime * 4.5) * 0.4;
+                rElbow.rotation.x = 1.0 - Math.sin(motionClockTime * 4.5) * 0.4;
+
+                lHip.rotation.x = danceRhythm * 0.25;
+                rHip.rotation.x = -danceRhythm * 0.25;
+                lKnee.rotation.x = Math.max(0, -danceRhythm * 0.4);
+                rKnee.rotation.x = Math.max(0, danceRhythm * 0.4);
+            } else if (currentMotion === 'squat') {
+                const squatDepth = (Math.sin(motionClockTime * 3.0) + 1) / 2;
+                pelvis.position.y = 1.45 - squatDepth * 0.55;
+                chest.rotation.x = squatDepth * 0.35;
+                
+                lHip.rotation.x = squatDepth * 1.1;
+                rHip.rotation.x = squatDepth * 1.1;
+                lKnee.rotation.x = -squatDepth * 1.6;
+                rKnee.rotation.x = -squatDepth * 1.6;
+
+                lShoulder.rotation.x = -squatDepth * 1.4;
+                rShoulder.rotation.x = -squatDepth * 1.4;
+                lElbow.rotation.x = 0.2;
+                rElbow.rotation.x = 0.2;
+            } else if (currentMotion === 'run') {
+                const stride = Math.sin(motionClockTime * 7.0);
+                pelvis.position.y = 1.45 + Math.abs(Math.sin(motionClockTime * 7.0)) * 0.08;
+                pelvis.rotation.y = Math.sin(motionClockTime * 7.0) * 0.12;
+
+                lHip.rotation.x = stride * 0.75;
+                rHip.rotation.x = -stride * 0.75;
+                lKnee.rotation.x = stride > 0 ? -stride * 1.1 : 0;
+                rKnee.rotation.x = stride < 0 ? stride * 1.1 : 0;
+
+                lShoulder.rotation.x = -stride * 0.85;
+                rShoulder.rotation.x = stride * 0.85;
+                lElbow.rotation.x = 0.75;
+                rElbow.rotation.x = 0.75;
+            }
+
+            mainControls.update();
+            mainRenderer.render(mainScene, mainCamera);
+
+            const modal = document.getElementById('hand-experiment-modal');
+            if (modal && !modal.classList.contains('hidden')) {
+                const dtHand = handClock.getDelta();
+                handControls.update();
+                computeTactilePhysics(dtHand);
+                handRenderer.render(handScene, handCamera);
+            }
+        }
+
+        window.onload = () => {
+            animate();
+            onHandModalResize();
+        };
+    </script>
+</body>
+</html>
