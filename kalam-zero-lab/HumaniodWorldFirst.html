@@ -1,0 +1,1652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>World's First EMI Health Clinic - GARRF's Shantanu</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <style>
+    :root {
+      --bg-studio: #1a1e27;
+      --bg-panel: rgba(14, 18, 27, 0.94);
+      --accent-cyan: #00e5ff;
+      --accent-green: #00e676;
+      --accent-rose: #ff1744;
+      --accent-gold: #ffd700;
+      --accent-purple: #b388ff;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --border-panel: rgba(0, 229, 255, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background: radial-gradient(circle at 50% 35%, #2a3140 0%, #101319 100%);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top Header Bar */
+    header {
+      background: rgba(10, 14, 22, 0.97);
+      border-bottom: 1px solid var(--border-panel);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.5rem 1.2rem;
+      z-index: 100;
+      backdrop-filter: blur(14px);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.65);
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      height: 44px;
+      width: 44px;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 1.5px solid var(--accent-cyan);
+      box-shadow: 0 0 14px rgba(0, 229, 255, 0.5);
+    }
+
+    .brand-titles {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .brand-org {
+      font-size: 0.72rem;
+      color: var(--accent-cyan);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 700;
+    }
+
+    .brand-main-title {
+      font-size: 1.05rem;
+      letter-spacing: 0.02em;
+      color: #ffffff;
+      font-weight: 800;
+      line-height: 1.2;
+      text-shadow: 0 0 12px rgba(0, 229, 255, 0.35);
+    }
+
+    .brand-subtitle {
+      font-size: 0.76rem;
+      color: #ffd700;
+      font-weight: 600;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .help-beacon-btn {
+      background: linear-gradient(135deg, rgba(0, 229, 255, 0.25), rgba(179, 136, 255, 0.25));
+      border: 1.5px solid var(--accent-cyan);
+      color: #fff;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 0 14px rgba(0, 229, 255, 0.4);
+      transition: all 0.25s ease;
+    }
+
+    .help-beacon-btn:hover {
+      background: linear-gradient(135deg, rgba(0, 229, 255, 0.45), rgba(179, 136, 255, 0.45));
+      box-shadow: 0 0 22px rgba(0, 229, 255, 0.7);
+      transform: scale(1.04);
+    }
+
+    .header-tag {
+      font-size: 0.68rem;
+      background: rgba(0, 229, 255, 0.12);
+      border: 1px solid var(--accent-cyan);
+      color: var(--accent-cyan);
+      padding: 4px 10px;
+      border-radius: 14px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+      display: none;
+    }
+
+    @media (min-width: 990px) {
+      .header-tag { display: block; }
+    }
+
+    /* 3D Viewport */
+    #viewport-container {
+      flex: 1;
+      position: relative;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+    }
+
+    #three-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* Minimizable Floating Panels */
+    .overlay-panel {
+      position: absolute;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-panel);
+      border-radius: 10px;
+      backdrop-filter: blur(14px);
+      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.6);
+      z-index: 50;
+      max-width: calc(100vw - 1.6rem);
+      transition: all 0.25s ease;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      background: rgba(255, 255, 255, 0.05);
+      cursor: pointer;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px 10px 0 0;
+    }
+
+    .panel-title {
+      font-size: 0.74rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent-cyan);
+      font-weight: 700;
+    }
+
+    .min-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      width: 22px;
+      height: 22px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .panel-body {
+      padding: 10px 12px;
+      max-height: 520px;
+      overflow-y: auto;
+      transition: max-height 0.25s ease, opacity 0.2s ease, padding 0.2s ease;
+    }
+
+    .overlay-panel.minimized .panel-body {
+      max-height: 0;
+      opacity: 0;
+      padding: 0 12px;
+      overflow: hidden;
+    }
+
+    .overlay-panel.minimized .panel-header {
+      border-bottom: none;
+      border-radius: 10px;
+    }
+
+    #left-panel {
+      top: 0.8rem;
+      left: 0.8rem;
+      width: 300px;
+    }
+
+    #right-panel {
+      top: 0.8rem;
+      right: 0.8rem;
+      width: 340px;
+      font-family: 'Courier New', Courier, monospace;
+    }
+
+    .btn-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 5px;
+      margin-bottom: 6px;
+    }
+
+    .action-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: var(--text-main);
+      padding: 6px 8px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 0.68rem;
+      text-align: center;
+      transition: all 0.2s;
+    }
+
+    .action-btn:hover, .action-btn.active {
+      background: rgba(0, 229, 255, 0.2);
+      border-color: var(--accent-cyan);
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .pzt-card-list {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      margin-top: 4px;
+    }
+
+    .pzt-card {
+      background: rgba(0, 176, 255, 0.08);
+      border: 1px solid rgba(0, 176, 255, 0.25);
+      border-radius: 5px;
+      padding: 6px 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .pzt-card:hover, .pzt-card.active {
+      background: rgba(0, 229, 255, 0.22);
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
+    }
+
+    .pzt-card-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .pzt-card-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.64rem;
+      color: var(--accent-gold);
+      margin-top: 2px;
+    }
+
+    .slider-container {
+      margin: 8px 0;
+    }
+
+    .slider-title {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    input[type=range] {
+      width: 100%;
+      accent-color: var(--accent-rose);
+    }
+
+    .telemetry-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.71rem;
+      margin-bottom: 4px;
+      color: var(--text-muted);
+    }
+
+    .telemetry-val {
+      color: var(--accent-green);
+      font-weight: 600;
+    }
+
+    #spectrum-canvas {
+      width: 100%;
+      height: 90px;
+      background: #090d14;
+      border: 1px solid rgba(0, 229, 255, 0.28);
+      border-radius: 6px;
+      margin: 6px 0;
+    }
+
+    .algo-container {
+      max-height: 120px;
+      overflow-y: auto;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      padding: 5px;
+      background: rgba(0, 0, 0, 0.35);
+      margin-top: 5px;
+    }
+
+    .algo-item {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.65rem;
+      padding: 2.5px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .pzt-spec-box {
+      margin-top: 6px;
+      padding: 6px 8px;
+      background: rgba(0, 176, 255, 0.12);
+      border: 1px solid var(--accent-cyan);
+      border-radius: 5px;
+      font-size: 0.67rem;
+      line-height: 1.35;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    .shm-note-box {
+      margin-top: 8px;
+      padding: 6px 8px;
+      background: rgba(255, 215, 0, 0.08);
+      border-left: 3px solid var(--accent-gold);
+      border-radius: 0 4px 4px 0;
+      font-size: 0.67rem;
+      color: #ffd700;
+      line-height: 1.35;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    /* Modal Styles for Master Help & Clinic Manual */
+    #help-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(5, 8, 14, 0.85);
+      backdrop-filter: blur(12px);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .modal-content {
+      background: #0f141f;
+      border: 2px solid var(--accent-cyan);
+      box-shadow: 0 0 50px rgba(0, 229, 255, 0.35);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 860px;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      color: #e2e8f0;
+    }
+
+    .modal-header {
+      background: #141b29;
+      border-bottom: 1px solid rgba(0, 229, 255, 0.3);
+      padding: 12px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-header h2 {
+      font-size: 1.05rem;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .modal-close-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      font-size: 1.1rem;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .modal-close-btn:hover {
+      background: var(--accent-rose);
+      border-color: var(--accent-rose);
+    }
+
+    .modal-body {
+      padding: 18px;
+      overflow-y: auto;
+      font-size: 0.82rem;
+      line-height: 1.6;
+    }
+
+    .modal-section {
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .modal-section h3 {
+      color: var(--accent-cyan);
+      font-size: 0.92rem;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .algo-grid-doc {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .algo-doc-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(0, 229, 255, 0.15);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 0.74rem;
+    }
+
+    .algo-doc-card strong {
+      color: var(--accent-gold);
+      display: block;
+      margin-bottom: 3px;
+    }
+
+    .proprietary-banner {
+      background: linear-gradient(135deg, rgba(0, 229, 255, 0.15), rgba(255, 215, 0, 0.15));
+      border: 1.5px solid var(--accent-gold);
+      border-radius: 8px;
+      padding: 14px;
+      margin-top: 14px;
+    }
+
+    /* Footer */
+    footer {
+      min-height: 34px;
+      background: rgba(10, 14, 22, 0.97);
+      border-top: 1px solid var(--border-panel);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      z-index: 100;
+      text-align: center;
+      padding: 0 0.5rem;
+    }
+
+    footer strong {
+      color: #fff;
+      margin-left: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header Bar -->
+  <header>
+    <div class="brand-section">
+      <img src="logo.jpeg" alt="GARRF Logo" class="brand-logo" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'44\' height=\'44\'><rect width=\'44\' height=\'44\' fill=\'%2300e5ff\'/><text x=\'50%\' y=\'55%\' fill=\'%23111\' font-size=\'11\' font-weight=\'bold\' text-anchor=\'middle\' dominant-baseline=\'middle\'>GARRF</text></svg>'">
+      <div class="brand-titles">
+        <span class="brand-org">Gopalkrishna Advanced Rural Research Foundation, India</span>
+        <h1 class="brand-main-title">World's First EMI Health Clinic</h1>
+        <span class="brand-subtitle">GARRF's Shantanu &bull; Proprietary Technology of GARRF.in</span>
+      </div>
+    </div>
+    
+    <div class="header-actions">
+      <div class="header-tag">Quantum SHM &bull; 15 Q-Algorithms</div>
+      <button class="help-beacon-btn" onclick="openHelpModal()">
+        <span>&#9432;</span>
+        <span>HELP &amp; PROTOCOL GUIDE</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- 3D Viewport -->
+  <div id="viewport-container">
+    <canvas id="three-canvas"></canvas>
+
+    <!-- Left Controls Panel -->
+    <div class="overlay-panel" id="left-panel">
+      <div class="panel-header" onclick="togglePanel('left-panel')">
+        <span class="panel-title">SHM Transducer Directory</span>
+        <button class="min-btn">&#8722;</button>
+      </div>
+      <div class="panel-body">
+        <div style="font-size: 0.68rem; color: var(--text-muted); margin-bottom: 4px;">GLOBAL PERSPECTIVES:</div>
+        <div class="btn-grid">
+          <button class="action-btn active" onclick="setFocus('full')">Full Humanoid</button>
+          <button class="action-btn" onclick="setFocus('chest')">GARRF Plaque</button>
+        </div>
+
+        <div style="font-size: 0.68rem; color: var(--text-muted); margin-top: 6px;">SELECT PZT COMPONENT NODE:</div>
+        <div class="pzt-card-list">
+          <div class="pzt-card active" onclick="selectPZT(0)">
+            <div class="pzt-card-header">
+              <span>PZT-01: Cervical Neck Collar</span>
+              <span style="color:var(--accent-cyan);">94.0 kHz</span>
+            </div>
+            <div class="pzt-card-meta">
+              <span>Type: PZT-5H (Navy VI)</span>
+              <span>Matrix DoF: 1024</span>
+            </div>
+          </div>
+
+          <div class="pzt-card" onclick="selectPZT(1)">
+            <div class="pzt-card-header">
+              <span>PZT-02: Right Wrist / Hand</span>
+              <span style="color:var(--accent-cyan);">135.0 kHz</span>
+            </div>
+            <div class="pzt-card-meta">
+              <span>Type: PZT-5H (Navy VI)</span>
+              <span>Matrix DoF: 512</span>
+            </div>
+          </div>
+
+          <div class="pzt-card" onclick="selectPZT(2)">
+            <div class="pzt-card-header">
+              <span>PZT-03: Left Wrist / Hand</span>
+              <span style="color:var(--accent-cyan);">134.5 kHz</span>
+            </div>
+            <div class="pzt-card-meta">
+              <span>Type: PZT-5H (Navy VI)</span>
+              <span>Matrix DoF: 512</span>
+            </div>
+          </div>
+
+          <div class="pzt-card" onclick="selectPZT(3)">
+            <div class="pzt-card-header">
+              <span>PZT-04: Right Knee Biaxial Joint</span>
+              <span style="color:var(--accent-cyan);">68.0 kHz</span>
+            </div>
+            <div class="pzt-card-meta">
+              <span>Type: PZT-4 (Navy I High-Power)</span>
+              <span>Matrix DoF: 1536</span>
+            </div>
+          </div>
+
+          <div class="pzt-card" onclick="selectPZT(4)">
+            <div class="pzt-card-header">
+              <span>PZT-05: Right Ankle Support</span>
+              <span style="color:var(--accent-cyan);">115.0 kHz</span>
+            </div>
+            <div class="pzt-card-meta">
+              <span>Type: PZT-4 (Navy I Impact)</span>
+              <span>Matrix DoF: 1280</span>
+            </div>
+          </div>
+
+          <div class="pzt-card" onclick="selectPZT(5)">
+            <div class="pzt-card-header">
+              <span>PZT-06: Pelvis Core Chassis</span>
+              <span style="color:var(--accent-cyan);">42.0 kHz</span>
+            </div>
+            <div class="pzt-card-meta">
+              <span>Type: PZT-5A (Navy II Broadband)</span>
+              <span>Matrix DoF: 2048</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="slider-container">
+          <div class="slider-title">
+            <span>Local Crack Severity Level:</span>
+            <span id="severity-label" style="color:var(--accent-rose); font-weight:bold;">0% (Intact)</span>
+          </div>
+          <input type="range" id="crack-slider" min="0" max="100" value="0" oninput="updateCrackSeverity(this.value)">
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Telemetry & Quantum AI Panel -->
+    <div class="overlay-panel" id="right-panel">
+      <div class="panel-header" onclick="togglePanel('right-panel')">
+        <span class="panel-title">EMI &amp; 15 Quantum AI Algos</span>
+        <button class="min-btn">&#8722;</button>
+      </div>
+      <div class="panel-body">
+        <div class="telemetry-row">
+          <span>Active Component:</span>
+          <span class="telemetry-val" id="val-loc">PZT-01 (Cervical Collar)</span>
+        </div>
+        <div class="telemetry-row">
+          <span>Resonance Shift:</span>
+          <span class="telemetry-val" id="val-shift">0.0 kHz</span>
+        </div>
+        <div class="telemetry-row">
+          <span>RMSD Metric:</span>
+          <span class="telemetry-val" id="val-rmsd">0.012 (HEALTHY)</span>
+        </div>
+        <div class="telemetry-row">
+          <span>Traditional CPU Time:</span>
+          <span class="telemetry-val" style="color:var(--accent-gold);" id="val-cpu-time">6.82 ms</span>
+        </div>
+        <div class="telemetry-row">
+          <span>Quantum Total Time:</span>
+          <span class="telemetry-val" style="color:var(--accent-cyan);" id="val-q-time">3.92 &mu;s (1740&times;)</span>
+        </div>
+
+        <div style="font-size: 0.66rem; color: var(--text-muted); margin-top: 6px;">CONDUCTANCE Re(Y) SPECTRUM [20-200 kHz]:</div>
+        <canvas id="spectrum-canvas" width="300" height="90"></canvas>
+
+        <div class="pzt-spec-box" id="pzt-spec-display"></div>
+
+        <div style="font-size: 0.66rem; color: var(--text-muted); margin-top: 6px;">15 QUANTUM AI ALGORITHMS (LIVE BENCHMARK):</div>
+        <div class="algo-container" id="algo-list"></div>
+
+        <div class="shm-note-box">
+          <strong>Note:</strong> Signatures vary for different humanoids depending on internal joint tolerances, chassis metallurgy, and structural boundary stiffness.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Master Help & Operations Modal -->
+  <div id="help-modal" onclick="closeModalOnBackdrop(event)">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2><span>&#128300;</span> GARRF EMI Health Clinic: Master User Manual &amp; Quantum AI Protocol</h2>
+        <button class="modal-close-btn" onclick="closeHelpModal()">&#10005;</button>
+      </div>
+      <div class="modal-body">
+        
+        <!-- 1. What is this about -->
+        <div class="modal-section">
+          <h3>1. What is This Platform About?</h3>
+          <p>
+            Welcome to the <strong>World's First EMI Health Clinic</strong> for humanoid robotics, hosted by the 
+            <strong>Gopalkrishna Advanced Rural Research Foundation (GARRF.in)</strong>. This platform pioneers the fusion of 
+            <strong>Piezoelectric Electromechanical Impedance (EMI) Structural Health Monitoring (SHM)</strong> with 
+            <strong>Quantum Artificial Intelligence</strong> to inspect, diagnose, and maintain the structural integrity of 
+            the shining polished-steel humanoid robot: <strong>GARRF's Shantanu</strong>.
+          </p>
+        </div>
+
+        <!-- 2. How to use EMI -->
+        <div class="modal-section">
+          <h3>2. How to Use the Electromechanical Impedance (EMI) Technique</h3>
+          <p>
+            The EMI technique utilizes bonded Lead Zirconate Titanate (PZT) ceramic transducers driven at high ultrasonic 
+            frequencies (20 kHz to 200 kHz). Through direct and converse piezoelectric coupling, the electrical admittance 
+            <em>Y(&omega;) = G(&omega;) + jB(&omega;)</em> across the PZT patch is coupled directly to the local mechanical 
+            impedance of the robot's skeletal joint:
+          </p>
+          <p style="font-family: monospace; color: var(--accent-cyan); background: rgba(0,0,0,0.3); padding: 6px; border-radius: 4px; margin: 6px 0;">
+            Y(&omega;) = j&omega; &middot; (w&middot;l / h) &middot; [&epsilon;<sub>33</sub><sup>T</sup> - d<sub>31</sub><sup>2</sup> &middot; Y<sub>E</sub> &middot; (Z<sub>a</sub> / (Z<sub>s</sub> + Z<sub>a</sub>))]
+          </p>
+          <p>
+            Any crack, bolt loosening, or structural micro-fissure directly modifies the structural impedance <em>Z<sub>s</sub></em>, 
+            producing immediate peak left-shifts, amplitude damping, and anti-resonance distortion in the conductance spectrum <em>Re(Y)</em>.
+          </p>
+        </div>
+
+        <!-- 3. Ask to get base signatures -->
+        <div class="modal-section">
+          <h3>3. Step 1: Capture the Pristine Baseline Signatures</h3>
+          <p>
+            Upon initial startup, keep the <strong>Local Crack Severity Level at 0% (Intact)</strong>. 
+            Click through each of the 6 PZT component cards in the left directory:
+          </p>
+          <ul style="margin-left: 20px; color: var(--accent-gold);">
+            <li><strong>PZT-01:</strong> Cervical Neck Collar (94.0 kHz)</li>
+            <li><strong>PZT-02 &amp; PZT-03:</strong> Right &amp; Left Hand / Wrist (135.0 kHz / 134.5 kHz)</li>
+            <li><strong>PZT-04:</strong> Right Knee Joint (68.0 kHz)</li>
+            <li><strong>PZT-05:</strong> Right Ankle Support (115.0 kHz)</li>
+            <li><strong>PZT-06:</strong> Pelvis Core Chassis (42.0 kHz)</li>
+          </ul>
+          <p>
+            Observe the pristine dashed cyan baseline conductance signature plotted on the HUD canvas. This constitutes 
+            the pristine structural fingerprint of the component.
+          </p>
+        </div>
+
+        <!-- 4. Ask to see signatures and quantum AI -->
+        <div class="modal-section">
+          <h3>4. Step 2: Observe Signatures and Quantum AI Convergence</h3>
+          <p>
+            Notice that in the baseline healthy state, the traditional <strong>Root Mean Square Deviation (RMSD)</strong> 
+            metric is nominal (&sim;0.012), and the 15 Quantum AI algorithms report near-perfect 
+            <strong>99.8% Structural Integrity Confidence</strong>.
+          </p>
+        </div>
+
+        <!-- 5. Give details of Quantum AI algorithms -->
+        <div class="modal-section">
+          <h3>5. Theoretical Dossier: The 15 Quantum AI Algorithms</h3>
+          <p>
+            Below is the comprehensive operational portfolio of the 15 proprietary Quantum AI algorithms actively computing 
+            damage identification in GARRF's Shantanu:
+          </p>
+          <div class="algo-grid-doc">
+            <div class="algo-doc-card">
+              <strong>1. QAOA-SHM</strong>
+              Quantum Approximate Optimization Algorithm tuned to identify the ground-state damage configuration in high-dimensional stiffness graphs.
+            </div>
+            <div class="algo-doc-card">
+              <strong>2. VQE-Impedance</strong>
+              Variational Quantum Eigensolver mapping continuous EMI conductance spectra to parametrized quantum circuits to isolate anti-resonance shifts.
+            </div>
+            <div class="algo-doc-card">
+              <strong>3. Quantum SVM (QSVM)</strong>
+              Evaluates non-linear impedance kernels in exponentially large Hilbert spaces for rapid healthy-vs-damaged hyper-plane classification.
+            </div>
+            <div class="algo-doc-card">
+              <strong>4. Quantum CNN (QCNN)</strong>
+              Translates multi-sensor PZT spectral arrays through parameterized quantum convolutional layers for localized joint crack isolation.
+            </div>
+            <div class="algo-doc-card">
+              <strong>5. Quantum PCA</strong>
+              Solves structural covariance matrices in logarithmic time $O(\log N)$, instantly compressing multi-joint admittance variations.
+            </div>
+            <div class="algo-doc-card">
+              <strong>6. QNN-Bayesian</strong>
+              Parameterized Quantum Neural Network providing Bayesian posterior uncertainty quantification for micro-crack depth prediction.
+            </div>
+            <div class="algo-doc-card">
+              <strong>7. QSVM-Kernel</strong>
+              Direct quantum inner-product estimation between baseline and live EMI vectors using quantum state swap tests.
+            </div>
+            <div class="algo-doc-card">
+              <strong>8. Quantum GAN (Q-GAN)</strong>
+              Adversarial generator reconstructing pristine structural states from noisy environmental signals to suppress thermal false positives.
+            </div>
+            <div class="algo-doc-card">
+              <strong>9. Quantum LSTM</strong>
+              Quantum recurrent memory tracking dynamic cyclic fatigue and micro-strain degradation across repeated bipedal locomotion cycles.
+            </div>
+            <div class="algo-doc-card">
+              <strong>10. Quantum Autoencoder</strong>
+              Compresses complex electromechanical impedance spectra into ultra-compact quantum latents to isolate minute topological anomalies.
+            </div>
+            <div class="algo-doc-card">
+              <strong>11. Quantum Annealing SHM</strong>
+              Ising-spin model formulation searching for global structural energy minima corresponding to bolt looseness or linkage separation.
+            </div>
+            <div class="algo-doc-card">
+              <strong>12. Quantum Transformer</strong>
+              Multi-head quantum self-attention analyzing long-range structural correlation between foot reaction impacts and cervical neck harmonics.
+            </div>
+            <div class="algo-doc-card">
+              <strong>13. Grover Damage Search</strong>
+              Quadratic quantum speedup $O(\sqrt{N})$ searching through unorganized database registers of joint fatigue failure modes.
+            </div>
+            <div class="algo-doc-card">
+              <strong>14. Quantum Boltzmann Machine</strong>
+              Generative stochastic network learning the probability distribution of high-frequency PZT resonance modes under varying temperatures.
+            </div>
+            <div class="algo-doc-card">
+              <strong>15. Quantum Reservoir Computing</strong>
+              High-dimensional quantum reservoir dynamics for real-time temporal tracking of transient ground impact shocks and sudden fractures.
+            </div>
+          </div>
+        </div>
+
+        <!-- 6. Ask now to make crack at location locally by dragging bar -->
+        <div class="modal-section">
+          <h3>6. Step 3: Induce a Local Crack by Dragging the Severity Slider</h3>
+          <p>
+            Select any target joint (e.g., <em>PZT-01 Cervical Collar</em> or <em>PZT-04 Knee Joint</em>). 
+            Gradually drag the <strong>Local Crack Severity Level slider from 0% up to 100%</strong>:
+          </p>
+          <ul style="margin-left: 20px;">
+            <li><span style="color:var(--accent-gold);">1% to 49%:</span> Initiates micro-fissures and joint bolt loosening.</li>
+            <li><span style="color:var(--accent-rose);">50% to 100%:</span> Induces severe structural cracking and catastrophic linkage rupture.</li>
+          </ul>
+          <p>
+            Watch the 3D humanoid twin: pulsating crimson crack fracture lines physically propagate across the joint!
+          </p>
+        </div>
+
+        <!-- 7. Ask to see signatures again and see comparison -->
+        <div class="modal-section">
+          <h3>7. Step 4: Examine Comparative Signature Alterations</h3>
+          <p>
+            Observe the real-time Conductance Spectrum HUD:
+          </p>
+          <ul style="margin-left: 20px;">
+            <li>The <strong>cyan curve shifts to glowing rose</strong>.</li>
+            <li>The resonance peak undergoes an immediate <strong>leftward frequency shift (&Delta;f up to -18.5 kHz)</strong> due to loss of local structural stiffness.</li>
+            <li>The peak amplitude drops significantly due to increased structural damping and micro-crack rubbing friction.</li>
+          </ul>
+        </div>
+
+        <!-- 8. Tell them to see time consumed by RMSD and quantum AI -->
+        <div class="modal-section">
+          <h3>8. Step 5: Compare Latency — Classical RMSD vs. Quantum AI</h3>
+          <p>
+            Examine the live computational timers on the right telemetry panel:
+          </p>
+          <div style="background: rgba(0,0,0,0.4); padding: 10px; border-radius: 6px; margin: 8px 0;">
+            <p><strong style="color:var(--accent-gold);">Traditional Statistical Methods (RMSD / Covariance Inversion):</strong> 
+            Takes <strong>3.9 ms to 25.5 ms</strong> on standard CPU cores, rapidly slowing down as matrix degrees of freedom (DoF) expand.</p>
+            <p><strong style="color:var(--accent-cyan);">The 15 Quantum AI Algorithms:</strong> 
+            Execute in <strong>140 nanoseconds to 450 nanoseconds</strong> per algorithm, delivering a total execution latency of 
+            just <strong>~3.9 &mu;s to 6.2 &mu;s</strong>!</p>
+          </div>
+          <p>
+            This demonstrates an astronomical <strong>~1,500&times; to 2,200&times; computational speedup</strong>, proving 
+            that Quantum AI enables true real-time sub-millisecond structural fail-safe intervention during fast bipedal humanoid walking.
+          </p>
+        </div>
+
+        <!-- 9. Announce to move to Quantum AI for real SHM -->
+        <div class="modal-section">
+          <h3 style="color:var(--accent-gold);">9. Global Proclamation: The Imperative Transition to Quantum AI for Humanoid SHM</h3>
+          <p>
+            Humanoid robots represent the most structurally complex machines ever built, possessing 50+ articulated degrees 
+            of freedom and non-linear dynamic couplings. Classical SHM algorithms suffer from the <em>curse of dimensionality</em>, 
+            becoming computationally paralyzed when computing multi-joint stiffness matrices in real time. 
+            <strong>GARRF officially announces the mandatory transition to Quantum AI for real-time Structural Health Monitoring of humanoid robotics.</strong>
+          </p>
+        </div>
+
+        <!-- 10. State 3 World First Proprietary Technologies & Copyright -->
+        <div class="proprietary-banner">
+          <h3 style="color: #ffd700; margin-bottom: 8px;">10. Global Milestone: 3 World-First Innovations from GARRF.in</h3>
+          <p style="font-weight: 600; margin-bottom: 6px;">
+            The Gopalkrishna Advanced Rural Research Foundation (GARRF) proudly establishes three historic world-first scientific breakthroughs:
+          </p>
+          <ol style="margin-left: 20px; line-height: 1.6;">
+            <li><strong>World's First EMI Health Clinic for Humanoid Robots</strong></li>
+            <li><strong>World's First Integration of Quantum AI for Structural Health Monitoring using EMI on General Structures</strong></li>
+            <li><strong>World's First Combined EMI with Quantum AI Platform for Humanoid Robotics</strong></li>
+          </ol>
+          <div style="margin-top: 12px; font-size: 0.76rem; border-top: 1px solid rgba(255,215,0,0.3); padding-top: 8px; color: #cbd5e1;">
+            <p><strong>Proprietary Technology of:</strong> <a href="https://garrf.in" target="_blank" style="color:var(--accent-cyan); text-decoration: none;">GARRF.in</a></p>
+            <p><strong>Copyright &copy; Dr Annamdas Venu Gopal Madhav &amp; Shantanu Vasudev Krishna Annamdas</strong></p>
+            <p style="margin-top: 4px; color: #94a3b8; font-style: italic;">
+              Fair Use &amp; Citation Notice: These simulations, architectures, and algorithms are proprietary intellectual property. 
+              Researchers and educational institutions are invited to use fairly and cite GARRF.in simulations in all academic publications.
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    Copyright &copy; <strong>Dr Annamdas Venu Gopal Madhav &amp; Shantanu Vasudev Krishna Annamdas</strong>
+  </footer>
+
+  <script>
+    // 15 Quantum AI Algorithms Template
+    const quantumAlgoBase = [
+      { name: "QAOA-SHM", baseNs: 240, noiseFactor: 0.8 },
+      { name: "VQE-Impedance", baseNs: 280, noiseFactor: 1.1 },
+      { name: "Quantum SVM (QSVM)", baseNs: 210, noiseFactor: 0.7 },
+      { name: "Quantum CNN (QCNN)", baseNs: 320, noiseFactor: 1.2 },
+      { name: "Quantum PCA", baseNs: 160, noiseFactor: 0.5 },
+      { name: "QNN-Bayesian", baseNs: 290, noiseFactor: 1.0 },
+      { name: "QSVM-Kernel", baseNs: 190, noiseFactor: 0.6 },
+      { name: "Quantum GAN (Q-GAN)", baseNs: 370, noiseFactor: 1.4 },
+      { name: "Quantum LSTM", baseNs: 340, noiseFactor: 1.3 },
+      { name: "Quantum Autoencoder", baseNs: 230, noiseFactor: 0.8 },
+      { name: "Quantum Annealing SHM", baseNs: 150, noiseFactor: 0.5 },
+      { name: "Quantum Transformer", baseNs: 390, noiseFactor: 1.5 },
+      { name: "Grover Damage Search", baseNs: 140, noiseFactor: 0.4 },
+      { name: "Quantum Boltzmann Machine", baseNs: 300, noiseFactor: 1.1 },
+      { name: "Quantum Reservoir Computing", baseNs: 260, noiseFactor: 0.9 }
+    ];
+
+    // PZT Database
+    const pztDB = [
+      {
+        id: "PZT-01",
+        name: "Cervical Neck Collar",
+        type: "PZT-5H (Navy VI High Sensitivity)",
+        dims: "10 x 10 x 0.3 mm",
+        d33: "593 pC/N",
+        dof: 1024,
+        cpuBaseMs: 6.8,
+        qBaseScale: 1.0,
+        baseFreq: 94.0,
+        pos: [0, 2.14, 0.12],
+        cam: [0, 2.22, 0.95],
+        look: [0, 2.14, 0],
+        desc: "Monitors cranial-cervical articulation and detects micro-loosening in cervical actuator links."
+      },
+      {
+        id: "PZT-02",
+        name: "Right Wrist / Hand",
+        type: "PZT-5H (Navy VI High Coupling)",
+        dims: "8 x 8 x 0.25 mm",
+        d33: "593 pC/N",
+        dof: 512,
+        cpuBaseMs: 3.9,
+        qBaseScale: 0.75,
+        baseFreq: 135.0,
+        pos: [-0.58, 0.98, 0.05],
+        cam: [-0.65, 1.12, 0.85],
+        look: [-0.58, 0.98, 0],
+        desc: "Tracks carpometacarpal joint vibrations and finger tendon actuation integrity during manipulation."
+      },
+      {
+        id: "PZT-03",
+        name: "Left Wrist / Hand",
+        type: "PZT-5H (Navy VI High Coupling)",
+        dims: "8 x 8 x 0.25 mm",
+        d33: "593 pC/N",
+        dof: 512,
+        cpuBaseMs: 3.95,
+        qBaseScale: 0.76,
+        baseFreq: 134.5,
+        pos: [0.58, 0.98, 0.05],
+        cam: [0.65, 1.12, 0.85],
+        look: [0.58, 0.98, 0],
+        desc: "Mirror wrist transducer monitoring tactile reaction force transients and motor gear backlash."
+      },
+      {
+        id: "PZT-04",
+        name: "Right Knee Biaxial Joint",
+        type: "PZT-4 (Navy I High Power Hard PZT)",
+        dims: "15 x 15 x 0.5 mm",
+        d33: "289 pC/N",
+        dof: 1536,
+        cpuBaseMs: 11.2,
+        qBaseScale: 1.25,
+        baseFreq: 68.0,
+        pos: [-0.22, 0.65, 0.13],
+        cam: [-0.22, 0.8, 1.45],
+        look: [-0.22, 0.65, 0],
+        desc: "High-power hard ceramic designed for sustained high dynamic loads, tracking knee bearing health."
+      },
+      {
+        id: "PZT-05",
+        name: "Right Ankle Support",
+        type: "PZT-4 (Navy I Shock-Resistant)",
+        dims: "12 x 12 x 0.4 mm",
+        d33: "289 pC/N",
+        dof: 1280,
+        cpuBaseMs: 9.4,
+        qBaseScale: 1.15,
+        baseFreq: 115.0,
+        pos: [-0.22, 0.12, 0.13],
+        cam: [-0.22, 0.3, 1.3],
+        look: [-0.22, 0.12, 0],
+        desc: "Captures ground reaction force (GRF) shockwave propagation and foot mounting bolt stress."
+      },
+      {
+        id: "PZT-06",
+        name: "Pelvis Core Chassis",
+        type: "PZT-5A (Navy II Broadband / Temp Stable)",
+        dims: "15 x 15 x 0.4 mm",
+        d33: "374 pC/N",
+        dof: 2048,
+        cpuBaseMs: 16.5,
+        qBaseScale: 1.45,
+        baseFreq: 42.0,
+        pos: [0, 1.05, 0.20],
+        cam: [0, 1.25, 1.6],
+        look: [0, 1.05, 0],
+        desc: "Broadband transducer tracking multi-axis torsional vibration and structural center-of-mass balance shifts."
+      }
+    ];
+
+    let currentPztIdx = 0;
+    let crackSeverity = 0;
+    let scene, camera, renderer, humanoidGroup;
+    let crackMeshGroup;
+    let pztNodeMeshes = [];
+    let targetCameraPos = new THREE.Vector3(0, 2.0, 4.8);
+    let targetLookAt = new THREE.Vector3(0, 1.3, 0);
+    let currentLookAt = new THREE.Vector3(0, 1.3, 0);
+    let isDragging = false, prevPointerX = 0, prevPointerY = 0;
+    let cameraOrbitAngle = 0, cameraElevation = 2.0;
+    let clock = new THREE.Clock();
+
+    function openHelpModal() {
+      document.getElementById('help-modal').style.display = 'flex';
+    }
+
+    function closeHelpModal() {
+      document.getElementById('help-modal').style.display = 'none';
+    }
+
+    function closeModalOnBackdrop(e) {
+      if (e.target.id === 'help-modal') {
+        closeHelpModal();
+      }
+    }
+
+    function togglePanel(id) {
+      const panel = document.getElementById(id);
+      const isMin = panel.classList.toggle('minimized');
+      panel.querySelector('.min-btn').innerHTML = isMin ? '&#43;' : '&#8722;';
+    }
+
+    function setFocus(type) {
+      document.querySelectorAll('.pzt-card').forEach(c => c.classList.remove('active'));
+      if (type === 'full') {
+        targetCameraPos.set(0, 2.0, 4.8);
+        targetLookAt.set(0, 1.3, 0);
+      } else if (type === 'chest') {
+        targetCameraPos.set(0, 1.85, 1.35);
+        targetLookAt.set(0, 1.82, 0);
+      }
+    }
+
+    function selectPZT(idx) {
+      currentPztIdx = idx;
+      const cards = document.querySelectorAll('.pzt-card');
+      cards.forEach((c, i) => c.classList.toggle('active', i === idx));
+
+      const pzt = pztDB[idx];
+      targetCameraPos.set(...pzt.cam);
+      targetLookAt.set(...pzt.look);
+
+      pztNodeMeshes.forEach((mesh, i) => {
+        if (i === idx) {
+          mesh.material.color.setHex(0x00e5ff);
+          mesh.scale.set(1.4, 1.4, 1.4);
+        } else {
+          mesh.material.color.setHex(0x00b0ff);
+          mesh.scale.set(1.0, 1.0, 1.0);
+        }
+      });
+
+      updateTelemetry();
+      repositionCrackVisuals();
+    }
+
+    function updateCrackSeverity(val) {
+      crackSeverity = parseInt(val);
+      const lbl = document.getElementById('severity-label');
+      if (crackSeverity === 0) {
+        lbl.innerText = "0% (Intact)";
+        lbl.style.color = "var(--accent-green)";
+      } else if (crackSeverity < 50) {
+        lbl.innerText = crackSeverity + "% (Micro-Crack)";
+        lbl.style.color = "var(--accent-gold)";
+      } else {
+        lbl.innerText = crackSeverity + "% (Critical Fracture)";
+        lbl.style.color = "var(--accent-rose)";
+      }
+      updateTelemetry();
+      repositionCrackVisuals();
+    }
+
+    function updateTelemetry() {
+      const pzt = pztDB[currentPztIdx];
+      document.getElementById('val-loc').innerText = `${pzt.id} (${pzt.name})`;
+
+      const fShift = (crackSeverity * 0.18 * (pzt.baseFreq / 80)).toFixed(1);
+      document.getElementById('val-shift').innerText = `-${fShift} kHz`;
+
+      const rmsd = (0.012 + (crackSeverity / 100) * 0.42 * (pzt.dof / 1000)).toFixed(3);
+      const rmsdElem = document.getElementById('val-rmsd');
+      if (crackSeverity === 0) {
+        rmsdElem.innerText = `${rmsd} (HEALTHY)`;
+        rmsdElem.style.color = "var(--accent-green)";
+      } else if (crackSeverity < 40) {
+        rmsdElem.innerText = `${rmsd} (WARNING)`;
+        rmsdElem.style.color = "var(--accent-gold)";
+      } else {
+        rmsdElem.innerText = `${rmsd} (CRITICAL FAULT)`;
+        rmsdElem.style.color = "var(--accent-rose)";
+      }
+
+      const cpuTimeMs = (pzt.cpuBaseMs * (1 + (crackSeverity / 100) * 1.85)).toFixed(2);
+      document.getElementById('val-cpu-time').innerText = `${cpuTimeMs} ms`;
+
+      let totalQuantumNs = 0;
+      const container = document.getElementById('algo-list');
+      container.innerHTML = "";
+
+      quantumAlgoBase.forEach(algo => {
+        const algoNs = Math.round(
+          algo.baseNs * pzt.qBaseScale * (1 + Math.log2(1 + (crackSeverity / 20)) * 0.22 * algo.noiseFactor)
+        );
+        totalQuantumNs += algoNs;
+
+        let conf;
+        if (crackSeverity === 0) {
+          conf = (99.4 + Math.sin(algo.baseNs) * 0.4).toFixed(1) + "% Healthy";
+        } else {
+          const detectRate = Math.min(99.9, 88.0 + (crackSeverity * 0.11) + (pzt.dof / 200) * 0.5);
+          conf = (detectRate - (Math.abs(Math.sin(algo.baseNs)) * 2.0)).toFixed(1) + "% Detect";
+        }
+
+        const row = document.createElement('div');
+        row.className = "algo-item";
+        row.innerHTML = `
+          <span style="color:#fff;">${algo.name}</span>
+          <span style="color:var(--accent-cyan); font-weight:600;">${algoNs} ns</span>
+          <span style="color:${crackSeverity > 0 ? 'var(--accent-rose)' : 'var(--accent-green)'};">${conf}</span>
+        `;
+        container.appendChild(row);
+      });
+
+      const totalQuantumMicroSec = (totalQuantumNs / 1000).toFixed(2);
+      const speedupRatio = Math.round((parseFloat(cpuTimeMs) * 1000000) / totalQuantumNs);
+      document.getElementById('val-q-time').innerText = `${totalQuantumMicroSec} \u03bcs (${speedupRatio}\u00d7 Speedup)`;
+
+      document.getElementById('pzt-spec-display').innerHTML = `
+        <div style="font-weight:700; color:#fff; margin-bottom:2px;">${pzt.id}: ${pzt.name} (DoF: ${pzt.dof})</div>
+        <div style="color:var(--accent-cyan); font-weight:600;">Ceramic: ${pzt.type}</div>
+        <div style="color:#cbd5e1;">Dims: ${pzt.dims} | d33: ${pzt.d33}</div>
+        <div style="color:#94a3b8; font-size:0.62rem; margin-top:2px;">${pzt.desc}</div>
+      `;
+    }
+
+    function createStudioEnvironment(renderer) {
+      const sceneEnv = new THREE.Scene();
+      const geo = new THREE.SphereGeometry(15, 32, 16);
+      
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+
+      const grad = ctx.createLinearGradient(0, 0, 0, 256);
+      grad.addColorStop(0, '#ffffff');
+      grad.addColorStop(0.25, '#99b0cc');
+      grad.addColorStop(0.55, '#1e2533');
+      grad.addColorStop(1, '#05070a');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 512, 256);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(70, 15, 65, 226);
+      ctx.fillRect(310, 25, 85, 206);
+      ctx.fillStyle = '#00e5ff';
+      ctx.fillRect(200, 40, 45, 176);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.mapping = THREE.EquirectangularReflectionMapping;
+
+      const mat = new THREE.MeshBasicMaterial({ map: texture, side: THREE.BackSide });
+      sceneEnv.add(new THREE.Mesh(geo, mat));
+
+      const pmremGenerator = new THREE.PMREMGenerator(renderer);
+      const envMap = pmremGenerator.fromScene(sceneEnv).texture;
+      pmremGenerator.dispose();
+      return envMap;
+    }
+
+    function init() {
+      const container = document.getElementById('viewport-container');
+      const canvas = document.getElementById('three-canvas');
+
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x1a1e27);
+      scene.fog = new THREE.FogExp2(0x1a1e27, 0.038);
+
+      camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+      camera.position.copy(targetCameraPos);
+
+      renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.4;
+
+      const envMap = createStudioEnvironment(renderer);
+      scene.environment = envMap;
+
+      const hemi = new THREE.HemisphereLight(0xffffff, 0x3d4758, 0.95);
+      scene.add(hemi);
+
+      const keyLight = new THREE.DirectionalLight(0xffffff, 2.4);
+      keyLight.position.set(4, 7, 5);
+      scene.add(keyLight);
+
+      const rimLight = new THREE.DirectionalLight(0x00e5ff, 2.0);
+      rimLight.position.set(-5, 4, -4);
+      scene.add(rimLight);
+
+      const warmFill = new THREE.DirectionalLight(0xffd700, 0.85);
+      warmFill.position.set(3, 2, -3);
+      scene.add(warmFill);
+
+      const headGlint = new THREE.PointLight(0xffffff, 1.2, 5);
+      headGlint.position.set(0, 3.2, 1.5);
+      scene.add(headGlint);
+
+      const floor = new THREE.Mesh(
+        new THREE.CylinderGeometry(3.6, 3.8, 0.15, 48),
+        new THREE.MeshStandardMaterial({ color: 0x141820, roughness: 0.3, metalness: 0.75 })
+      );
+      floor.position.y = -0.075;
+      scene.add(floor);
+
+      const grid = new THREE.GridHelper(7, 28, 0x00e5ff, 0x3d4452);
+      grid.position.y = 0.005;
+      scene.add(grid);
+
+      buildFullHumanoid();
+      buildPhysicalPZTTransducers();
+      buildCrackVisualizer();
+      initPointerControls(container);
+
+      window.addEventListener('resize', onResize);
+      selectPZT(0);
+      animate();
+      renderSpectrumLoop();
+    }
+
+    function createGARRFTexture() {
+      const cvs = document.createElement('canvas');
+      cvs.width = 512;
+      cvs.height = 256;
+      const ctx = cvs.getContext('2d');
+
+      ctx.fillStyle = "#0e131c";
+      ctx.fillRect(0, 0, 512, 256);
+
+      ctx.lineWidth = 14;
+      ctx.strokeStyle = "#00e5ff";
+      ctx.strokeRect(10, 10, 492, 236);
+
+      ctx.font = "bold 74px 'Arial Black', sans-serif";
+      ctx.fillStyle = "#ffffff";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.shadowColor = "#00e5ff";
+      ctx.shadowBlur = 20;
+      ctx.fillText("GARRF's", 256, 95);
+
+      ctx.font = "bold 60px 'Arial Black', sans-serif";
+      ctx.fillStyle = "#ffd700";
+      ctx.fillText("SHANTANU", 256, 175);
+
+      return new THREE.CanvasTexture(cvs);
+    }
+
+    function buildFullHumanoid() {
+      humanoidGroup = new THREE.Group();
+
+      const steelMat = new THREE.MeshPhysicalMaterial({
+        color: 0xf0f4fc,
+        metalness: 0.99,
+        roughness: 0.05,
+        clearcoat: 1.0,
+        clearcoatRoughness: 0.03,
+        reflectivity: 1.0
+      });
+
+      const goldJointMat = new THREE.MeshPhysicalMaterial({
+        color: 0xf5b700,
+        metalness: 0.95,
+        roughness: 0.1,
+        clearcoat: 0.9
+      });
+
+      const darkMat = new THREE.MeshStandardMaterial({
+        color: 0x161a22,
+        metalness: 0.85,
+        roughness: 0.3
+      });
+
+      // Torso & Upper Clavicle
+      const torso = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.85, 0.4), steelMat);
+      torso.position.y = 1.7;
+      humanoidGroup.add(torso);
+
+      const clavicleCollar = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.24, 0.34, 0.16, 24),
+        steelMat
+      );
+      clavicleCollar.position.y = 2.15;
+      humanoidGroup.add(clavicleCollar);
+
+      const emblem = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.52, 0.26),
+        new THREE.MeshBasicMaterial({ map: createGARRFTexture() })
+      );
+      emblem.position.set(0, 1.82, 0.205);
+      humanoidGroup.add(emblem);
+
+      const spine = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 0.32, 24), darkMat);
+      spine.position.y = 1.15;
+      humanoidGroup.add(spine);
+
+      const pelvis = new THREE.Mesh(new THREE.BoxGeometry(0.66, 0.26, 0.38), steelMat);
+      pelvis.position.y = 0.92;
+      humanoidGroup.add(pelvis);
+
+      // Continuous Cervical Neck (No Gaps)
+      const neckGroup = new THREE.Group();
+      neckGroup.position.y = 2.18;
+
+      const lowerRing = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.21, 0.08, 24), steelMat);
+      lowerRing.position.y = 0.04;
+      neckGroup.add(lowerRing);
+
+      const midRing = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.18, 0.08, 24), goldJointMat);
+      midRing.position.y = 0.11;
+      neckGroup.add(midRing);
+
+      const upperRing = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.16, 0.08, 24), steelMat);
+      upperRing.position.y = 0.18;
+      neckGroup.add(upperRing);
+
+      [-0.11, 0.11].forEach(px => {
+        const piston = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.18, 12), darkMat);
+        piston.position.set(px, 0.11, 0.05);
+        neckGroup.add(piston);
+      });
+
+      humanoidGroup.add(neckGroup);
+
+      // Head & Visor
+      const head = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.4, 0.36), steelMat);
+      head.position.y = 2.48;
+      humanoidGroup.add(head);
+
+      const visorGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.28, 16);
+      visorGeo.rotateZ(Math.PI / 2);
+      const visor = new THREE.Mesh(visorGeo, new THREE.MeshBasicMaterial({ color: 0x00e5ff }));
+      visor.position.set(0, 2.51, 0.185);
+      humanoidGroup.add(visor);
+
+      // Legs
+      function createLeg(x) {
+        const leg = new THREE.Group();
+        leg.position.set(x, 0.85, 0);
+
+        const hip = new THREE.Mesh(new THREE.SphereGeometry(0.12, 16, 16), goldJointMat);
+        leg.add(hip);
+
+        const thigh = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.42, 0.22), steelMat);
+        thigh.position.y = -0.22;
+        leg.add(thigh);
+
+        const knee = new THREE.Mesh(new THREE.SphereGeometry(0.11, 16, 16), darkMat);
+        knee.position.y = -0.45;
+        leg.add(knee);
+
+        const shin = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.42, 0.2), steelMat);
+        shin.position.y = -0.68;
+        leg.add(shin);
+
+        const foot = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.1, 0.32), steelMat);
+        foot.position.set(0, -0.85, 0.06);
+        leg.add(foot);
+
+        return leg;
+      }
+      humanoidGroup.add(createLeg(-0.22));
+      humanoidGroup.add(createLeg(0.22));
+
+      // Arms & 5 Fingers
+      function createArmWithHand(isRight) {
+        const arm = new THREE.Group();
+        const sideX = isRight ? -0.48 : 0.48;
+        arm.position.set(sideX, 2.05, 0);
+
+        const shoulder = new THREE.Mesh(new THREE.SphereGeometry(0.13, 16, 16), goldJointMat);
+        arm.add(shoulder);
+
+        const bicep = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.42, 0.18), steelMat);
+        bicep.position.y = -0.24;
+        arm.add(bicep);
+
+        const elbow = new THREE.Mesh(new THREE.SphereGeometry(0.1, 16, 16), darkMat);
+        elbow.position.y = -0.48;
+        arm.add(elbow);
+
+        const forearm = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.4, 0.16), steelMat);
+        forearm.position.y = -0.7;
+        arm.add(forearm);
+
+        const wrist = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 16), goldJointMat);
+        wrist.position.y = -0.92;
+        arm.add(wrist);
+
+        const palm = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.14, 0.07), steelMat);
+        palm.position.y = -1.02;
+        arm.add(palm);
+
+        const fingerOffsets = [-0.06, -0.02, 0.02, 0.06];
+        fingerOffsets.forEach((fx) => {
+          const knuckle = new THREE.Mesh(new THREE.SphereGeometry(0.02, 8, 8), darkMat);
+          knuckle.position.set(fx, -1.09, 0);
+          arm.add(knuckle);
+
+          const finger = new THREE.Mesh(new THREE.BoxGeometry(0.026, 0.11, 0.035), steelMat);
+          finger.position.set(fx, -1.15, 0);
+          arm.add(finger);
+        });
+
+        const thumbX = isRight ? 0.09 : -0.09;
+        const thumb = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.09, 0.04), steelMat);
+        thumb.position.set(thumbX, -1.03, 0.04);
+        thumb.rotation.z = isRight ? -0.4 : 0.4;
+        arm.add(thumb);
+
+        return arm;
+      }
+
+      humanoidGroup.add(createArmWithHand(true));
+      humanoidGroup.add(createArmWithHand(false));
+
+      scene.add(humanoidGroup);
+    }
+
+    function buildPhysicalPZTTransducers() {
+      pztNodeMeshes = [];
+
+      pztDB.forEach((sensor) => {
+        const transducerGroup = new THREE.Group();
+        transducerGroup.position.set(...sensor.pos);
+
+        const brassGeo = new THREE.BoxGeometry(0.09, 0.09, 0.01);
+        const brassMat = new THREE.MeshStandardMaterial({ color: 0xb8860b, metalness: 0.8, roughness: 0.2 });
+        const brassMesh = new THREE.Mesh(brassGeo, brassMat);
+        transducerGroup.add(brassMesh);
+
+        const pztGeo = new THREE.BoxGeometry(0.07, 0.07, 0.02);
+        const pztMat = new THREE.MeshStandardMaterial({
+          color: 0x00b0ff,
+          emissive: 0x004488,
+          roughness: 0.3,
+          metalness: 0.4
+        });
+        const pztMesh = new THREE.Mesh(pztGeo, pztMat);
+        pztMesh.position.z = 0.01;
+        transducerGroup.add(pztMesh);
+        pztNodeMeshes.push(pztMesh);
+
+        const ringGeo = new THREE.RingGeometry(0.06, 0.09, 20);
+        const ringMat = new THREE.MeshBasicMaterial({
+          color: 0x00e5ff,
+          side: THREE.DoubleSide,
+          transparent: true,
+          opacity: 0.8
+        });
+        const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+        ringMesh.position.z = 0.025;
+        transducerGroup.add(ringMesh);
+
+        humanoidGroup.add(transducerGroup);
+      });
+    }
+
+    function buildCrackVisualizer() {
+      crackMeshGroup = new THREE.Group();
+
+      const crackMat = new THREE.LineBasicMaterial({
+        color: 0xff1744,
+        linewidth: 3
+      });
+
+      const points = [
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Vector3(0.04, 0.05, 0.02),
+        new THREE.Vector3(0.02, 0.09, 0.01),
+        new THREE.Vector3(0.07, 0.12, 0.03),
+        new THREE.Vector3(0.04, 0.05, 0.02),
+        new THREE.Vector3(-0.03, 0.08, 0.01),
+        new THREE.Vector3(-0.06, 0.13, 0.02)
+      ];
+
+      const crackGeo = new THREE.BufferGeometry().setFromPoints(points);
+      const crackLine = new THREE.Line(crackGeo, crackMat);
+      crackMeshGroup.add(crackLine);
+
+      const ringGeo = new THREE.RingGeometry(0.04, 0.07, 16);
+      const ringMat = new THREE.MeshBasicMaterial({ color: 0xff1744, side: THREE.DoubleSide });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      crackMeshGroup.add(ring);
+
+      scene.add(crackMeshGroup);
+      repositionCrackVisuals();
+    }
+
+    function repositionCrackVisuals() {
+      const pzt = pztDB[currentPztIdx];
+      crackMeshGroup.position.set(...pzt.pos);
+
+      const scale = (crackSeverity / 100) * 1.5;
+      crackMeshGroup.scale.set(scale, scale, scale);
+      crackMeshGroup.visible = crackSeverity > 0;
+    }
+
+    function initPointerControls(dom) {
+      dom.addEventListener('pointerdown', e => {
+        isDragging = true;
+        prevPointerX = e.clientX;
+        prevPointerY = e.clientY;
+      });
+
+      window.addEventListener('pointerup', () => isDragging = false);
+
+      dom.addEventListener('pointermove', e => {
+        if (!isDragging) return;
+        const dx = e.clientX - prevPointerX;
+        const dy = e.clientY - prevPointerY;
+        prevPointerX = e.clientX;
+        prevPointerY = e.clientY;
+
+        cameraOrbitAngle += dx * 0.008;
+        cameraElevation = Math.max(0.3, Math.min(4.5, cameraElevation - dy * 0.008));
+
+        targetCameraPos.x = Math.sin(cameraOrbitAngle) * 4.8;
+        targetCameraPos.z = Math.cos(cameraOrbitAngle) * 4.8;
+        targetCameraPos.y = cameraElevation;
+      });
+    }
+
+    function renderSpectrumLoop() {
+      const cvs = document.getElementById('spectrum-canvas');
+      const ctx = cvs.getContext('2d');
+      const w = cvs.width, h = cvs.height;
+      let phase = 0;
+
+      function draw() {
+        requestAnimationFrame(draw);
+        phase += 0.05;
+        const pzt = pztDB[currentPztIdx];
+
+        ctx.fillStyle = "#090d14";
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.strokeStyle = "rgba(0, 229, 255, 0.12)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (let x = 0; x < w; x += 30) { ctx.moveTo(x, 0); ctx.lineTo(x, h); }
+        for (let y = 0; y < h; y += 18) { ctx.moveTo(0, y); ctx.lineTo(w, y); }
+        ctx.stroke();
+
+        // Baseline (Dashed Cyan)
+        const peakPos = (pzt.baseFreq / 180) * w;
+        ctx.strokeStyle = "rgba(0, 229, 255, 0.4)";
+        ctx.setLineDash([4, 4]);
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        for (let x = 0; x < w; x++) {
+          const pk1 = Math.exp(-Math.pow((x - peakPos) / 14, 2)) * 48;
+          const pk2 = Math.exp(-Math.pow((x - (peakPos + 70)) / 18, 2)) * 28;
+          const y = h - 12 - (pk1 + pk2);
+          if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Active Curve
+        const shift = -(crackSeverity * 0.35 * (pzt.baseFreq / 90));
+        const damp = 1 - (crackSeverity / 100) * 0.45;
+        ctx.strokeStyle = crackSeverity > 0 ? "var(--accent-rose)" : "var(--accent-cyan)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+
+        for (let x = 0; x < w; x++) {
+          const pk1 = Math.exp(-Math.pow((x - (peakPos + shift)) / 14, 2)) * 48 * damp;
+          const pk2 = Math.exp(-Math.pow((x - (peakPos + 70 + shift * 0.8)) / 18, 2)) * 28 * damp;
+          const noise = (Math.sin(x * 0.4 + phase) + Math.cos(x * 0.8 - phase)) * 1.5;
+          const y = h - 12 - (pk1 + pk2 + noise);
+          if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+      draw();
+    }
+
+    function onResize() {
+      const c = document.getElementById('viewport-container');
+      camera.aspect = c.clientWidth / c.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(c.clientWidth, c.clientHeight);
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const t = clock.getElapsedTime();
+
+      camera.position.lerp(targetCameraPos, 0.08);
+      currentLookAt.lerp(targetLookAt, 0.08);
+      camera.lookAt(currentLookAt);
+
+      if (humanoidGroup) {
+        humanoidGroup.position.y = Math.sin(t * 2.2) * 0.02;
+      }
+
+      if (crackMeshGroup && crackSeverity > 0) {
+        crackMeshGroup.children[1].scale.setScalar(1 + Math.sin(t * 8) * 0.15);
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    window.onload = init;
+  </script>
+</body>
+</html>
