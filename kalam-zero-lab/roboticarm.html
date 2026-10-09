@@ -1,0 +1,1556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Virtual Robotics & Kinematics Laboratory | GARRF</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --panel-bg: rgba(255, 255, 255, 0.92);
+      --panel-border: rgba(226, 232, 240, 0.8);
+      --accent-yellow: #f59e0b;
+      --accent-gold: #d97706;
+      --accent-blue: #2563eb;
+      --accent-cyan: #06b6d4;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --glass-shadow: 0 16px 36px -8px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(226, 232, 240, 0.7);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text-main);
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top Academic Header */
+    header {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 66px;
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--panel-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      z-index: 50;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+    }
+
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .brand-logo-slot {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+      flex-shrink: 0;
+    }
+
+    .brand-logo-slot img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .brand-logo-fallback {
+      font-weight: 800;
+      font-size: 18px;
+      color: var(--accent-gold);
+    }
+
+    .brand-text h1 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #0f172a;
+      letter-spacing: -0.01em;
+    }
+
+    .brand-text p {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .header-pills {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .pill-badge {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 14px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 999px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--accent-blue);
+    }
+
+    .pill-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 8px #10b981;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    /* 3D Canvas Viewport */
+    #canvas-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+      outline: none;
+    }
+
+    /* Ultra-Thin Technical Overlay Layer (Clean, non-opaque, non-blocking) */
+    #reticles-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 20;
+    }
+
+    /* Minimalist Technical HUD Target */
+    .reticle-3d {
+      position: absolute;
+      width: 38px;
+      height: 38px;
+      border: 1px dashed rgba(245, 158, 11, 0.45);
+      border-radius: 50%;
+      pointer-events: auto;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent; /* 100% Transparent — no opaque blocking */
+      transform: translate(-50%, -50%);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .reticle-3d::before {
+      content: '';
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      border-top: 1.5px solid rgba(245, 158, 11, 0.7);
+      border-left: 1.5px solid rgba(245, 158, 11, 0.7);
+      top: 2px;
+      left: 2px;
+    }
+
+    .reticle-3d::after {
+      content: '';
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      border-bottom: 1.5px solid rgba(245, 158, 11, 0.7);
+      border-right: 1.5px solid rgba(245, 158, 11, 0.7);
+      bottom: 2px;
+      right: 2px;
+    }
+
+    .reticle-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: rgba(217, 119, 6, 0.85);
+      box-shadow: 0 0 6px rgba(245, 158, 11, 0.7);
+      transition: transform 0.2s;
+    }
+
+    .reticle-tag {
+      position: absolute;
+      left: 44px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 10px;
+      font-weight: 700;
+      color: #92400e;
+      background: rgba(254, 243, 199, 0.85);
+      backdrop-filter: blur(4px);
+      padding: 2px 7px;
+      border-radius: 4px;
+      border: 1px solid rgba(251, 191, 36, 0.6);
+      white-space: nowrap;
+      pointer-events: none;
+      letter-spacing: 0.04em;
+    }
+
+    .reticle-3d:hover {
+      border: 1px solid #d97706;
+      transform: translate(-50%, -50%) scale(1.15);
+    }
+
+    .reticle-3d:hover .reticle-dot {
+      transform: scale(1.6);
+      background: #ea580c;
+    }
+
+    .reticle-3d.active-reticle {
+      border: 1.5px solid #2563eb;
+      animation: reticleSpin 6s linear infinite;
+    }
+
+    .reticle-3d.active-reticle .reticle-dot {
+      background: #2563eb;
+      box-shadow: 0 0 8px #3b82f6;
+    }
+
+    @keyframes reticleSpin {
+      100% { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+
+    /* Left Control Dock */
+    .control-dock {
+      position: absolute;
+      top: 80px;
+      left: 24px;
+      width: 375px;
+      max-height: calc(100vh - 134px);
+      background: var(--panel-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--panel-border);
+      border-radius: 18px;
+      box-shadow: var(--glass-shadow);
+      z-index: 30;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .dock-header {
+      padding: 15px 18px;
+      border-bottom: 1px solid #edf2f7;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.7);
+    }
+
+    .dock-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #1e293b;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .dock-title svg {
+      color: var(--accent-gold);
+    }
+
+    .dock-scrollable {
+      padding: 16px 18px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .dock-scrollable::-webkit-scrollbar {
+      width: 5px;
+    }
+    .dock-scrollable::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+
+    .sec-sub {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #94a3b8;
+      margin-bottom: 2px;
+    }
+
+    /* Gripper Selection Buttons */
+    .gripper-selector-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .gripper-btn {
+      padding: 9px 5px;
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #475569;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .gripper-btn svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+    }
+
+    .gripper-btn:hover {
+      border-color: #cbd5e1;
+      background: #ffffff;
+      transform: translateY(-1px);
+    }
+
+    .gripper-btn.active {
+      border-color: var(--accent-gold);
+      background: #fffbeb;
+      color: #b45309;
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
+    }
+
+    /* Joint Control Cards */
+    .joint-group {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 11px 13px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .joint-group:hover, .joint-group.active-group {
+      border-color: var(--accent-yellow);
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.08);
+    }
+
+    .joint-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+
+    .joint-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #1e293b;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .joint-tag {
+      font-size: 9.5px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: #f1f5f9;
+      color: #64748b;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .joint-val-badge {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent-blue);
+      background: #eff6ff;
+      padding: 2px 7px;
+      border-radius: 6px;
+    }
+
+    .range-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      background: #e2e8f0;
+      border-radius: 4px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--accent-yellow);
+      border: 2.5px solid #ffffff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.22);
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+
+    .joint-info-trigger {
+      align-self: flex-end;
+      font-size: 11px;
+      color: #64748b;
+      background: none;
+      border: none;
+      cursor: pointer;
+      text-decoration: underline;
+      padding-top: 2px;
+    }
+    .joint-info-trigger:hover {
+      color: var(--accent-blue);
+    }
+
+    /* Co-Pilot Status & Actions */
+    .copilot-panel-status {
+      padding: 10px 12px;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 10px;
+      font-size: 11.5px;
+      color: #166534;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .actions-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .btn-act {
+      padding: 9px 12px;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+      background: #ffffff;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #334155;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-act:hover {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+      transform: translateY(-1px);
+    }
+
+    /* Floating Educational Dialogue Card */
+    #joint-dialog {
+      position: absolute;
+      top: 80px;
+      right: 24px;
+      width: 340px;
+      background: var(--panel-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--panel-border);
+      border-radius: 18px;
+      box-shadow: var(--glass-shadow);
+      z-index: 30;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s;
+    }
+
+    .dialog-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .dialog-title-box h3 {
+      font-size: 15px;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .dialog-title-box p {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--accent-gold);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 2px;
+    }
+
+    .btn-close-dialog {
+      width: 26px;
+      height: 26px;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      color: #64748b;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .btn-close-dialog:hover {
+      background: #fee2e2;
+      color: #dc2626;
+      border-color: #fecaca;
+    }
+
+    .dialog-body {
+      font-size: 12px;
+      line-height: 1.6;
+      color: #334155;
+      background: #ffffff;
+      border: 1px solid #f1f5f9;
+      border-radius: 12px;
+      padding: 12px;
+    }
+
+    .kinematic-readout {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      background: #f8fafc;
+      padding: 9px;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+      text-align: center;
+    }
+
+    .kr-item span {
+      display: block;
+      font-size: 9.5px;
+      color: #64748b;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .kr-item strong {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12.5px;
+      color: #0f172a;
+    }
+
+    /* Fixed Bottom Footer */
+    footer {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 36px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-top: 1px solid var(--panel-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 500;
+      color: #475569;
+      z-index: 50;
+      padding: 0 20px;
+      text-align: center;
+    }
+
+    footer strong {
+      font-weight: 700;
+      color: #0f172a;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Academic Header -->
+  <header>
+    <div class="brand-wrap">
+      <div class="brand-logo-slot">
+        <img src="logo.jpeg" alt="GARRF Logo" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'brand-logo-fallback\'>⚛</div>';">
+      </div>
+      <div class="brand-text">
+        <h1>Gopalkrishna Advanced Rural Research Foundation, India</h1>
+        <p>Virtual Robotics & Kinematics Engineering Laboratory</p>
+      </div>
+    </div>
+    <div class="header-pills">
+      <div class="pill-badge">
+        <div class="pill-dot"></div>
+        <span>Humanoid Co-Pilot Synchronized</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- 3D WebGL Canvas Container -->
+  <div id="canvas-container"></div>
+
+  <!-- Transparent Minimalist 3D HUD Reticles Layer -->
+  <div id="reticles-layer"></div>
+
+  <!-- Left Control Console -->
+  <div class="control-dock">
+    <div class="dock-header">
+      <div class="dock-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+        6-DOF Teleoperation Terminal
+      </div>
+    </div>
+
+    <div class="dock-scrollable">
+      <!-- Interchangeable Gripper Selector -->
+      <div>
+        <div class="sec-sub">End-Effector Tool Attachment</div>
+        <div class="gripper-selector-grid">
+          <button class="gripper-btn active" id="btn-grip-parallel" onclick="switchGripper('parallel')">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+              <rect x="6" y="4" width="12" height="4" rx="1"></rect>
+              <line x1="8" y1="8" x2="8" y2="18"></line>
+              <line x1="16" y1="8" x2="16" y2="18"></line>
+              <path d="M6 18h4m4 0h4"></path>
+            </svg>
+            2-Jaw Gripper
+          </button>
+          <button class="gripper-btn" id="btn-grip-vacuum" onclick="switchGripper('vacuum')">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+              <circle cx="12" cy="7" r="3"></circle>
+              <path d="M12 10v4"></path>
+              <path d="M8 14h8l-2 5h-4z"></path>
+              <ellipse cx="12" cy="19" rx="5" ry="2"></ellipse>
+            </svg>
+            Vacuum Cup
+          </button>
+          <button class="gripper-btn" id="btn-grip-magnetic" onclick="switchGripper('magnetic')">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+              <path d="M6 4v7a6 6 0 0 0 12 0V4"></path>
+              <line x1="6" y1="9" x2="18" y2="9"></line>
+              <rect x="4" y="3" width="4" height="4"></rect>
+              <rect x="16" y="3" width="4" height="4"></rect>
+            </svg>
+            Electromagnet
+          </button>
+        </div>
+      </div>
+
+      <!-- Humanoid Co-Pilot Telemetry Status -->
+      <div class="copilot-panel-status" id="copilot-hud-indicator">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="7" r="4"></circle>
+          <path d="M5.5 21a6.5 6.5 0 0 1 13 0"></path>
+        </svg>
+        <span id="copilot-status-text">Humanoid Standing By (Select Joint)</span>
+      </div>
+
+      <!-- Joint Sliders -->
+      <div class="sec-sub">Kinematic Degrees of Freedom (DOF)</div>
+
+      <!-- J1: Base -->
+      <div class="joint-group" id="group-j1">
+        <div class="joint-meta">
+          <div class="joint-label">J1: Base Turntable <span class="joint-tag">Yaw</span></div>
+          <div class="joint-val-badge" id="val-j1">0°</div>
+        </div>
+        <div class="range-wrap">
+          <input type="range" id="slider-j1" min="-170" max="170" value="0" oninput="onStudentJointInput(1, this.value)">
+        </div>
+        <button class="joint-info-trigger" onclick="inspectJoint(1)">Study Joint Dynamics &rarr;</button>
+      </div>
+
+      <!-- J2: Shoulder -->
+      <div class="joint-group" id="group-j2">
+        <div class="joint-meta">
+          <div class="joint-label">J2: Shoulder <span class="joint-tag">Pitch</span></div>
+          <div class="joint-val-badge" id="val-j2">25°</div>
+        </div>
+        <div class="range-wrap">
+          <input type="range" id="slider-j2" min="-65" max="85" value="25" oninput="onStudentJointInput(2, this.value)">
+        </div>
+        <button class="joint-info-trigger" onclick="inspectJoint(2)">Study Joint Dynamics &rarr;</button>
+      </div>
+
+      <!-- J3: Elbow -->
+      <div class="joint-group" id="group-j3">
+        <div class="joint-meta">
+          <div class="joint-label">J3: Elbow <span class="joint-tag">Pitch</span></div>
+          <div class="joint-val-badge" id="val-j3">-45°</div>
+        </div>
+        <div class="range-wrap">
+          <input type="range" id="slider-j3" min="-130" max="45" value="-45" oninput="onStudentJointInput(3, this.value)">
+        </div>
+        <button class="joint-info-trigger" onclick="inspectJoint(3)">Study Joint Dynamics &rarr;</button>
+      </div>
+
+      <!-- J4: Wrist Pitch -->
+      <div class="joint-group" id="group-j4">
+        <div class="joint-meta">
+          <div class="joint-label">J4: Wrist Pitch <span class="joint-tag">Pitch</span></div>
+          <div class="joint-val-badge" id="val-j4">20°</div>
+        </div>
+        <div class="range-wrap">
+          <input type="range" id="slider-j4" min="-95" max="95" value="20" oninput="onStudentJointInput(4, this.value)">
+        </div>
+        <button class="joint-info-trigger" onclick="inspectJoint(4)">Study Joint Dynamics &rarr;</button>
+      </div>
+
+      <!-- J5: Flange Roll (Fixed & Fully Visual) -->
+      <div class="joint-group" id="group-j5">
+        <div class="joint-meta">
+          <div class="joint-label">J5: Flange Roll <span class="joint-tag">Continuous Roll</span></div>
+          <div class="joint-val-badge" id="val-j5">0°</div>
+        </div>
+        <div class="range-wrap">
+          <input type="range" id="slider-j5" min="-180" max="180" value="0" oninput="onStudentJointInput(5, this.value)">
+        </div>
+        <button class="joint-info-trigger" onclick="inspectJoint(5)">Study Joint Dynamics &rarr;</button>
+      </div>
+
+      <!-- J6: End Effector Stroke -->
+      <div class="joint-group" id="group-j6">
+        <div class="joint-meta">
+          <div class="joint-label" id="lbl-j6">J6: Jaw Stroke <span class="joint-tag">Stroke</span></div>
+          <div class="joint-val-badge" id="val-j6">50%</div>
+        </div>
+        <div class="range-wrap">
+          <input type="range" id="slider-j6" min="0" max="100" value="50" oninput="onStudentJointInput(6, this.value)">
+        </div>
+        <button class="joint-info-trigger" onclick="inspectJoint(6)">Study Joint Dynamics &rarr;</button>
+      </div>
+
+      <!-- Console Utilities -->
+      <div class="actions-grid">
+        <button class="btn-act" onclick="resetToHomePosition()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+            <path d="M3 3v5h5"></path>
+          </svg>
+          Reset To Home
+        </button>
+        <button class="btn-act" onclick="toggleTelemetryView()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="16"></line>
+            <line x1="8" y1="12" x2="16" y2="12"></line>
+          </svg>
+          Toggle Reticles
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating Educational Dialogue Card -->
+  <div id="joint-dialog">
+    <div class="dialog-header">
+      <div class="dialog-title-box">
+        <h3 id="diag-title">Joint 1: Base Turntable</h3>
+        <p id="diag-type">Revolute Axis (Z-Rotation)</p>
+      </div>
+      <button class="btn-close-dialog" onclick="closeJointDialog()">×</button>
+    </div>
+
+    <div class="dialog-body" id="diag-desc">
+      Provides azimuthal positioning across the horizontal working plane. Supported by heavy-duty slewing ring bearings, this joint absorbs maximum tipping moment under dynamic acceleration.
+    </div>
+
+    <!-- Live Kinematics Readout -->
+    <div class="kinematic-readout">
+      <div class="kr-item">
+        <span>Tool X</span>
+        <strong id="tcp-x">0.00</strong>
+      </div>
+      <div class="kr-item">
+        <span>Tool Y</span>
+        <strong id="tcp-y">0.00</strong>
+      </div>
+      <div class="kr-item">
+        <span>Tool Z</span>
+        <strong id="tcp-z">0.00</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- Academic Footer -->
+  <footer>
+    <span>Copyright ©️ <strong>Dr Annamdas Venu Gopal Madhav</strong>, <strong>Shantanu Vasudev Krishna Annamdas</strong>. All Rights Reserved.</span>
+  </footer>
+
+  <!-- Three.js + OrbitControls CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+  <script>
+    /* =========================================================
+       AUDIO SYNTHESIZER (Web Audio API)
+       ========================================================= */
+    let audioCtx = null;
+    function initAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+
+    function playServoSound(freq = 240, duration = 0.08) {
+      try {
+        initAudio();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(freq * 0.75, audioCtx.currentTime + duration);
+        gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    /* =========================================================
+       SCENE SETUP & SHINY STUDIO LIGHTING
+       ========================================================= */
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xf1f5f9);
+    scene.fog = new THREE.FogExp2(0xf1f5f9, 0.02);
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(4.6, 3.4, 5.0);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.15;
+    container.appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.06;
+    controls.maxPolarAngle = Math.PI / 2 - 0.02;
+    controls.minDistance = 1.4;
+    controls.maxDistance = 15;
+    controls.target.set(0, 1.25, 0);
+
+    // Studio Lighting for Specular Highlights
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0xcfd8dc, 0.85);
+    scene.add(hemiLight);
+
+    const keySpot = new THREE.SpotLight(0xffffff, 2.4, 30, Math.PI / 4, 0.25, 1);
+    keySpot.position.set(6, 9.5, 6);
+    keySpot.castShadow = true;
+    keySpot.shadow.mapSize.width = 2048;
+    keySpot.shadow.mapSize.height = 2048;
+    keySpot.shadow.bias = -0.0003;
+    scene.add(keySpot);
+
+    const rimLightBlue = new THREE.DirectionalLight(0x93c5fd, 1.2);
+    rimLightBlue.position.set(-6, 5, -5);
+    scene.add(rimLightBlue);
+
+    const rimLightWarm = new THREE.DirectionalLight(0xfef08a, 0.9);
+    rimLightWarm.position.set(5, 4, -5);
+    scene.add(rimLightWarm);
+
+    // Shiny Laboratory Floor
+    const floorGeo = new THREE.PlaneGeometry(36, 36);
+    const floorMat = new THREE.MeshPhysicalMaterial({
+      color: 0xf8fafc,
+      roughness: 0.15,
+      metalness: 0.1,
+      clearcoat: 0.9,
+      clearcoatRoughness: 0.12
+    });
+    const floorMesh = new THREE.Mesh(floorGeo, floorMat);
+    floorMesh.rotation.x = -Math.PI / 2;
+    floorMesh.receiveShadow = true;
+    scene.add(floorMesh);
+
+    const grid = new THREE.GridHelper(26, 52, 0xcbd5e1, 0xe2e8f0);
+    grid.position.y = 0.002;
+    scene.add(grid);
+
+    /* =========================================================
+       HIGH-GLOSS INDUSTRIAL MATERIALS (CLEARCOAT AUTOMOTIVE)
+       ========================================================= */
+    const matShinyYellow = new THREE.MeshPhysicalMaterial({
+      color: 0xf59e0b,
+      roughness: 0.14,
+      metalness: 0.12,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0.05,
+      reflectivity: 0.95
+    });
+
+    const matDarkMetal = new THREE.MeshPhysicalMaterial({
+      color: 0x1e293b,
+      roughness: 0.35,
+      metalness: 0.85,
+      clearcoat: 0.5
+    });
+
+    const matChrome = new THREE.MeshPhysicalMaterial({
+      color: 0xf1f5f9,
+      roughness: 0.08,
+      metalness: 0.96,
+      clearcoat: 1.0
+    });
+
+    const matHumanoidWhite = new THREE.MeshPhysicalMaterial({
+      color: 0xffffff,
+      roughness: 0.22,
+      metalness: 0.08,
+      clearcoat: 0.85
+    });
+
+    const matCyberCyan = new THREE.MeshStandardMaterial({
+      color: 0x06b6d4,
+      emissive: 0x0891b2,
+      emissiveIntensity: 0.8,
+      roughness: 0.2
+    });
+
+    /* =========================================================
+       6-DOF INDUSTRIAL YELLOW ROBOT ARM CONSTRUCTION
+       ========================================================= */
+    const robotRoot = new THREE.Group();
+    scene.add(robotRoot);
+
+    // Base Pedestal
+    const pedestalMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.65, 0.3, 32), matDarkMetal);
+    pedestalMesh.position.y = 0.15;
+    pedestalMesh.castShadow = true;
+    pedestalMesh.receiveShadow = true;
+    robotRoot.add(pedestalMesh);
+
+    // Joint 1: Base Turntable
+    const joint1Group = new THREE.Group();
+    joint1Group.position.set(0, 0.3, 0);
+    robotRoot.add(joint1Group);
+
+    const baseTurntable = new THREE.Mesh(new THREE.CylinderGeometry(0.48, 0.52, 0.22, 32), matShinyYellow);
+    baseTurntable.position.y = 0.11;
+    baseTurntable.castShadow = true;
+    joint1Group.add(baseTurntable);
+
+    // Joint 2: Shoulder Pitch Pivot
+    const joint2Group = new THREE.Group();
+    joint2Group.position.set(0, 0.26, 0);
+    joint1Group.add(joint2Group);
+
+    const shoulderJointCyl = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.44, 28), matDarkMetal);
+    shoulderJointCyl.rotation.z = Math.PI / 2;
+    shoulderJointCyl.castShadow = true;
+    joint2Group.add(shoulderJointCyl);
+
+    // Link 1: Upper Arm
+    const link1Arm = new THREE.Group();
+    joint2Group.add(link1Arm);
+
+    const upperArmMesh = new THREE.Mesh(new THREE.BoxGeometry(0.28, 1.1, 0.3), matShinyYellow);
+    upperArmMesh.position.set(0, 0.55, 0);
+    upperArmMesh.castShadow = true;
+    link1Arm.add(upperArmMesh);
+
+    const upperArmCap = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.32, 24), matDarkMetal);
+    upperArmCap.rotation.z = Math.PI / 2;
+    upperArmCap.position.set(0, 0.55, 0);
+    upperArmCap.castShadow = true;
+    link1Arm.add(upperArmCap);
+
+    // Joint 3: Elbow Pitch Pivot
+    const joint3Group = new THREE.Group();
+    joint3Group.position.set(0, 1.1, 0);
+    link1Arm.add(joint3Group);
+
+    const elbowJointCyl = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.38, 28), matDarkMetal);
+    elbowJointCyl.rotation.z = Math.PI / 2;
+    elbowJointCyl.castShadow = true;
+    joint3Group.add(elbowJointCyl);
+
+    // Link 2: Forearm
+    const link2Forearm = new THREE.Group();
+    joint3Group.add(link2Forearm);
+
+    const forearmMesh = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.95, 0.24), matShinyYellow);
+    forearmMesh.position.set(0, 0.475, 0);
+    forearmMesh.castShadow = true;
+    link2Forearm.add(forearmMesh);
+
+    // Joint 4: Wrist Pitch Pivot
+    const joint4Group = new THREE.Group();
+    joint4Group.position.set(0, 0.95, 0);
+    link2Forearm.add(joint4Group);
+
+    const wristPitchCyl = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.3, 24), matDarkMetal);
+    wristPitchCyl.rotation.z = Math.PI / 2;
+    wristPitchCyl.castShadow = true;
+    joint4Group.add(wristPitchCyl);
+
+    // Joint 5: Flange Roll (Direct Y-axis rotation with high-visibility indicator ring)
+    const joint5Group = new THREE.Group();
+    joint5Group.position.set(0, 0.15, 0);
+    joint4Group.add(joint5Group);
+
+    // Rotating Flange Mesh
+    const flangeMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.15, 0.16, 28), matDarkMetal);
+    flangeMesh.position.y = 0.08;
+    flangeMesh.castShadow = true;
+    joint5Group.add(flangeMesh);
+
+    // Radial Orientation Indicator Ring with Bolt Pattern on J5
+    const j5DialRing = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.152, 0.152, 0.04, 28),
+      new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.2, metalness: 0.8 })
+    );
+    j5DialRing.position.y = 0.08;
+    joint5Group.add(j5DialRing);
+
+    // High-Contrast Dual Alignment Notches
+    [-0.15, 0.15].forEach(nx => {
+      const notch = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.06, 0.03), matShinyYellow);
+      notch.position.set(nx, 0.08, 0);
+      joint5Group.add(notch);
+    });
+
+    // 6-Bolt Perimeter Flange
+    for (let i = 0; i < 6; i++) {
+      const angle = (i / 6) * Math.PI * 2;
+      const bolt = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.02, 12), matChrome);
+      bolt.position.set(Math.cos(angle) * 0.12, 0.165, Math.sin(angle) * 0.12);
+      joint5Group.add(bolt);
+    }
+
+    // Tool Mount
+    const toolMount = new THREE.Group();
+    toolMount.position.set(0, 0.16, 0);
+    joint5Group.add(toolMount);
+
+    /* =========================================================
+       INTERCHANGEABLE GRIPPERS
+       ========================================================= */
+    const gripperContainer = new THREE.Group();
+    toolMount.add(gripperContainer);
+
+    let currentGripperType = 'parallel';
+    let gripperStrokeValue = 0.5;
+
+    // 1. Parallel 2-Jaw Gripper
+    const parallelGripperGroup = new THREE.Group();
+    const jawBase = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.08, 0.16), matDarkMetal);
+    jawBase.position.y = 0.04;
+    jawBase.castShadow = true;
+    parallelGripperGroup.add(jawBase);
+
+    const leftFingerMesh = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.22, 0.06), matChrome);
+    leftFingerMesh.position.set(-0.07, 0.16, 0);
+    leftFingerMesh.castShadow = true;
+    parallelGripperGroup.add(leftFingerMesh);
+
+    const rightFingerMesh = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.22, 0.06), matChrome);
+    rightFingerMesh.position.set(0.07, 0.16, 0);
+    rightFingerMesh.castShadow = true;
+    parallelGripperGroup.add(rightFingerMesh);
+
+    // 2. Vacuum Cup Gripper
+    const vacuumGripperGroup = new THREE.Group();
+    const vacStem = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.16, 16), matDarkMetal);
+    vacStem.position.y = 0.08;
+    vacStem.castShadow = true;
+    vacuumGripperGroup.add(vacStem);
+
+    const vacBellows = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.13, 0.06, 0.12, 20),
+      new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.35, metalness: 0.1 })
+    );
+    vacBellows.position.y = 0.21;
+    vacBellows.castShadow = true;
+    vacuumGripperGroup.add(vacBellows);
+
+    // 3. Electromagnetic Chuck Plate
+    const magneticGripperGroup = new THREE.Group();
+    const magPlate = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.06, 24), matDarkMetal);
+    magPlate.position.y = 0.04;
+    magPlate.castShadow = true;
+    magneticGripperGroup.add(magPlate);
+
+    const magCoil = new THREE.Mesh(
+      new THREE.RingGeometry(0.05, 0.15, 24),
+      new THREE.MeshStandardMaterial({ color: 0xf97316, emissive: 0xc2410c, emissiveIntensity: 0.4, side: THREE.DoubleSide })
+    );
+    magCoil.rotation.x = Math.PI / 2;
+    magCoil.position.y = 0.071;
+    magneticGripperGroup.add(magCoil);
+
+    gripperContainer.add(parallelGripperGroup);
+
+    function switchGripper(type) {
+      currentGripperType = type;
+      gripperContainer.remove(parallelGripperGroup);
+      gripperContainer.remove(vacuumGripperGroup);
+      gripperContainer.remove(magneticGripperGroup);
+
+      document.querySelectorAll('.gripper-btn').forEach(b => b.classList.remove('active'));
+
+      if (type === 'parallel') {
+        gripperContainer.add(parallelGripperGroup);
+        document.getElementById('btn-grip-parallel').classList.add('active');
+        document.getElementById('lbl-j6').innerHTML = 'J6: Jaw Stroke <span class="joint-tag">Stroke</span>';
+      } else if (type === 'vacuum') {
+        gripperContainer.add(vacuumGripperGroup);
+        document.getElementById('btn-grip-vacuum').classList.add('active');
+        document.getElementById('lbl-j6').innerHTML = 'J6: Vacuum Pressure <span class="joint-tag">Vacuum</span>';
+      } else if (type === 'magnetic') {
+        gripperContainer.add(magneticGripperGroup);
+        document.getElementById('btn-grip-magnetic').classList.add('active');
+        document.getElementById('lbl-j6').innerHTML = 'J6: Field Intensity <span class="joint-tag">Flux</span>';
+      }
+      playServoSound(360, 0.09);
+      updateGripperActuation();
+      humanoidPerformTeleoperation(6, gripperStrokeValue * 100);
+    }
+
+    function updateGripperActuation() {
+      if (currentGripperType === 'parallel') {
+        const span = 0.03 + (1 - gripperStrokeValue) * 0.075;
+        leftFingerMesh.position.x = -span;
+        rightFingerMesh.position.x = span;
+      } else if (currentGripperType === 'vacuum') {
+        const sq = 0.85 + (1 - gripperStrokeValue) * 0.3;
+        vacBellows.scale.set(1, sq, 1);
+      } else if (currentGripperType === 'magnetic') {
+        magCoil.material.emissiveIntensity = 0.2 + gripperStrokeValue * 0.9;
+      }
+    }
+
+    /* =========================================================
+       CYBERNETIC HUMANOID CO-PILOT
+       ========================================================= */
+    const humanoidGroup = new THREE.Group();
+    humanoidGroup.position.set(1.95, 0, 0.35);
+    humanoidGroup.rotation.y = -Math.PI * 0.72;
+    scene.add(humanoidGroup);
+
+    // Operator Console Podium
+    const podGeo = new THREE.BoxGeometry(0.72, 0.92, 0.46);
+    const podMesh = new THREE.Mesh(podGeo, matDarkMetal);
+    podMesh.position.set(0, 0.46, 0.42);
+    podMesh.castShadow = true;
+    humanoidGroup.add(podMesh);
+
+    // Holographic Telemetry Screen
+    const holoScreen = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.52, 0.26),
+      new THREE.MeshStandardMaterial({
+        color: 0x38bdf8,
+        emissive: 0x0284c7,
+        emissiveIntensity: 0.85,
+        transparent: true,
+        opacity: 0.9,
+        side: THREE.DoubleSide
+      })
+    );
+    holoScreen.position.set(0, 1.06, 0.42);
+    holoScreen.rotation.x = -Math.PI * 0.2;
+    humanoidGroup.add(holoScreen);
+
+    // Humanoid Body
+    const pelvisMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.15, 0.16, 16), matDarkMetal);
+    pelvisMesh.position.y = 0.95;
+    pelvisMesh.castShadow = true;
+    humanoidGroup.add(pelvisMesh);
+
+    [-0.1, 0.1].forEach(lx => {
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.055, 0.92, 16), matHumanoidWhite);
+      leg.position.set(lx, 0.46, 0);
+      leg.castShadow = true;
+      humanoidGroup.add(leg);
+    });
+
+    const torsoMesh = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.46, 0.24), matHumanoidWhite);
+    torsoMesh.position.set(0, 1.25, 0);
+    torsoMesh.castShadow = true;
+    humanoidGroup.add(torsoMesh);
+
+    const chestLight = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.1, 0.02), matCyberCyan);
+    chestLight.position.set(0, 1.3, 0.125);
+    humanoidGroup.add(chestLight);
+
+    const headPivot = new THREE.Group();
+    headPivot.position.set(0, 1.55, 0);
+    humanoidGroup.add(headPivot);
+
+    const headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.13, 24, 20), matHumanoidWhite);
+    headMesh.scale.set(0.9, 1.05, 1);
+    headMesh.castShadow = true;
+    headPivot.add(headMesh);
+
+    const visorMesh = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.06, 0.11), matCyberCyan);
+    visorMesh.position.set(0, 0.02, 0.09);
+    headPivot.add(visorMesh);
+
+    // Dynamic Humanoid Arms
+    const humanoidArmLeft = new THREE.Group();
+    humanoidArmLeft.position.set(-0.24, 1.4, 0.02);
+    humanoidGroup.add(humanoidArmLeft);
+
+    const armLMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.04, 0.35, 14), matHumanoidWhite);
+    armLMesh.position.set(0, -0.17, 0.1);
+    armLMesh.rotation.x = Math.PI / 4;
+    armLMesh.castShadow = true;
+    humanoidArmLeft.add(armLMesh);
+
+    const humanoidArmRight = new THREE.Group();
+    humanoidArmRight.position.set(0.24, 1.4, 0.02);
+    humanoidGroup.add(humanoidArmRight);
+
+    const armRMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.04, 0.35, 14), matHumanoidWhite);
+    armRMesh.position.set(0, -0.17, 0.1);
+    armRMesh.rotation.x = Math.PI / 4;
+    armRMesh.castShadow = true;
+    humanoidArmRight.add(armRMesh);
+
+    function humanoidPerformTeleoperation(jointId, angleVal) {
+      // Co-Pilot dynamically tracks target joint, articulates arms and console touch
+      const norm = (angleVal / 180);
+      humanoidArmLeft.rotation.x = 0.2 + Math.sin(norm * 3.14) * 0.35;
+      humanoidArmLeft.rotation.z = -0.1 + Math.cos(norm * 2) * 0.15;
+      humanoidArmRight.rotation.x = 0.2 - Math.cos(norm * 3.14) * 0.35;
+      humanoidArmRight.rotation.z = 0.1 - Math.sin(norm * 2) * 0.15;
+
+      headPivot.rotation.y = THREE.MathUtils.clamp(-norm * 0.6, -0.7, 0.7);
+      headPivot.rotation.x = 0.18 + Math.abs(norm) * 0.08;
+
+      document.getElementById('copilot-status-text').innerText = `Humanoid Actuating J${jointId} (${Math.round(angleVal)}${jointId === 6 ? '%' : '°'})`;
+    }
+
+    /* =========================================================
+       CLEANROOM LAB WORKBENCHES
+       ========================================================= */
+    function createShinyWorkbench(x, z) {
+      const table = new THREE.Group();
+      table.position.set(x, 0, z);
+
+      const top = new THREE.Mesh(
+        new THREE.BoxGeometry(0.95, 0.08, 0.95),
+        new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.12, metalness: 0.15, clearcoat: 0.85 })
+      );
+      top.position.y = 0.58;
+      top.castShadow = true;
+      top.receiveShadow = true;
+      table.add(top);
+
+      [-0.4, 0.4].forEach(px => {
+        [-0.4, 0.4].forEach(pz => {
+          const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.58, 16), matDarkMetal);
+          leg.position.set(px, 0.29, pz);
+          leg.castShadow = true;
+          table.add(leg);
+        });
+      });
+
+      const ring = new THREE.Mesh(
+        new THREE.RingGeometry(0.18, 0.28, 32),
+        new THREE.MeshBasicMaterial({ color: 0x94a3b8, side: THREE.DoubleSide, opacity: 0.25, transparent: true })
+      );
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.y = 0.622;
+      table.add(ring);
+
+      scene.add(table);
+    }
+
+    createShinyWorkbench(-1.5, 0.3);
+    createShinyWorkbench(0.6, 1.5);
+
+    /* =========================================================
+       NON-OPAQUE, NON-BLOCKING 3D HUD RETICLES
+       ========================================================= */
+    const reticlesLayer = document.getElementById('reticles-layer');
+    let showReticles = true;
+
+    const jointMarkers = [
+      { id: 1, object: joint1Group, offset: new THREE.Vector3(0, 0.22, 0), label: "J1 Base" },
+      { id: 2, object: joint2Group, offset: new THREE.Vector3(0, 0, 0),    label: "J2 Shoulder" },
+      { id: 3, object: joint3Group, offset: new THREE.Vector3(0, 0, 0),    label: "J3 Elbow" },
+      { id: 4, object: joint4Group, offset: new THREE.Vector3(0, 0, 0),    label: "J4 Wrist" },
+      { id: 5, object: joint5Group, offset: new THREE.Vector3(0, 0.08, 0), label: "J5 Roll" },
+      { id: 6, object: toolMount,   offset: new THREE.Vector3(0, 0.18, 0), label: "J6 Tool" }
+    ];
+
+    const reticleDoms = [];
+
+    jointMarkers.forEach(jm => {
+      const el = document.createElement('div');
+      el.className = 'reticle-3d';
+      el.id = `reticle-${jm.id}`;
+      el.innerHTML = `
+        <div class="reticle-dot"></div>
+        <div class="reticle-tag">${jm.label}</div>
+      `;
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        inspectJoint(jm.id);
+        const slider = document.getElementById(`slider-j${jm.id}`);
+        if (slider) humanoidPerformTeleoperation(jm.id, parseFloat(slider.value));
+      });
+      reticlesLayer.appendChild(el);
+      reticleDoms.push({ el, marker: jm });
+    });
+
+    function updateReticleProjections() {
+      if (!showReticles) {
+        reticleDoms.forEach(rd => rd.el.style.display = 'none');
+        return;
+      }
+      const tempVec = new THREE.Vector3();
+      reticleDoms.forEach(rd => {
+        rd.marker.object.getWorldPosition(tempVec);
+        tempVec.add(rd.marker.offset);
+        tempVec.project(camera);
+
+        const isBehind = tempVec.z > 1;
+        if (isBehind) {
+          rd.el.style.display = 'none';
+        } else {
+          rd.el.style.display = 'flex';
+          const x = (tempVec.x * 0.5 + 0.5) * window.innerWidth;
+          const y = (-(tempVec.y * 0.5) + 0.5) * window.innerHeight;
+          rd.el.style.left = `${x}px`;
+          rd.el.style.top = `${y}px`;
+        }
+      });
+    }
+
+    function toggleTelemetryView() {
+      showReticles = !showReticles;
+      reticleDoms.forEach(rd => rd.el.style.display = showReticles ? 'flex' : 'none');
+      playServoSound(420, 0.05);
+    }
+
+    /* =========================================================
+       KINEMATICS CONTROLLER & JOINT INSPECTION
+       ========================================================= */
+    const jointInfoDatabase = {
+      1: {
+        title: "Joint 1: Base Turntable",
+        type: "Revolute Axis (Z-Rotation)",
+        desc: "Azimuthal yaw rotation across the entire horizontal work envelope. Houses the primary cycloidal drive gear, handling high dynamic inertial torque."
+      },
+      2: {
+        title: "Joint 2: Shoulder Pitch",
+        type: "Revolute Pitch Axis",
+        desc: "Controls primary elevation of the upper arm. Counteracts the principal cantilever gravity moment of links 2, 3, and any attached payload."
+      },
+      3: {
+        title: "Joint 3: Elbow Pitch",
+        type: "Revolute Pitch Axis",
+        desc: "Extends and retracts forearm reach. Governs tool reach radius and establishes the Singularity Boundary when fully collinear with the upper arm."
+      },
+      4: {
+        title: "Joint 4: Wrist Pitch",
+        type: "Revolute Orientation Pitch",
+        desc: "Controls elevation tilt of the end-effector. Critical for maintaining orthogonal attack angles relative to flat work surfaces."
+      },
+      5: {
+        title: "Joint 5: Tool Flange Roll",
+        type: "Revolute Continuous Roll Axis",
+        desc: "Continuous axial rotation along the longitudinal tool center point (TCP). Notice the blue dial indicator and 6 perimeter bolts rotating directly to match target orientations."
+      },
+      6: {
+        title: "Joint 6: End-Effector Actuator",
+        type: "Linear / Pneumatic / Electromagnetic",
+        desc: "Active mechanical interface. Accommodates two-finger parallel clamping strokes, vacuum suction bellow compression, or electromagnetic flux coupling."
+      }
+    };
+
+    function onStudentJointInput(jointId, val) {
+      applyJointAngle(jointId, parseFloat(val));
+      humanoidPerformTeleoperation(jointId, parseFloat(val));
+      inspectJoint(jointId, false);
+      playServoSound(200 + jointId * 35, 0.06);
+    }
+
+    function applyJointAngle(jointId, val) {
+      const rad = THREE.MathUtils.degToRad(val);
+      switch(jointId) {
+        case 1:
+          joint1Group.rotation.y = rad;
+          document.getElementById('val-j1').innerText = `${Math.round(val)}°`;
+          break;
+        case 2:
+          joint2Group.rotation.z = -rad;
+          document.getElementById('val-j2').innerText = `${Math.round(val)}°`;
+          break;
+        case 3:
+          joint3Group.rotation.z = -rad;
+          document.getElementById('val-j3').innerText = `${Math.round(val)}°`;
+          break;
+        case 4:
+          joint4Group.rotation.z = -rad;
+          document.getElementById('val-j4').innerText = `${Math.round(val)}°`;
+          break;
+        case 5:
+          // Fixed & Explicit: J5 rolls directly on its tool axis
+          joint5Group.rotation.y = rad;
+          document.getElementById('val-j5').innerText = `${Math.round(val)}°`;
+          break;
+        case 6:
+          gripperStrokeValue = val / 100;
+          document.getElementById('val-j6').innerText = `${Math.round(val)}%`;
+          updateGripperActuation();
+          break;
+      }
+      updateForwardKinematicsTCP();
+    }
+
+    function inspectJoint(jointId, openDialog = true) {
+      // Highlight active card
+      document.querySelectorAll('.joint-group').forEach(g => g.classList.remove('active-group'));
+      const activeCard = document.getElementById(`group-j${jointId}`);
+      if (activeCard) activeCard.classList.add('active-group');
+
+      // Highlight active reticle
+      document.querySelectorAll('.reticle-3d').forEach(r => r.classList.remove('active-reticle'));
+      const activeRet = document.getElementById(`reticle-${jointId}`);
+      if (activeRet) activeRet.classList.add('active-reticle');
+
+      const data = jointInfoDatabase[jointId];
+      if (!data) return;
+      document.getElementById('diag-title').innerText = data.title;
+      document.getElementById('diag-type').innerText = data.type;
+      document.getElementById('diag-desc').innerText = data.desc;
+
+      const dialog = document.getElementById('joint-dialog');
+      dialog.style.opacity = '1';
+      dialog.style.pointerEvents = 'auto';
+
+      updateForwardKinematicsTCP();
+    }
+
+    function closeJointDialog() {
+      const dialog = document.getElementById('joint-dialog');
+      dialog.style.opacity = '0';
+      dialog.style.pointerEvents = 'none';
+      document.querySelectorAll('.reticle-3d').forEach(r => r.classList.remove('active-reticle'));
+      document.querySelectorAll('.joint-group').forEach(g => g.classList.remove('active-group'));
+    }
+
+    function updateForwardKinematicsTCP() {
+      const tcp = new THREE.Vector3();
+      toolMount.getWorldPosition(tcp);
+      document.getElementById('tcp-x').innerText = tcp.x.toFixed(2);
+      document.getElementById('tcp-y').innerText = tcp.y.toFixed(2);
+      document.getElementById('tcp-z').innerText = tcp.z.toFixed(2);
+    }
+
+    function resetToHomePosition() {
+      const home = [0, 25, -45, 20, 0, 50];
+      for (let i = 1; i <= 6; i++) {
+        document.getElementById(`slider-j${i}`).value = home[i - 1];
+        applyJointAngle(i, home[i - 1]);
+      }
+      playServoSound(300, 0.15);
+      inspectJoint(1);
+      humanoidPerformTeleoperation(1, 0);
+    }
+
+    /* Initialize initial pose */
+    resetToHomePosition();
+
+    /* =========================================================
+       WINDOW RESIZE & MAIN RENDER LOOP
+       ========================================================= */
+    window.addEventListener('resize', onWindowResize, false);
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    let clock = new THREE.Clock();
+
+    function renderLoop() {
+      requestAnimationFrame(renderLoop);
+
+      const elapsedTime = clock.getElapsedTime();
+
+      // Idle humanoid breathing
+      torsoMesh.position.y = 1.25 + Math.sin(elapsedTime * 2.2) * 0.003;
+      holoScreen.material.opacity = 0.88 + Math.sin(elapsedTime * 4.5) * 0.08;
+
+      controls.update();
+      updateReticleProjections();
+      renderer.render(scene, camera);
+    }
+
+    renderLoop();
+  </script>
+</body>
+</html>
