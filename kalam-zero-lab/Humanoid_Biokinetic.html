@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gopalkrishna Advanced Rural Research Foundation, India - Humanoid Bio-Kinetic Twin Visualization Lab</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Three.js and OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #1a1c20;
+      color: #e2e8f0;
+      overflow: hidden;
+      margin: 0;
+      padding: 0;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(30, 35, 45, 0.4);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.3);
+      border-radius: 4px;
+    }
+    .glass-panel {
+      background: rgba(26, 30, 38, 0.75);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.6);
+    }
+    .hud-glow-cyan {
+      box-shadow: 0 0 15px rgba(6, 182, 212, 0.25);
+    }
+    .hud-glow-green {
+      box-shadow: 0 0 15px rgba(34, 197, 94, 0.25);
+    }
+    .hud-glow-amber {
+      box-shadow: 0 0 15px rgba(245, 158, 11, 0.25);
+    }
+  </style>
+</head>
+<body class="h-screen w-screen flex flex-col justify-between">
+
+  <!-- Header Bar -->
+  <header class="h-16 w-full px-5 bg-gradient-to-r from-[#17191e]/95 via-[#1e222a]/95 to-[#17191e]/95 border-b border-white/10 flex items-center justify-between z-30 shadow-md">
+    <div class="flex items-center gap-3.5">
+      <!-- Logo Container with fallback -->
+      <div class="relative w-10 h-10 rounded-lg overflow-hidden border border-cyan-400/40 shadow-[0_0_12px_rgba(6,182,212,0.3)] bg-slate-900 flex items-center justify-center flex-shrink-0">
+        <img src="logo.jpeg" alt="GARRF Logo" class="w-full h-full object-cover" 
+             onerror="this.style.display='none'; document.getElementById('logo-fallback').style.display='flex';">
+        <div id="logo-fallback" class="hidden w-full h-full bg-gradient-to-br from-cyan-600 to-slate-900 items-center justify-center text-white font-extrabold text-xs tracking-wider">
+          GARRF
+        </div>
+      </div>
+      <div>
+        <h1 class="text-sm md:text-base font-bold text-slate-100 tracking-wide flex items-center gap-2">
+          Gopalkrishna Advanced Rural Research Foundation, India
+          <span class="hidden sm:inline-block text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">Research Lab</span>
+        </h1>
+        <p class="text-xs text-slate-400 font-medium">Humanoid Bio-Kinetic Twin Visualization Lab &bull; Polished Steel Digital Twin</p>
+      </div>
+    </div>
+
+    <!-- Quick Mode / Status Badges -->
+    <div class="flex items-center gap-2.5">
+      <div class="hidden lg:flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800/80 border border-slate-700/60 text-xs text-slate-300 font-mono">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span>TWIN SYNC: ACTIVE (60 FPS)</span>
+      </div>
+      <button onclick="resetCamera()" class="text-xs px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-white/10 transition flex items-center gap-1.5 shadow-sm">
+        <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        Reset Camera
+      </button>
+    </div>
+  </header>
+
+  <!-- 3D Canvas Container -->
+  <main class="relative flex-1 w-full h-[calc(100vh-6rem)] overflow-hidden">
+    <canvas id="twin-canvas" class="w-full h-full block cursor-grab active:cursor-grabbing"></canvas>
+
+    <!-- Interactive Layer Selector & Kinetics Controls (Left HUD) -->
+    <div class="absolute top-4 left-4 w-72 glass-panel rounded-xl p-4 flex flex-col gap-3.5 z-20 pointer-events-auto">
+      <div class="flex items-center justify-between border-b border-white/10 pb-2">
+        <span class="text-xs font-semibold tracking-wider text-cyan-400 uppercase font-mono flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-cyan-400"></span> Bio-Kinetic Layers
+        </span>
+        <span class="text-[10px] text-slate-400 font-mono">GARRF-V1.0</span>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <!-- Toggle: SHM & Piezo Smart Materials -->
+        <button id="btn-shm" onclick="toggleLayer('shm')" class="w-full py-2 px-3 rounded-lg bg-cyan-500/20 border border-cyan-400 text-left text-xs font-medium text-white flex items-center justify-between transition hover:bg-cyan-500/30">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span>
+            <span>SHM & Piezo Sensors</span>
+          </div>
+          <span id="badge-shm" class="text-[10px] font-mono uppercase bg-cyan-400/20 px-1.5 py-0.5 rounded text-cyan-300">ON</span>
+        </button>
+
+        <!-- Toggle: ZMP & Ground Kinetics -->
+        <button id="btn-kinetics" onclick="toggleLayer('kinetics')" class="w-full py-2 px-3 rounded-lg bg-emerald-500/20 border border-emerald-400 text-left text-xs font-medium text-white flex items-center justify-between transition hover:bg-emerald-500/30">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+            <span>ZMP & Kinetics Grid</span>
+          </div>
+          <span id="badge-kinetics" class="text-[10px] font-mono uppercase bg-emerald-400/20 px-1.5 py-0.5 rounded text-emerald-300">ON</span>
+        </button>
+
+        <!-- Toggle: LiDAR / Perception -->
+        <button id="btn-lidar" onclick="toggleLayer('lidar')" class="w-full py-2 px-3 rounded-lg bg-amber-500/20 border border-amber-400 text-left text-xs font-medium text-white flex items-center justify-between transition hover:bg-amber-500/30">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+            <span>LiDAR & Depth Cone</span>
+          </div>
+          <span id="badge-lidar" class="text-[10px] font-mono uppercase bg-amber-400/20 px-1.5 py-0.5 rounded text-amber-300">ON</span>
+        </button>
+
+        <!-- Toggle: Chrome Gloss / Armor Shell -->
+        <button id="btn-shell" onclick="toggleLayer('shell')" class="w-full py-2 px-3 rounded-lg bg-slate-700/60 border border-slate-600 text-left text-xs font-medium text-slate-200 flex items-center justify-between transition hover:bg-slate-700">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
+            <span>Armor View</span>
+          </div>
+          <span id="badge-shell" class="text-[10px] font-mono uppercase bg-slate-500/20 px-1.5 py-0.5 rounded text-slate-300">SOLID</span>
+        </button>
+      </div>
+
+      <!-- Kinematics Movement Slider -->
+      <div class="mt-1 pt-2.5 border-t border-white/10 flex flex-col gap-1.5">
+        <div class="flex justify-between text-xs text-slate-300">
+          <span class="text-[11px] font-mono">Biped Gait Velocity:</span>
+          <span id="speed-display" class="font-mono text-cyan-400 font-bold">1.0x</span>
+        </div>
+        <input type="range" id="gait-speed" min="0" max="2.5" step="0.1" value="1.0" 
+               oninput="setSpeed(this.value)" 
+               class="w-full accent-cyan-400 h-1.5 bg-slate-700 rounded-lg cursor-pointer">
+      </div>
+
+      <!-- Posing / Gesture Action Buttons -->
+      <div class="grid grid-cols-2 gap-2 pt-1 text-[11px]">
+        <button onclick="setStance('balance')" class="py-1 px-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-mono transition">Biped Stance</button>
+        <button onclick="setStance('wave')" class="py-1 px-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-mono transition">Embody Greeting</button>
+      </div>
+    </div>
+
+    <!-- Live Telemetry / SHM Analytical Stream (Right HUD) -->
+    <div class="absolute top-4 right-4 w-80 glass-panel rounded-xl p-4 flex flex-col gap-3 z-20 pointer-events-auto">
+      <div class="flex items-center justify-between border-b border-white/10 pb-2">
+        <span class="text-xs font-semibold tracking-wider text-emerald-400 uppercase font-mono flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Real-Time Telemetry
+        </span>
+        <span class="text-[10px] font-mono text-slate-400">EMBEDDED SHM</span>
+      </div>
+
+      <!-- Telemetry Data Grid -->
+      <div class="flex flex-col gap-2 font-mono text-xs">
+        <div class="flex items-center justify-between bg-slate-800/50 p-2 rounded border border-white/5">
+          <span class="text-slate-400">ZMP Dynamic Margin:</span>
+          <span id="tele-zmp" class="text-emerald-400 font-bold">STABLE (0.018 m)</span>
+        </div>
+        <div class="flex items-center justify-between bg-slate-800/50 p-2 rounded border border-white/5">
+          <span class="text-slate-400">Piezo Strain (&mu;&epsilon;):</span>
+          <span id="tele-strain" class="text-cyan-400 font-bold">128.4 &mu;&epsilon;</span>
+        </div>
+        <div class="flex items-center justify-between bg-slate-800/50 p-2 rounded border border-white/5">
+          <span class="text-slate-400">EMI Peak Resonance:</span>
+          <span id="tele-emi" class="text-amber-400 font-bold">76.82 kHz</span>
+        </div>
+        <div class="flex items-center justify-between bg-slate-800/50 p-2 rounded border border-white/5">
+          <span class="text-slate-400">Ground Reaction (GRF):</span>
+          <span id="tele-grf" class="text-sky-300 font-bold">448.2 N</span>
+        </div>
+        <div class="flex items-center justify-between bg-slate-800/50 p-2 rounded border border-white/5">
+          <span class="text-slate-400">Joint Actuator Health:</span>
+          <span class="text-emerald-400 font-bold">99.4% OPTIMAL</span>
+        </div>
+      </div>
+
+      <!-- Real-time Miniature Piezo Impedance Waveform Visualizer -->
+      <div class="mt-1 flex flex-col gap-1 border-t border-white/10 pt-2">
+        <div class="flex justify-between text-[11px] font-mono text-slate-400">
+          <span>EMI Conductance Spectrum (G)</span>
+          <span class="text-cyan-400">10-100 kHz</span>
+        </div>
+        <canvas id="spectrum-canvas" width="280" height="48" class="w-full h-12 bg-slate-950/70 rounded border border-white/10"></canvas>
+      </div>
+    </div>
+
+    <!-- Center Floor Prompt -->
+    <div class="absolute bottom-4 left-1/2 -translate-x-1/2 glass-panel px-4 py-1.5 rounded-full text-slate-300 text-[11px] font-mono tracking-wide pointer-events-none flex items-center gap-2 shadow-lg">
+      <svg class="w-3.5 h-3.5 text-cyan-400 animate-spin" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+      DRAG TO ROTATE &bull; SCROLL TO ZOOM &bull; RIGHT-CLICK TO PAN
+    </div>
+  </main>
+
+  <!-- Footer Bar -->
+  <footer class="h-8 w-full bg-[#14161a] border-t border-white/10 px-5 flex items-center justify-between text-[11px] text-slate-400 z-30 font-medium">
+    <div class="flex items-center gap-2">
+      <span class="w-2 h-2 rounded-full bg-cyan-500"></span>
+      <span class="tracking-wide">GARRF Autonomous &amp; Biomechanical Twin Engine</span>
+    </div>
+    <div class="text-right">
+      Copyright &copy; Dr Annamdas Venu Gopal Madhav &amp; Shantanu Vasudev Krishna Annamdas
+    </div>
+  </footer>
+
+  <script>
+    /* Global State and Three.js Elements */
+    let scene, camera, renderer, controls;
+    let humanoidRoot, chestMesh;
+    let zmpTargetMesh, zmpBoundsLines, comLine, lidarConeGroup;
+    let piezoSensors = [];
+    let animationSpeed = 1.0;
+    let currentStance = 'balance';
+    let clock = new THREE.Clock();
+    let isWireframe = false;
+
+    // Toggleable layers state
+    const layerVisibility = {
+      shm: true,
+      kinetics: true,
+      lidar: true
+    };
+
+    // Shared high-gloss polished steel / chrome materials
+    let chromeMaterial, darkCarbonMaterial, jointGoldMaterial, sensorGlowMaterial, emblemMaterial;
+
+    function init3D() {
+      const container = document.querySelector('main');
+      const canvas = document.getElementById('twin-canvas');
+
+      // 1. Scene setup with Neutral Studio Gray Fog
+      scene = new THREE.Scene();
+      const studioGray = new THREE.Color(0x282c34);
+      scene.background = studioGray;
+      scene.fog = new THREE.FogExp2(0x282c34, 0.035);
+
+      // 2. Camera setup
+      camera = new THREE.PerspectiveCamera(42, container.clientWidth / container.clientHeight, 0.1, 100);
+      camera.position.set(0, 1.8, 4.8);
+
+      // 3. Renderer with physical lighting and shadows
+      renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: false });
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.25;
+
+      // 4. OrbitControls
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.06;
+      controls.maxPolarAngle = Math.PI / 2 - 0.02; // Keep above floor
+      controls.minDistance = 1.5;
+      controls.maxDistance = 12.0;
+      controls.target.set(0, 1.35, 0);
+
+      // 5. Setup Studio Lighting for Shining Steel Reflections
+      setupStudioLighting();
+
+      // 6. Build Pedestal Floor Platform
+      buildPedestalEnvironment();
+
+      // 7. Materials & Humanoid Assembly
+      setupMaterials();
+      buildRealisticHumanoid();
+
+      // 8. Visual Kinetic Layers
+      buildKineticLayers();
+
+      // 9. Event Listeners
+      window.addEventListener('resize', onWindowResize);
+
+      // Start animation loop
+      animate();
+      initSpectrumCanvas();
+    }
+
+    function setupStudioLighting() {
+      // Balanced Ambient fill light
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
+      scene.add(ambientLight);
+
+      // Key light from high front-right (casts soft shadows)
+      const keyLight = new THREE.DirectionalLight(0xf8fafc, 2.4);
+      keyLight.position.set(4, 7, 5);
+      keyLight.castShadow = true;
+      keyLight.shadow.mapSize.width = 2048;
+      keyLight.shadow.mapSize.height = 2048;
+      keyLight.shadow.camera.near = 0.5;
+      keyLight.shadow.camera.far = 15;
+      keyLight.shadow.bias = -0.0005;
+      const d = 3;
+      keyLight.shadow.camera.left = -d;
+      keyLight.shadow.camera.right = d;
+      keyLight.shadow.camera.top = d;
+      keyLight.shadow.camera.bottom = -d;
+      scene.add(keyLight);
+
+      // Cool Rim Light for highlighting the shining steel silhouettes
+      const rimLight = new THREE.DirectionalLight(0x38bdf8, 2.0);
+      rimLight.position.set(-4, 5, -4);
+      scene.add(rimLight);
+
+      // Warm Bottom bounce light to illuminate under the joints
+      const bounceLight = new THREE.DirectionalLight(0x94a3b8, 0.8);
+      bounceLight.position.set(0, -3, 2);
+      scene.add(bounceLight);
+
+      // Overhead soft spotlight for chrome highlights
+      const spotLight = new THREE.SpotLight(0xffffff, 2.2, 14, Math.PI / 4, 0.4, 1.2);
+      spotLight.position.set(0, 6, 1.5);
+      spotLight.target.position.set(0, 1.2, 0);
+      scene.add(spotLight);
+      scene.add(spotLight.target);
+    }
+
+    function buildPedestalEnvironment() {
+      const platformGroup = new THREE.Group();
+
+      // Industrial studio round pedestal
+      const pedestalGeo = new THREE.CylinderGeometry(2.2, 2.3, 0.15, 64);
+      const pedestalMat = new THREE.MeshStandardMaterial({
+        color: 0x1e2229,
+        roughness: 0.5,
+        metalness: 0.5,
+      });
+      const pedestal = new THREE.Mesh(pedestalGeo, pedestalMat);
+      pedestal.position.y = -0.075;
+      pedestal.receiveShadow = true;
+      platformGroup.add(pedestal);
+
+      // Precision laser etched border ring on pedestal
+      const ringGeo = new THREE.RingGeometry(2.0, 2.03, 64);
+      ringGeo.rotateX(-Math.PI / 2);
+      const ringMat = new THREE.MeshBasicMaterial({ color: 0x06b6d4, side: THREE.DoubleSide });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.position.y = 0.002;
+      platformGroup.add(ring);
+
+      // Infinite Gray Studio Floor
+      const floorGeo = new THREE.PlaneGeometry(60, 60);
+      const floorMat = new THREE.MeshStandardMaterial({
+        color: 0x22262e,
+        roughness: 0.85,
+        metalness: 0.15
+      });
+      const floor = new THREE.Mesh(floorGeo, floorMat);
+      floor.rotation.x = -Math.PI / 2;
+      floor.position.y = -0.15;
+      floor.receiveShadow = true;
+      platformGroup.add(floor);
+
+      // Subtle fine grid overlay
+      const grid = new THREE.GridHelper(16, 32, 0x06b6d4, 0x334155);
+      grid.position.y = 0.003;
+      platformGroup.add(grid);
+
+      scene.add(platformGroup);
+    }
+
+    function setupMaterials() {
+      // Shining Polished Steel Material with Clearcoat
+      chromeMaterial = new THREE.MeshPhysicalMaterial({
+        color: 0xe6eef8,
+        metalness: 0.95,
+        roughness: 0.14,
+        reflectivity: 0.95,
+        clearcoat: 0.8,
+        clearcoatRoughness: 0.1,
+      });
+
+      // Dark Matte Titanium for internal skeletal core & joints
+      darkCarbonMaterial = new THREE.MeshStandardMaterial({
+        color: 0x1f242c,
+        metalness: 0.7,
+        roughness: 0.4
+      });
+
+      // Anodized Golden Copper Accents for high-torque servo joints
+      jointGoldMaterial = new THREE.MeshStandardMaterial({
+        color: 0xd97706,
+        metalness: 0.85,
+        roughness: 0.25
+      });
+
+      // Dynamic Cyan Pulsing Smart Sensor Material
+      sensorGlowMaterial = new THREE.MeshBasicMaterial({
+        color: 0x06b6d4,
+        wireframe: true
+      });
+
+      // Procedural GARRF Chest Badge Canvas Texture
+      const badgeCanvas = document.createElement('canvas');
+      badgeCanvas.width = 512;
+      badgeCanvas.height = 256;
+      const ctx = badgeCanvas.getContext('2d');
+
+      // Brushed metal texture background for badge
+      const grad = ctx.createLinearGradient(0, 0, 512, 256);
+      grad.addColorStop(0, '#0f172a');
+      grad.addColorStop(0.5, '#1e293b');
+      grad.addColorStop(1, '#0f172a');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 512, 256);
+
+      // Beveled border
+      ctx.strokeStyle = '#06b6d4';
+      ctx.lineWidth = 14;
+      ctx.strokeRect(16, 16, 480, 224);
+
+      // Embossed "GARRF" Branding
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 96px "Inter", "JetBrains Mono", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.shadowColor = 'rgba(6, 182, 212, 0.9)';
+      ctx.shadowBlur = 18;
+      ctx.fillText('GARRF', 256, 115);
+
+      // Subtitle
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = '600 24px "JetBrains Mono", sans-serif';
+      ctx.letterSpacing = '4px';
+      ctx.fillText('RESEARCH TWIN &bull; INDIA', 256, 180);
+
+      const badgeTexture = new THREE.CanvasTexture(badgeCanvas);
+      badgeTexture.anisotropy = 8;
+
+      emblemMaterial = new THREE.MeshStandardMaterial({
+        map: badgeTexture,
+        roughness: 0.2,
+        metalness: 0.85
+      });
+    }
+
+    function buildRealisticHumanoid() {
+      humanoidRoot = new THREE.Group();
+      humanoidRoot.position.y = 0.05;
+
+      // 1. CHEST & TORSO ASSEMBLY
+      const torsoGroup = new THREE.Group();
+      torsoGroup.position.y = 1.62;
+
+      // Sculpted Upper Chest Armor (Chamfered look using tapered cylinder / box)
+      const chestGeo = new THREE.BoxGeometry(0.72, 0.58, 0.36);
+      chestMesh = new THREE.Mesh(chestGeo, chromeMaterial);
+      chestMesh.castShadow = true;
+      torsoGroup.add(chestMesh);
+
+      // Prominent GARRF Emblem Plaque Imprinted on Center Chest
+      const plaqueGeo = new THREE.BoxGeometry(0.48, 0.24, 0.03);
+      const plaqueMesh = new THREE.Mesh(plaqueGeo, emblemMaterial);
+      plaqueMesh.position.set(0, 0.04, 0.185); // Placed flush on front of chest
+      plaqueMesh.castShadow = true;
+      torsoGroup.add(plaqueMesh);
+
+      // Rib cage side ventilation plates
+      const ribLGeo = new THREE.BoxGeometry(0.06, 0.38, 0.28);
+      const ribL = new THREE.Mesh(ribLGeo, darkCarbonMaterial);
+      ribL.position.set(-0.37, -0.06, 0);
+      const ribR = ribL.clone();
+      ribR.position.x = 0.37;
+      torsoGroup.add(ribL);
+      torsoGroup.add(ribR);
+
+      // Abdominal Core Hydraulic Spine Column
+      const spineGeo = new THREE.CylinderGeometry(0.12, 0.14, 0.44, 20);
+      const spine = new THREE.Mesh(spineGeo, darkCarbonMaterial);
+      spine.position.y = -0.42;
+      torsoGroup.add(spine);
+
+      // Dual hydraulic actuators beside spine
+      for (let s of [-0.18, 0.18]) {
+        const piston = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.38, 16), jointGoldMaterial);
+        piston.position.set(s, -0.42, 0.02);
+        torsoGroup.add(piston);
+      }
+
+      // 2. PELVIS & HIP CRADLE
+      const pelvisGeo = new THREE.CylinderGeometry(0.34, 0.28, 0.26, 24);
+      const pelvis = new THREE.Mesh(pelvisGeo, chromeMaterial);
+      pelvis.position.y = -0.65;
+      pelvis.castShadow = true;
+      torsoGroup.add(pelvis);
+
+      // 3. ARTICULATED HEAD & SENSOR VISOR
+      const neckGeo = new THREE.CylinderGeometry(0.09, 0.11, 0.18, 16);
+      const neck = new THREE.Mesh(neckGeo, darkCarbonMaterial);
+      neck.position.y = 0.36;
+      torsoGroup.add(neck);
+
+      const headGroup = new THREE.Group();
+      headGroup.position.y = 0.58;
+
+      // Realistic Cranial Helm Shape
+      const headCraniumGeo = new THREE.SphereGeometry(0.23, 32, 24);
+      headCraniumGeo.scale(0.85, 1.15, 0.95);
+      const headCranium = new THREE.Mesh(headCraniumGeo, chromeMaterial);
+      headCranium.castShadow = true;
+      headGroup.add(headCranium);
+
+      // Chin / Jaw Guard
+      const jawGeo = new THREE.BoxGeometry(0.24, 0.18, 0.26);
+      const jaw = new THREE.Mesh(jawGeo, darkCarbonMaterial);
+      jaw.position.set(0, -0.12, 0.04);
+      headGroup.add(jaw);
+
+      // Sleek Cybernetic Visor with Sensor Band
+      const visorGeo = new THREE.CylinderGeometry(0.07, 0.07, 0.32, 24);
+      visorGeo.rotateZ(Math.PI / 2);
+      const visorMat = new THREE.MeshPhysicalMaterial({
+        color: 0x06b6d4,
+        emissive: 0x0284c7,
+        emissiveIntensity: 0.8,
+        roughness: 0.1,
+        metalness: 0.9
+      });
+      const visor = new THREE.Mesh(visorGeo, visorMat);
+      visor.position.set(0, 0.02, 0.18);
+      headGroup.add(visor);
+
+      torsoGroup.add(headGroup);
+      humanoidRoot.add(torsoGroup);
+
+      // 4. UPPER LIMBS (SHOULDERS, ARMS & HANDS)
+      function createArm(sideMultiplier) {
+        const armRoot = new THREE.Group();
+        armRoot.position.set(sideMultiplier * 0.46, 0.2, 0);
+
+        // Shoulder Ball Socket
+        const shoulderGeo = new THREE.SphereGeometry(0.13, 24, 20);
+        const shoulder = new THREE.Mesh(shoulderGeo, jointGoldMaterial);
+        armRoot.add(shoulder);
+
+        // Shoulder Epaulet Guard (Polished Steel)
+        const pauldronGeo = new THREE.SphereGeometry(0.18, 20, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+        const pauldron = new THREE.Mesh(pauldronGeo, chromeMaterial);
+        pauldron.rotation.z = sideMultiplier * -0.3;
+        pauldron.position.y = 0.02;
+        armRoot.add(pauldron);
+
+        // Bicep Shell
+        const bicepGeo = new THREE.CylinderGeometry(0.09, 0.08, 0.38, 20);
+        const bicep = new THREE.Mesh(bicepGeo, chromeMaterial);
+        bicep.position.y = -0.24;
+        bicep.castShadow = true;
+        armRoot.add(bicep);
+
+        // Elbow Joint
+        const elbowGeo = new THREE.CylinderGeometry(0.07, 0.07, 0.14, 16);
+        elbowGeo.rotateZ(Math.PI / 2);
+        const elbow = new THREE.Mesh(elbowGeo, darkCarbonMaterial);
+        elbow.position.y = -0.46;
+        armRoot.add(elbow);
+
+        // Forearm Shell
+        const forearmGeo = new THREE.CylinderGeometry(0.08, 0.065, 0.36, 20);
+        const forearm = new THREE.Mesh(forearmGeo, chromeMaterial);
+        forearm.position.y = -0.66;
+        forearm.castShadow = true;
+        armRoot.add(forearm);
+
+        // Articulated Hand
+        const handGeo = new THREE.BoxGeometry(0.07, 0.12, 0.04);
+        const hand = new THREE.Mesh(handGeo, darkCarbonMaterial);
+        hand.position.set(0, -0.88, 0.01);
+        armRoot.add(hand);
+
+        // Fingers (simplified articulated robot digits)
+        for (let f = -0.025; f <= 0.025; f += 0.025) {
+          const finger = new THREE.Mesh(new THREE.BoxGeometry(0.014, 0.07, 0.02), chromeMaterial);
+          finger.position.set(f, -0.96, 0.01);
+          armRoot.add(finger);
+        }
+
+        return armRoot;
+      }
+
+      const leftArm = createArm(-1);
+      const rightArm = createArm(1);
+      torsoGroup.add(leftArm);
+      torsoGroup.add(rightArm);
+      humanoidRoot.leftArm = leftArm;
+      humanoidRoot.rightArm = rightArm;
+
+      // 5. LOWER LIMBS (HIPS, THIGHS, KNEES, CALVES & FEET)
+      function createLeg(sideMultiplier) {
+        const legRoot = new THREE.Group();
+        legRoot.position.set(sideMultiplier * 0.22, 0.95, 0);
+
+        // Hip Joint
+        const hipJoint = new THREE.Mesh(new THREE.SphereGeometry(0.12, 20, 16), jointGoldMaterial);
+        legRoot.add(hipJoint);
+
+        // Thigh (Femur Shell)
+        const thighGeo = new THREE.CylinderGeometry(0.125, 0.10, 0.52, 24);
+        const thigh = new THREE.Mesh(thighGeo, chromeMaterial);
+        thigh.position.y = -0.28;
+        thigh.castShadow = true;
+        legRoot.add(thigh);
+
+        // Knee Actuator Ring (Piezo Sensor placement)
+        const kneeGeo = new THREE.CylinderGeometry(0.09, 0.09, 0.18, 20);
+        kneeGeo.rotateZ(Math.PI / 2);
+        const knee = new THREE.Mesh(kneeGeo, darkCarbonMaterial);
+        knee.position.y = -0.58;
+        legRoot.add(knee);
+
+        // Knee Cap Plate
+        const kneeCap = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.14, 0.06), chromeMaterial);
+        kneeCap.position.set(0, -0.58, 0.08);
+        legRoot.add(kneeCap);
+
+        // Shin & Calf Muscle Shell
+        const calfGeo = new THREE.CylinderGeometry(0.105, 0.075, 0.52, 24);
+        const calf = new THREE.Mesh(calfGeo, chromeMaterial);
+        calf.position.y = -0.88;
+        calf.castShadow = true;
+        legRoot.add(calf);
+
+        // Ankle Actuator
+        const ankle = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 16), jointGoldMaterial);
+        ankle.position.y = -1.18;
+        legRoot.add(ankle);
+
+        // High Stability Ground Sole / Precision Foot
+        const footGeo = new THREE.BoxGeometry(0.16, 0.08, 0.36);
+        const foot = new THREE.Mesh(footGeo, chromeMaterial);
+        foot.position.set(0, -1.24, 0.05);
+        foot.castShadow = true;
+        legRoot.add(foot);
+
+        // Rubberized High-Traction Grip Base
+        const sole = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.02, 0.37), darkCarbonMaterial);
+        sole.position.set(0, -1.285, 0.05);
+        legRoot.add(sole);
+
+        return legRoot;
+      }
+
+      const leftLeg = createLeg(-1);
+      const rightLeg = createLeg(1);
+      humanoidRoot.add(leftLeg);
+      humanoidRoot.add(rightLeg);
+      humanoidRoot.leftLeg = leftLeg;
+      humanoidRoot.rightLeg = rightLeg;
+
+      // 6. ATTACH STRUCTURAL HEALTH MONITORING (SHM) PIEZO SENSOR NODES
+      const sensorPositions = [
+        { name: "Knee Left (PZT-1)", pos: new THREE.Vector3(-0.22, 0.37, 0.08) },
+        { name: "Knee Right (PZT-2)", pos: new THREE.Vector3(0.22, 0.37, 0.08) },
+        { name: "Ankle Left (PZT-3)", pos: new THREE.Vector3(-0.22, -0.23, 0.08) },
+        { name: "Ankle Right (PZT-4)", pos: new THREE.Vector3(0.22, -0.23, 0.08) },
+        { name: "Pelvis Center (PZT-5)", pos: new THREE.Vector3(0, 0.95, 0.16) },
+        { name: "Shoulder Left (PZT-6)", pos: new THREE.Vector3(-0.46, 1.82, 0.02) },
+        { name: "Shoulder Right (PZT-7)", pos: new THREE.Vector3(0.46, 1.82, 0.02) },
+      ];
+
+      sensorPositions.forEach((item) => {
+        const ringNode = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.012, 12, 24), sensorGlowMaterial);
+        ringNode.position.copy(item.pos);
+        ringNode.userData = { label: item.name };
+        humanoidRoot.add(ringNode);
+        piezoSensors.push(ringNode);
+      });
+
+      scene.add(humanoidRoot);
+    }
+
+    function buildKineticLayers() {
+      // 1. ZMP (Zero Moment Point) Dynamic Target on Ground Platform
+      const zmpGeo = new THREE.RingGeometry(0.06, 0.16, 32);
+      zmpGeo.rotateX(-Math.PI / 2);
+      const zmpMat = new THREE.MeshBasicMaterial({ color: 0x22c55e, side: THREE.DoubleSide });
+      zmpTargetMesh = new THREE.Mesh(zmpGeo, zmpMat);
+      zmpTargetMesh.position.set(0, 0.015, 0.05);
+      scene.add(zmpTargetMesh);
+
+      // ZMP Bounding Convex Footprint Box
+      const boundsGeo = new THREE.BufferGeometry();
+      const boundsVerts = new Float32Array([
+        -0.38, 0.01, -0.25,   0.38, 0.01, -0.25,
+         0.38, 0.01, -0.25,   0.38, 0.01,  0.35,
+         0.38, 0.01,  0.35,  -0.38, 0.01,  0.35,
+        -0.38, 0.01,  0.35,  -0.38, 0.01, -0.25
+      ]);
+      boundsGeo.setAttribute('position', new THREE.BufferAttribute(boundsVerts, 3));
+      zmpBoundsLines = new THREE.LineSegments(boundsGeo, new THREE.LineBasicMaterial({ color: 0x22c55e, linewidth: 2 }));
+      scene.add(zmpBoundsLines);
+
+      // Center of Mass (CoM) Vertical Plummet Vector Line
+      const comGeo = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(0, 1.45, 0),
+        new THREE.Vector3(0, 0.01, 0)
+      ]);
+      comLine = new THREE.Line(comGeo, new THREE.LineDashedMaterial({
+        color: 0x38bdf8,
+        dashSize: 0.08,
+        gapSize: 0.04
+      }));
+      comLine.computeLineDistances();
+      scene.add(comLine);
+
+      // 2. LiDAR Spatial Perception Cone Sweeper from head visor
+      lidarConeGroup = new THREE.Group();
+      lidarConeGroup.position.set(0, 2.2, 0.22);
+
+      // 3D Visualizer Cone Lines
+      const coneSegments = 24;
+      const coneAngle = Math.PI / 4;
+      const coneLength = 3.2;
+      const conePoints = [];
+
+      for (let i = 0; i <= coneSegments; i++) {
+        const theta = (i / coneSegments) * Math.PI * 2;
+        const x = Math.cos(theta) * 1.5;
+        const y = Math.sin(theta) * 0.9;
+        conePoints.push(new THREE.Vector3(0, 0, 0));
+        conePoints.push(new THREE.Vector3(x, y, coneLength));
+      }
+
+      const coneGeo = new THREE.BufferGeometry().setFromPoints(conePoints);
+      const coneLines = new THREE.LineSegments(coneGeo, new THREE.LineBasicMaterial({
+        color: 0xf59e0b,
+        transparent: true,
+        opacity: 0.25
+      }));
+      lidarConeGroup.add(coneLines);
+
+      // LiDAR Scanning Crosshair Ring
+      const scanRingGeo = new THREE.RingGeometry(1.4, 1.45, 32);
+      const scanRing = new THREE.Mesh(scanRingGeo, new THREE.MeshBasicMaterial({
+        color: 0xf59e0b,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.7
+      }));
+      scanRing.position.z = 3.0;
+      lidarConeGroup.add(scanRing);
+
+      scene.add(lidarConeGroup);
+    }
+
+    function toggleLayer(layer) {
+      if (layer === 'shm') {
+        layerVisibility.shm = !layerVisibility.shm;
+        piezoSensors.forEach(s => s.visible = layerVisibility.shm);
+        updateBtnState('btn-shm', 'badge-shm', layerVisibility.shm, 'ON', 'OFF');
+      } else if (layer === 'kinetics') {
+        layerVisibility.kinetics = !layerVisibility.kinetics;
+        zmpTargetMesh.visible = layerVisibility.kinetics;
+        zmpBoundsLines.visible = layerVisibility.kinetics;
+        comLine.visible = layerVisibility.kinetics;
+        updateBtnState('btn-kinetics', 'badge-kinetics', layerVisibility.kinetics, 'ON', 'OFF');
+      } else if (layer === 'lidar') {
+        layerVisibility.lidar = !layerVisibility.lidar;
+        lidarConeGroup.visible = layerVisibility.lidar;
+        updateBtnState('btn-lidar', 'badge-lidar', layerVisibility.lidar, 'ON', 'OFF');
+      } else if (layer === 'shell') {
+        isWireframe = !isWireframe;
+        chromeMaterial.wireframe = isWireframe;
+        darkCarbonMaterial.wireframe = isWireframe;
+        document.getElementById('badge-shell').innerText = isWireframe ? 'WIREFRAME' : 'SOLID';
+      }
+    }
+
+    function updateBtnState(btnId, badgeId, isActive, activeText, inactiveText) {
+      const badge = document.getElementById(badgeId);
+      badge.innerText = isActive ? activeText : inactiveText;
+      const btn = document.getElementById(btnId);
+      if (isActive) {
+        btn.classList.add('opacity-100');
+        btn.classList.remove('opacity-40');
+      } else {
+        btn.classList.remove('opacity-100');
+        btn.classList.add('opacity-40');
+      }
+    }
+
+    function setSpeed(val) {
+      animationSpeed = parseFloat(val);
+      document.getElementById('speed-display').innerText = animationSpeed.toFixed(1) + 'x';
+    }
+
+    function setStance(stance) {
+      currentStance = stance;
+      if (stance === 'balance') {
+        humanoidRoot.leftArm.rotation.x = 0;
+        humanoidRoot.rightArm.rotation.x = 0;
+      }
+    }
+
+    function resetCamera() {
+      camera.position.set(0, 1.8, 4.8);
+      controls.target.set(0, 1.35, 0);
+      controls.update();
+    }
+
+    function onWindowResize() {
+      const container = document.querySelector('main');
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    }
+
+    function initSpectrumCanvas() {
+      const canvas = document.getElementById('spectrum-canvas');
+      const ctx = canvas.getContext('2d');
+
+      function drawSpectrum() {
+        ctx.fillStyle = 'rgba(10, 15, 25, 0.4)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.strokeStyle = '#06b6d4';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+
+        const t = performance.now() * 0.003;
+        for (let x = 0; x < canvas.width; x++) {
+          const freq = x * 0.5;
+          const peak = Math.sin(x * 0.08 + t) * Math.cos(x * 0.03 - t * 0.5);
+          const y = (canvas.height / 2) + (peak * 16) + (Math.sin(x * 0.3) * 3);
+          if (x === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+        requestAnimationFrame(drawSpectrum);
+      }
+      drawSpectrum();
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const delta = clock.getDelta();
+      const elapsed = clock.getElapsedTime() * animationSpeed;
+
+      controls.update();
+
+      // Kinematic rhythmic sway & bipedal weight shifting
+      if (humanoidRoot) {
+        const bipedFreq = elapsed * 2.8;
+
+        // Subtle realistic respiration & postural sway
+        humanoidRoot.position.y = 0.05 + Math.sin(bipedFreq * 2) * 0.015;
+        humanoidRoot.rotation.y = Math.sin(bipedFreq) * 0.05;
+
+        // Limbs oscillation corresponding to active stance
+        if (currentStance === 'balance') {
+          humanoidRoot.leftArm.rotation.x = Math.sin(bipedFreq) * 0.14;
+          humanoidRoot.rightArm.rotation.x = -Math.sin(bipedFreq) * 0.14;
+        } else if (currentStance === 'wave') {
+          humanoidRoot.rightArm.rotation.x = -Math.PI * 0.65;
+          humanoidRoot.rightArm.rotation.z = Math.sin(elapsed * 6) * 0.35 + 0.2;
+        }
+
+        // Slight leg compression during simulated gait weight-transfer
+        if (humanoidRoot.leftLeg && humanoidRoot.rightLeg) {
+          humanoidRoot.leftLeg.position.y = 0.95 + Math.sin(bipedFreq) * 0.01;
+          humanoidRoot.rightLeg.position.y = 0.95 - Math.sin(bipedFreq) * 0.01;
+        }
+      }
+
+      // Dynamic ZMP Migration and Ground Vector tracking
+      if (zmpTargetMesh && layerVisibility.kinetics) {
+        const bipedFreq = elapsed * 2.8;
+        const zmpX = Math.sin(bipedFreq) * 0.18;
+        const zmpZ = 0.05 + Math.cos(bipedFreq) * 0.08;
+        zmpTargetMesh.position.x = zmpX;
+        zmpTargetMesh.position.z = zmpZ;
+
+        // Update Center of Mass Plummet line to follow the chest position
+        const comPositions = comLine.geometry.attributes.position.array;
+        comPositions[0] = zmpX * 0.4; // Upper CoM offset
+        comPositions[1] = 1.6;
+        comPositions[2] = 0;
+        comPositions[3] = zmpX;       // Ground ZMP target
+        comPositions[4] = 0.02;
+        comPositions[5] = zmpZ;
+        comLine.geometry.attributes.position.needsUpdate = true;
+      }
+
+      // LiDAR Visualizer Pitch Oscillation
+      if (lidarConeGroup && layerVisibility.lidar) {
+        lidarConeGroup.rotation.y = Math.sin(elapsed * 1.5) * 0.35;
+        lidarConeGroup.rotation.x = Math.sin(elapsed * 2.2) * 0.12;
+      }
+
+      // Piezo Sensors Pulse Effect
+      if (piezoSensors.length && layerVisibility.shm) {
+        const pulse = 1.0 + Math.sin(elapsed * 5) * 0.12;
+        piezoSensors.forEach(sensor => sensor.scale.set(pulse, pulse, pulse));
+      }
+
+      // Update Live Telemetry Stream Values at 10Hz
+      if (Math.random() > 0.88) {
+        const dynamicStrain = (128.0 + Math.sin(elapsed * 4) * 14.2).toFixed(1);
+        const dynamicZmp = (0.015 + Math.abs(Math.sin(elapsed * 2.8)) * 0.008).toFixed(3);
+        const dynamicGrf = (440.0 + Math.cos(elapsed * 2.8) * 42.5).toFixed(1);
+        const dynamicEmi = (76.5 + Math.sin(elapsed * 3) * 0.85).toFixed(2);
+
+        document.getElementById('tele-strain').innerText = dynamicStrain + " \u03BC\u03B5";
+        document.getElementById('tele-zmp').innerText = "STABLE (" + dynamicZmp + " m)";
+        document.getElementById('tele-grf').innerText = dynamicGrf + " N";
+        document.getElementById('tele-emi').innerText = dynamicEmi + " kHz";
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    // Launch application upon complete load
+    window.onload = init3D;
+  </script>
+</body>
+</html>
