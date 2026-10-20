@@ -1,0 +1,1333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GARRF Humanoid - Gopalkrishna Advanced Rural Research Foundation, India</title>
+
+  <!-- Tailwind CSS & Lucide Icons -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Three.js & Controls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+  <!-- Google MediaPipe Hands & Camera Utils for Real-time Video Tracking -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@400;500;600;700&display=swap');
+
+    body {
+      font-family: 'Rajdhani', sans-serif;
+      background-color: #030712;
+      color: #f3f4f6;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    .font-scifi {
+      font-family: 'Orbitron', monospace;
+    }
+
+    /* Cyber holographic effects */
+    .hud-glass {
+      background: rgba(8, 15, 36, 0.72);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(56, 189, 248, 0.28);
+      box-shadow: 0 0 25px rgba(14, 165, 233, 0.15), inset 0 0 15px rgba(56, 189, 248, 0.08);
+    }
+
+    .hud-glow {
+      box-shadow: 0 0 15px rgba(6, 182, 212, 0.4), inset 0 0 10px rgba(168, 85, 247, 0.25);
+    }
+
+    .neon-text-cyan {
+      text-shadow: 0 0 8px rgba(6, 182, 212, 0.8), 0 0 18px rgba(6, 182, 212, 0.4);
+    }
+
+    .neon-text-magenta {
+      text-shadow: 0 0 8px rgba(236, 72, 153, 0.8), 0 0 18px rgba(217, 70, 239, 0.4);
+    }
+
+    /* Animated holographic rings & scanner lines */
+    .scanline {
+      background: linear-gradient(to bottom, transparent 50%, rgba(6, 182, 212, 0.15) 51%);
+      background-size: 100% 4px;
+    }
+
+    @keyframes rotateHolo {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes pulseHolo {
+      0%, 100% { opacity: 0.35; transform: scale(1); }
+      50% { opacity: 0.75; transform: scale(1.04); }
+    }
+
+    .animate-holo-spin {
+      animation: rotateHolo 24s linear infinite;
+    }
+
+    .animate-holo-pulse {
+      animation: pulseHolo 4s ease-in-out infinite;
+    }
+
+    /* Custom range sliders */
+    input[type=range] {
+      -webkit-appearance: none;
+      background: rgba(30, 41, 59, 0.8);
+      border-radius: 9999px;
+      height: 6px;
+      outline: none;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #06b6d4;
+      box-shadow: 0 0 10px #06b6d4, 0 0 15px #38bdf8;
+      cursor: pointer;
+      border: 2px solid #ffffff;
+    }
+
+    /* Hide scrollbars */
+    .scrollbar-none::-webkit-scrollbar {
+      display: none;
+    }
+    .scrollbar-none {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="relative w-screen h-screen overflow-hidden scanline">
+
+  <!-- 3D WebGL Canvas Container -->
+  <div id="webgl-container" class="absolute inset-0 z-0"></div>
+
+  <!-- Holographic Ambient Background Rings (Aesthetic Layer) -->
+  <div id="hud-rings-layer" class="pointer-events-none absolute inset-0 z-10 flex items-center justify-center overflow-hidden opacity-45">
+    <div class="w-[780px] h-[780px] rounded-full border border-cyan-500/20 border-dashed animate-holo-spin absolute"></div>
+    <div class="w-[940px] h-[940px] rounded-full border-2 border-fuchsia-500/15 border-t-cyan-400/40 animate-holo-spin absolute" style="animation-duration: 40s; animation-direction: reverse;"></div>
+    <div class="w-[580px] h-[580px] rounded-full border border-sky-400/30 animate-holo-pulse absolute"></div>
+  </div>
+
+  <!-- ==================== HEADER ==================== -->
+  <header class="absolute top-0 left-0 right-0 z-30 p-3 md:p-4 pointer-events-auto">
+    <div class="max-w-7xl mx-auto flex items-center justify-between hud-glass rounded-2xl px-4 py-3 md:px-6">
+      <!-- Foundation Logo & Name -->
+      <div class="flex items-center space-x-3 sm:space-x-4">
+        <!-- Logo container with fallback image replacement -->
+        <div class="relative w-11 h-11 md:w-13 md:h-13 rounded-xl overflow-hidden bg-slate-900/90 border border-cyan-400/40 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+          <img src="logo.jpeg" alt="GARRF Logo" class="w-full h-full object-cover" 
+               onerror="this.style.display='none'; document.getElementById('logo-fallback').style.display='flex';">
+          <div id="logo-fallback" class="hidden w-full h-full flex flex-col items-center justify-center bg-gradient-to-tr from-cyan-900 to-indigo-950 text-cyan-300">
+            <i data-lucide="award" class="w-6 h-6 animate-pulse"></i>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="text-xs uppercase tracking-widest text-cyan-400 font-scifi">Republic of India</span>
+            <span class="inline-block w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping"></span>
+          </div>
+          <h1 class="text-sm md:text-base lg:text-lg font-bold text-gray-100 tracking-wide font-scifi leading-tight">
+            Gopalkrishna Advanced Rural Research Foundation, India
+          </h1>
+          <div class="flex items-center space-x-2">
+            <span class="text-base md:text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-pink-400 to-purple-400 font-scifi">
+              GARRF Humanoid
+            </span>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 font-mono">Mk-VII Glitter-Rig</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Status & Fast Controls -->
+      <div class="flex items-center space-x-2 md:space-x-3">
+        <!-- Status Indicator -->
+        <div id="tracking-badge" class="hidden sm:flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-slate-900/80 border border-amber-500/40 text-amber-300 text-xs font-mono">
+          <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
+          <span id="tracking-text">STANDBY (SIMULATOR)</span>
+        </div>
+
+        <!-- Camera Trigger Modal Button -->
+        <button id="btn-open-cam-modal" class="relative group overflow-hidden px-3.5 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-fuchsia-600 hover:from-cyan-400 hover:to-fuchsia-500 text-white font-scifi text-xs md:text-sm font-semibold tracking-wider shadow-lg shadow-cyan-500/25 transition-all transform hover:scale-105 active:scale-95 flex items-center space-x-2">
+          <i data-lucide="camera" class="w-4 h-4"></i>
+          <span class="hidden md:inline">Camera Link</span>
+        </button>
+
+        <!-- Fullscreen Button -->
+        <button id="btn-fullscreen" class="p-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-cyan-400 border border-cyan-500/30 transition">
+          <i data-lucide="maximize" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== CAMERA PERMISSION MODAL BANNER ==================== -->
+  <div id="camera-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md transition-opacity duration-300">
+    <div class="hud-glass max-w-lg w-full rounded-3xl p-6 md:p-8 relative border-2 border-cyan-400/50 shadow-2xl shadow-cyan-500/30 text-center animate-in fade-in zoom-in-95">
+      <!-- Close button -->
+      <button id="btn-close-modal" class="absolute top-4 right-4 text-gray-400 hover:text-white p-2">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <!-- Holographic Icon Badge -->
+      <div class="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500/20 via-fuchsia-500/20 to-purple-500/30 border border-cyan-400/60 flex items-center justify-center mb-4 hud-glow">
+        <i data-lucide="video" class="w-8 h-8 text-cyan-300 animate-pulse"></i>
+      </div>
+
+      <h2 class="text-xl md:text-2xl font-bold font-scifi text-white tracking-wide mb-2">
+        Optical Neural Link Authorization
+      </h2>
+
+      <!-- Exact user requested notice -->
+      <div class="my-4 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/40 text-amber-200 text-xs md:text-sm leading-relaxed text-left flex items-start space-x-3">
+        <i data-lucide="shield-alert" class="w-6 h-6 text-amber-400 flex-shrink-0 mt-0.5"></i>
+        <div>
+          <strong class="font-bold block text-amber-300 mb-0.5">Notice: Camera Open Permission Required</strong>
+          Please grant camera permission to allow the GARRF Humanoid to mirror your physical head nodding, head shaking, and individual finger gestures in real time. Video stream is processed 100% locally on your machine.
+        </div>
+      </div>
+
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-3 mt-6">
+        <button id="btn-grant-camera" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 via-sky-500 to-fuchsia-600 hover:from-cyan-400 hover:to-fuchsia-500 text-white font-scifi font-bold text-sm tracking-wider shadow-lg shadow-cyan-500/40 transition transform active:scale-95 flex items-center justify-center space-x-2">
+          <i data-lucide="shield-check" class="w-4 h-4"></i>
+          <span>Allow & Start Camera</span>
+        </button>
+
+        <button id="btn-use-simulator" class="w-full sm:w-auto px-5 py-3 rounded-xl bg-slate-800/90 hover:bg-slate-700 border border-cyan-500/30 text-cyan-300 font-scifi text-xs font-semibold tracking-wider transition">
+          Test With Simulator
+        </button>
+      </div>
+
+      <p class="text-[11px] text-gray-400 mt-4 font-mono">
+        MediaPipe Hands & Face Vision Pipeline • Local WebAssembly Processing
+      </p>
+    </div>
+  </div>
+
+  <!-- ==================== LEFT FLOATING HUD TELEMETRY PANEL ==================== -->
+  <aside id="hud-left" class="absolute left-4 top-24 bottom-20 w-72 md:w-80 pointer-events-none z-20 flex flex-col justify-between hidden sm:flex transition-all">
+    <!-- Telemetry Stats -->
+    <div class="hud-glass rounded-2xl p-4 pointer-events-auto space-y-3">
+      <div class="flex items-center justify-between border-b border-cyan-500/20 pb-2">
+        <span class="text-xs font-scifi font-bold text-cyan-400 flex items-center space-x-1.5">
+          <i data-lucide="activity" class="w-3.5 h-3.5"></i>
+          <span>BIO-TELEMETRY</span>
+        </span>
+        <span class="text-[10px] font-mono text-fuchsia-400">FPS: <span id="hud-fps">60</span></span>
+      </div>
+
+      <!-- Real-time Pitch Yaw Roll Readout -->
+      <div class="grid grid-cols-3 gap-2 text-center font-mono">
+        <div class="bg-slate-900/80 p-2 rounded-lg border border-cyan-500/20">
+          <div class="text-[10px] text-gray-400">NOD (PITCH)</div>
+          <div id="tele-pitch" class="text-sm font-bold text-cyan-300">0.0°</div>
+        </div>
+        <div class="bg-slate-900/80 p-2 rounded-lg border border-cyan-500/20">
+          <div class="text-[10px] text-gray-400">TURN (YAW)</div>
+          <div id="tele-yaw" class="text-sm font-bold text-fuchsia-300">0.0°</div>
+        </div>
+        <div class="bg-slate-900/80 p-2 rounded-lg border border-cyan-500/20">
+          <div class="text-[10px] text-gray-400">TILT (ROLL)</div>
+          <div id="tele-roll" class="text-sm font-bold text-emerald-300">0.0°</div>
+        </div>
+      </div>
+
+      <!-- Finger Joint Telemetry -->
+      <div>
+        <div class="flex justify-between text-[11px] font-mono text-gray-300 mb-1">
+          <span>DIGITAL EXPANSION</span>
+          <span id="tele-fingers-open" class="text-cyan-400">5 / 5 ACTIVE</span>
+        </div>
+        <div class="flex space-x-1 h-3 rounded-md bg-slate-900/90 p-0.5 border border-cyan-500/20">
+          <div id="bar-f1" class="flex-1 bg-cyan-400 rounded-sm transition-all duration-150"></div>
+          <div id="bar-f2" class="flex-1 bg-cyan-400 rounded-sm transition-all duration-150"></div>
+          <div id="bar-f3" class="flex-1 bg-cyan-400 rounded-sm transition-all duration-150"></div>
+          <div id="bar-f4" class="flex-1 bg-cyan-400 rounded-sm transition-all duration-150"></div>
+          <div id="bar-f5" class="flex-1 bg-cyan-400 rounded-sm transition-all duration-150"></div>
+        </div>
+        <div class="flex justify-between text-[9px] font-mono text-gray-500 mt-1">
+          <span>THUMB</span><span>INDX</span><span>MID</span><span>RING</span><span>PINKY</span>
+        </div>
+      </div>
+
+      <!-- Dynamic Waveform Graphic Canvas -->
+      <div class="relative h-12 bg-slate-950/70 rounded-lg border border-cyan-500/20 overflow-hidden flex items-center">
+        <canvas id="waveform-canvas" width="280" height="48" class="w-full h-full"></canvas>
+      </div>
+    </div>
+
+    <!-- Quick Gesture Trigger Presets -->
+    <div class="hud-glass rounded-2xl p-4 pointer-events-auto space-y-2">
+      <div class="text-xs font-scifi font-bold text-cyan-400 flex items-center space-x-1.5 border-b border-cyan-500/20 pb-2">
+        <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+        <span>NEURAL GESTURE OVERRIDES</span>
+      </div>
+      <div class="grid grid-cols-2 gap-2 text-xs">
+        <button class="preset-btn px-2.5 py-1.5 rounded-lg bg-slate-900/80 hover:bg-cyan-950 border border-cyan-500/30 text-cyan-200 transition font-mono flex items-center justify-center space-x-1" data-gesture="nod">
+          <i data-lucide="check" class="w-3 h-3 text-cyan-400"></i>
+          <span>Nod Yes</span>
+        </button>
+        <button class="preset-btn px-2.5 py-1.5 rounded-lg bg-slate-900/80 hover:bg-cyan-950 border border-cyan-500/30 text-cyan-200 transition font-mono flex items-center justify-center space-x-1" data-gesture="shake">
+          <i data-lucide="refresh-cw" class="w-3 h-3 text-fuchsia-400"></i>
+          <span>Shake No</span>
+        </button>
+        <button class="preset-btn px-2.5 py-1.5 rounded-lg bg-slate-900/80 hover:bg-cyan-950 border border-cyan-500/30 text-cyan-200 transition font-mono flex items-center justify-center space-x-1" data-gesture="wave">
+          <i data-lucide="hand" class="w-3 h-3 text-emerald-400"></i>
+          <span>Wave Hand</span>
+        </button>
+        <button class="preset-btn px-2.5 py-1.5 rounded-lg bg-slate-900/80 hover:bg-cyan-950 border border-cyan-500/30 text-cyan-200 transition font-mono flex items-center justify-center space-x-1" data-gesture="peace">
+          <i data-lucide="smile" class="w-3 h-3 text-amber-400"></i>
+          <span>Peace Sign</span>
+        </button>
+        <button class="preset-btn px-2.5 py-1.5 rounded-lg bg-slate-900/80 hover:bg-cyan-950 border border-cyan-500/30 text-cyan-200 transition font-mono col-span-2 flex items-center justify-center space-x-1" data-gesture="count">
+          <i data-lucide="hash" class="w-3 h-3 text-purple-400"></i>
+          <span>Show Fingers (Count 1-5)</span>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ==================== RIGHT FLOATING CONTROL PANEL ==================== -->
+  <aside id="hud-right" class="absolute right-4 top-24 bottom-20 w-72 md:w-80 pointer-events-none z-20 flex flex-col justify-between hidden sm:flex transition-all">
+    <!-- Visual Shimmer & Glitter Controls -->
+    <div class="hud-glass rounded-2xl p-4 pointer-events-auto space-y-3">
+      <div class="flex items-center justify-between border-b border-cyan-500/20 pb-2">
+        <span class="text-xs font-scifi font-bold text-fuchsia-400 flex items-center space-x-1.5">
+          <i data-lucide="sliders" class="w-3.5 h-3.5"></i>
+          <span>GLITTER & OPTICS RIG</span>
+        </span>
+        <button id="btn-toggle-hud" class="text-gray-400 hover:text-cyan-300 text-[11px] font-mono">HUD: ON</button>
+      </div>
+
+      <!-- Color Theme Swatches -->
+      <div>
+        <label class="text-[11px] font-mono text-gray-300 block mb-1.5">METALLIC IRIDESCENCE PRESET</label>
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <button class="theme-btn px-2 py-1.5 rounded-lg bg-gradient-to-r from-cyan-600 via-fuchsia-600 to-indigo-600 text-white font-mono border border-cyan-400 text-left truncate active" data-theme="iridescent">
+            ★ Prismatic
+          </button>
+          <button class="theme-btn px-2 py-1.5 rounded-lg bg-gradient-to-r from-blue-700 to-cyan-500 text-white font-mono border border-transparent text-left truncate" data-theme="cyber">
+            ✦ Cyber Neon
+          </button>
+          <button class="theme-btn px-2 py-1.5 rounded-lg bg-gradient-to-r from-amber-600 to-yellow-400 text-white font-mono border border-transparent text-left truncate" data-theme="solar">
+            ☀ Golden Solar
+          </button>
+          <button class="theme-btn px-2 py-1.5 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-400 text-white font-mono border border-transparent text-left truncate" data-theme="emerald">
+            ❖ Quantum Jade
+          </button>
+        </div>
+      </div>
+
+      <!-- Sliders for Glitter & Lights -->
+      <div class="space-y-2 pt-1 font-mono text-xs">
+        <div>
+          <div class="flex justify-between text-gray-300 mb-1">
+            <span>GLITTER INTENSITY</span>
+            <span id="val-glitter" class="text-cyan-400">100%</span>
+          </div>
+          <input id="slider-glitter" type="range" min="10" max="250" value="100" class="w-full">
+        </div>
+
+        <div>
+          <div class="flex justify-between text-gray-300 mb-1">
+            <span>NEON CORE PULSE</span>
+            <span id="val-neon" class="text-fuchsia-400">80%</span>
+          </div>
+          <input id="slider-neon" type="range" min="20" max="150" value="80" class="w-full">
+        </div>
+      </div>
+    </div>
+
+    <!-- Manual Mirror Simulator Sliders (Always usable) -->
+    <div class="hud-glass rounded-2xl p-4 pointer-events-auto space-y-2.5">
+      <div class="flex items-center justify-between border-b border-cyan-500/20 pb-2">
+        <span class="text-xs font-scifi font-bold text-cyan-400 flex items-center space-x-1.5">
+          <i data-lucide="user-check" class="w-3.5 h-3.5"></i>
+          <span>MANUAL POSE SIMULATOR</span>
+        </span>
+        <span class="text-[10px] text-gray-400 font-mono">Live Rig</span>
+      </div>
+
+      <div class="space-y-2 font-mono text-xs">
+        <div>
+          <div class="flex justify-between text-gray-300 mb-0.5">
+            <span>Head Nod (Pitch)</span>
+            <span id="slider-val-pitch" class="text-cyan-400">0°</span>
+          </div>
+          <input id="slider-pitch" type="range" min="-35" max="35" value="0" class="w-full">
+        </div>
+
+        <div>
+          <div class="flex justify-between text-gray-300 mb-0.5">
+            <span>Head Turn (Yaw)</span>
+            <span id="slider-val-yaw" class="text-cyan-400">0°</span>
+          </div>
+          <input id="slider-yaw" type="range" min="-45" max="45" value="0" class="w-full">
+        </div>
+
+        <div>
+          <div class="flex justify-between text-gray-300 mb-0.5">
+            <span>Fingers Flexion (Curl)</span>
+            <span id="slider-val-curl" class="text-cyan-400">Open</span>
+          </div>
+          <input id="slider-curl" type="range" min="0" max="100" value="0" class="w-full">
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ==================== PICTURE-IN-PICTURE WEBCAM PREVIEW ==================== -->
+  <div id="pip-container" class="absolute bottom-16 right-4 z-30 w-48 sm:w-56 hud-glass rounded-2xl overflow-hidden border border-cyan-400/50 shadow-xl transition-all duration-300">
+    <div class="flex items-center justify-between px-3 py-1.5 bg-slate-900/90 border-b border-cyan-500/30 text-[11px] font-mono text-cyan-300">
+      <span class="flex items-center space-x-1">
+        <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+        <span id="pip-status-tag">CAM FEED</span>
+      </span>
+      <div class="flex items-center space-x-1.5">
+        <button id="pip-toggle-btn" class="hover:text-white p-0.5"><i data-lucide="minimize-2" class="w-3.5 h-3.5"></i></button>
+      </div>
+    </div>
+    <div id="pip-body" class="relative aspect-video bg-black/80 flex items-center justify-center overflow-hidden">
+      <video id="webcam-video" autoplay playsinline muted class="w-full h-full object-cover transform -scale-x-100"></video>
+      <canvas id="webcam-overlay" class="absolute inset-0 pointer-events-none transform -scale-x-100"></canvas>
+      <div id="pip-placeholder" class="absolute inset-0 flex flex-col items-center justify-center p-3 text-center bg-slate-950/90 text-gray-400 text-xs">
+        <i data-lucide="camera-off" class="w-6 h-6 text-gray-500 mb-1"></i>
+        <span>Camera Standby</span>
+        <button id="pip-enable-link" class="mt-1.5 px-2.5 py-1 text-[10px] rounded bg-cyan-600/60 hover:bg-cyan-500 text-white font-scifi">Connect</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Floating Trigger for Presets & Simulator -->
+  <div class="sm:hidden fixed bottom-14 left-4 z-30">
+    <button id="btn-mobile-menu" class="p-3 rounded-full bg-gradient-to-tr from-cyan-500 to-fuchsia-600 text-white shadow-lg border border-cyan-300">
+      <i data-lucide="settings" class="w-5 h-5"></i>
+    </button>
+  </div>
+
+  <!-- ==================== FOOTER ==================== -->
+  <footer class="absolute bottom-0 left-0 right-0 z-30 pointer-events-none p-2 sm:p-3 text-center">
+    <div class="inline-block hud-glass px-5 py-1.5 rounded-full border border-cyan-500/30 text-xs md:text-sm font-scifi text-gray-300 tracking-wider shadow-lg">
+      Copyright © <span class="text-cyan-300 font-semibold">Dr Annamdas Venu Gopal Madhav</span>
+    </div>
+  </footer>
+
+  <!-- ==================== APPLICATION CORE LOGIC ==================== -->
+  <script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    // -------------------------------------------------------------------------
+    // 1. STATE & TELEMETRY MANAGEMENT
+    // -------------------------------------------------------------------------
+    const state = {
+      head: { pitch: 0, yaw: 0, roll: 0 },
+      targetHead: { pitch: 0, yaw: 0, roll: 0 },
+      fingers: [0, 0, 0, 0, 0], // 0 = open, 1 = curled (Thumb, Index, Middle, Ring, Pinky)
+      targetFingers: [0, 0, 0, 0, 0],
+      isCameraActive: false,
+      handsTracker: null,
+      cameraStream: null,
+      glitterIntensity: 1.0,
+      neonIntensity: 0.8,
+      currentTheme: 'iridescent',
+      fps: 60,
+      frameCount: 0,
+      lastFpsTime: performance.now(),
+      hudVisible: true
+    };
+
+    // Color Theme Definitions
+    const THEMES = {
+      iridescent: {
+        metallic: 0x90a4ae,
+        roughness: 0.15,
+        metalness: 0.95,
+        neonPrimary: 0x06b6d4,
+        neonSecondary: 0xec4899,
+        glitterColors: [0x00f0ff, 0xff00a0, 0xa855f7, 0xfff066],
+        coreLight: 0x38bdf8
+      },
+      cyber: {
+        metallic: 0x1e293b,
+        roughness: 0.2,
+        metalness: 0.98,
+        neonPrimary: 0x00ffff,
+        neonSecondary: 0x3b82f6,
+        glitterColors: [0x00ffff, 0x3b82f6, 0x60a5fa, 0xffffff],
+        coreLight: 0x06b6d4
+      },
+      solar: {
+        metallic: 0xd97706,
+        roughness: 0.25,
+        metalness: 0.9,
+        neonPrimary: 0xf59e0b,
+        neonSecondary: 0xef4444,
+        glitterColors: [0xfbbf24, 0xf59e0b, 0xffedd5, 0xd97706],
+        coreLight: 0xfbbf24
+      },
+      emerald: {
+        metallic: 0x047857,
+        roughness: 0.18,
+        metalness: 0.92,
+        neonPrimary: 0x10b981,
+        neonSecondary: 0x06b6d4,
+        glitterColors: [0x34d399, 0x10b981, 0x6ee7b7, 0xa7f3d0],
+        coreLight: 0x34d399
+      }
+    };
+
+    // -------------------------------------------------------------------------
+    // 2. THREE.JS 3D SCENE & HUMANOID RIG SETUP
+    // -------------------------------------------------------------------------
+    const container = document.getElementById('webgl-container');
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x030712, 0.035);
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(0, 1.2, 3.8);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.25;
+    renderer.shadowMap.enabled = true;
+    container.appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.minDistance = 1.8;
+    controls.maxDistance = 6.5;
+    controls.maxPolarAngle = Math.PI / 2 + 0.1;
+    controls.target.set(0, 1.0, 0);
+
+    // Dynamic Lighting
+    const ambientLight = new THREE.AmbientLight(0x0f172a, 1.8);
+    scene.add(ambientLight);
+
+    const keyLight = new THREE.DirectionalLight(0x38bdf8, 2.5);
+    keyLight.position.set(2, 4, 3);
+    scene.add(keyLight);
+
+    const rimLight = new THREE.DirectionalLight(0xec4899, 3.2);
+    rimLight.position.set(-3, 2, -2);
+    scene.add(rimLight);
+
+    const chestPointLight = new THREE.PointLight(THEMES.iridescent.neonPrimary, 3.0, 4);
+    chestPointLight.position.set(0, 1.1, 0.6);
+    scene.add(chestPointLight);
+
+    // -------------------------------------------------------------------------
+    // 3. HUMANOID BUST & ARTICULATED HANDS HIERARCHY
+    // -------------------------------------------------------------------------
+    const humanoidRoot = new THREE.Group();
+    scene.add(humanoidRoot);
+
+    // Shaders / Materials Creation
+    let activeTheme = THEMES.iridescent;
+
+    // Metallic glitter/iridescent body material
+    const robotMaterial = new THREE.MeshPhysicalMaterial({
+      color: activeTheme.metallic,
+      metalness: activeTheme.metalness,
+      roughness: activeTheme.roughness,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0.1,
+      reflectivity: 1.0
+    });
+
+    // Pulsing Neon accents
+    const neonMaterialPrimary = new THREE.MeshBasicMaterial({
+      color: activeTheme.neonPrimary
+    });
+
+    const neonMaterialSecondary = new THREE.MeshBasicMaterial({
+      color: activeTheme.neonSecondary
+    });
+
+    // Dark cyber carbon joints
+    const jointMaterial = new THREE.MeshStandardMaterial({
+      color: 0x0f172a,
+      roughness: 0.5,
+      metalness: 0.8
+    });
+
+    // ---- A. TORSO & CHEST ----
+    const torsoGroup = new THREE.Group();
+    humanoidRoot.add(torsoGroup);
+
+    // Chest plate
+    const chestGeo = new THREE.CylinderGeometry(0.55, 0.35, 0.9, 16);
+    const chestMesh = new THREE.Mesh(chestGeo, robotMaterial);
+    chestMesh.position.y = 0.65;
+    chestMesh.scale.set(1.1, 1, 0.65);
+    torsoGroup.add(chestMesh);
+
+    // Center Quantum Arc Reactor (Neon Core)
+    const reactorRingGeo = new THREE.TorusGeometry(0.12, 0.025, 16, 32);
+    const reactorRing = new THREE.Mesh(reactorRingGeo, neonMaterialPrimary);
+    reactorRing.position.set(0, 0.8, 0.36);
+    torsoGroup.add(reactorRing);
+
+    const reactorCoreGeo = new THREE.SphereGeometry(0.08, 16, 16);
+    const reactorCore = new THREE.Mesh(reactorCoreGeo, neonMaterialSecondary);
+    reactorCore.position.set(0, 0.8, 0.35);
+    torsoGroup.add(reactorCore);
+
+    // Fiber-optic Shoulder Glow Ribbons
+    const ribbonGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.3, 8);
+    for (let i = -1; i <= 1; i += 2) {
+      for (let j = 0; j < 3; j++) {
+        const ribbon = new THREE.Mesh(ribbonGeo, neonMaterialPrimary);
+        ribbon.position.set(i * (0.45 + j * 0.06), 0.95 + j * 0.04, -0.05);
+        ribbon.rotation.z = i * (-0.4 - j * 0.1);
+        torsoGroup.add(ribbon);
+      }
+    }
+
+    // Collar / Neck Base
+    const neckBase = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.26, 0.2, 16), jointMaterial);
+    neckBase.position.y = 1.15;
+    torsoGroup.add(neckBase);
+
+    // ---- B. HEAD RIG (ROTATES FOR NOD / YAW / TILT) ----
+    const headRig = new THREE.Group();
+    headRig.position.set(0, 1.25, 0); // Neck pivot point
+    humanoidRoot.add(headRig);
+
+    // Neck joint column
+    const neckJoint = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.16, 0.25, 12), jointMaterial);
+    neckJoint.position.y = 0.1;
+    headRig.add(neckJoint);
+
+    // Cranium / Face Shell
+    const headBust = new THREE.Group();
+    headBust.position.y = 0.35;
+    headRig.add(headBust);
+
+    const skullGeo = new THREE.SphereGeometry(0.32, 24, 24);
+    skullGeo.scale(0.95, 1.2, 1.05);
+    const skull = new THREE.Mesh(skullGeo, robotMaterial);
+    headBust.add(skull);
+
+    // Cyber Jaw & Chin Plate
+    const chinGeo = new THREE.BoxGeometry(0.22, 0.22, 0.28);
+    const chin = new THREE.Mesh(chinGeo, robotMaterial);
+    chin.position.set(0, -0.22, 0.12);
+    headBust.add(chin);
+
+    // Visor / Cybernetic Eyes
+    const visorGeo = new THREE.BoxGeometry(0.42, 0.09, 0.2);
+    const visor = new THREE.Mesh(visorGeo, neonMaterialPrimary);
+    visor.position.set(0, 0.04, 0.26);
+    headBust.add(visor);
+
+    // Individual Optical Irises
+    for (let i = -1; i <= 1; i += 2) {
+      const eyeRing = new THREE.Mesh(new THREE.TorusGeometry(0.04, 0.012, 12, 24), neonMaterialSecondary);
+      eyeRing.position.set(i * 0.12, 0.04, 0.36);
+      headBust.add(eyeRing);
+
+      const earPlate = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.05, 16), jointMaterial);
+      earPlate.position.set(i * 0.33, 0.0, 0);
+      earPlate.rotation.z = Math.PI / 2;
+      headBust.add(earPlate);
+    }
+
+    // Forehead Neural Crest Light
+    const crest = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.22, 0.12), neonMaterialSecondary);
+    crest.position.set(0, 0.28, 0.28);
+    crest.rotation.x = -0.3;
+    headBust.add(crest);
+
+    // ---- C. ARTICULATED ROBOTIC RIGHT HAND & FINGERS ----
+    // Positioned in front-right replicate space
+    const handArmGroup = new THREE.Group();
+    handArmGroup.position.set(0.65, 0.85, 0.6);
+    humanoidRoot.add(handArmGroup);
+
+    // Forearm
+    const forearm = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.07, 0.5, 12), robotMaterial);
+    forearm.rotation.x = Math.PI / 4;
+    forearm.rotation.z = -Math.PI / 8;
+    forearm.position.set(0.1, -0.15, -0.15);
+    handArmGroup.add(forearm);
+
+    // Wrist
+    const wrist = new THREE.Mesh(new THREE.SphereGeometry(0.09, 16, 16), jointMaterial);
+    handArmGroup.add(wrist);
+
+    // Palm
+    const palmGeo = new THREE.BoxGeometry(0.24, 0.28, 0.08);
+    const palm = new THREE.Mesh(palmGeo, robotMaterial);
+    palm.position.set(0, 0.16, 0);
+    handArmGroup.add(palm);
+
+    // Glowing Palm Scanner Repulsor
+    const palmGlow = new THREE.Mesh(new THREE.CircleGeometry(0.06, 16), neonMaterialPrimary);
+    palmGlow.position.set(0, 0.16, 0.045);
+    handArmGroup.add(palmGlow);
+
+    // Build Articulated Fingers (Thumb, Index, Middle, Ring, Pinky)
+    const fingerJoints = [];
+    const fingerConfigs = [
+      { name: 'Thumb', x: -0.15, y: 0.06, z: 0.02, scale: 0.85, rotZ: 0.5 },
+      { name: 'Index', x: -0.09, y: 0.31, z: 0, scale: 0.95, rotZ: 0.05 },
+      { name: 'Middle', x: -0.01, y: 0.33, z: 0, scale: 1.05, rotZ: 0.0 },
+      { name: 'Ring', x: 0.07, y: 0.31, z: 0, scale: 0.95, rotZ: -0.05 },
+      { name: 'Pinky', x: 0.14, y: 0.27, z: 0, scale: 0.78, rotZ: -0.12 }
+    ];
+
+    fingerConfigs.forEach((cfg) => {
+      const baseJoint = new THREE.Group();
+      baseJoint.position.set(cfg.x, cfg.y, cfg.z);
+      baseJoint.rotation.z = cfg.rotZ;
+      handArmGroup.add(baseJoint);
+
+      // Phalanx 1
+      const p1Len = 0.1 * cfg.scale;
+      const p1Mesh = new THREE.Mesh(new THREE.CylinderGeometry(0.026 * cfg.scale, 0.028 * cfg.scale, p1Len, 8), robotMaterial);
+      p1Mesh.position.y = p1Len / 2;
+      baseJoint.add(p1Mesh);
+
+      // Knuckle 1 LED
+      const led1 = new THREE.Mesh(new THREE.SphereGeometry(0.022 * cfg.scale, 8, 8), neonMaterialSecondary);
+      led1.position.y = 0;
+      baseJoint.add(led1);
+
+      // Mid Joint
+      const midJoint = new THREE.Group();
+      midJoint.position.y = p1Len;
+      baseJoint.add(midJoint);
+
+      // Phalanx 2
+      const p2Len = 0.08 * cfg.scale;
+      const p2Mesh = new THREE.Mesh(new THREE.CylinderGeometry(0.022 * cfg.scale, 0.024 * cfg.scale, p2Len, 8), robotMaterial);
+      p2Mesh.position.y = p2Len / 2;
+      midJoint.add(p2Mesh);
+
+      // Tip Joint
+      const tipJoint = new THREE.Group();
+      tipJoint.position.y = p2Len;
+      midJoint.add(tipJoint);
+
+      const p3Len = 0.07 * cfg.scale;
+      const p3Mesh = new THREE.Mesh(new THREE.ConeGeometry(0.02 * cfg.scale, p3Len, 8), neonMaterialPrimary);
+      p3Mesh.position.y = p3Len / 2;
+      tipJoint.add(p3Mesh);
+
+      fingerJoints.push({
+        base: baseJoint,
+        mid: midJoint,
+        tip: tipJoint,
+        config: cfg
+      });
+    });
+
+    // -------------------------------------------------------------------------
+    // 4. SHIMMERING GLITTER & SPARKLE PARTICLE SYSTEM
+    // -------------------------------------------------------------------------
+    const glitterCount = 900;
+    const glitterGeo = new THREE.BufferGeometry();
+    const glitterPositions = new Float32Array(glitterCount * 3);
+    const glitterOriginals = new Float32Array(glitterCount * 3);
+    const glitterColors = new Float32Array(glitterCount * 3);
+    const glitterSpeeds = new Float32Array(glitterCount);
+
+    const c1 = new THREE.Color(activeTheme.glitterColors[0]);
+    const c2 = new THREE.Color(activeTheme.glitterColors[1]);
+    const c3 = new THREE.Color(activeTheme.glitterColors[2]);
+
+    for (let i = 0; i < glitterCount; i++) {
+      const radius = 0.5 + Math.random() * 1.6;
+      const theta = Math.random() * Math.PI * 2;
+      const y = Math.random() * 2.2 - 0.2;
+
+      const px = Math.cos(theta) * radius;
+      const py = y;
+      const pz = Math.sin(theta) * radius;
+
+      glitterPositions[i * 3] = px;
+      glitterPositions[i * 3 + 1] = py;
+      glitterPositions[i * 3 + 2] = pz;
+
+      glitterOriginals[i * 3] = px;
+      glitterOriginals[i * 3 + 1] = py;
+      glitterOriginals[i * 3 + 2] = pz;
+
+      // Color variation
+      const choice = Math.random();
+      const col = choice < 0.4 ? c1 : choice < 0.8 ? c2 : c3;
+      glitterColors[i * 3] = col.r;
+      glitterColors[i * 3 + 1] = col.g;
+      glitterColors[i * 3 + 2] = col.b;
+
+      glitterSpeeds[i] = 0.8 + Math.random() * 1.5;
+    }
+
+    glitterGeo.setAttribute('position', new THREE.BufferAttribute(glitterPositions, 3));
+    glitterGeo.setAttribute('color', new THREE.BufferAttribute(glitterColors, 3));
+
+    // Particle sprite using canvas
+    const createGlitterTexture = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 64;
+      canvas.height = 64;
+      const ctx = canvas.getContext('2d');
+      const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 30);
+      grad.addColorStop(0, 'rgba(255,255,255,1)');
+      grad.addColorStop(0.3, 'rgba(56,189,248,0.9)');
+      grad.addColorStop(0.7, 'rgba(236,72,153,0.3)');
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 64, 64);
+      return new THREE.CanvasTexture(canvas);
+    };
+
+    const glitterMat = new THREE.PointsMaterial({
+      size: 0.08,
+      vertexColors: true,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      map: createGlitterTexture()
+    });
+
+    const glitterSystem = new THREE.Points(glitterGeo, glitterMat);
+    scene.add(glitterSystem);
+
+    // -------------------------------------------------------------------------
+    // 5. ANIMATION & CONTROL LOOP
+    // -------------------------------------------------------------------------
+    let clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const delta = clock.getDelta();
+      const elapsed = clock.getElapsedTime();
+
+      // Smooth Lerping of Head Motion (Pitch, Yaw, Roll)
+      state.head.pitch += (state.targetHead.pitch - state.head.pitch) * 0.12;
+      state.head.yaw += (state.targetHead.yaw - state.head.yaw) * 0.12;
+      state.head.roll += (state.targetHead.roll - state.head.roll) * 0.12;
+
+      headRig.rotation.x = state.head.pitch;
+      headRig.rotation.y = state.head.yaw;
+      headRig.rotation.z = state.head.roll;
+
+      // Subtle living idle breathe in torso
+      torsoGroup.position.y = Math.sin(elapsed * 1.5) * 0.015;
+      reactorRing.rotation.z = elapsed * 1.2;
+      reactorCore.scale.setScalar(1.0 + Math.sin(elapsed * 4) * 0.08);
+
+      // Smooth Lerping of Finger Articulation
+      for (let i = 0; i < 5; i++) {
+        state.fingers[i] += (state.targetFingers[i] - state.fingers[i]) * 0.15;
+        const curl = state.fingers[i]; // 0 (open) to 1 (closed)
+
+        const joint = fingerJoints[i];
+        // Rotate knuckle & intermediate joints forward
+        joint.base.rotation.x = curl * (Math.PI / 2.3);
+        joint.mid.rotation.x = curl * (Math.PI / 2.5);
+        joint.tip.rotation.x = curl * (Math.PI / 2.8);
+      }
+
+      // Hand wave idle animation if not overridden
+      handArmGroup.position.y = 0.85 + Math.sin(elapsed * 2) * 0.02;
+
+      // Animate Glitter Particles (Swirl around humanoid)
+      const positions = glitterGeo.attributes.position.array;
+      for (let i = 0; i < glitterCount; i++) {
+        const i3 = i * 3;
+        const speed = glitterSpeeds[i] * state.glitterIntensity;
+        positions[i3 + 1] += Math.sin(elapsed * speed + i) * 0.003;
+        
+        // Swirl around Y
+        const currentAngle = Math.atan2(positions[i3 + 2], positions[i3]) + 0.005 * speed;
+        const currentRadius = Math.hypot(positions[i3], positions[i3 + 2]);
+        positions[i3] = Math.cos(currentAngle) * currentRadius;
+        positions[i3 + 2] = Math.sin(currentAngle) * currentRadius;
+      }
+      glitterGeo.attributes.position.needsUpdate = true;
+
+      // Pulsing lights
+      chestPointLight.intensity = (2.2 + Math.sin(elapsed * 3.5) * 0.8) * state.neonIntensity;
+
+      // OrbitControls update
+      controls.update();
+
+      // Render Scene
+      renderer.render(scene, camera);
+
+      // Update Telemetry & UI
+      updateTelemetryUI();
+    }
+
+    // -------------------------------------------------------------------------
+    // 6. UI HUD UPDATES & TELEMETRY STREAM
+    // -------------------------------------------------------------------------
+    const pitchDisplay = document.getElementById('tele-pitch');
+    const yawDisplay = document.getElementById('tele-yaw');
+    const rollDisplay = document.getElementById('tele-roll');
+    const hudFps = document.getElementById('hud-fps');
+    const fingersOpenDisplay = document.getElementById('tele-fingers-open');
+    const fingerBars = [
+      document.getElementById('bar-f1'),
+      document.getElementById('bar-f2'),
+      document.getElementById('bar-f3'),
+      document.getElementById('bar-f4'),
+      document.getElementById('bar-f5')
+    ];
+
+    function updateTelemetryUI() {
+      state.frameCount++;
+      const now = performance.now();
+      if (now - state.lastFpsTime >= 500) {
+        state.fps = Math.round((state.frameCount * 1000) / (now - state.lastFpsTime));
+        hudFps.innerText = state.fps;
+        state.frameCount = 0;
+        state.lastFpsTime = now;
+      }
+
+      // Convert radians to degrees for HUD display
+      const pDeg = (state.head.pitch * (180 / Math.PI)).toFixed(1);
+      const yDeg = (state.head.yaw * (180 / Math.PI)).toFixed(1);
+      const rDeg = (state.head.roll * (180 / Math.PI)).toFixed(1);
+
+      pitchDisplay.innerText = `${pDeg > 0 ? '+' : ''}${pDeg}°`;
+      yawDisplay.innerText = `${yDeg > 0 ? '+' : ''}${yDeg}°`;
+      rollDisplay.innerText = `${rDeg > 0 ? '+' : ''}${rDeg}°`;
+
+      // Active finger bars
+      let activeCount = 0;
+      for (let i = 0; i < 5; i++) {
+        const val = 1 - state.fingers[i]; // 1 = fully open
+        fingerBars[i].style.height = `${Math.max(15, val * 100)}%`;
+        fingerBars[i].style.opacity = 0.3 + val * 0.7;
+        if (val > 0.4) activeCount++;
+      }
+      fingersOpenDisplay.innerText = `${activeCount} / 5 EXTENDED`;
+    }
+
+    // Mini Live Waveform in HUD
+    const waveCanvas = document.getElementById('waveform-canvas');
+    const waveCtx = waveCanvas.getContext('2d');
+    let waveOffset = 0;
+
+    function drawWaveform() {
+      waveCtx.clearRect(0, 0, waveCanvas.width, waveCanvas.height);
+      waveCtx.beginPath();
+      waveCtx.lineWidth = 1.8;
+      waveCtx.strokeStyle = '#06b6d4';
+
+      const sliceWidth = waveCanvas.width / 40;
+      let x = 0;
+
+      for (let i = 0; i <= 40; i++) {
+        const freq = 0.25;
+        const amp = 14 + Math.abs(state.head.pitch) * 18;
+        const y = waveCanvas.height / 2 + Math.sin(i * freq + waveOffset) * amp * Math.cos(waveOffset * 0.5);
+        if (i === 0) waveCtx.moveTo(x, y);
+        else waveCtx.lineTo(x, y);
+        x += sliceWidth;
+      }
+      waveCtx.stroke();
+      waveOffset += 0.08;
+      requestAnimationFrame(drawWaveform);
+    }
+    drawWaveform();
+
+    // -------------------------------------------------------------------------
+    // 7. WEBCAM & MEDIAPIPE TRACKING INTEGRATION
+    // -------------------------------------------------------------------------
+    const videoElement = document.getElementById('webcam-video');
+    const overlayCanvas = document.getElementById('webcam-overlay');
+    const overlayCtx = overlayCanvas.getContext('2d');
+    const trackingBadge = document.getElementById('tracking-badge');
+    const trackingText = document.getElementById('tracking-text');
+    const cameraModal = document.getElementById('camera-modal');
+    const pipPlaceholder = document.getElementById('pip-placeholder');
+    const pipStatusTag = document.getElementById('pip-status-tag');
+
+    async function initCameraTracking() {
+      try {
+        cameraModal.classList.add('opacity-0', 'pointer-events-none');
+        setTimeout(() => cameraModal.classList.add('hidden'), 300);
+
+        trackingBadge.className = 'flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-slate-900/80 border border-cyan-400 text-cyan-300 text-xs font-mono';
+        trackingText.innerHTML = '<span class="inline-block w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping"></span> OPTICAL LINK ACTIVE';
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: 480, height: 360, facingMode: 'user' },
+          audio: false
+        });
+
+        videoElement.srcObject = stream;
+        state.cameraStream = stream;
+        state.isCameraActive = true;
+        pipPlaceholder.style.display = 'none';
+        pipStatusTag.innerText = 'TRACKING LIVE';
+
+        // Setup MediaPipe Hands
+        const hands = new Hands({
+          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+        });
+
+        hands.setOptions({
+          maxNumHands: 1,
+          modelComplexity: 1,
+          minDetectionConfidence: 0.6,
+          minTrackingConfidence: 0.6
+        });
+
+        hands.onResults(onHandsResults);
+
+        // Process frames
+        const cameraUtils = new Camera(videoElement, {
+          onFrame: async () => {
+            if (state.isCameraActive) {
+              await hands.send({ image: videoElement });
+            }
+          },
+          width: 480,
+          height: 360
+        });
+
+        cameraUtils.start();
+
+      } catch (err) {
+        console.error("Camera access error:", err);
+        cameraModal.classList.remove('hidden', 'opacity-0', 'pointer-events-none');
+        alertUser("Camera access declined or unavailable. Switching to live motion simulator!");
+        useSimulatorMode();
+      }
+    }
+
+    // Process Hand Landmarks & Estimate Finger Curl + Head Estimation
+    function onHandsResults(results) {
+      overlayCanvas.width = videoElement.videoWidth || 320;
+      overlayCanvas.height = videoElement.videoHeight || 240;
+      overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+
+      if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+        const landmarks = results.multiHandLandmarks[0];
+
+        // Draw HUD overlay keypoints
+        overlayCtx.fillStyle = '#06b6d4';
+        overlayCtx.strokeStyle = '#ec4899';
+        overlayCtx.lineWidth = 2;
+
+        landmarks.forEach(pt => {
+          overlayCtx.beginPath();
+          overlayCtx.arc(pt.x * overlayCanvas.width, pt.y * overlayCanvas.height, 3, 0, 2 * Math.PI);
+          overlayCtx.fill();
+        });
+
+        // 1. Calculate Finger Curls (Distance between tip and MCP joint compared to extended length)
+        const wrist = landmarks[0];
+        
+        // Finger tip and base indices: Thumb(4,2), Index(8,5), Middle(12,9), Ring(16,13), Pinky(20,17)
+        const pairs = [
+          { tip: 4, base: 2, mcp: 1 },
+          { tip: 8, base: 5, mcp: 0 },
+          { tip: 12, base: 9, mcp: 0 },
+          { tip: 16, base: 13, mcp: 0 },
+          { tip: 20, base: 17, mcp: 0 }
+        ];
+
+        pairs.forEach((p, idx) => {
+          const tip = landmarks[p.tip];
+          const base = landmarks[p.base];
+          const distToWrist = Math.hypot(tip.x - wrist.x, tip.y - wrist.y);
+          const baseToWrist = Math.hypot(base.x - wrist.x, base.y - wrist.y);
+
+          // If tip is closer to wrist than knuckle base, finger is curled
+          let curlRatio = 0;
+          if (idx === 0) { // Thumb
+            const thumbSpread = Math.hypot(tip.x - landmarks[17].x, tip.y - landmarks[17].y);
+            curlRatio = thumbSpread < 0.22 ? 1.0 : 0.0;
+          } else {
+            curlRatio = distToWrist < (baseToWrist * 1.15) ? 1.0 : 0.0;
+          }
+
+          state.targetFingers[idx] = THREE.MathUtils.lerp(state.targetFingers[idx], curlRatio, 0.4);
+        });
+
+        // 2. Optical Head Tracking Estimation derived from Hand position / posture
+        // When hand is raised or tilted, mirror interactive responsive head gestures
+        const handCenterX = landmarks[9].x - 0.5; // -0.5 to 0.5
+        const handCenterY = landmarks[9].y - 0.5;
+
+        state.targetHead.yaw = -handCenterX * 0.7; // Turn toward hand
+        state.targetHead.pitch = handCenterY * 0.6; // Nod toward elevation
+      }
+    }
+
+    function useSimulatorMode() {
+      cameraModal.classList.add('opacity-0', 'pointer-events-none');
+      setTimeout(() => cameraModal.classList.add('hidden'), 300);
+      trackingBadge.className = 'flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-slate-900/80 border border-amber-500/40 text-amber-300 text-xs font-mono';
+      trackingText.innerText = 'SIMULATOR MODE';
+    }
+
+    // -------------------------------------------------------------------------
+    // 8. INTERACTIVE CONTROLS & PRESET GESTURES
+    // -------------------------------------------------------------------------
+    // Permission modal triggers
+    document.getElementById('btn-open-cam-modal').addEventListener('click', () => {
+      cameraModal.classList.remove('hidden');
+      setTimeout(() => cameraModal.classList.remove('opacity-0', 'pointer-events-none'), 10);
+    });
+
+    document.getElementById('btn-close-modal').addEventListener('click', () => {
+      cameraModal.classList.add('opacity-0', 'pointer-events-none');
+      setTimeout(() => cameraModal.classList.add('hidden'), 300);
+    });
+
+    document.getElementById('btn-grant-camera').addEventListener('click', initCameraTracking);
+    document.getElementById('btn-use-simulator').addEventListener('click', useSimulatorMode);
+    document.getElementById('pip-enable-link').addEventListener('click', initCameraTracking);
+
+    // Fullscreen toggle
+    document.getElementById('btn-fullscreen').addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    });
+
+    // PiP minimize toggle
+    let isPipMinimized = false;
+    document.getElementById('pip-toggle-btn').addEventListener('click', () => {
+      const pipBody = document.getElementById('pip-body');
+      isPipMinimized = !isPipMinimized;
+      pipBody.style.display = isPipMinimized ? 'none' : 'flex';
+    });
+
+    // Theme selector buttons
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        document.querySelectorAll('.theme-btn').forEach(b => {
+          b.classList.remove('active', 'border-cyan-400');
+          b.classList.add('border-transparent');
+        });
+        const target = e.currentTarget;
+        target.classList.add('active', 'border-cyan-400');
+        target.classList.remove('border-transparent');
+
+        const themeName = target.getAttribute('data-theme');
+        applyTheme(themeName);
+      });
+    });
+
+    function applyTheme(name) {
+      activeTheme = THEMES[name];
+      state.currentTheme = name;
+
+      // Update 3D materials
+      robotMaterial.color.setHex(activeTheme.metallic);
+      robotMaterial.roughness = activeTheme.roughness;
+      robotMaterial.metalness = activeTheme.metalness;
+
+      neonMaterialPrimary.color.setHex(activeTheme.neonPrimary);
+      neonMaterialSecondary.color.setHex(activeTheme.neonSecondary);
+      chestPointLight.color.setHex(activeTheme.coreLight);
+
+      // Update particle colors
+      const colors = glitterGeo.attributes.color.array;
+      const c1 = new THREE.Color(activeTheme.glitterColors[0]);
+      const c2 = new THREE.Color(activeTheme.glitterColors[1]);
+      const c3 = new THREE.Color(activeTheme.glitterColors[2]);
+
+      for (let i = 0; i < glitterCount; i++) {
+        const choice = Math.random();
+        const col = choice < 0.35 ? c1 : choice < 0.7 ? c2 : c3;
+        colors[i * 3] = col.r;
+        colors[i * 3 + 1] = col.g;
+        colors[i * 3 + 2] = col.b;
+      }
+      glitterGeo.attributes.color.needsUpdate = true;
+    }
+
+    // Sliders
+    const sliderGlitter = document.getElementById('slider-glitter');
+    const valGlitter = document.getElementById('val-glitter');
+    sliderGlitter.addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      state.glitterIntensity = val / 100;
+      valGlitter.innerText = `${val}%`;
+      glitterMat.size = 0.08 * (val / 100);
+    });
+
+    const sliderNeon = document.getElementById('slider-neon');
+    const valNeon = document.getElementById('val-neon');
+    sliderNeon.addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      state.neonIntensity = val / 100;
+      valNeon.innerText = `${val}%`;
+    });
+
+    // Manual simulator sliders
+    const sliderPitch = document.getElementById('slider-pitch');
+    const sliderYaw = document.getElementById('slider-yaw');
+    const sliderCurl = document.getElementById('slider-curl');
+
+    sliderPitch.addEventListener('input', (e) => {
+      const deg = parseFloat(e.target.value);
+      document.getElementById('slider-val-pitch').innerText = `${deg}°`;
+      state.targetHead.pitch = deg * (Math.PI / 180);
+    });
+
+    sliderYaw.addEventListener('input', (e) => {
+      const deg = parseFloat(e.target.value);
+      document.getElementById('slider-val-yaw').innerText = `${deg}°`;
+      state.targetHead.yaw = deg * (Math.PI / 180);
+    });
+
+    sliderCurl.addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value) / 100;
+      document.getElementById('slider-val-curl').innerText = val > 0.8 ? 'Closed' : val < 0.2 ? 'Open' : `${Math.round(val*100)}%`;
+      for (let i = 0; i < 5; i++) {
+        state.targetFingers[i] = val;
+      }
+    });
+
+    // Gesture Presets Engine
+    let activePresetTimeout = null;
+
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const gesture = e.currentTarget.getAttribute('data-gesture');
+        triggerGesturePreset(gesture);
+      });
+    });
+
+    function triggerGesturePreset(gesture) {
+      if (activePresetTimeout) clearTimeout(activePresetTimeout);
+
+      // Temporarily bypass camera feed for preset demonstration
+      if (gesture === 'nod') {
+        // Nodding up and down 3 times
+        let nodCount = 0;
+        const nodInterval = setInterval(() => {
+          nodCount++;
+          state.targetHead.pitch = Math.sin(nodCount * 0.8) * 0.35;
+          if (nodCount > 10) {
+            clearInterval(nodInterval);
+            state.targetHead.pitch = 0;
+          }
+        }, 80);
+      } else if (gesture === 'shake') {
+        // Shaking side to side
+        let shakeCount = 0;
+        const shakeInterval = setInterval(() => {
+          shakeCount++;
+          state.targetHead.yaw = Math.sin(shakeCount * 0.8) * 0.45;
+          if (shakeCount > 10) {
+            clearInterval(shakeInterval);
+            state.targetHead.yaw = 0;
+          }
+        }, 80);
+      } else if (gesture === 'wave') {
+        // Open hand and wave
+        state.targetFingers = [0, 0, 0, 0, 0];
+        let waveCount = 0;
+        const waveInterval = setInterval(() => {
+          waveCount++;
+          handArmGroup.rotation.z = Math.sin(waveCount * 0.6) * 0.25;
+          if (waveCount > 12) {
+            clearInterval(waveInterval);
+            handArmGroup.rotation.z = 0;
+          }
+        }, 70);
+      } else if (gesture === 'peace') {
+        // Peace sign: Thumb, Ring, Pinky closed; Index & Middle extended
+        state.targetFingers = [1, 0, 0, 1, 1];
+        state.targetHead.roll = -0.15;
+        activePresetTimeout = setTimeout(() => {
+          state.targetHead.roll = 0;
+        }, 2500);
+      } else if (gesture === 'count') {
+        // Show counting from 1 to 5 sequentially
+        let step = 0;
+        const countInterval = setInterval(() => {
+          step++;
+          if (step === 1) state.targetFingers = [1, 0, 1, 1, 1]; // 1 (Index)
+          if (step === 2) state.targetFingers = [1, 0, 0, 1, 1]; // 2 (Index + Middle)
+          if (step === 3) state.targetFingers = [1, 0, 0, 0, 1]; // 3
+          if (step === 4) state.targetFingers = [1, 0, 0, 0, 0]; // 4
+          if (step === 5) state.targetFingers = [0, 0, 0, 0, 0]; // 5 (Full palm)
+          if (step >= 6) {
+            clearInterval(countInterval);
+          }
+        }, 550);
+      }
+    }
+
+    // Toggle HUD Visibility
+    const btnToggleHud = document.getElementById('btn-toggle-hud');
+    const hudLeft = document.getElementById('hud-left');
+    const hudRingsLayer = document.getElementById('hud-rings-layer');
+
+    btnToggleHud.addEventListener('click', () => {
+      state.hudVisible = !state.hudVisible;
+      btnToggleHud.innerText = `HUD: ${state.hudVisible ? 'ON' : 'OFF'}`;
+      hudLeft.style.opacity = state.hudVisible ? '1' : '0';
+      hudLeft.style.pointerEvents = state.hudVisible ? 'auto' : 'none';
+      hudRingsLayer.style.display = state.hudVisible ? 'flex' : 'none';
+    });
+
+    // Mobile simulator panel trigger
+    const btnMobileMenu = document.getElementById('btn-mobile-menu');
+    btnMobileMenu.addEventListener('click', () => {
+      const isRightHidden = hudRight.classList.contains('hidden');
+      if (isRightHidden) {
+        hudRight.classList.remove('hidden');
+        hudLeft.classList.remove('hidden');
+      } else {
+        hudRight.classList.add('hidden');
+        hudLeft.classList.add('hidden');
+      }
+    });
+
+    // In-app Alert Notification Helper
+    function alertUser(msg) {
+      const banner = document.createElement('div');
+      banner.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 z-50 hud-glass border border-cyan-400 text-cyan-200 px-5 py-3 rounded-2xl shadow-2xl text-xs font-mono flex items-center space-x-2 animate-bounce';
+      banner.innerHTML = `<i data-lucide="info" class="w-4 h-4 text-cyan-400"></i><span>${msg}</span>`;
+      document.body.appendChild(banner);
+      lucide.createIcons();
+      setTimeout(() => banner.remove(), 4000);
+    }
+
+    // -------------------------------------------------------------------------
+    // 9. RESIZE & RESPONSIVE HANDLING
+    // -------------------------------------------------------------------------
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // Start Animation Loop on Page Load
+    window.onload = function() {
+      animate();
+    };
+  </script>
+</body>
+</html>
