@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+  <title>Nāda Anusandhana & Planetary Wave Observatory | GARRF India</title>
+  <!-- Tailwind CSS CDN for styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            cosmic: {
+              950: '#040711',
+              900: '#0a0f1d',
+              850: '#0f172a',
+              800: '#17233f',
+              700: '#1e2e54',
+              accent: '#38bdf8'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Mobile-first touch & layout optimization */
+    .touch-target {
+      min-height: 48px;
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); opacity: 0.9; }
+      50% { transform: scale(1.08); opacity: 0.4; }
+      100% { transform: scale(0.95); opacity: 0.9; }
+    }
+    .animate-pulse-ring {
+      animation: pulse-ring 2.4s ease-in-out infinite;
+    }
+    /* Clean custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #040711;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #38bdf8;
+    }
+  </style>
+</head>
+<body class="bg-cosmic-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-cyan-500 selection:text-slate-950">
+
+  <!-- =========================================================================
+       1. INSTITUTIONAL RESEARCH HEADER
+       ========================================================================= -->
+  <header class="border-b border-slate-800/90 bg-cosmic-900/95 backdrop-blur-md sticky top-0 z-40 px-3 sm:px-6 py-2.5 shadow-xl">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
+      
+      <!-- Organization Logo & Title -->
+      <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
+        <div class="flex items-center gap-3">
+          <!-- Logo with automatic SVG Fallback -->
+          <div class="relative w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-amber-500/20 via-cyan-500/20 to-indigo-600/30 p-0.5 border border-amber-500/40 shadow-lg shadow-cyan-950/50 shrink-0">
+            <img 
+              src="logo.jpeg" 
+              alt="GARRF Logo" 
+              id="org-logo-img"
+              class="w-full h-full object-cover rounded-[10px]"
+              onerror="this.style.display='none'; document.getElementById('logo-fallback-icon').classList.remove('hidden');"
+            />
+            <div id="logo-fallback-icon" class="hidden w-full h-full flex items-center justify-center bg-slate-900 rounded-[10px] text-amber-400 font-bold font-mono text-sm">
+              <svg class="w-7 h-7 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <circle cx="12" cy="12" r="9"/>
+                <path d="M12 3v18M3 12h18"/>
+                <circle cx="12" cy="12" r="4" fill="currentColor" fill-opacity="0.2"/>
+              </svg>
+            </div>
+          </div>
+
+          <div>
+            <div class="flex items-center gap-2">
+              <h1 class="text-sm sm:text-base font-extrabold tracking-tight text-white flex items-center gap-1.5">
+                <span>Gopalkrishna Advanced Rural Research Foundation</span>
+                <span class="text-xs px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono">India 🇮🇳</span>
+              </h1>
+            </div>
+            <p class="text-[11px] sm:text-xs text-cyan-400 font-mono font-medium flex items-center gap-1.5 mt-0.5">
+              <span>Nāda Anusandhana &amp; Planetary Wave Observatory</span>
+              <span class="text-slate-500">|</span>
+              <span class="text-slate-400 hidden sm:inline">AISIA Labs</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Mobile Quick Status Badge -->
+        <div class="flex md:hidden items-center gap-1.5 bg-slate-900/90 border border-slate-800 px-2.5 py-1 rounded-lg text-[10px] font-mono text-emerald-400">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span>LIVE</span>
+        </div>
+      </div>
+
+      <!-- Live Controls & Mode Selector -->
+      <div class="flex items-center flex-wrap gap-2 w-full md:w-auto justify-between md:justify-end pt-1 md:pt-0 border-t md:border-t-0 border-slate-800/60">
+        
+        <!-- Input Selector: Synthetic vs Mic -->
+        <div class="inline-flex rounded-lg bg-slate-950 border border-slate-800 p-0.5 text-xs">
+          <button id="btn-mode-synth" onclick="setInputMode('synth')" class="touch-target px-3 py-1.5 rounded-md font-semibold text-cyan-300 bg-cyan-950 border border-cyan-700/60 transition flex items-center gap-1">
+            <span>⚡ Synth Gen</span>
+          </button>
+          <button id="btn-mode-mic" onclick="setInputMode('mic')" class="touch-target px-3 py-1.5 rounded-md font-medium text-slate-400 hover:text-white transition flex items-center gap-1">
+            <span>🎙️ Sensor / Mic</span>
+          </button>
+        </div>
+
+        <!-- Master Start/Stop Button -->
+        <button id="btn-master-toggle" onclick="toggleEngine()" class="touch-target px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 shadow-lg shadow-cyan-500/20 transition flex items-center gap-1.5 active:scale-95">
+          <span id="master-toggle-icon">⏹</span>
+          <span id="master-toggle-text">Active Stream</span>
+        </button>
+
+        <!-- Audible 432 Hz Binaural Chime Button -->
+        <button id="btn-audio-chime" onclick="toggleAudibleCarrier()" class="touch-target px-3 py-2 rounded-xl text-xs font-medium bg-slate-900 border border-slate-700 text-slate-300 hover:text-amber-300 hover:border-amber-500/50 transition flex items-center gap-1.5">
+          <span id="chime-icon">🔈</span>
+          <span class="hidden sm:inline" id="chime-text">Audition 432Hz</span>
+        </button>
+
+        <!-- Help Modal Button -->
+        <button onclick="openModal('help-modal')" title="Scientific & Spiritual Guide" class="touch-target p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-600 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Notification Banner for Sensor Permissions / Fallback -->
+  <div id="sensor-banner" class="hidden bg-amber-950/90 border-b border-amber-600/50 px-4 py-2 text-xs text-amber-200">
+    <div class="max-w-7xl mx-auto flex items-center justify-between gap-3">
+      <div class="flex items-center gap-2">
+        <span class="text-amber-400 text-base">⚠️</span>
+        <span id="sensor-banner-msg">Microphone permission blocked or running on HTTP. Reverted automatically to pure mathematical synthesis.</span>
+      </div>
+      <button onclick="document.getElementById('sensor-banner').classList.add('hidden')" class="text-amber-400 hover:text-white p-1">✕</button>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       2. MAIN DASHBOARD CONTENT
+       ========================================================================= -->
+  <main class="max-w-7xl mx-auto w-full px-3 sm:px-6 py-4 flex-1 flex flex-col gap-4">
+
+    <!-- A. Wave Age & Temporal Origin Chronometer (When Visitor presses Start/Execute) -->
+    <section class="rounded-2xl bg-gradient-to-br from-cosmic-900 via-cosmic-900 to-slate-900/90 border border-slate-800/90 p-3 sm:p-4 shadow-xl">
+      <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 pb-3 border-b border-slate-800/80">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="h-2.5 w-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
+            <h2 class="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-200">
+              Cosmic Wave Age &amp; Temporal Origin Telemetry
+            </h2>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 border border-cyan-800/80 text-cyan-300">Origin Chronometer</span>
+          </div>
+          <p class="text-[11px] text-slate-400 mt-0.5">
+            Physical propagation delay and cosmological origin calculated the moment you initiate the wave engine.
+          </p>
+        </div>
+
+        <!-- Execute / Re-sample Button -->
+        <button onclick="recalculateWaveCapture()" class="touch-target px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-600/40 text-xs font-mono font-medium transition flex items-center gap-1.5 active:scale-95 shadow">
+          <span>⚡ Re-Execute Wave Capture</span>
+        </button>
+      </div>
+
+      <!-- 3-Tier Origin Matrix -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+        
+        <!-- Tier 1: Primordial Cosmic Seed -->
+        <div class="p-3 rounded-xl bg-cosmic-950/70 border border-purple-900/40 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between text-[11px] font-mono text-purple-400 mb-1">
+              <span>TIER 1: PRIMORDIAL SEED</span>
+              <span>Parā Vāk</span>
+            </div>
+            <div class="text-xl sm:text-2xl font-black text-purple-200 font-mono tracking-tight">~13.8 Billion Yrs</div>
+            <p class="text-[11px] text-slate-400 mt-1 leading-snug">
+              Cosmic Inflationary gravitational background &amp; unmanifest foundational carrier (<em class="text-purple-300">Śabda Brahman</em>).
+            </p>
+          </div>
+          <div class="mt-2 pt-2 border-t border-purple-900/30 text-[10px] font-mono text-purple-300/80 flex justify-between">
+            <span>Cosmic Dawn ($t=0$)</span>
+            <span>Unmanifest</span>
+          </div>
+        </div>
+
+        <!-- Tier 2: Solar & Magnetospheric Transit -->
+        <div class="p-3 rounded-xl bg-cosmic-950/70 border border-amber-900/40 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between text-[11px] font-mono text-amber-400 mb-1">
+              <span>TIER 2: SOLAR EMISSION</span>
+              <span>Prānic Wind</span>
+            </div>
+            <div class="text-xl sm:text-2xl font-black text-amber-200 font-mono tracking-tight" id="solar-flight-display">
+              8m 19s (EM) / ~2.8d
+            </div>
+            <p class="text-[11px] text-slate-400 mt-1 leading-snug">
+              Sun surface plasma wave departure: <strong class="text-amber-300" id="solar-depart-time">--:--:--</strong> UTC.
+            </p>
+          </div>
+          <div class="mt-2 pt-2 border-t border-amber-900/30 text-[10px] font-mono text-amber-300/80 flex justify-between">
+            <span>Photon Flight: 499.0s</span>
+            <span>Solar Wind Plasma</span>
+          </div>
+        </div>
+
+        <!-- Tier 3: Terrestrial Brahma Muhūrta Origin -->
+        <div class="p-3 rounded-xl bg-cosmic-950/70 border border-emerald-900/40 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between text-[11px] font-mono text-emerald-400 mb-1">
+              <span>TIER 3: BRAHMA MUHŪRTA</span>
+              <span>03:30 - 05:30 AM</span>
+            </div>
+            <div class="text-xl sm:text-2xl font-black text-emerald-200 font-mono tracking-tight" id="brahma-window-display">
+              Dawn Resonance
+            </div>
+            <p class="text-[11px] text-slate-400 mt-1 leading-snug" id="brahma-status-desc">
+              Earth ionosphere waveguide at minimum electrical noise; pure cavity standing wave.
+            </p>
+          </div>
+          <div class="mt-2 pt-2 border-t border-emerald-900/30 text-[10px] font-mono text-emerald-300/80 flex justify-between">
+            <span id="earth-circuit-time">Earth Circuit: 133.4 ms</span>
+            <span class="text-cyan-400" id="capture-time-now">Captured: Live</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- B. Interactive Frequency Presets (One-touch buttons for Delta, Theta, Schumann, etc.) -->
+    <section class="rounded-2xl bg-cosmic-900/80 border border-slate-800 p-3 sm:p-4 shadow-xl">
+      <div class="flex items-center justify-between mb-2">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+          <span>Select Sacred &amp; Scientific Resonance Preset</span>
+          <span class="text-[10px] text-slate-500 font-mono hidden sm:inline">(Tap to lock harmonic &amp; sync visualizers)</span>
+        </h3>
+        <span class="text-[11px] font-mono text-cyan-400" id="hud-active-rate">Target: 7.83 Hz</span>
+      </div>
+
+      <!-- Preset Grid (6 Mobile-friendly touch cards) -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+        
+        <!-- Preset 1: Parā -->
+        <button id="btn-preset-para" onclick="selectPreset('para')" class="preset-btn touch-target p-2.5 rounded-xl bg-cosmic-950 border border-slate-800 hover:border-purple-500 text-left transition flex flex-col justify-between active:scale-95">
+          <div class="flex items-center justify-between text-[10px] font-mono text-purple-400">
+            <span>0.1 - 0.5 Hz</span>
+            <span class="w-2 h-2 rounded-full bg-purple-400"></span>
+          </div>
+          <div class="font-bold text-xs text-white my-0.5">Parā (परा)</div>
+          <div class="text-[9px] text-slate-400 truncate">Cardiorespiratory Tide</div>
+        </button>
+
+        <!-- Preset 2: Delta -->
+        <button id="btn-preset-delta" onclick="selectPreset('delta')" class="preset-btn touch-target p-2.5 rounded-xl bg-cosmic-950 border border-slate-800 hover:border-blue-500 text-left transition flex flex-col justify-between active:scale-95">
+          <div class="flex items-center justify-between text-[10px] font-mono text-blue-400">
+            <span>0.5 - 4.0 Hz</span>
+            <span class="w-2 h-2 rounded-full bg-blue-400"></span>
+          </div>
+          <div class="font-bold text-xs text-white my-0.5">Delta Wave</div>
+          <div class="text-[9px] text-slate-400 truncate">Deep Subconscious / Rest</div>
+        </button>
+
+        <!-- Preset 3: Theta (Krishna / Brahma Muhūrta) -->
+        <button id="btn-preset-theta" onclick="selectPreset('theta')" class="preset-btn touch-target p-2.5 rounded-xl bg-cosmic-950 border border-slate-800 hover:border-cyan-500 text-left transition flex flex-col justify-between active:scale-95">
+          <div class="flex items-center justify-between text-[10px] font-mono text-cyan-400">
+            <span>4.0 - 7.5 Hz</span>
+            <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+          </div>
+          <div class="font-bold text-xs text-white my-0.5">Theta (4.0 Hz)</div>
+          <div class="text-[9px] text-slate-400 truncate">Brahma Muhūrta Blessing</div>
+        </button>
+
+        <!-- Preset 4: Schumann Resonance (Default) -->
+        <button id="btn-preset-schumann" onclick="selectPreset('schumann')" class="preset-btn touch-target p-2.5 rounded-xl bg-cosmic-950 border border-emerald-500 shadow-lg shadow-emerald-500/20 text-left transition flex flex-col justify-between active:scale-95">
+          <div class="flex items-center justify-between text-[10px] font-mono text-emerald-400">
+            <span>7.83 Hz</span>
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          </div>
+          <div class="font-bold text-xs text-white my-0.5">Schumann Res.</div>
+          <div class="text-[9px] text-slate-400 truncate">Earth Cavity Waveguide</div>
+        </button>
+
+        <!-- Preset 5: Alpha -->
+        <button id="btn-preset-alpha" onclick="selectPreset('alpha')" class="preset-btn touch-target p-2.5 rounded-xl bg-cosmic-950 border border-slate-800 hover:border-amber-500 text-left transition flex flex-col justify-between active:scale-95">
+          <div class="flex items-center justify-between text-[10px] font-mono text-amber-400">
+            <span>8.0 - 12.0 Hz</span>
+            <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+          </div>
+          <div class="font-bold text-xs text-white my-0.5">Alpha (10 Hz)</div>
+          <div class="text-[9px] text-slate-400 truncate">Bansuri Flute / Dhyana</div>
+        </button>
+
+        <!-- Preset 6: Vaikharī / 432 Hz -->
+        <button id="btn-preset-vaikhari" onclick="selectPreset('vaikhari')" class="preset-btn touch-target p-2.5 rounded-xl bg-cosmic-950 border border-slate-800 hover:border-pink-500 text-left transition flex flex-col justify-between active:scale-95">
+          <div class="flex items-center justify-between text-[10px] font-mono text-pink-400">
+            <span>12 - 45 Hz</span>
+            <span class="w-2 h-2 rounded-full bg-pink-400"></span>
+          </div>
+          <div class="font-bold text-xs text-white my-0.5">Vaikharī / 432Hz</div>
+          <div class="text-[9px] text-slate-400 truncate">Audible Sound &amp; Chants</div>
+        </button>
+
+      </div>
+    </section>
+
+    <!-- C. Real-Time Telemetry Metrics Strip -->
+    <section class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+      <!-- Metric 1: Peak Frequency -->
+      <div class="rounded-xl bg-cosmic-900/80 border border-slate-800 p-3 flex flex-col justify-between">
+        <div class="text-[10px] font-mono uppercase text-slate-400">Dominant Peak Hz</div>
+        <div class="flex items-baseline gap-1 my-0.5">
+          <span id="metric-hz" class="text-2xl sm:text-3xl font-black text-cyan-400 font-mono tracking-tight">7.83</span>
+          <span class="text-xs text-slate-400 font-mono">Hz</span>
+        </div>
+        <div id="metric-band-tag" class="text-[10px] font-mono font-medium text-emerald-300 bg-emerald-950/80 border border-emerald-800/80 px-2 py-0.5 rounded w-fit">
+          Schumann Fundamental
+        </div>
+      </div>
+
+      <!-- Metric 2: Carrier Alignment -->
+      <div class="rounded-xl bg-cosmic-900/80 border border-slate-800 p-3 flex flex-col justify-between">
+        <div class="text-[10px] font-mono uppercase text-slate-400">Active Vedic Domain</div>
+        <div id="metric-domain-name" class="text-base sm:text-lg font-bold text-white mt-1 truncate">
+          Pashyantī (पश्यन्ती)
+        </div>
+        <div id="metric-sub-desc" class="text-[10px] text-slate-400 truncate font-mono">
+          Ionosphere Cavity
+        </div>
+      </div>
+
+      <!-- Metric 3: Pulse Interval & Count -->
+      <div class="rounded-xl bg-cosmic-900/80 border border-slate-800 p-3 flex flex-col justify-between">
+        <div class="text-[10px] font-mono uppercase text-slate-400">Pulse Tally (1 Min)</div>
+        <div class="flex items-baseline gap-1.5 my-0.5">
+          <span id="metric-pulses" class="text-2xl sm:text-3xl font-black text-amber-400 font-mono tracking-tight">470</span>
+          <span class="text-[10px] text-slate-400 font-mono">crests</span>
+        </div>
+        <div id="metric-interval-ms" class="text-[10px] text-amber-400/90 font-mono">
+          Interval: 127.7 ms / cycle
+        </div>
+      </div>
+
+      <!-- Metric 4: Sound Carrier Harmonic -->
+      <div class="rounded-xl bg-cosmic-900/80 border border-slate-800 p-3 flex flex-col justify-between">
+        <div class="text-[10px] font-mono uppercase text-slate-400">Carrier Harmonic</div>
+        <div id="metric-carrier-tone" class="text-base sm:text-lg font-bold text-indigo-300 mt-1 truncate">
+          432.0 Hz (A=432)
+        </div>
+        <div id="metric-om-tone" class="text-[10px] text-indigo-400 font-mono">
+          Om Octave: 136.1 Hz
+        </div>
+      </div>
+    </section>
+
+    <!-- D. LARGE SUB-SPECTRAL DENSITY DISPLAY (FLAWLESS 1:1 ALIGNED COORDINATE MAPPING) -->
+    <section class="rounded-2xl bg-cosmic-900/90 border border-slate-800 p-3 sm:p-4 shadow-xl flex flex-col">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pb-2.5 border-b border-slate-800/80 mb-2">
+        <div class="flex items-center gap-2">
+          <span class="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          <h2 class="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-200">
+            Sub-Spectral Power Density (0.0 Hz – 45.0 Hz)
+          </h2>
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 border border-emerald-800 text-emerald-300">
+            Linear Scale
+          </span>
+        </div>
+        <div class="flex items-center gap-2 text-xs font-mono">
+          <span class="text-slate-400 hidden sm:inline">Scrub / Drag canvas to inspect:</span>
+          <span id="spectral-readout-badge" class="px-2 py-0.5 rounded bg-slate-950 text-cyan-400 border border-cyan-800/80 font-bold">
+            Target: 7.83 Hz (Schumann)
+          </span>
+        </div>
+      </div>
+
+      <!-- Spectrum Canvas Container with Explicit Mobile Height -->
+      <div id="fft-wrapper" class="relative w-full h-[260px] sm:h-[300px] rounded-xl overflow-hidden border border-slate-800 bg-cosmic-950 flex items-center justify-center cursor-crosshair touch-none select-none">
+        <canvas id="fftCanvas" class="w-full h-full block"></canvas>
+        
+        <!-- Interactive Touch & Mouse Tooltip HUD -->
+        <div id="fft-tooltip" class="absolute top-2 left-2 pointer-events-none hidden bg-cosmic-950/95 backdrop-blur-md border border-cyan-500/80 rounded-lg px-2.5 py-1.5 text-xs font-mono shadow-2xl z-20">
+          <div class="text-cyan-300 font-bold" id="tooltip-freq">4.0 Hz</div>
+          <div class="text-[10px] text-slate-400" id="tooltip-info">Theta Band</div>
+        </div>
+
+        <!-- Legend Overlay for Rapid Identification -->
+        <div class="absolute bottom-1.5 right-1.5 pointer-events-none flex flex-wrap gap-1 text-[9px] font-mono text-slate-400 bg-cosmic-950/90 backdrop-blur-sm p-1.5 rounded-lg border border-slate-800/80 z-10">
+          <span class="flex items-center gap-1"><span class="w-2 h-2 rounded bg-purple-500"></span>Parā (0.2)</span>
+          <span class="flex items-center gap-1"><span class="w-2 h-2 rounded bg-blue-500"></span>Delta (2.5)</span>
+          <span class="flex items-center gap-1"><span class="w-2 h-2 rounded bg-cyan-400"></span>Theta (4.0)</span>
+          <span class="flex items-center gap-1"><span class="w-2 h-2 rounded bg-emerald-400"></span>Schumann (7.83)</span>
+          <span class="flex items-center gap-1"><span class="w-2 h-2 rounded bg-amber-400"></span>Alpha (10)</span>
+          <span class="flex items-center gap-1"><span class="w-2 h-2 rounded bg-pink-500"></span>Vaikharī (43.2)</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- E. TIME-DOMAIN OSCILLOSCOPE (FREQUENCY-SCALED MOTION) -->
+    <section class="rounded-2xl bg-cosmic-900/90 border border-slate-800 p-3 sm:p-4 shadow-xl flex flex-col">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-800/80 mb-2">
+        <div class="flex items-center gap-2">
+          <span class="h-2.5 w-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
+          <h2 class="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-200">
+            Real-Time Oscilloscope (Time Domain Waveform)
+          </h2>
+        </div>
+        <div class="text-[11px] font-mono text-cyan-400 flex items-center gap-2">
+          <span id="scope-speed-label">Cycle Speed: 7.83 Hz</span>
+          <span class="text-slate-600">|</span>
+          <span class="text-slate-400 font-mono">Window: 1.0s</span>
+        </div>
+      </div>
+
+      <!-- Oscilloscope Canvas Container -->
+      <div id="scope-wrapper" class="relative w-full h-[220px] sm:h-[250px] rounded-xl overflow-hidden border border-slate-800 bg-cosmic-950 flex items-center justify-center">
+        <canvas id="scopeCanvas" class="w-full h-full block"></canvas>
+        <div class="absolute bottom-2 left-3 pointer-events-none text-[10px] font-mono text-slate-500 flex gap-4 z-10">
+          <span>+1.0 Crest</span>
+          <span>0.0 Neutral</span>
+          <span>-1.0 Trough</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- F. FOUR DETAILED KNOWLEDGE CARDS WITH INLINE SVG ILLUSTRATIONS -->
+    <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+      
+      <!-- Card 1: Schumann Resonance -->
+      <div class="rounded-xl bg-cosmic-900/70 border border-slate-800 p-3.5 flex flex-col justify-between">
+        <div>
+          <div class="h-28 w-full rounded-lg bg-cosmic-950 border border-emerald-950 flex items-center justify-center overflow-hidden mb-3">
+            <svg class="w-full h-full p-2" viewBox="0 0 200 100" fill="none">
+              <!-- Earth & Ionosphere concentric circles -->
+              <circle cx="100" cy="50" r="32" stroke="#10b981" stroke-width="2" fill="#042f2e" fill-opacity="0.5"/>
+              <circle cx="100" cy="50" r="44" stroke="#34d399" stroke-width="1.5" stroke-dasharray="3 3"/>
+              <!-- Standing wave pattern in cavity -->
+              <path d="M 56 50 Q 78 36, 100 50 T 144 50" stroke="#a7f3d0" stroke-width="2" fill="none"/>
+              <path d="M 56 50 Q 78 64, 100 50 T 144 50" stroke="#a7f3d0" stroke-width="2" fill="none"/>
+              <!-- Lightning flash -->
+              <path d="M 125 15 L 120 28 L 126 28 L 118 42" stroke="#fbbf24" stroke-width="2.2" stroke-linecap="round"/>
+              <text x="100" y="54" text-anchor="middle" fill="#6ee7b7" font-size="9" font-family="monospace">7.83 Hz</text>
+            </svg>
+          </div>
+          <h4 class="font-bold text-sm text-emerald-300">Schumann Cavity (7.83 Hz)</h4>
+          <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+            The Earth-ionosphere spherical waveguide. Excited by 50 global lightning strikes per second, creating an unbroken planetary harmonic.
+          </p>
+        </div>
+        <div class="mt-3 pt-2 border-t border-slate-800/80 text-[10px] font-mono text-emerald-400">
+          Source: Terrestrial Lightning
+        </div>
+      </div>
+
+      <!-- Card 2: Deep Meditation & Theta -->
+      <div class="rounded-xl bg-cosmic-900/70 border border-slate-800 p-3.5 flex flex-col justify-between">
+        <div>
+          <div class="h-28 w-full rounded-lg bg-cosmic-950 border border-cyan-950 flex items-center justify-center overflow-hidden mb-3">
+            <svg class="w-full h-full p-2" viewBox="0 0 200 100" fill="none">
+              <!-- Meditator silhouette outline -->
+              <circle cx="100" cy="32" r="10" stroke="#06b6d4" stroke-width="2"/>
+              <path d="M 85 70 C 85 50, 115 50, 115 70 Z" stroke="#06b6d4" stroke-width="2" fill="#083344" fill-opacity="0.4"/>
+              <!-- Concentric subtle radiation rings -->
+              <circle cx="100" cy="32" r="22" stroke="#22d3ee" stroke-width="1.2" stroke-dasharray="2 2" opacity="0.6"/>
+              <circle cx="100" cy="32" r="34" stroke="#22d3ee" stroke-width="1" stroke-dasharray="3 3" opacity="0.3"/>
+              <!-- Third Eye Ajna Glow -->
+              <circle cx="100" cy="32" r="2" fill="#38bdf8"/>
+              <text x="100" y="88" text-anchor="middle" fill="#67e8f9" font-size="9" font-family="monospace">4.0 Hz Theta</text>
+            </svg>
+          </div>
+          <h4 class="font-bold text-sm text-cyan-300">Theta State (4.0 - 7.5 Hz)</h4>
+          <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+            Deep Dhyāna, sensory withdrawal (<em class="text-slate-300">Pratyāhāra</em>), and Brahma Muhūrta devotion. Thalamic synchrony opens receptive awareness.
+          </p>
+        </div>
+        <div class="mt-3 pt-2 border-t border-slate-800/80 text-[10px] font-mono text-cyan-400">
+          Source: Pyramidal Neurons
+        </div>
+      </div>
+
+      <!-- Card 3: Parā & Cardiorespiratory Tide -->
+      <div class="rounded-xl bg-cosmic-900/70 border border-slate-800 p-3.5 flex flex-col justify-between">
+        <div>
+          <div class="h-28 w-full rounded-lg bg-cosmic-950 border border-purple-950 flex items-center justify-center overflow-hidden mb-3">
+            <svg class="w-full h-full p-2" viewBox="0 0 200 100" fill="none">
+              <!-- Slow rolling infrasound tidal sine wave -->
+              <path d="M 10 50 Q 55 10, 100 50 T 190 50" stroke="#a855f7" stroke-width="2.5" fill="none"/>
+              <circle cx="100" cy="50" r="5" fill="#c084fc"/>
+              <!-- Micro-pulses along wave -->
+              <circle cx="55" cy="30" r="2" fill="#e9d5ff"/>
+              <circle cx="145" cy="70" r="2" fill="#e9d5ff"/>
+              <text x="100" y="88" text-anchor="middle" fill="#d8b4fe" font-size="9" font-family="monospace">0.1 - 0.5 Hz Parā</text>
+            </svg>
+          </div>
+          <h4 class="font-bold text-sm text-purple-300">Parā Vāk &amp; Tidal Breath</h4>
+          <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+            Sub-infrasonic cardiorespiratory resonance (<em class="text-slate-300">Prāṇāyāma</em>) and oceanic microbaroms. The primordial stillness preceding speech.
+          </p>
+        </div>
+        <div class="mt-3 pt-2 border-t border-slate-800/80 text-[10px] font-mono text-purple-400">
+          Source: Heart-Lung Autonomic
+        </div>
+      </div>
+
+      <!-- Card 4: Sacred Bansuri & 432 Hz Harmonics -->
+      <div class="rounded-xl bg-cosmic-900/70 border border-slate-800 p-3.5 flex flex-col justify-between">
+        <div>
+          <div class="h-28 w-full rounded-lg bg-cosmic-950 border border-pink-950 flex items-center justify-center overflow-hidden mb-3">
+            <svg class="w-full h-full p-2" viewBox="0 0 200 100" fill="none">
+              <!-- Bamboo Flute (Bansuri) outline -->
+              <rect x="25" y="46" width="150" height="8" rx="4" stroke="#ec4899" stroke-width="1.8" fill="#500724"/>
+              <circle cx="45" cy="50" r="2.2" fill="#f472b6"/>
+              <circle cx="75" cy="50" r="2.2" fill="#f472b6"/>
+              <circle cx="95" cy="50" r="2.2" fill="#f472b6"/>
+              <circle cx="115" cy="50" r="2.2" fill="#f472b6"/>
+              <circle cx="135" cy="50" r="2.2" fill="#f472b6"/>
+              <!-- Harmonic acoustic spirals -->
+              <path d="M 175 42 Q 185 30, 195 40" stroke="#fbcfe8" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M 175 58 Q 188 70, 198 58" stroke="#fbcfe8" stroke-width="1.5" stroke-linecap="round"/>
+              <text x="100" y="88" text-anchor="middle" fill="#f472b6" font-size="9" font-family="monospace">432 Hz / 136.1 Hz</text>
+            </svg>
+          </div>
+          <h4 class="font-bold text-sm text-pink-300">Vaikharī &amp; 432 Hz Flute</h4>
+          <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+            Acoustic manifestation of the cosmic carrier. Krishna's bansuri tunes natural harmonics into audible sound, comforting the sensory mind.
+          </p>
+        </div>
+        <div class="mt-3 pt-2 border-t border-slate-800/80 text-[10px] font-mono text-pink-400">
+          Source: Bamboo Acoustic / Voice
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- =========================================================================
+       3. INSTITUTIONAL RESEARCH FOOTER
+       ========================================================================= -->
+  <footer class="border-t border-slate-800/90 bg-cosmic-900/95 py-6 px-4 sm:px-6 mt-8 text-xs text-slate-400">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+      
+      <!-- Organization & Copyright Line -->
+      <div class="text-center md:text-left space-y-1">
+        <div class="font-bold text-slate-200 text-sm flex items-center justify-center md:justify-start gap-1.5">
+          <span>Gopalkrishna Advanced Rural Research Foundation, India</span>
+          <span class="text-amber-400">🇮🇳</span>
+        </div>
+        <div class="text-cyan-400 font-mono font-medium">
+          Copyright ©️ Dr Annamdas Venu Gopal Madhav. All rights reserved.
+        </div>
+        <div class="text-[11px] text-slate-500">
+          Chief Research Scientist &amp; Author | Advanced Rural &amp; Planetary Wave Analytics
+        </div>
+      </div>
+
+      <!-- Compliance & Standards -->
+      <div class="flex flex-wrap items-center justify-center gap-3 text-[11px] font-mono text-slate-400">
+        <span class="px-2.5 py-1 rounded bg-slate-950 border border-slate-800">HTML5 Web Audio</span>
+        <span class="px-2.5 py-1 rounded bg-slate-950 border border-slate-800">Sub-150Hz FFT Engine</span>
+        <span class="px-2.5 py-1 rounded bg-slate-950 border border-slate-800">Zero External Assets</span>
+      </div>
+
+    </div>
+  </footer>
+
+  <!-- =========================================================================
+       4. HELP & SCIENTIFIC GUIDE MODAL
+       ========================================================================= -->
+  <div id="help-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-cosmic-900 border border-slate-700 rounded-2xl max-w-xl w-full p-6 shadow-2xl relative max-h-[90vh] flex flex-col">
+      <button onclick="closeModal('help-modal')" class="touch-target absolute top-4 right-4 text-slate-400 hover:text-white p-2 text-lg">✕</button>
+      
+      <div class="flex items-center gap-3 mb-4 shrink-0">
+        <div class="h-10 w-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-bold font-mono">
+          Ω
+        </div>
+        <div>
+          <h3 class="text-base font-bold text-white">Observatory Scientific &amp; Spiritual Guide</h3>
+          <p class="text-xs text-slate-400">Understanding Low-Frequency Wave Mechanics &amp; Vāk</p>
+        </div>
+      </div>
+
+      <div class="space-y-3 text-xs text-slate-300 leading-relaxed overflow-y-auto pr-2 flex-1">
+        
+        <div class="p-3 rounded-xl bg-cosmic-950 border border-slate-800">
+          <h4 class="font-bold text-cyan-400 mb-1">1. How Many Pulses in a Time Span?</h4>
+          <p>
+            Frequency in Hertz means cycles per second ($1\text{ Hz} = 1\text{ pulse/sec}$). In 1 minute ($60\text{s}$):
+            <br>• <strong>1.0 Hz (Delta):</strong> 60 pulses
+            <br>• <strong>4.0 Hz (Theta):</strong> 240 pulses
+            <br>• <strong>7.83 Hz (Schumann):</strong> ~470 pulses
+            <br>• <strong>10.0 Hz (Alpha):</strong> 600 pulses
+          </p>
+        </div>
+
+        <div class="p-3 rounded-xl bg-cosmic-950 border border-slate-800">
+          <h4 class="font-bold text-amber-400 mb-1">2. Why Brahma Muhūrta (03:30 – 05:30 AM)?</h4>
+          <p>
+            During pre-dawn hours, solar ionization has decayed to its quietest baseline, human industrial noise and power grid load reach a daily minimum, and the biological nervous system shifts naturally into deep Theta synchronization (4–7.5 Hz), creating optimal resonance with ambient standing waves.
+          </p>
+        </div>
+
+        <div class="p-3 rounded-xl bg-cosmic-950 border border-slate-800">
+          <h4 class="font-bold text-purple-400 mb-1">3. The 4 Levels of Sound (Chatvāri Vāk)</h4>
+          <p>
+            • <strong>Parā:</strong> Unmanifest, timeless carrier ($10^{-3}\text{ Hz}$, $0.1\text{ Hz}$).
+            <br>• <strong>Pashyantī:</strong> Direct intuitive perception / Schumann standing wave ($7.83\text{ Hz}$).
+            <br>• <strong>Madhyamā:</strong> Mental contemplation / Alpha neural firing ($10\text{ Hz}$).
+            <br>• <strong>Vaikharī:</strong> Audible acoustic sound ($432\text{ Hz}$ flute &amp; speech).
+          </p>
+        </div>
+
+        <div class="p-3 rounded-xl bg-cosmic-950 border border-slate-800">
+          <h4 class="font-bold text-emerald-400 mb-1">4. Real Hardware Microphone Mode</h4>
+          <p>
+            Tapping <em>"🎙️ Sensor / Mic"</em> taps your device's audio input. Most mobile phones incorporate an OS high-pass filter below 20Hz. If blocked or running under plain HTTP, the engine automatically protects continuity by falling back to mathematical synthesis.
+          </p>
+        </div>
+
+      </div>
+
+      <div class="mt-4 pt-3 border-t border-slate-800 flex justify-end shrink-0">
+        <button onclick="closeModal('help-modal')" class="touch-target px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold transition">
+          Return to Dashboard
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       5. CORE REAL-TIME JAVASCRIPT ENGINE (1:1 UNIFIED COORDINATES)
+       ========================================================================= -->
+  <script>
+    /* -------------------------------------------------------------------------
+       PRESET CONFIGURATION DICTIONARY
+       Every frequency is bounded by strict band edges for 1:1 mathematical match
+       ------------------------------------------------------------------------- */
+    const PRESETS = {
+      para: {
+        freq: 0.2,
+        name: 'Parā (परा)',
+        tag: 'PARĀ',
+        domain: 'Parā (परा)',
+        subDesc: 'Cardiorespiratory Tide',
+        color: '#a855f7', // Purple
+        bandMin: 0.0,
+        bandMax: 0.5,
+        btnId: 'btn-preset-para',
+        carrierTone: '136.1 Hz (Om Earth)',
+        octaveDesc: 'Om Octave: 136.1 Hz'
+      },
+      delta: {
+        freq: 2.5,
+        name: 'Delta Wave',
+        tag: 'DELTA',
+        domain: 'Sushupti (सुषुप्ति)',
+        subDesc: 'Deep Healing Sleep',
+        color: '#3b82f6', // Blue
+        bandMin: 0.5,
+        bandMax: 4.0,
+        btnId: 'btn-preset-delta',
+        carrierTone: '136.1 Hz (Om)',
+        octaveDesc: 'Sub-harmonic Delta'
+      },
+      theta: {
+        freq: 4.0,
+        name: 'Theta (4.0 Hz)',
+        tag: 'THETA',
+        domain: 'Pashyantī (पश्यन्ती)',
+        subDesc: 'Brahma Muhūrta Blessing',
+        color: '#06b6d4', // Cyan
+        bandMin: 4.0,
+        bandMax: 7.5,
+        btnId: 'btn-preset-theta',
+        carrierTone: '432.0 Hz Carrier',
+        octaveDesc: 'Krishna Flute Resonance'
+      },
+      schumann: {
+        freq: 7.83,
+        name: 'Schumann Resonance',
+        tag: 'SCHUMANN',
+        domain: 'Pashyantī (पश्यन्ती)',
+        subDesc: 'Earth Cavity Waveguide',
+        color: '#10b981', // Emerald
+        bandMin: 7.0,
+        bandMax: 8.6,
+        btnId: 'btn-preset-schumann',
+        carrierTone: '432.0 Hz (Harmonic)',
+        octaveDesc: '7.83 Hz Earth Core'
+      },
+      alpha: {
+        freq: 10.0,
+        name: 'Alpha Wave',
+        tag: 'ALPHA',
+        domain: 'Madhyamā (मध्यमा)',
+        subDesc: 'Relaxed Alert Focus',
+        color: '#f59e0b', // Amber
+        bandMin: 8.6,
+        bandMax: 13.0,
+        btnId: 'btn-preset-alpha',
+        carrierTone: '432.0 Hz Bansuri',
+        octaveDesc: 'Calm Neural Coherence'
+      },
+      vaikhari: {
+        freq: 43.2,
+        name: 'Vaikharī / 432Hz',
+        tag: 'VAIKHARĪ',
+        domain: 'Vaikharī (वैखरी)',
+        subDesc: 'Audible Harmonic Chants',
+        color: '#ec4899', // Pink
+        bandMin: 13.0,
+        bandMax: 45.0,
+        btnId: 'btn-preset-vaikhari',
+        carrierTone: '432.0 Hz Pure Pitch',
+        octaveDesc: 'Acoustic Audible Spectrum'
+      }
+    };
+
+    /* Global Application State */
+    let currentKey = 'schumann';
+    let activePreset = PRESETS['schumann'];
+    let inputMode = 'synth'; // 'synth' or 'mic'
+    let isRunning = true;
+    let animFrameId = null;
+
+    /* Max Spectrum Range in Hertz for Linear Mapping (0.0 to 45.0 Hz) */
+    const MAX_SPECTRAL_HZ = 45.0;
+
+    /* Audio Context & Synthesizer State */
+    let audioCtx = null;
+    let micStream = null;
+    let micSource = null;
+    let analyser = null;
+    let micDataArray = null;
+    const FFT_SIZE = 8192;
+
+    /* Audible 432 Hz Carrier Generator */
+    let chimeActive = false;
+    let chimeOsc = null;
+    let chimeGain = null;
+
+    /* Oscilloscope Running State */
+    let scopePhase = 0;
+
+    /* Canvas Handles */
+    const fftCanvas = document.getElementById('fftCanvas');
+    const fftCtx = fftCanvas.getContext('2d');
+    const scopeCanvas = document.getElementById('scopeCanvas');
+    const scopeCtx = scopeCanvas.getContext('2d');
+
+    /* UI Metric Handles */
+    const metricHz = document.getElementById('metric-hz');
+    const metricBandTag = document.getElementById('metric-band-tag');
+    const metricDomainName = document.getElementById('metric-domain-name');
+    const metricSubDesc = document.getElementById('metric-sub-desc');
+    const metricPulses = document.getElementById('metric-pulses');
+    const metricIntervalMs = document.getElementById('metric-interval-ms');
+    const metricCarrierTone = document.getElementById('metric-carrier-tone');
+    const metricOmTone = document.getElementById('metric-om-tone');
+    const hudActiveRate = document.getElementById('hud-active-rate');
+    const spectralReadoutBadge = document.getElementById('spectral-readout-badge');
+    const scopeSpeedLabel = document.getElementById('scope-speed-label');
+
+    /* -------------------------------------------------------------------------
+       EXPLICIT HIGH-DPI CANVAS SIZING
+       Ensures canvas.width matches exactly its CSS display width (no stretching)
+       ------------------------------------------------------------------------- */
+    function resizeCanvases() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2.5); // Cap to 2.5 for mobile performance
+
+      // 1. Sub-Spectral Canvas
+      const fftBox = document.getElementById('fft-wrapper').getBoundingClientRect();
+      if (fftBox.width > 0 && fftBox.height > 0) {
+        fftCanvas.width = Math.floor(fftBox.width * dpr);
+        fftCanvas.height = Math.floor(fftBox.height * dpr);
+        fftCtx.setTransform(1, 0, 0, 1, 0, 0); // Reset
+        fftCtx.scale(dpr, dpr);
+      }
+
+      // 2. Oscilloscope Canvas
+      const scopeBox = document.getElementById('scope-wrapper').getBoundingClientRect();
+      if (scopeBox.width > 0 && scopeBox.height > 0) {
+        scopeCanvas.width = Math.floor(scopeBox.width * dpr);
+        scopeCanvas.height = Math.floor(scopeBox.height * dpr);
+        scopeCtx.setTransform(1, 0, 0, 1, 0, 0);
+        scopeCtx.scale(dpr, dpr);
+      }
+    }
+
+    // Use ResizeObserver for instant responsive re-alignment
+    const resizeObserver = new ResizeObserver(() => {
+      resizeCanvases();
+    });
+    resizeObserver.observe(document.getElementById('fft-wrapper'));
+    resizeObserver.observe(document.getElementById('scope-wrapper'));
+    window.addEventListener('resize', resizeCanvases);
+
+    /* -------------------------------------------------------------------------
+       UNIFIED 1:1 FREQUENCY TO X-COORDINATE CONVERTER
+       This exact formula is used by the Spectrum Bars, Highlight Box, Marker Pin,
+       Axis Ticks, and Touch Scrubber. Mismatches are impossible.
+       ------------------------------------------------------------------------- */
+    function freqToX(freqHz, totalWidth) {
+      const clamped = Math.max(0, Math.min(MAX_SPECTRAL_HZ, freqHz));
+      return (clamped / MAX_SPECTRAL_HZ) * totalWidth;
+    }
+
+    function xToFreq(xCoord, totalWidth) {
+      const ratio = Math.max(0, Math.min(1, xCoord / totalWidth));
+      return ratio * MAX_SPECTRAL_HZ;
+    }
+
+    /* -------------------------------------------------------------------------
+       PRESET SELECTION HANDLER
+       Locks active frequency, styles buttons, and synchronizes HUD
+       ------------------------------------------------------------------------- */
+    function selectPreset(key) {
+      if (!PRESETS[key]) return;
+      currentKey = key;
+      activePreset = PRESETS[key];
+
+      // 1. Update Button Visual States
+      document.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.classList.remove(
+          'border-emerald-500', 'border-blue-500', 'border-cyan-500', 
+          'border-purple-500', 'border-amber-500', 'border-pink-500', 
+          'shadow-lg', 'shadow-emerald-500/20', 'shadow-blue-500/20', 
+          'shadow-cyan-500/20', 'shadow-purple-500/20', 'shadow-amber-500/20', 'shadow-pink-500/20'
+        );
+        btn.classList.add('border-slate-800');
+        btn.style.boxShadow = 'none';
+      });
+
+      const activeBtn = document.getElementById(activePreset.btnId);
+      if (activeBtn) {
+        activeBtn.classList.remove('border-slate-800');
+        activeBtn.style.borderColor = activePreset.color;
+        activeBtn.style.boxShadow = `0 10px 25px -5px ${activePreset.color}33`;
+      }
+
+      // 2. Synchronize HUD Metrics
+      const f = activePreset.freq;
+      metricHz.textContent = f < 1 ? f.toFixed(2) : f.toFixed(2);
+      hudActiveRate.textContent = `Target: ${f.toFixed(2)} Hz`;
+      metricDomainName.textContent = activePreset.domain;
+      metricSubDesc.textContent = activePreset.subDesc;
+      scopeSpeedLabel.textContent = `Cycle Speed: ${f.toFixed(2)} Hz`;
+
+      // 3. Pulse tally calculations
+      const pulsesIn1Min = Math.round(f * 60);
+      metricPulses.textContent = pulsesIn1Min;
+      const intervalMs = (1000 / f).toFixed(1);
+      metricIntervalMs.textContent = `Interval: ${intervalMs} ms / cycle`;
+
+      metricCarrierTone.textContent = activePreset.carrierTone;
+      metricOmTone.textContent = activePreset.octaveDesc;
+
+      // 4. Update Badge Text & Colors
+      metricBandTag.textContent = `${activePreset.name} Band`;
+      metricBandTag.style.color = activePreset.color;
+      metricBandTag.style.borderColor = activePreset.color + '88';
+      metricBandTag.style.backgroundColor = activePreset.color + '1a';
+
+      spectralReadoutBadge.textContent = `TARGET: ${f.toFixed(2)} Hz [${activePreset.tag}]`;
+      spectralReadoutBadge.style.color = activePreset.color;
+      spectralReadoutBadge.style.borderColor = activePreset.color + '88';
+
+      // 5. Update Audible Chime frequency if active
+      if (chimeActive && chimeOsc) {
+        chimeOsc.frequency.setValueAtTime(432 + f, audioCtx.currentTime);
+      }
+    }
+
+    /* -------------------------------------------------------------------------
+       WAVE AGE & ORIGIN TELEMETRY ENGINE
+       Recomputes times when the visitor executes / captures
+       ------------------------------------------------------------------------- */
+    function recalculateWaveCapture() {
+      const now = new Date();
+      
+      // Update Capture Timestamp
+      document.getElementById('capture-time-now').textContent = 
+        `Captured: ${now.toTimeString().split(' ')[0]}.${String(now.getMilliseconds()).padStart(3, '0')}`;
+
+      // Solar Transit Time (Photon transit: 8m 19s = 499s)
+      const solarDepart = new Date(now.getTime() - 499000);
+      const solarTimeStr = solarDepart.toISOString().substring(11, 19);
+      document.getElementById('solar-depart-time').textContent = `${solarTimeStr}`;
+
+      // Brahma Muhūrta (Centered at 04:18 AM IST)
+      const curH = now.getHours();
+      const curM = now.getMinutes();
+      const totalMinutes = curH * 60 + curM;
+      const brahmaStartMin = 3 * 60 + 30; // 03:30 AM
+      const brahmaEndMin = 5 * 60 + 30;   // 05:30 AM
+
+      const brahmaWindowDisplay = document.getElementById('brahma-window-display');
+      const brahmaDesc = document.getElementById('brahma-status-desc');
+
+      if (totalMinutes >= brahmaStartMin && totalMinutes <= brahmaEndMin) {
+        brahmaWindowDisplay.textContent = "NOW ACTIVE (Dawn)";
+        brahmaWindowDisplay.className = "text-xl sm:text-2xl font-black text-amber-300 font-mono tracking-tight";
+        brahmaDesc.textContent = "Atmospheric and neural static at absolute diurnal minimum. Optimal resonance window.";
+      } else {
+        const diffHours = ((totalMinutes < brahmaStartMin ? totalMinutes + 1440 : totalMinutes) - 270) / 60;
+        brahmaWindowDisplay.textContent = `Cycle Ref (${diffHours.toFixed(1)}h ago)`;
+        brahmaWindowDisplay.className = "text-xl sm:text-2xl font-black text-emerald-200 font-mono tracking-tight";
+        brahmaDesc.textContent = "Dawn ionospheric standing wave preserved in global cavity harmonics.";
+      }
+    }
+
+    /* -------------------------------------------------------------------------
+       PRIMARY RENDER LOOP
+       Oscilloscope + 1:1 Aligned Sub-Spectral Density
+       ------------------------------------------------------------------------- */
+    function renderLoop(timestamp) {
+      if (!isRunning) return;
+      animFrameId = requestAnimationFrame(renderLoop);
+
+      // Width and Height in CSS pixels
+      const fftW = fftCanvas.clientWidth;
+      const fftH = fftCanvas.clientHeight;
+      const scopeW = scopeCanvas.clientWidth;
+      const scopeH = scopeCanvas.clientHeight;
+
+      if (fftW <= 0 || scopeW <= 0) return;
+
+      /* -----------------------------------------------------------------------
+         A. DRAW OSCILLOSCOPE (Time Domain Waveform)
+         ----------------------------------------------------------------------- */
+      scopeCtx.clearRect(0, 0, scopeW, scopeH);
+
+      // Draw Oscilloscope Grid Lines
+      scopeCtx.strokeStyle = '#0f172a';
+      scopeCtx.lineWidth = 1;
+      scopeCtx.beginPath();
+      // Center zero line
+      scopeCtx.moveTo(0, scopeH / 2);
+      scopeCtx.lineTo(scopeW, scopeH / 2);
+      // Vertical time divisions
+      for (let x = 0; x < scopeW; x += scopeW / 8) {
+        scopeCtx.moveTo(x, 0);
+        scopeCtx.lineTo(x, scopeH);
+      }
+      scopeCtx.stroke();
+
+      // Synthesize or draw waveform
+      const targetF = activePreset.freq;
+      // Increment phase proportional to frequency (Delta moves slowly, Alpha faster)
+      scopePhase += (targetF * 2 * Math.PI) / 60;
+
+      scopeCtx.beginPath();
+      scopeCtx.lineWidth = 2.5;
+      scopeCtx.strokeStyle = activePreset.color;
+      scopeCtx.shadowColor = activePreset.color;
+      scopeCtx.shadowBlur = 8;
+
+      let micAvailable = false;
+      if (inputMode === 'mic' && analyser) {
+        analyser.getFloatTimeDomainData(micDataArray);
+        micAvailable = true;
+      }
+
+      for (let x = 0; x < scopeW; x++) {
+        // Normalizes time-domain window across screen
+        const t = (x / scopeW) * 2 * Math.PI * (targetF < 2 ? 2 : (targetF < 15 ? 4 : 8));
+        
+        let sample = Math.sin(t + scopePhase) * 0.75;
+        // Add subtle harmonic richness & noise
+        sample += Math.sin(t * 2 + scopePhase * 1.5) * 0.12;
+        sample += (Math.random() - 0.5) * 0.04;
+
+        if (micAvailable && micDataArray) {
+          const micIdx = Math.floor((x / scopeW) * micDataArray.length);
+          const micVal = micDataArray[micIdx] || 0;
+          sample = sample * 0.4 + micVal * 1.6;
+        }
+
+        const y = (scopeH / 2) - (sample * (scopeH / 2) * 0.85);
+        if (x === 0) scopeCtx.moveTo(x, y);
+        else scopeCtx.lineTo(x, y);
+      }
+      scopeCtx.stroke();
+      scopeCtx.shadowBlur = 0; // Reset shadow
+
+      /* -----------------------------------------------------------------------
+         B. DRAW SUB-SPECTRAL DENSITY (FLAWLESS 1:1 COORDINATE MAPPING)
+         ----------------------------------------------------------------------- */
+      fftCtx.clearRect(0, 0, fftW, fftH);
+
+      // Background Grid
+      fftCtx.strokeStyle = '#0a1020';
+      fftCtx.lineWidth = 1;
+      fftCtx.beginPath();
+      for (let hz = 0; hz <= MAX_SPECTRAL_HZ; hz += 5) {
+        const x = freqToX(hz, fftW);
+        fftCtx.moveTo(x, 0);
+        fftCtx.lineTo(x, fftH - 24);
+      }
+      fftCtx.stroke();
+
+      // 1. Draw Active Band Highlight Box (Strictly bounded by bandMin and bandMax)
+      const bandXStart = freqToX(activePreset.bandMin, fftW);
+      const bandXEnd = freqToX(activePreset.bandMax, fftW);
+      const bandBoxWidth = Math.max(16, bandXEnd - bandXStart);
+
+      fftCtx.save();
+      // Glowing wash over active band
+      fftCtx.fillStyle = activePreset.color + '1a'; // 10% opacity
+      fftCtx.fillRect(bandXStart, 28, bandBoxWidth, fftH - 52);
+
+      // Distinct highlight border
+      fftCtx.strokeStyle = activePreset.color + '66';
+      fftCtx.lineWidth = 1.5;
+      fftCtx.setLineDash([4, 3]);
+      fftCtx.strokeRect(bandXStart, 28, bandBoxWidth, fftH - 52);
+      fftCtx.setLineDash([]);
+      fftCtx.restore();
+
+      // 2. Render Mathematical Spectrum Bars (Sampled linearly across frequency)
+      const totalBars = Math.min(64, Math.floor(fftW / 8));
+      const barWidth = fftW / totalBars;
+
+      for (let i = 0; i < totalBars; i++) {
+        // Bin Frequency is determined strictly by its position in the linear scale
+        const binHz = (i / totalBars) * MAX_SPECTRAL_HZ;
+        
+        // Exact distance in Hertz from the selected target frequency
+        const hzDiff = Math.abs(binHz - targetF);
+
+        // Gaussian energy curve centered EXACTLY at targetF
+        const sigma = Math.max(0.5, targetF * 0.12);
+        let energy = Math.exp(-0.5 * Math.pow(hzDiff / sigma, 2));
+
+        // Background natural 1/f noise floor & ambient hum
+        energy += 0.04 + (Math.sin(timestamp * 0.003 + i) * 0.02) + ((Math.random() - 0.5) * 0.015);
+        energy = Math.max(0.02, Math.min(1.0, energy));
+
+        const barHeight = energy * (fftH - 56);
+        const barX = i * barWidth;
+        const barY = (fftH - 24) - barHeight;
+
+        // Color coding by frequency zone
+        const inBand = (binHz >= activePreset.bandMin && binHz <= activePreset.bandMax);
+        const grad = fftCtx.createLinearGradient(0, barY, 0, fftH - 24);
+
+        if (inBand) {
+          grad.addColorStop(0, '#ffffff'); // Bright crest
+          grad.addColorStop(0.25, activePreset.color);
+          grad.addColorStop(1, '#060a16');
+        } else {
+          grad.addColorStop(0, '#334155');
+          grad.addColorStop(1, '#060a16');
+        }
+
+        fftCtx.fillStyle = grad;
+        fftCtx.fillRect(barX, barY, Math.max(2, barWidth - 1.5), barHeight);
+      }
+
+      // 3. Draw Axis Labels (0 Hz to 45 Hz)
+      fftCtx.fillStyle = '#64748b';
+      fftCtx.font = '10px monospace';
+      for (let hz = 0; hz <= MAX_SPECTRAL_HZ; hz += 5) {
+        const x = freqToX(hz, fftW);
+        fftCtx.fillText(`${hz}Hz`, Math.max(2, x - 10), fftH - 8);
+      }
+
+      // 4. DRAW PROMINENT GLOWING POINTER & NEON HUD PIN
+      // Exact X coordinate of the selected frequency
+      const targetPinX = freqToX(targetF, fftW);
+
+      fftCtx.save();
+      fftCtx.shadowColor = activePreset.color;
+      fftCtx.shadowBlur = 12;
+      fftCtx.strokeStyle = activePreset.color;
+      fftCtx.lineWidth = 2;
+
+      // Vertical neon dashed hairline through spectrum
+      fftCtx.setLineDash([4, 3]);
+      fftCtx.beginPath();
+      fftCtx.moveTo(targetPinX, 26);
+      fftCtx.lineTo(targetPinX, fftH - 24);
+      fftCtx.stroke();
+      fftCtx.setLineDash([]);
+
+      // Arrow Marker Pin (Inverted neon triangle pointing to crest)
+      fftCtx.fillStyle = activePreset.color;
+      fftCtx.beginPath();
+      fftCtx.moveTo(targetPinX - 7, 24);
+      fftCtx.lineTo(targetPinX + 7, 24);
+      fftCtx.lineTo(targetPinX, 33);
+      fftCtx.closePath();
+      fftCtx.fill();
+
+      // Top Floating Tag Badge
+      const tagText = `ACTIVE TARGET: ${targetF.toFixed(targetF < 1 ? 2 : 2)} Hz [${activePreset.tag}]`;
+      fftCtx.font = 'bold 10px monospace';
+      const textWidth = fftCtx.measureText(tagText).width + 16;
+      // Clamp badge within canvas borders
+      const badgeX = Math.max(4, Math.min(fftW - textWidth - 4, targetPinX - (textWidth / 2)));
+
+      fftCtx.fillStyle = '#030712';
+      fftCtx.fillRect(badgeX, 4, textWidth, 18);
+      fftCtx.strokeStyle = activePreset.color;
+      fftCtx.lineWidth = 1.5;
+      fftCtx.strokeRect(badgeX, 4, textWidth, 18);
+
+      fftCtx.fillStyle = activePreset.color;
+      fftCtx.fillText(tagText, badgeX + 8, 16);
+      fftCtx.restore();
+    }
+
+    /* -------------------------------------------------------------------------
+       TOUCH & MOUSE SCRUBBER FOR THE SUB-SPECTRAL CANVAS
+       ------------------------------------------------------------------------- */
+    const fftWrapper = document.getElementById('fft-wrapper');
+    const fftTooltip = document.getElementById('fft-tooltip');
+    const tooltipFreq = document.getElementById('tooltip-freq');
+    const tooltipInfo = document.getElementById('tooltip-info');
+
+    function handleScrub(e) {
+      const rect = fftCanvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      
+      const x = clientX - rect.left;
+      const y = clientY - rect.top;
+
+      if (x < 0 || x > rect.width || y < 0 || y > rect.height) {
+        fftTooltip.classList.add('hidden');
+        return;
+      }
+
+      // Convert exact touch X coordinate to frequency
+      const scrubHz = xToFreq(x, rect.width);
+      
+      // Determine band
+      let scrubBand = 'Acoustic Sub-harmonic';
+      let scrubColor = '#ec4899';
+      for (const key in PRESETS) {
+        const p = PRESETS[key];
+        if (scrubHz >= p.bandMin && scrubHz <= p.bandMax) {
+          scrubBand = `${p.name} (${p.domain})`;
+          scrubColor = p.color;
+          break;
+        }
+      }
+
+      tooltipFreq.textContent = `${scrubHz.toFixed(2)} Hz`;
+      tooltipFreq.style.color = scrubColor;
+      tooltipInfo.textContent = scrubBand;
+
+      // Position tooltip near finger/cursor
+      const tooltipX = Math.max(10, Math.min(rect.width - 130, x - 60));
+      fftTooltip.style.left = `${tooltipX}px`;
+      fftTooltip.style.top = '10px';
+      fftTooltip.classList.remove('hidden');
+    }
+
+    fftWrapper.addEventListener('mousemove', handleScrub);
+    fftWrapper.addEventListener('mouseleave', () => fftTooltip.classList.add('hidden'));
+    fftWrapper.addEventListener('touchmove', handleScrub, { passive: true });
+    fftWrapper.addEventListener('touchend', () => fftTooltip.classList.add('hidden'));
+
+    /* -------------------------------------------------------------------------
+       INPUT MODES & SENSOR INITIALIZATION
+       ------------------------------------------------------------------------- */
+    async function setInputMode(mode) {
+      inputMode = mode;
+      const btnSynth = document.getElementById('btn-mode-synth');
+      const btnMic = document.getElementById('btn-mode-mic');
+
+      if (mode === 'synth') {
+        btnSynth.className = "touch-target px-3 py-1.5 rounded-md font-semibold text-cyan-300 bg-cyan-950 border border-cyan-700/60 transition flex items-center gap-1";
+        btnMic.className = "touch-target px-3 py-1.5 rounded-md font-medium text-slate-400 hover:text-white transition flex items-center gap-1";
+        document.getElementById('sensor-banner').classList.add('hidden');
+      } else {
+        btnMic.className = "touch-target px-3 py-1.5 rounded-md font-semibold text-cyan-300 bg-cyan-950 border border-cyan-700/60 transition flex items-center gap-1";
+        btnSynth.className = "touch-target px-3 py-1.5 rounded-md font-medium text-slate-400 hover:text-white transition flex items-center gap-1";
+        await startMicStream();
+      }
+    }
+
+    async function startMicStream() {
+      try {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+          await audioCtx.resume();
+        }
+
+        micStream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: false,
+            noiseSuppression: false,
+            autoGainControl: false
+          }
+        });
+
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = FFT_SIZE;
+        micSource = audioCtx.createMediaStreamSource(micStream);
+        micSource.connect(analyser);
+
+        micDataArray = new Float32Array(analyser.fftSize);
+      } catch (err) {
+        console.warn("Microphone access failed:", err);
+        document.getElementById('sensor-banner').classList.remove('hidden');
+        setInputMode('synth');
+      }
+    }
+
+    /* -------------------------------------------------------------------------
+       AUDIBLE 432 HZ CARRIER CHIME
+       ------------------------------------------------------------------------- */
+    function toggleAudibleCarrier() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+
+      const chimeBtn = document.getElementById('btn-audio-chime');
+      const chimeIcon = document.getElementById('chime-icon');
+      const chimeText = document.getElementById('chime-text');
+
+      if (!chimeActive) {
+        chimeOsc = audioCtx.createOscillator();
+        chimeGain = audioCtx.createGain();
+
+        // 432 Hz fundamental modulated with active low frequency
+        chimeOsc.type = 'sine';
+        chimeOsc.frequency.setValueAtTime(432.0, audioCtx.currentTime);
+
+        chimeGain.gain.setValueAtTime(0.01, audioCtx.currentTime);
+        chimeGain.gain.exponentialRampToValueAtTime(0.06, audioCtx.currentTime + 0.5);
+
+        chimeOsc.connect(chimeGain);
+        chimeGain.connect(audioCtx.destination);
+        chimeOsc.start();
+
+        chimeActive = true;
+        chimeIcon.textContent = "🔊";
+        chimeText.textContent = "Mute 432Hz";
+        chimeBtn.classList.add('border-amber-500', 'text-amber-300');
+      } else {
+        if (chimeGain) {
+          chimeGain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.3);
+          setTimeout(() => {
+            if (chimeOsc) chimeOsc.stop();
+            chimeActive = false;
+          }, 350);
+        }
+        chimeIcon.textContent = "🔈";
+        chimeText.textContent = "Audition 432Hz";
+        chimeBtn.classList.remove('border-amber-500', 'text-amber-300');
+      }
+    }
+
+    /* -------------------------------------------------------------------------
+       MASTER ENGINE TOGGLE
+       ------------------------------------------------------------------------- */
+    function toggleEngine() {
+      const toggleText = document.getElementById('master-toggle-text');
+      const toggleIcon = document.getElementById('master-toggle-icon');
+      const toggleBtn = document.getElementById('btn-master-toggle');
+
+      if (isRunning) {
+        isRunning = false;
+        if (animFrameId) cancelAnimationFrame(animFrameId);
+        toggleText.textContent = "Resume Stream";
+        toggleIcon.textContent = "▶";
+        toggleBtn.classList.remove('from-cyan-500', 'to-blue-600');
+        toggleBtn.classList.add('from-rose-600', 'to-red-700');
+      } else {
+        isRunning = true;
+        recalculateWaveCapture();
+        toggleText.textContent = "Active Stream";
+        toggleIcon.textContent = "⏹";
+        toggleBtn.classList.remove('from-rose-600', 'to-red-700');
+        toggleBtn.classList.add('from-cyan-500', 'to-blue-600');
+        requestAnimationFrame(renderLoop);
+      }
+    }
+
+    /* -------------------------------------------------------------------------
+       MODAL CONTROLS
+       ------------------------------------------------------------------------- */
+    function openModal(id) {
+      document.getElementById(id).classList.remove('hidden');
+    }
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+    }
+
+    /* -------------------------------------------------------------------------
+       WINDOW INITIALIZATION
+       ------------------------------------------------------------------------- */
+    window.addEventListener('load', () => {
+      resizeCanvases();
+      recalculateWaveCapture();
+      selectPreset('schumann'); // Initialize with 7.83 Hz
+      requestAnimationFrame(renderLoop);
+    });
+  </script>
+</body>
+</html>
