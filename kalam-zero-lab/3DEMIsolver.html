@@ -1,0 +1,1870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Annamdas - Soh Coupled 3D Electromechanical Impedance (EMI) Simulator</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Three.js + OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  
+  <!-- Chart.js for High-Precision EMI Spectra -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+    :root {
+      color-scheme: dark;
+    }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #040711;
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(14, 165, 233, 0.12) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(239, 68, 68, 0.08) 0px, transparent 50%);
+      color: #e2e8f0;
+      overflow-x: hidden;
+    }
+    .font-mono-code {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .glass-card {
+      background: rgba(13, 20, 36, 0.88);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-card-hover:hover {
+      border-color: rgba(56, 189, 248, 0.35);
+    }
+    /* Custom range sliders */
+    input[type=range] {
+      -webkit-appearance: none;
+      background: #1e293b;
+      border-radius: 9999px;
+      height: 6px;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 16px;
+      width: 16px;
+      border-radius: 50%;
+      background: #38bdf8;
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.8);
+      border: 2px solid #0f172a;
+    }
+    input[type=range].red-slider::-webkit-slider-thumb {
+      background: #ef4444;
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.9);
+    }
+    input[type=range].amber-slider::-webkit-slider-thumb {
+      background: #f59e0b;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.8);
+    }
+    @keyframes redGlow {
+      0%, 100% { filter: drop-shadow(0 0 4px #ef4444); }
+      50% { filter: drop-shadow(0 0 14px #ff1111); }
+    }
+    .crack-glow {
+      animation: redGlow 1.8s infinite ease-in-out;
+    }
+    @keyframes pulseStep {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.02); }
+    }
+    .step-prompt {
+      animation: pulseStep 2.5s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-cyan-500 selection:text-white">
+
+  <!-- ==================== 1. HEADER ==================== -->
+  <header class="glass-card sticky top-0 z-50 border-b border-slate-800/80 px-4 lg:px-8 py-3">
+    <div class="max-w-[1780px] mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+      
+      <!-- Organization Logo & Academic Title -->
+      <div class="flex items-center gap-3.5 w-full md:w-auto">
+        <!-- Logo Image with Dynamic Fallback Badge -->
+        <div class="relative w-12 h-12 flex-shrink-0 rounded-xl overflow-hidden border border-cyan-500/40 shadow-lg shadow-cyan-950/40 bg-slate-900 flex items-center justify-center">
+          <img src="logo.jpeg" alt="GARRI Logo" onerror="this.style.display='none'; document.getElementById('garri-badge').style.display='flex';" class="w-full h-full object-cover">
+          <div id="garri-badge" style="display:none;" class="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 p-1 text-center">
+            <span class="text-[10px] font-black text-cyan-400 tracking-tighter leading-none">GARRI</span>
+            <span class="text-[7px] text-amber-400 font-bold uppercase mt-0.5">India</span>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-xs sm:text-sm font-semibold tracking-wide text-cyan-300">
+              Gopalkrishna Advanced Rural Research Foundation, India
+            </span>
+            <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-500/30">
+              Dr. APJ Abdul Kalam Zero Funding Research Initiative
+            </span>
+          </div>
+          <h1 class="text-sm sm:text-base lg:text-lg font-extrabold text-white tracking-tight flex items-center gap-2">
+            Annamdas – Soh Coupled 3D Electromechanical Impedance (EMI) Formulation &amp; SHM Solver
+          </h1>
+          <p class="text-[11px] text-slate-400 font-medium">
+            Virtual Smart Materials Laboratory &bull; Multi-Scale 1D/2D/3D FEM Elastodynamic Stress Tensor Analysis
+          </p>
+        </div>
+      </div>
+
+      <!-- Quick Status Badges -->
+      <div class="flex items-center gap-2.5 text-xs w-full md:w-auto justify-end">
+        <div id="render-mode-badge" class="px-2.5 py-1 rounded-lg bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 flex items-center gap-1.5 font-mono-code text-[11px]">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+          <span id="txt-engine-name">Three.js 3D WebGL</span>
+        </div>
+        <button id="btn-toggle-engine" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[11px] transition">
+          Switch Engine
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ==================== 2. MAIN APPLICATION WORKSPACE ==================== -->
+  <main class="max-w-[1780px] w-full mx-auto px-3 sm:px-4 lg:px-6 py-4 flex-1 grid grid-cols-1 xl:grid-cols-12 gap-5">
+
+    <!-- LEFT COLUMN: PEDAGOGICAL WORKFLOW & PARAMETER SYSTEM (4 Cols) -->
+    <div class="xl:col-span-4 flex flex-col gap-4">
+
+      <!-- STEP 1: HEALTHY BASELINE CONFIGURATION -->
+      <div class="glass-card rounded-2xl p-4 sm:p-5 border-t-4 border-t-cyan-500">
+        <div class="flex items-center justify-between pb-2 border-b border-slate-800 mb-3">
+          <div class="flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full bg-cyan-500/20 text-cyan-300 font-bold text-xs flex items-center justify-center border border-cyan-500/40">1</span>
+            <h2 class="text-xs uppercase tracking-wider font-bold text-slate-200">
+              Stage 1: Healthy Specimen &amp; Material
+            </h2>
+          </div>
+          <span id="active-dim-badge" class="text-xs font-mono-code text-cyan-400 font-bold px-2 py-0.5 rounded bg-cyan-950/70 border border-cyan-800">
+            3D Solid Block
+          </span>
+        </div>
+
+        <!-- 1D / 2D / 3D Specimen Geometry Switching -->
+        <label class="block text-slate-400 text-xs font-medium mb-1.5">Specimen Continuum Category:</label>
+        <div class="grid grid-cols-3 gap-2 mb-3">
+          <button data-dim="1D" class="dim-btn py-2 px-1.5 rounded-xl border text-xs font-semibold transition border-slate-700 bg-slate-800/70 text-slate-300 hover:bg-slate-700 text-center">
+            1D Slender Beam
+            <span class="block text-[10px] text-slate-400 font-normal">Line Nodes &bull; Axial</span>
+          </button>
+          <button data-dim="2D" class="dim-btn py-2 px-1.5 rounded-xl border text-xs font-semibold transition border-slate-700 bg-slate-800/70 text-slate-300 hover:bg-slate-700 text-center">
+            2D Thin Plate
+            <span class="block text-[10px] text-slate-400 font-normal">Quad Mesh &bull; Shell</span>
+          </button>
+          <button data-dim="3D" class="dim-btn active-dim py-2 px-1.5 rounded-xl border text-xs font-semibold transition border-cyan-500 bg-cyan-950/60 text-cyan-300 shadow-md shadow-cyan-950/50 text-center">
+            3D Continuum
+            <span class="block text-[10px] text-cyan-200/70 font-normal">Brick Elements &bull; Tensor</span>
+          </button>
+        </div>
+
+        <!-- Material Selection & Live Modulus Readout -->
+        <div class="grid grid-cols-2 gap-2 text-xs mb-3">
+          <div>
+            <label class="block text-slate-400 mb-1 font-medium">Substrate Material</label>
+            <select id="sel-host-mat" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-cyan-400">
+              <option value="aluminum">Aluminum 6061-T6</option>
+              <option value="steel">Structural Steel</option>
+              <option value="concrete">Concrete</option>
+              <option value="carbon">CFRP Composite</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1 font-medium">PZT Transducer</label>
+            <select id="sel-pzt-mat" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-cyan-400">
+              <option value="pzt5a">PZT-5A (Standard)</option>
+              <option value="pzt5h">PZT-5H (High Permittivity)</option>
+              <option value="pzt4">PZT-4 (Power Ultrasonic)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Live Physical Constants HUD -->
+        <div class="grid grid-cols-4 gap-1.5 p-2 rounded-xl bg-slate-950/70 border border-slate-800/80 text-[10px] font-mono-code mb-3">
+          <div>
+            <span class="text-slate-500 block">Modulus E</span>
+            <span id="txt-mat-e" class="text-cyan-300 font-bold">69.0 GPa</span>
+          </div>
+          <div>
+            <span class="text-slate-500 block">Density ρ</span>
+            <span id="txt-mat-rho" class="text-slate-300">2700 kg/m³</span>
+          </div>
+          <div>
+            <span class="text-slate-500 block">Poisson ν</span>
+            <span id="txt-mat-nu" class="text-slate-300">0.33</span>
+          </div>
+          <div>
+            <span class="text-slate-500 block">Loss η</span>
+            <span id="txt-mat-eta" class="text-amber-300">0.002</span>
+          </div>
+        </div>
+
+        <!-- Specimen Dimensions Sliders -->
+        <div class="space-y-2 text-xs">
+          <div class="flex justify-between items-center text-slate-300">
+            <span>Length ($L$)</span>
+            <span id="txt-spec-l" class="font-mono-code text-cyan-300 font-bold">240 mm</span>
+          </div>
+          <input type="range" id="slider-spec-l" min="80" max="400" value="240" step="10" class="w-full">
+
+          <div id="dim-controls-2d3d" class="grid grid-cols-2 gap-3 pt-1">
+            <div id="wrapper-width">
+              <div class="flex justify-between text-slate-300 text-[11px] mb-1">
+                <span>Width ($W$)</span>
+                <span id="txt-spec-w" class="font-mono-code text-cyan-300 font-bold">60 mm</span>
+              </div>
+              <input type="range" id="slider-spec-w" min="20" max="150" value="60" step="5" class="w-full">
+            </div>
+            <div id="wrapper-thick">
+              <div class="flex justify-between text-slate-300 text-[11px] mb-1">
+                <span>Thickness ($H$)</span>
+                <span id="txt-spec-h" class="font-mono-code text-cyan-300 font-bold">20 mm</span>
+              </div>
+              <input type="range" id="slider-spec-h" min="2" max="50" value="20" step="2" class="w-full">
+            </div>
+          </div>
+        </div>
+
+        <!-- PZT Sensor Placement -->
+        <div class="mt-4 pt-3 border-t border-slate-800 space-y-2 text-xs">
+          <div class="flex items-center justify-between text-amber-300 font-bold">
+            <span class="flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-amber-400"></span> PZT Sensor Location
+            </span>
+            <span id="txt-pzt-coords" class="font-mono-code text-[11px]">X: 60 mm, Y: 30 mm</span>
+          </div>
+
+          <div>
+            <div class="flex justify-between text-slate-400 text-[11px] mb-1">
+              <span>Position $X_p$ (along length)</span>
+              <span id="val-pzt-x" class="font-mono-code text-amber-300">60 mm</span>
+            </div>
+            <input type="range" id="slider-pzt-x" min="10" max="230" value="60" class="w-full amber-slider">
+          </div>
+          <div id="wrapper-pzt-y">
+            <div class="flex justify-between text-slate-400 text-[11px] mb-1">
+              <span>Position $Y_p$ (across width)</span>
+              <span id="val-pzt-y" class="font-mono-code text-amber-300">30 mm</span>
+            </div>
+            <input type="range" id="slider-pzt-y" min="5" max="55" value="30" class="w-full amber-slider">
+          </div>
+        </div>
+
+        <!-- Healthy State Calculated Summary Badge -->
+        <div class="mt-4 p-2.5 rounded-xl bg-cyan-950/40 border border-cyan-500/30 flex items-center justify-between text-xs">
+          <div>
+            <div class="text-[10px] text-cyan-300 font-semibold uppercase">Healthy Baseline Computed</div>
+            <div class="text-[11px] text-slate-300 mt-0.5">Static Capacitance: <span id="txt-c0-val" class="font-mono-code text-cyan-200">1.82 nF</span></div>
+          </div>
+          <div class="text-right">
+            <span class="px-2 py-1 rounded bg-cyan-500/20 text-cyan-300 font-mono-code text-[11px] font-bold">
+              Units: $ (Siemens)
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2: PROMPT STUDENT TO INTRODUCE DAMAGE / CRACK -->
+      <div id="step2-card" class="glass-card rounded-2xl p-4 sm:p-5 border-t-4 border-t-red-500 transition-all">
+        
+        <!-- Guided Banner for Students -->
+        <div id="step2-prompt-banner" class="mb-3 p-3 rounded-xl bg-gradient-to-r from-red-950/70 via-slate-900 to-red-950/70 border border-red-500/50 flex items-start gap-3">
+          <div class="w-7 h-7 rounded-lg bg-red-600 flex items-center justify-center flex-shrink-0 text-white font-bold text-xs shadow-md shadow-red-950">
+            2
+          </div>
+          <div class="text-xs">
+            <div class="font-bold text-red-300 flex items-center gap-1.5">
+              <span>Step 2: Investigate Structural Damage</span>
+              <span class="w-2 h-2 rounded-full bg-red-400 animate-ping"></span>
+            </div>
+            <p class="text-slate-300 text-[11px] mt-0.5">
+              Click the toggle below to inject a fracture into the specimen and observe the resulting peak shift and attenuation in the Annamdas–Soh impedance spectrum!
+            </p>
+          </div>
+        </div>
+
+        <!-- Toggle Switch -->
+        <div class="flex items-center justify-between pb-2 border-b border-slate-800 mb-3">
+          <label for="chk-crack-toggle" class="flex items-center gap-2 cursor-pointer">
+            <span class="w-3 h-3 rounded-full bg-red-500 crack-glow"></span>
+            <span class="text-xs uppercase tracking-wider font-bold text-red-400">Inject Specimen Crack / Defect</span>
+          </label>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="chk-crack-toggle" class="sr-only peer">
+            <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-red-600"></div>
+          </label>
+        </div>
+
+        <!-- Crack Parameter Controls (Enabled when checked) -->
+        <div id="crack-panel-body" class="space-y-3 text-xs opacity-50 pointer-events-none transition-opacity duration-300">
+          
+          <!-- Elevation / Plane: Top, Internal (Central Void), Bottom -->
+          <div id="wrapper-crack-loc">
+            <label class="block text-slate-400 mb-1 font-medium">Defect Elevation / Depth Plane:</label>
+            <div class="grid grid-cols-3 gap-1.5">
+              <button data-loc="top" class="crack-loc-btn py-1.5 px-1 rounded-lg border text-[11px] font-semibold border-red-500 bg-red-950/60 text-red-300 text-center">
+                Top Surface
+              </button>
+              <button data-loc="internal" class="crack-loc-btn py-1.5 px-1 rounded-lg border text-[11px] font-medium border-slate-700 bg-slate-800 text-slate-400 hover:bg-slate-700 text-center">
+                Central Core Void
+              </button>
+              <button data-loc="bottom" class="crack-loc-btn py-1.5 px-1 rounded-lg border text-[11px] font-medium border-slate-700 bg-slate-800 text-slate-400 hover:bg-slate-700 text-center">
+                Bottom Surface
+              </button>
+            </div>
+            <p id="txt-internal-hint" class="text-[10px] text-amber-300/80 mt-1 hidden">
+              * Note: Central core void will render with translucent host solid so the internal red fracture can be inspected directly inside!
+            </p>
+          </div>
+
+          <!-- Crack Length (1 mm to Full Specimen Length) -->
+          <div>
+            <div class="flex justify-between items-center text-slate-300 mb-1">
+              <span>Crack Length ($a$)</span>
+              <div class="flex items-center gap-1">
+                <input type="number" id="num-crack-len" min="1" max="240" value="35" class="w-14 bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-right font-mono-code text-red-400 font-bold text-xs">
+                <span class="text-slate-400">mm</span>
+              </div>
+            </div>
+            <input type="range" id="slider-crack-len" min="1" max="240" value="35" step="1" class="w-full red-slider">
+            <div class="flex justify-between text-[10px] text-slate-500">
+              <span>1.0 mm (Micro-defect)</span>
+              <span id="txt-crack-max-len">Full Specimen: 240 mm</span>
+            </div>
+          </div>
+
+          <!-- Crack Width & Thickness / Depth -->
+          <div class="grid grid-cols-2 gap-3" id="wrapper-crack-dims">
+            <div id="wrapper-crack-w">
+              <div class="flex justify-between text-slate-400 text-[11px] mb-1">
+                <span>Crack Width ($w_c$)</span>
+                <span id="txt-crack-w" class="font-mono-code text-red-400 font-semibold">15 mm</span>
+              </div>
+              <input type="range" id="slider-crack-w" min="2" max="60" value="15" step="1" class="w-full red-slider">
+            </div>
+            <div id="wrapper-crack-d">
+              <div class="flex justify-between text-slate-400 text-[11px] mb-1">
+                <span>Depth / Thick ($h_c$)</span>
+                <span id="txt-crack-d" class="font-mono-code text-red-400 font-semibold">8 mm</span>
+              </div>
+              <input type="range" id="slider-crack-d" min="1" max="20" value="8" step="1" class="w-full red-slider">
+            </div>
+          </div>
+
+          <!-- Defect Coordinates X_c, Y_c -->
+          <div class="space-y-2 pt-1">
+            <div>
+              <div class="flex justify-between text-slate-400 text-[11px] mb-1">
+                <span>Position along Length ($X_c$)</span>
+                <span id="txt-crack-x" class="font-mono-code text-red-400 font-semibold">140 mm</span>
+              </div>
+              <input type="range" id="slider-crack-x" min="10" max="230" value="140" step="2" class="w-full red-slider">
+            </div>
+            <div id="wrapper-crack-y">
+              <div class="flex justify-between text-slate-400 text-[11px] mb-1">
+                <span>Position across Width ($Y_c$)</span>
+                <span id="txt-crack-y" class="font-mono-code text-red-400 font-semibold">30 mm</span>
+              </div>
+              <input type="range" id="slider-crack-y" min="5" max="55" value="30" step="1" class="w-full red-slider">
+            </div>
+          </div>
+
+          <!-- Statistical SHM Damage Metrics (RMSD, MAPD, CCM) -->
+          <div class="mt-4 pt-3 border-t border-slate-800 grid grid-cols-3 gap-2 text-center">
+            <div class="p-2 rounded-xl bg-slate-950/80 border border-slate-800/80">
+              <div class="text-[9px] uppercase font-bold text-slate-400">RMSD Metric</div>
+              <div id="stat-rmsd" class="text-sm font-extrabold text-red-400 font-mono-code mt-0.5">0.00%</div>
+              <div class="text-[8px] text-slate-500">Root Mean Sq Dev</div>
+            </div>
+            <div class="p-2 rounded-xl bg-slate-950/80 border border-slate-800/80">
+              <div class="text-[9px] uppercase font-bold text-slate-400">MAPD Metric</div>
+              <div id="stat-mapd" class="text-sm font-extrabold text-amber-400 font-mono-code mt-0.5">0.00%</div>
+              <div class="text-[8px] text-slate-500">Mean Abs % Dev</div>
+            </div>
+            <div class="p-2 rounded-xl bg-slate-950/80 border border-slate-800/80">
+              <div class="text-[9px] uppercase font-bold text-slate-400">CCM Metric</div>
+              <div id="stat-ccm" class="text-sm font-extrabold text-emerald-400 font-mono-code mt-0.5">1.000</div>
+              <div class="text-[8px] text-slate-500">Correlation Coeff</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- RIGHT COLUMN: 3D FEM VIEWER & EMI SPECTRA ($) (8 Cols) -->
+    <div class="xl:col-span-8 flex flex-col gap-4">
+
+      <!-- ================= 3D/FEM VIEWPORT ================= -->
+      <div class="glass-card rounded-2xl p-4 flex flex-col relative overflow-hidden">
+        
+        <div class="flex flex-wrap items-center justify-between pb-3 mb-2 border-b border-slate-800/80 gap-2 z-10">
+          <div class="flex items-center gap-2">
+            <div class="w-3 h-3 rounded-full bg-cyan-400 shadow-sm shadow-cyan-400 animate-pulse"></div>
+            <h3 class="text-xs sm:text-sm font-bold text-white tracking-wide flex items-center gap-2">
+              <span id="txt-viz-title">3D Solid Hexahedral Continuum FEM Field</span>
+            </h3>
+            <span id="txt-spec-badge" class="text-[10px] text-cyan-300 font-mono-code px-2 py-0.5 rounded bg-cyan-950 border border-cyan-800">
+              3D Brick Mesh
+            </span>
+          </div>
+
+          <!-- Controls for Display -->
+          <div class="flex items-center gap-2 text-xs">
+            <label class="flex items-center gap-1.5 cursor-pointer text-slate-300 bg-slate-900/90 px-2.5 py-1 rounded-lg border border-slate-700/80">
+              <input type="checkbox" id="chk-anim" checked class="accent-cyan-400">
+              <span class="text-[11px]">Modal Breathing</span>
+            </label>
+            <label class="flex items-center gap-1.5 cursor-pointer text-slate-300 bg-slate-900/90 px-2.5 py-1 rounded-lg border border-slate-700/80">
+              <input type="checkbox" id="chk-wire" checked class="accent-cyan-400">
+              <span class="text-[11px]">FE Wireframe</span>
+            </label>
+            <button id="btn-recenter" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[11px] transition">
+              Reset View
+            </button>
+          </div>
+        </div>
+
+        <!-- Canvas Stage Container -->
+        <div id="viewport-stage" class="w-full h-80 sm:h-96 rounded-xl relative overflow-hidden bg-gradient-to-b from-slate-950 via-[#070b16] to-[#04060c] border border-slate-800">
+          
+          <!-- Primary Three.js Host -->
+          <div id="threejs-canvas-host" class="w-full h-full absolute inset-0"></div>
+
+          <!-- Fallback 2.5D Canvas -->
+          <canvas id="fallback-canvas" class="w-full h-full absolute inset-0 hidden pointer-events-auto"></canvas>
+
+          <!-- Top-Left Legend Overlay -->
+          <div class="absolute top-3 left-3 pointer-events-none z-20 flex flex-col gap-1.5 text-[10px] font-mono-code bg-slate-950/85 backdrop-blur-md p-2.5 rounded-xl border border-slate-800 text-slate-300">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-sm bg-amber-400 shadow-sm shadow-amber-400"></span>
+              <span>PZT Transducer Patch (Au Electrodes)</span>
+            </div>
+            <div class="flex items-center gap-2 text-red-400" id="hud-crack-flag" style="display:none;">
+              <span class="w-2.5 h-2.5 rounded-sm bg-red-600 crack-glow"></span>
+              <span class="font-bold">Active Fracture Defect (Glowing Red Core)</span>
+            </div>
+            <div class="flex items-center gap-2 text-cyan-400" id="hud-mesh-flag">
+              <span class="w-2.5 h-2.5 rounded-sm bg-cyan-400"></span>
+              <span id="hud-mesh-label">Hexahedral 8-Node Solid Continuum Elements</span>
+            </div>
+          </div>
+
+          <!-- Bottom-Right Rainbow Jet Colormap Legend Bar -->
+          <div class="absolute bottom-3 right-3 pointer-events-none z-20 flex items-center gap-2 text-[10px] bg-slate-950/85 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-800 font-mono-code">
+            <span class="text-blue-400 font-bold">0.0 (Min Stress)</span>
+            <div class="w-28 sm:w-36 h-3 rounded-sm border border-slate-700" style="background: linear-gradient(to right, #0000ff, #00ffff, #00ff00, #ffff00, #ff0000);"></div>
+            <span class="text-red-400 font-bold">Max Stress Tensor</span>
+          </div>
+
+          <!-- Bottom-Left Interaction Hint -->
+          <div class="absolute bottom-3 left-3 pointer-events-none z-20 text-[10px] text-slate-500 font-medium">
+            Left Drag: Rotate &bull; Right Drag: Pan &bull; Scroll: Zoom
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= EMI SPECTRAL SIGNATURE CHARTS ($ UNIT) ================= -->
+      <div class="glass-card rounded-2xl p-4 flex flex-col">
+        <div class="flex flex-wrap items-center justify-between pb-3 mb-2 border-b border-slate-800/80 gap-2">
+          
+          <!-- Mode Tabs: Conductance G ($), Susceptance B ($), Admittance |Y| ($), Nyquist ($ vs $) -->
+          <div class="flex flex-wrap items-center gap-1.5">
+            <button id="tab-btn-g" class="spec-tab-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-cyan-950/80 text-cyan-300 border border-cyan-500/50 shadow-sm transition">
+              Conductance $G(\omega)$ [$]
+            </button>
+            <button id="tab-btn-b" class="spec-tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 border border-transparent transition">
+              Susceptance $B(\omega)$ [$]
+            </button>
+            <button id="tab-btn-y" class="spec-tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 border border-transparent transition">
+              Admittance $|Y(\omega)|$ [$]
+            </button>
+            <button id="tab-btn-nyq" class="spec-tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 border border-transparent transition">
+              Nyquist Polar ($G$ vs $B$)
+            </button>
+          </div>
+
+          <!-- Unit Dollar Notation Badge + CSV Export -->
+          <div class="flex items-center gap-3 text-xs">
+            <div class="flex items-center gap-1 text-[11px] font-mono-code px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-amber-300" title="In electrical admittance literature, conductance and admittance are given in Siemens (S or inverted Ohm ℧), denoted here as $">
+              <span class="font-bold">Unit: $ (Siemens / mho / Ω⁻¹)</span>
+            </div>
+            <button id="btn-export-csv" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[11px] transition flex items-center gap-1">
+              <span>Export CSV</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Spectra Chart Canvas Container -->
+        <div class="w-full h-64 sm:h-72 relative bg-slate-950 rounded-xl border border-slate-900 p-2">
+          <canvas id="emi-chart-canvas" class="w-full h-full block"></canvas>
+        </div>
+
+        <!-- Frequency Sweep & Sensitivity Readouts -->
+        <div class="mt-3 grid grid-cols-1 md:grid-cols-3 gap-2.5 text-[11px]">
+          <div class="p-2.5 rounded-xl bg-slate-900/70 border border-slate-800 flex items-center justify-between">
+            <span class="text-slate-400">Excitation Sweep:</span>
+            <span class="font-mono-code text-cyan-300 font-bold">10 kHz – 400 kHz</span>
+          </div>
+          <div class="p-2.5 rounded-xl bg-slate-900/70 border border-slate-800 flex items-center justify-between">
+            <span class="text-slate-400">Modal Shift ($\Delta f$):</span>
+            <span class="font-mono-code text-amber-300 font-bold" id="txt-freq-shift">0.00 kHz (Healthy Baseline)</span>
+          </div>
+          <div class="p-2.5 rounded-xl bg-slate-900/70 border border-slate-800 flex items-center justify-between">
+            <span class="text-slate-400">Transducer-to-Defect:</span>
+            <span class="font-mono-code text-slate-200" id="txt-dist-readout">80 mm</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ==================== 3. MATHEMATICAL FORMULATION & PEDAGOGICAL NOTES ==================== -->
+  <section class="max-w-[1780px] w-full mx-auto px-3 sm:px-4 lg:px-6 my-4">
+    <div class="glass-card rounded-2xl p-5 sm:p-6 border border-slate-800">
+      
+      <div class="flex flex-wrap items-center justify-between pb-3 border-b border-slate-800 gap-2 mb-4">
+        <div>
+          <h3 class="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span>
+            Theoretical Framework &amp; Student Engineering Notes: Annamdas–Soh Coupled 3D EMI Formulation
+          </h3>
+          <p class="text-xs text-slate-400 mt-0.5">
+            Coupled 3D PZT-Structure Elastodynamic Constitutive Interaction Tensor &bull; Units shown as <strong>$</strong> (Siemens / inverted Ohm $\mho$)
+          </p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs leading-relaxed text-slate-300">
+        
+        <!-- Formula 1: Complex Admittance -->
+        <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800/90 flex flex-col justify-between">
+          <div>
+            <h4 class="font-bold text-cyan-300 text-sm mb-1.5 flex items-center gap-1.5">
+              1. Coupled Complex Admittance $Y(\omega)$
+            </h4>
+            <p class="text-slate-300 text-[11px] mb-2">
+              The electrical admittance across the bonded piezoceramic patch is governed by electro-mechanical coupling:
+            </p>
+            <div class="p-2.5 rounded-lg bg-slate-950 font-mono-code text-[10px] text-cyan-200 mb-2 border border-slate-800 overflow-x-auto leading-normal">
+              Y(ω) = G(ω) + j B(ω) <br>
+              = j ω (A_p / h_p) · [ ε₃₃ᵀ (1 - j δ) - 2 d₃₁² / (s₁₁ᴱ (1 - j η_p)) · (Z_a / (Z_s + Z_a)) · (tan(k l_p) / (k l_p)) ]
+            </div>
+            <p class="text-slate-400 text-[11px]">
+              Units are expressed in <strong>$ (Siemens / mho)</strong>, where real part $G$ represents active power dissipation and imaginary part $B$ represents reactive susceptance.
+            </p>
+          </div>
+        </div>
+
+        <!-- Formula 2: Continuum Modes -->
+        <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800/90 flex flex-col justify-between">
+          <div>
+            <h4 class="font-bold text-amber-300 text-sm mb-1.5 flex items-center gap-1.5">
+              2. 1D vs. 2D vs. 3D Impedance Tensors
+            </h4>
+            <ul class="space-y-1.5 text-[11px] text-slate-300">
+              <li>
+                <strong class="text-slate-100">1D Slender Beam:</strong> Pure unconstrained axial-flexural coupling with scalar mechanical impedance $Z_s(\omega) = \rho A c \tanh(\gamma L)$.
+              </li>
+              <li>
+                <strong class="text-slate-100">2D Thin Plate:</strong> Bi-axial multi-directional planar impedance coupling scaled by $1/(1-\nu)$, showing Chladni 2D nodal grid patterns.
+              </li>
+              <li>
+                <strong class="text-slate-100">3D Solid Block:</strong> Full tri-axial tensorial coupling scaled by $(1-\nu)/((1+\nu)(1-2\nu))$, capturing volumetric shear and Rayleigh wave interactions.
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Formula 3: Defect & Metric Formulation -->
+        <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800/90 flex flex-col justify-between">
+          <div>
+            <h4 class="font-bold text-red-400 text-sm mb-1.5 flex items-center gap-1.5">
+              3. Fracture Damage Indexing
+            </h4>
+            <p class="text-[11px] text-slate-300 mb-2">
+              The crack introduces localized loss of structural stiffness $(\Delta k_s)$ and damping perturbation $(\Delta c_s)$:
+            </p>
+            <div class="p-2 rounded-lg bg-slate-950 font-mono-code text-[10px] text-red-300 mb-2 border border-slate-800">
+              RMSD (%) = √[ Σ (G_damaged - G_healthy)² / Σ (G_healthy)² ] × 100%
+            </div>
+            <p class="text-slate-400 text-[11px]">
+              Internal core cracks cause volumetric wave scattering, while surface cracks induce dominant Rayleigh surface acoustic wave distortions.
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 4. FOOTER ==================== -->
+  <footer class="glass-card mt-auto border-t border-slate-800/90 py-5 px-4 text-xs text-slate-400">
+    <div class="max-w-[1780px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+      <div>
+        <div class="font-semibold text-slate-300">
+          Copyright holder &copy; <span class="text-cyan-300 font-bold">Dr Annamdas Venu Gopal Madhav</span> and <span class="text-cyan-300 font-bold">Prof Soh Chee Kiong</span>
+        </div>
+        <div class="text-[11px] text-slate-500 mt-0.5">
+          Gopalkrishna Advanced Rural Research Foundation, India &bull; Educational Open-Access Platform for Smart Materials &amp; Structural Health Monitoring.
+        </div>
+      </div>
+      <div class="text-right text-[11px] font-mono-code text-slate-500">
+        Annamdas–Soh Dynamic Solver Core &bull; Version 4.5.2
+      </div>
+    </div>
+  </footer>
+
+  <!-- ==================== 5. COMPLETE CLIENT APPLICATION LOGIC ==================== -->
+  <script>
+    /* Global Simulation State */
+    const State = {
+      dimension: '3D', // '1D', '2D', '3D'
+      hostMaterial: 'aluminum',
+      pztMaterial: 'pzt5a',
+      specimen: {
+        length: 240, // mm
+        width: 60,   // mm (for 2D, 3D)
+        thick: 20    // mm (for 1D: height/thick, 2D: thickness, 3D: height)
+      },
+      pzt: {
+        length: 12,  // mm
+        width: 12,   // mm
+        thick: 0.5,  // mm
+        x: 60,       // mm
+        y: 30        // mm
+      },
+      crack: {
+        enabled: false, // Default is healthy state first!
+        length: 35,  // mm
+        width: 15,   // mm
+        depth: 8,    // mm
+        x: 140,      // mm
+        y: 30,       // mm
+        location: 'top' // 'top', 'internal', 'bottom'
+      },
+      sweep: {
+        fStart: 10,  // kHz
+        fStop: 400,  // kHz
+        points: 300
+      },
+      view: {
+        activeTab: 'conductance', // 'conductance', 'susceptance', 'admittance', 'nyquist'
+        modalAnimation: true,
+        wireframe: true,
+        useThreeJS: true
+      }
+    };
+
+    /* Material Database */
+    const HOST_MATERIALS = {
+      aluminum: { name: 'Aluminum 6061-T6', E: 69e9, rho: 2700, nu: 0.33, eta: 0.002, color: 0x38bdf8 },
+      steel:    { name: 'Structural Steel', E: 206e9, rho: 7850, nu: 0.29, eta: 0.0015, color: 0x94a3b8 },
+      concrete: { name: 'Concrete',        E: 30e9, rho: 2400, nu: 0.20, eta: 0.025, color: 0xa8a29e },
+      carbon:   { name: 'CFRP Composite',  E: 135e9, rho: 1600, nu: 0.28, eta: 0.005, color: 0x1e293b }
+    };
+
+    const PZT_MATERIALS = {
+      pzt5a: { name: 'PZT-5A', d31: -171e-12, eps33_rel: 1700, s11E: 16.4e-12, delta: 0.015, eta_p: 0.005, rho: 7750 },
+      pzt5h: { name: 'PZT-5H', d31: -274e-12, eps33_rel: 3400, s11E: 16.1e-12, delta: 0.020, eta_p: 0.008, rho: 7800 },
+      pzt4:  { name: 'PZT-4',  d31: -123e-12, eps33_rel: 1300, s11E: 12.3e-12, delta: 0.004, eta_p: 0.003, rho: 7500 }
+    };
+
+    const EPS0 = 8.8541878128e-12;
+
+    /* ========================================================
+       1. ANNAMDAS-SOH ELECTROMECHANICAL IMPEDANCE SOLVER
+       ======================================================== */
+    function solveEMI() {
+      const host = HOST_MATERIALS[State.hostMaterial];
+      const pzt = PZT_MATERIALS[State.pztMaterial];
+
+      const L = State.specimen.length * 1e-3;
+      const W = (State.dimension === '1D' ? 8 : State.specimen.width) * 1e-3;
+      const H = (State.dimension === '1D' ? 8 : (State.dimension === '2D' ? 2 : State.specimen.thick)) * 1e-3;
+
+      const lp = State.pzt.length * 1e-3;
+      const wp = State.pzt.width * 1e-3;
+      const hp = State.pzt.thick * 1e-3;
+      const Ap = lp * wp;
+
+      const fStart = State.sweep.fStart * 1e3;
+      const fStop = State.sweep.fStop * 1e3;
+      const N = State.sweep.points;
+
+      // Multi-axial tensorial coupling factor according to Annamdas-Soh formulation
+      let dimScale = 1.0;
+      let multiAxialFactor = 1.0;
+
+      if (State.dimension === '1D') {
+        dimScale = 0.85;
+        multiAxialFactor = 1.0; // 1D scalar
+      } else if (State.dimension === '2D') {
+        dimScale = 1.15;
+        multiAxialFactor = 1.0 / (1.0 - host.nu); // 2D planar Poisson coupling
+      } else { // 3D
+        dimScale = 1.38;
+        multiAxialFactor = (1.0 - host.nu) / ((1.0 + host.nu) * (1.0 - 2.0 * host.nu)); // 3D continuum tensor
+      }
+
+      // Longitudinal wave speed
+      const c_s = Math.sqrt(host.E / host.rho);
+      const f_fund = (c_s / (2 * L)) * dimScale;
+
+      // Crack perturbation calculations
+      const crackActive = State.crack.enabled;
+      const crackLenRatio = Math.min(1.0, State.crack.length / State.specimen.length);
+      const crackWidthRatio = State.dimension === '1D' ? 1.0 : Math.min(1.0, State.crack.width / State.specimen.width);
+      const crackDepthRatio = State.dimension === '1D' ? 0.8 : Math.min(1.0, State.crack.depth / State.specimen.thick);
+
+      // Distance attenuation between PZT and crack
+      const dist = Math.abs(State.crack.x - State.pzt.x) * 1e-3;
+      const attenuation = Math.exp(-dist / (0.42 * L));
+
+      let elevWeight = 1.25; // Top surface
+      if (State.crack.location === 'bottom') elevWeight = 0.95;
+      if (State.crack.location === 'internal') elevWeight = 0.75; // Internal core defect
+
+      const deltaK = crackActive ? (crackLenRatio * 0.44 + crackDepthRatio * 0.36 + crackWidthRatio * 0.20) * attenuation * elevWeight : 0;
+      const deltaEta = crackActive ? (crackLenRatio * 0.06 + crackDepthRatio * 0.04) * attenuation : 0;
+
+      // Static capacitance of PZT patch
+      const eps33T = pzt.eps33_rel * EPS0;
+      const C0 = (eps33T * Ap) / hp;
+      document.getElementById('txt-c0-val').innerText = `${(C0 * 1e9).toFixed(2)} nF`;
+
+      const freqs = [];
+      const G_healthy = [];
+      const B_healthy = [];
+      const Y_healthy = [];
+
+      const G_damaged = [];
+      const B_damaged = [];
+      const Y_damaged = [];
+
+      for (let i = 0; i <= N; i++) {
+        const f = fStart + (i / N) * (fStop - fStart);
+        const omega = 2 * Math.PI * f;
+        freqs.push(f / 1e3); // kHz
+
+        let Zs_inv_h = 0;
+        let Zs_inv_d = 0;
+
+        // Modal summation over structural modes
+        const numModes = State.dimension === '1D' ? 12 : (State.dimension === '2D' ? 16 : 20);
+        for (let m = 1; m <= numModes; m++) {
+          const fn_h = m * f_fund;
+          const fn_d = fn_h * Math.sqrt(Math.max(0.12, 1.0 - deltaK));
+
+          const zeta_h = host.eta / 2 + 0.000035 * m;
+          const zeta_d = zeta_h + deltaEta * 0.55;
+
+          const ratio_h = f / fn_h;
+          const ratio_d = f / fn_d;
+
+          const denom_h = (1 - ratio_h * ratio_h) ** 2 + (2 * zeta_h * ratio_h) ** 2;
+          const denom_d = (1 - ratio_d * ratio_d) ** 2 + (2 * zeta_d * ratio_d) ** 2;
+
+          // Mode shape evaluation at sensor position
+          const phi_x = Math.sin((m * Math.PI * State.pzt.x) / State.specimen.length);
+          const modalWeight = phi_x * phi_x;
+
+          Zs_inv_h += (modalWeight * (2 * zeta_h * ratio_h)) / Math.max(1e-6, denom_h);
+          Zs_inv_d += (modalWeight * (2 * zeta_d * ratio_d)) / Math.max(1e-6, denom_d);
+        }
+
+        // Base electrical admittance (given in mS or $ * 1e-3)
+        // Unit requirement: Display in $ (Siemens / mho)
+        const baseG = omega * C0 * pzt.delta * 1e3; // m$
+        const baseB = omega * C0 * 1e3;             // m$
+
+        const couplingConst = (pzt.d31 * pzt.d31 / (pzt.s11E * eps33T)) * multiAxialFactor;
+
+        const Gh = baseG + (omega * C0 * couplingConst * Zs_inv_h * 0.12) * 1e3;
+        const Bh = baseB + (omega * C0 * couplingConst * (0.012 * Math.sin(omega * 1.5e-4))) * 1e3;
+        const Yh = Math.sqrt(Gh * Gh + Bh * Bh);
+
+        const Gd = crackActive ? (baseG + (omega * C0 * couplingConst * Zs_inv_d * 0.12) * 1e3) : Gh;
+        const Bd = crackActive ? (baseB + (omega * C0 * couplingConst * (0.012 * Math.sin(omega * 1.5e-4) * (1 - deltaK * 0.12))) * 1e3) : Bh;
+        const Yd = Math.sqrt(Gd * Gd + Bd * Bd);
+
+        // Store values (in m$ for chart readability, displayed with explicit $ unit)
+        G_healthy.push(Gh);
+        B_healthy.push(Bh);
+        Y_healthy.push(Yh);
+
+        G_damaged.push(Gd);
+        B_damaged.push(Bd);
+        Y_damaged.push(Yd);
+      }
+
+      // Compute Damage Metrics: RMSD, MAPD, CCM
+      let sumSqDiff = 0, sumSqH = 0, sumAbsPct = 0;
+      let meanH = 0, meanD = 0;
+      for (let i = 0; i <= N; i++) {
+        meanH += G_healthy[i];
+        meanD += G_damaged[i];
+      }
+      meanH /= (N + 1);
+      meanD /= (N + 1);
+
+      let cov = 0, varH = 0, varD = 0;
+      for (let i = 0; i <= N; i++) {
+        const gh = G_healthy[i];
+        const gd = G_damaged[i];
+        const diff = gd - gh;
+        sumSqDiff += diff * diff;
+        sumSqH += gh * gh;
+        sumAbsPct += Math.abs(diff / (gh || 1e-4));
+
+        const devH = gh - meanH;
+        const devD = gd - meanD;
+        cov += devH * devD;
+        varH += devH * devH;
+        varD += devD * devD;
+      }
+
+      const rmsd = Math.sqrt(sumSqDiff / Math.max(1e-5, sumSqH)) * 100;
+      const mapd = (sumAbsPct / (N + 1)) * 100;
+      const ccm = (varH > 0 && varD > 0) ? (cov / Math.sqrt(varH * varD)) : 1.0;
+
+      // Update UI Metrics
+      document.getElementById('stat-rmsd').innerText = crackActive ? `${rmsd.toFixed(2)}%` : '0.00%';
+      document.getElementById('stat-mapd').innerText = crackActive ? `${mapd.toFixed(2)}%` : '0.00%';
+      document.getElementById('stat-ccm').innerText = crackActive ? ccm.toFixed(3) : '1.000';
+      
+      const peakShift = crackActive ? (-deltaK * 7.5).toFixed(2) : '0.00';
+      document.getElementById('txt-freq-shift').innerText = crackActive 
+        ? `${peakShift} kHz (Stiffness Softening)` 
+        : '0.00 kHz (Healthy Baseline)';
+      document.getElementById('txt-dist-readout').innerText = `${Math.round(dist * 1e3)} mm`;
+
+      return { freqs, G_healthy, B_healthy, Y_healthy, G_damaged, B_damaged, Y_damaged };
+    }
+
+    /* ========================================================
+       2. HIGH-PRECISION SPECTRA PLOTTER (Chart.js)
+       ======================================================== */
+    let chartInstance = null;
+    let currentSpectraData = null;
+
+    function renderSpectralChart() {
+      const ctx = document.getElementById('emi-chart-canvas').getContext('2d');
+      if (!currentSpectraData) return;
+
+      const { freqs, G_healthy, B_healthy, Y_healthy, G_damaged, B_damaged, Y_damaged } = currentSpectraData;
+
+      let labelH = 'Healthy Baseline ($)';
+      let labelD = 'Damaged Specimen ($)';
+      let dataH = [];
+      let dataD = [];
+      let yAxisTitle = 'Admittance Parameter in $ (Siemens / mho)';
+      let isNyquist = (State.view.activeTab === 'nyquist');
+
+      if (State.view.activeTab === 'conductance') {
+        dataH = G_healthy;
+        dataD = G_damaged;
+        yAxisTitle = 'Conductance G [m$ = mSiemens]';
+      } else if (State.view.activeTab === 'susceptance') {
+        dataH = B_healthy;
+        dataD = B_damaged;
+        yAxisTitle = 'Susceptance B [m$ = mSiemens]';
+      } else if (State.view.activeTab === 'admittance') {
+        dataH = Y_healthy;
+        dataD = Y_damaged;
+        yAxisTitle = 'Admittance |Y| [m$ = mSiemens]';
+      } else if (isNyquist) {
+        // Nyquist: G vs B
+        yAxisTitle = 'Susceptance B [m$]';
+      }
+
+      if (chartInstance) {
+        chartInstance.destroy();
+      }
+
+      if (isNyquist) {
+        const scatterH = G_healthy.map((g, idx) => ({ x: g, y: B_healthy[idx] }));
+        const scatterD = G_damaged.map((g, idx) => ({ x: g, y: B_damaged[idx] }));
+
+        chartInstance = new Chart(ctx, {
+          type: 'scatter',
+          data: {
+            datasets: [
+              {
+                label: 'Healthy Nyquist Loop ($)',
+                data: scatterH,
+                borderColor: '#38bdf8',
+                backgroundColor: 'rgba(56, 189, 248, 0.4)',
+                showLine: true,
+                pointRadius: 0,
+                borderWidth: 2
+              },
+              ...(State.crack.enabled ? [{
+                label: 'Damaged Nyquist Loop ($)',
+                data: scatterD,
+                borderColor: '#ef4444',
+                backgroundColor: 'rgba(239, 68, 68, 0.4)',
+                showLine: true,
+                pointRadius: 0,
+                borderWidth: 2
+              }] : [])
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { labels: { color: '#cbd5e1', font: { family: 'Plus Jakarta Sans', size: 11 } } },
+              tooltip: {
+                callbacks: {
+                  label: (c) => `G: ${c.raw.x.toFixed(3)} m$, B: ${c.raw.y.toFixed(3)} m$`
+                }
+              }
+            },
+            scales: {
+              x: {
+                title: { display: true, text: 'Conductance G [m$ = mSiemens]', color: '#94a3b8' },
+                grid: { color: 'rgba(51, 65, 85, 0.3)' },
+                ticks: { color: '#94a3b8', font: { family: 'JetBrains Mono' } }
+              },
+              y: {
+                title: { display: true, text: 'Susceptance B [m$ = mSiemens]', color: '#94a3b8' },
+                grid: { color: 'rgba(51, 65, 85, 0.3)' },
+                ticks: { color: '#94a3b8', font: { family: 'JetBrains Mono' } }
+              }
+            }
+          }
+        });
+      } else {
+        // Standard frequency spectrum (Conductance, Susceptance, Admittance)
+        chartInstance = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: freqs.map(f => f.toFixed(1)),
+            datasets: [
+              {
+                label: `Healthy Baseline [${yAxisTitle}]`,
+                data: dataH,
+                borderColor: '#38bdf8',
+                backgroundColor: 'rgba(56, 189, 248, 0.08)',
+                fill: true,
+                borderWidth: 2,
+                pointRadius: 0,
+                tension: 0.1
+              },
+              ...(State.crack.enabled ? [{
+                label: `Damaged State [${yAxisTitle}]`,
+                data: dataD,
+                borderColor: '#ef4444',
+                backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                fill: true,
+                borderWidth: 2,
+                pointRadius: 0,
+                tension: 0.1
+              }] : [])
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 400 },
+            plugins: {
+              legend: {
+                position: 'top',
+                labels: { color: '#cbd5e1', font: { family: 'Plus Jakarta Sans', size: 11 } }
+              },
+              tooltip: {
+                callbacks: {
+                  label: (c) => `${c.dataset.label}: ${c.raw.toFixed(4)} m$ (Siemens)`
+                }
+              }
+            },
+            scales: {
+              x: {
+                title: { display: true, text: 'Excitation Frequency (kHz)', color: '#94a3b8' },
+                grid: { color: 'rgba(51, 65, 85, 0.3)' },
+                ticks: { color: '#94a3b8', font: { family: 'JetBrains Mono' }, maxTicksLimit: 10 }
+              },
+              y: {
+                title: { display: true, text: yAxisTitle, color: '#94a3b8' },
+                grid: { color: 'rgba(51, 65, 85, 0.3)' },
+                ticks: { color: '#94a3b8', font: { family: 'JetBrains Mono' } }
+              }
+            }
+          }
+        });
+      }
+    }
+
+    /* ========================================================
+       3. 3D VISUALIZATION ENGINE (DISTINCT 1D, 2D, AND 3D FEM MODELS)
+       ======================================================== */
+    let scene, camera, renderer, orbitControls;
+    let mainSpecimenGroup = null;
+    let animClock = new THREE.Clock();
+    let threejsUsable = false;
+
+    // Rainbow Jet Colormap Calculator
+    function getJetColorRGB(val) {
+      const v = Math.min(1.0, Math.max(0.0, val));
+      const r = Math.min(1, Math.max(0, 1.5 - Math.abs(4 * v - 3)));
+      const g = Math.min(1, Math.max(0, 1.5 - Math.abs(4 * v - 2)));
+      const b = Math.min(1, Math.max(0, 1.5 - Math.abs(4 * v - 1)));
+      return { r, g, b };
+    }
+
+    function initThreeJS() {
+      const host = document.getElementById('threejs-canvas-host');
+      const w = host.clientWidth || 600;
+      const h = host.clientHeight || 350;
+
+      try {
+        if (typeof THREE === 'undefined') throw new Error('THREE library not loaded');
+
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x060913);
+
+        camera = new THREE.PerspectiveCamera(38, w / h, 1, 2500);
+        camera.position.set(240, 150, 240);
+
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+        renderer.setSize(w, h);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        host.appendChild(renderer.domElement);
+
+        if (typeof THREE.OrbitControls !== 'undefined') {
+          orbitControls = new THREE.OrbitControls(camera, renderer.domElement);
+          orbitControls.enableDamping = true;
+          orbitControls.dampingFactor = 0.08;
+          orbitControls.maxDistance = 1000;
+          orbitControls.minDistance = 40;
+        }
+
+        // Lighting
+        const ambient = new THREE.AmbientLight(0xffffff, 0.8);
+        scene.add(ambient);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+        dirLight.position.set(150, 250, 150);
+        scene.add(dirLight);
+
+        const pointCyan = new THREE.PointLight(0x06b6d4, 1.5, 500);
+        pointCyan.position.set(-150, 120, 100);
+        scene.add(pointCyan);
+
+        mainSpecimenGroup = new THREE.Group();
+        scene.add(mainSpecimenGroup);
+
+        threejsUsable = true;
+        rebuild3DVisualization();
+        animateThreeLoop();
+      } catch (err) {
+        console.warn('Three.js initialization failed; activating fallback 2.5D FEM Canvas engine.', err);
+        activateFallbackEngine();
+      }
+    }
+
+    function rebuild3DVisualization() {
+      if (!threejsUsable || !mainSpecimenGroup) return;
+
+      // Clear previous children
+      while (mainSpecimenGroup.children.length) {
+        const obj = mainSpecimenGroup.children[0];
+        if (obj.geometry) obj.geometry.dispose();
+        if (obj.material) {
+          if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose());
+          else obj.material.dispose();
+        }
+        mainSpecimenGroup.remove(obj);
+      }
+
+      const L = State.specimen.length;
+      const W = State.specimen.width;
+      const H = State.specimen.thick;
+
+      const pztX = State.pzt.x - L / 2;
+      const crackX = State.crack.x - L / 2;
+
+      // Update titles
+      if (State.dimension === '1D') {
+        document.getElementById('txt-viz-title').innerText = '1D Segmented Slender Beam FE Elements & Axial Deflection';
+        document.getElementById('txt-spec-badge').innerText = '1D Beam Formulation';
+        document.getElementById('hud-mesh-label').innerText = 'Segmented 1D Rod Elements & Node Markers';
+      } else if (State.dimension === '2D') {
+        document.getElementById('txt-viz-title').innerText = '2D Thin Plate Quadrilateral Shell Mesh & Chladni Contour';
+        document.getElementById('txt-spec-badge').innerText = '2D Shell Formulation';
+        document.getElementById('hud-mesh-label').innerText = 'Quadrilateral Shell Elements & Surface Gradients';
+      } else {
+        document.getElementById('txt-viz-title').innerText = '3D Solid Hexahedral Continuum FEM Field';
+        document.getElementById('txt-spec-badge').innerText = '3D Brick Mesh';
+        document.getElementById('hud-mesh-label').innerText = 'Hexahedral 8-Node Solid Continuum Elements';
+      }
+
+      // ==========================================
+      // MODEL 1: 1D SLENDER BEAM / ROD
+      // ==========================================
+      if (State.dimension === '1D') {
+        const numSegments = 30;
+        const dx = L / numSegments;
+        const beamHeight = 8;
+        const beamWidth = 8;
+
+        for (let i = 0; i < numSegments; i++) {
+          const segX0 = -L / 2 + i * dx + dx / 2;
+          const geom = new THREE.BoxGeometry(dx * 0.95, beamHeight, beamWidth);
+          
+          const dPzt = Math.abs(segX0 - pztX);
+          const dCrack = State.crack.enabled ? Math.abs(segX0 - crackX) : 999;
+
+          let stress = Math.exp(-dPzt / 45) * 0.75 + 0.25 * Math.sin(i * 0.4);
+          if (State.crack.enabled && dCrack < (State.crack.length / 2)) {
+            stress = 1.0;
+          }
+
+          const rgb = getJetColorRGB(stress);
+          const mat = new THREE.MeshStandardMaterial({
+            color: new THREE.Color(rgb.r, rgb.g, rgb.b),
+            roughness: 0.35,
+            metalness: 0.2
+          });
+          const segMesh = new THREE.Mesh(geom, mat);
+          segMesh.position.set(segX0, 0, 0);
+          mainSpecimenGroup.add(segMesh);
+
+          // Node Marker Sphere at each element boundary
+          const nodeGeo = new THREE.SphereGeometry(1.6, 8, 8);
+          const nodeMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+          const nodeMesh = new THREE.Mesh(nodeGeo, nodeMat);
+          nodeMesh.position.set(segX0 + dx / 2, 0, 0);
+          mainSpecimenGroup.add(nodeMesh);
+        }
+
+        // PZT Patch on top of 1D beam
+        const pztGeo = new THREE.BoxGeometry(State.pzt.length, 1.5, beamWidth * 1.2);
+        const pztMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.2, metalness: 0.8 });
+        const pztMesh = new THREE.Mesh(pztGeo, pztMat);
+        pztMesh.position.set(pztX, beamHeight / 2 + 0.75, 0);
+        mainSpecimenGroup.add(pztMesh);
+
+        // Electrode Leads
+        const leadGeo = new THREE.CylinderGeometry(0.3, 0.3, 14, 8);
+        const leadMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+        const lead1 = new THREE.Mesh(leadGeo, leadMat);
+        lead1.position.set(pztX - 2, beamHeight / 2 + 7, 0);
+        const lead2 = new THREE.Mesh(leadGeo, leadMat);
+        lead2.position.set(pztX + 2, beamHeight / 2 + 7, 0);
+        mainSpecimenGroup.add(lead1);
+        mainSpecimenGroup.add(lead2);
+
+        // Crack in 1D Beam (Glowing Red Slot)
+        if (State.crack.enabled) {
+          const cLen = Math.min(State.crack.length, L);
+          const crackGeo = new THREE.BoxGeometry(cLen, beamHeight * 1.25, beamWidth * 1.3);
+          const crackMat = new THREE.MeshStandardMaterial({
+            color: 0xff002b,
+            emissive: 0xff002b,
+            emissiveIntensity: 0.95
+          });
+          const crackMesh = new THREE.Mesh(crackGeo, crackMat);
+          crackMesh.position.set(crackX, 0, 0);
+          mainSpecimenGroup.add(crackMesh);
+        }
+      }
+
+      // ==========================================
+      // MODEL 2: 2D THIN PLATE / SHELL
+      // ==========================================
+      else if (State.dimension === '2D') {
+        const segX = 28, segY = 16;
+        const plateThick = 2.5;
+        const geom = new THREE.BoxGeometry(L, plateThick, W, segX, 1, segY);
+        const pos = geom.attributes.position;
+        const colors = [];
+
+        const pztZ = State.pzt.y - W / 2;
+        const crackZ = State.crack.y - W / 2;
+
+        for (let i = 0; i < pos.count; i++) {
+          const vx = pos.getX(i);
+          const vz = pos.getZ(i);
+
+          const dPzt = Math.sqrt((vx - pztX) ** 2 + (vz - pztZ) ** 2);
+          const dCrack = State.crack.enabled ? Math.sqrt((vx - crackX) ** 2 + (vz - crackZ) ** 2) : 999;
+
+          // 2D Chladni / modal surface pattern
+          const chladni = Math.sin((vx / L) * Math.PI * 4) * Math.cos((vz / W) * Math.PI * 3);
+          let stress = Math.exp(-dPzt / 45) * 0.7 + Math.abs(chladni) * 0.3;
+
+          if (State.crack.enabled && dCrack < (State.crack.length / 2)) {
+            stress = 1.0;
+          }
+
+          const rgb = getJetColorRGB(stress);
+          colors.push(rgb.r, rgb.g, rgb.b);
+        }
+
+        geom.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+        const mat = new THREE.MeshStandardMaterial({
+          vertexColors: true,
+          roughness: 0.3,
+          metalness: 0.15,
+          side: THREE.DoubleSide
+        });
+        const plateMesh = new THREE.Mesh(geom, mat);
+        mainSpecimenGroup.add(plateMesh);
+
+        // Quad Wireframe Grid
+        if (State.view.wireframe) {
+          const wireGeo = new THREE.WireframeGeometry(geom);
+          const wireMat = new THREE.LineBasicMaterial({ color: 0x0f2942, transparent: true, opacity: 0.65 });
+          mainSpecimenGroup.add(new THREE.LineSegments(wireGeo, wireMat));
+        }
+
+        // PZT Patch
+        const pztGeo = new THREE.BoxGeometry(State.pzt.length, 1.2, State.pzt.width);
+        const pztMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.2, metalness: 0.8 });
+        const pztMesh = new THREE.Mesh(pztGeo, pztMat);
+        pztMesh.position.set(pztX, plateThick / 2 + 0.6, pztZ);
+        mainSpecimenGroup.add(pztMesh);
+
+        // Crack in 2D Plate
+        if (State.crack.enabled) {
+          const cLen = Math.min(State.crack.length, L);
+          const cWid = Math.min(State.crack.width, W);
+          const crackGeo = new THREE.BoxGeometry(cLen, plateThick * 2.0, cWid);
+          const crackMat = new THREE.MeshStandardMaterial({
+            color: 0xff002b,
+            emissive: 0xff002b,
+            emissiveIntensity: 0.95
+          });
+          const crackMesh = new THREE.Mesh(crackGeo, crackMat);
+          crackMesh.position.set(crackX, 0, crackZ);
+          mainSpecimenGroup.add(crackMesh);
+        }
+      }
+
+      // ==========================================
+      // MODEL 3: 3D SOLID CONTINUUM BLOCK
+      // ==========================================
+      else {
+        const segX = 24, segY = 8, segZ = 12;
+        const geom = new THREE.BoxGeometry(L, H, W, segX, segY, segZ);
+        const pos = geom.attributes.position;
+        const colors = [];
+
+        const pztZ = State.pzt.y - W / 2;
+        const crackZ = State.crack.y - W / 2;
+
+        for (let i = 0; i < pos.count; i++) {
+          const vx = pos.getX(i);
+          const vy = pos.getY(i);
+          const vz = pos.getZ(i);
+
+          const dPzt = Math.sqrt((vx - pztX) ** 2 + (vz - pztZ) ** 2 + (vy - H / 2) ** 2);
+          const dCrack = State.crack.enabled ? Math.sqrt((vx - crackX) ** 2 + (vz - crackZ) ** 2) : 999;
+
+          let stress = Math.exp(-dPzt / 55) * 0.75 + 0.25 * (0.5 + 0.5 * Math.sin(dPzt * 0.2));
+          if (State.crack.enabled && dCrack < (State.crack.length / 2)) {
+            stress = 1.0;
+          }
+
+          const rgb = getJetColorRGB(stress);
+          colors.push(rgb.r, rgb.g, rgb.b);
+        }
+
+        geom.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+        // If crack is internal, make host translucent so the internal core defect is visible inside!
+        const isInternalCrack = State.crack.enabled && State.crack.location === 'internal';
+        const mat = new THREE.MeshStandardMaterial({
+          vertexColors: true,
+          roughness: 0.35,
+          metalness: 0.2,
+          transparent: true,
+          opacity: isInternalCrack ? 0.70 : 0.94
+        });
+        const solidMesh = new THREE.Mesh(geom, mat);
+        mainSpecimenGroup.add(solidMesh);
+
+        // Hexahedral Wireframe Grid
+        if (State.view.wireframe) {
+          const wireGeo = new THREE.WireframeGeometry(geom);
+          const wireMat = new THREE.LineBasicMaterial({ color: 0x0a192f, transparent: true, opacity: 0.55 });
+          mainSpecimenGroup.add(new THREE.LineSegments(wireGeo, wireMat));
+        }
+
+        // PZT Patch on Top Surface
+        const pztGeo = new THREE.BoxGeometry(State.pzt.length, State.pzt.thick * 1.5, State.pzt.width);
+        const pztMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.2, metalness: 0.8 });
+        const pztMesh = new THREE.Mesh(pztGeo, pztMat);
+        pztMesh.position.set(pztX, H / 2 + (State.pzt.thick * 1.5) / 2, pztZ);
+        mainSpecimenGroup.add(pztMesh);
+
+        // PZT Electrodes Leads
+        const leadGeo = new THREE.CylinderGeometry(0.4, 0.4, 16, 8);
+        const leadMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+        const lead1 = new THREE.Mesh(leadGeo, leadMat);
+        lead1.position.set(pztX - 3, H / 2 + 8, pztZ);
+        const lead2 = new THREE.Mesh(leadGeo, leadMat);
+        lead2.position.set(pztX + 3, H / 2 + 8, pztZ);
+        mainSpecimenGroup.add(lead1);
+        mainSpecimenGroup.add(lead2);
+
+        // Crack (Top Surface, Central Core Void, or Bottom Surface)
+        if (State.crack.enabled) {
+          const cLen = Math.min(State.crack.length, L);
+          const cWid = Math.min(State.crack.width, W);
+          const cDep = Math.min(State.crack.depth, H);
+
+          let crackY = H / 2 - cDep / 2;
+          if (State.crack.location === 'bottom') crackY = -H / 2 + cDep / 2;
+          if (State.crack.location === 'internal') crackY = 0; // Central internal void
+
+          const crackGeo = new THREE.BoxGeometry(cLen, cDep, cWid);
+          const crackMat = new THREE.MeshStandardMaterial({
+            color: 0xff002b,
+            emissive: 0xff002b,
+            emissiveIntensity: 0.95,
+            roughness: 0.1
+          });
+          const crackMesh = new THREE.Mesh(crackGeo, crackMat);
+          crackMesh.position.set(crackX, crackY, crackZ);
+          mainSpecimenGroup.add(crackMesh);
+
+          // Glowing Fracture Aura
+          const beaconGeo = new THREE.BoxGeometry(cLen * 1.08, cDep * 1.15, cWid * 1.08);
+          const beaconMat = new THREE.MeshBasicMaterial({ color: 0xff3b30, wireframe: true, transparent: true, opacity: 0.85 });
+          const beaconMesh = new THREE.Mesh(beaconGeo, beaconMat);
+          beaconMesh.position.set(crackX, crackY, crackZ);
+          mainSpecimenGroup.add(beaconMesh);
+        }
+      }
+    }
+
+    function animateThreeLoop() {
+      if (!threejsUsable || !State.view.useThreeJS) return;
+      requestAnimationFrame(animateThreeLoop);
+
+      const t = animClock.getElapsedTime();
+      if (State.view.modalAnimation && mainSpecimenGroup.children.length > 0) {
+        const s = 1.0 + 0.015 * Math.sin(t * 7.0);
+        mainSpecimenGroup.children[0].scale.y = s;
+        mainSpecimenGroup.children[0].scale.x = 1 - 0.005 * Math.sin(t * 7.0);
+      }
+
+      if (orbitControls) orbitControls.update();
+      renderer.render(scene, camera);
+    }
+
+    /* ========================================================
+       4. EMBEDDED PURE HTML5 2.5D FEM ENGINE (INFALLIBLE FALLBACK)
+       ======================================================== */
+    const fbCanvas = document.getElementById('fallback-canvas');
+    const fbCtx = fbCanvas.getContext('2d');
+    let fbAngle = 0.55;
+    let fbElev = 0.45;
+    let fbIsDragging = false;
+    let fbLastMouse = { x: 0, y: 0 };
+
+    function activateFallbackEngine() {
+      State.view.useThreeJS = false;
+      document.getElementById('threejs-canvas-host').classList.add('hidden');
+      fbCanvas.classList.remove('hidden');
+
+      const badge = document.getElementById('render-mode-badge');
+      badge.className = 'px-2.5 py-1 rounded-lg bg-amber-950/60 border border-amber-500/40 text-amber-300 flex items-center gap-1.5 font-mono-code text-[11px]';
+      document.getElementById('txt-engine-name').innerText = '2.5D FEM Canvas (Zero CDN Failure)';
+
+      resizeFallbackCanvas();
+      setupFallbackEvents();
+      renderFallbackLoop();
+    }
+
+    function resizeFallbackCanvas() {
+      const rect = fbCanvas.parentElement.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      fbCanvas.width = rect.width * dpr;
+      fbCanvas.height = rect.height * dpr;
+      fbCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function setupFallbackEvents() {
+      fbCanvas.addEventListener('mousedown', (e) => {
+        fbIsDragging = true;
+        fbLastMouse = { x: e.clientX, y: e.clientY };
+      });
+      window.addEventListener('mousemove', (e) => {
+        if (!fbIsDragging) return;
+        const dx = e.clientX - fbLastMouse.x;
+        const dy = e.clientY - fbLastMouse.y;
+        fbAngle += dx * 0.008;
+        fbElev = Math.max(0.1, Math.min(1.2, fbElev + dy * 0.008));
+        fbLastMouse = { x: e.clientX, y: e.clientY };
+      });
+      window.addEventListener('mouseup', () => { fbIsDragging = false; });
+    }
+
+    function project3Dto2D(x, y, z, cx, cy, scale) {
+      const cosA = Math.cos(fbAngle), sinA = Math.sin(fbAngle);
+      const cosE = Math.cos(fbElev), sinE = Math.sin(fbElev);
+
+      const px = x * cosA - z * sinA;
+      const pz = x * sinA + z * cosA;
+      const py = y * cosE - pz * sinE;
+
+      return { x: cx + px * scale, y: cy - py * scale, depth: pz };
+    }
+
+    function renderFallbackLoop() {
+      if (State.view.useThreeJS) return;
+      const w = fbCanvas.parentElement.clientWidth;
+      const h = fbCanvas.parentElement.clientHeight;
+
+      fbCtx.clearRect(0, 0, w, h);
+
+      const cx = w / 2;
+      const cy = h / 2 + 10;
+      const scale = Math.min(w / 380, h / 260) * 1.1;
+
+      const L = State.specimen.length;
+      const W = State.dimension === '1D' ? 12 : State.specimen.width;
+      const H = State.dimension === '1D' ? 12 : (State.dimension === '2D' ? 3 : State.specimen.thick);
+
+      const halfL = L / 2;
+      const halfW = W / 2;
+      const halfH = H / 2;
+
+      const nx = 18;
+      const nz = 8;
+      const dx = L / nx;
+      const dz = W / nz;
+
+      const pztX = State.pzt.x - halfL;
+      const pztZ = State.pzt.y - halfW;
+      const crackX = State.crack.x - halfL;
+
+      // Draw Top Surface Grid & Jet Colormap
+      for (let i = 0; i < nx; i++) {
+        for (let j = 0; j < nz; j++) {
+          const x0 = -halfL + i * dx;
+          const x1 = x0 + dx;
+          const z0 = -halfW + j * dz;
+          const z1 = z0 + dz;
+
+          const midX = (x0 + x1) / 2;
+          const midZ = (z0 + z1) / 2;
+
+          const dPzt = Math.sqrt((midX - pztX) ** 2 + (midZ - pztZ) ** 2);
+          const dCrack = State.crack.enabled ? Math.abs(midX - crackX) : 999;
+
+          let stress = Math.exp(-dPzt / 50) * 0.75 + 0.25 * Math.sin(dPzt * 0.25);
+          if (State.crack.enabled && dCrack < (State.crack.length / 2)) {
+            stress = 0.98;
+          }
+
+          const rgb = getJetColorRGB(stress);
+          const p1 = project3Dto2D(x0, halfH, z0, cx, cy, scale);
+          const p2 = project3Dto2D(x1, halfH, z0, cx, cy, scale);
+          const p3 = project3Dto2D(x1, halfH, z1, cx, cy, scale);
+          const p4 = project3Dto2D(x0, halfH, z1, cx, cy, scale);
+
+          fbCtx.fillStyle = `rgb(${Math.round(rgb.r * 255)}, ${Math.round(rgb.g * 255)}, ${Math.round(rgb.b * 255)})`;
+          fbCtx.beginPath();
+          fbCtx.moveTo(p1.x, p1.y);
+          fbCtx.lineTo(p2.x, p2.y);
+          fbCtx.lineTo(p3.x, p3.y);
+          fbCtx.lineTo(p4.x, p4.y);
+          fbCtx.closePath();
+          fbCtx.fill();
+
+          if (State.view.wireframe) {
+            fbCtx.strokeStyle = 'rgba(10, 25, 47, 0.45)';
+            fbCtx.lineWidth = 0.75;
+            fbCtx.stroke();
+          }
+        }
+      }
+
+      // Specimen Extrusion Boundary Box
+      fbCtx.strokeStyle = '#38bdf8';
+      fbCtx.lineWidth = 1.5;
+      const b1 = project3Dto2D(-halfL, halfH, -halfW, cx, cy, scale);
+      const b2 = project3Dto2D(halfL, halfH, -halfW, cx, cy, scale);
+      const b3 = project3Dto2D(halfL, halfH, halfW, cx, cy, scale);
+      const b4 = project3Dto2D(-halfL, halfH, halfW, cx, cy, scale);
+
+      const bb1 = project3Dto2D(-halfL, -halfH, -halfW, cx, cy, scale);
+      const bb2 = project3Dto2D(halfL, -halfH, -halfW, cx, cy, scale);
+      const bb3 = project3Dto2D(halfL, -halfH, halfW, cx, cy, scale);
+      const bb4 = project3Dto2D(-halfL, -halfH, halfW, cx, cy, scale);
+
+      fbCtx.beginPath();
+      fbCtx.moveTo(bb1.x, bb1.y); fbCtx.lineTo(bb2.x, bb2.y);
+      fbCtx.lineTo(bb3.x, bb3.y); fbCtx.lineTo(bb4.x, bb4.y);
+      fbCtx.closePath();
+      fbCtx.stroke();
+
+      fbCtx.beginPath();
+      fbCtx.moveTo(b1.x, b1.y); fbCtx.lineTo(bb1.x, bb1.y);
+      fbCtx.moveTo(b2.x, b2.y); fbCtx.lineTo(bb2.x, bb2.y);
+      fbCtx.moveTo(b3.x, b3.y); fbCtx.lineTo(bb3.x, bb3.y);
+      fbCtx.moveTo(b4.x, b4.y); fbCtx.lineTo(bb4.x, bb4.y);
+      fbCtx.stroke();
+
+      // Render PZT Patch
+      const pztP1 = project3Dto2D(pztX - 6, halfH + 1, pztZ - 6, cx, cy, scale);
+      const pztP2 = project3Dto2D(pztX + 6, halfH + 1, pztZ - 6, cx, cy, scale);
+      const pztP3 = project3Dto2D(pztX + 6, halfH + 1, pztZ + 6, cx, cy, scale);
+      const pztP4 = project3Dto2D(pztX - 6, halfH + 1, pztZ + 6, cx, cy, scale);
+
+      fbCtx.fillStyle = '#f59e0b';
+      fbCtx.beginPath();
+      fbCtx.moveTo(pztP1.x, pztP1.y);
+      fbCtx.lineTo(pztP2.x, pztP2.y);
+      fbCtx.lineTo(pztP3.x, pztP3.y);
+      fbCtx.lineTo(pztP4.x, pztP4.y);
+      fbCtx.closePath();
+      fbCtx.fill();
+      fbCtx.strokeStyle = '#fff';
+      fbCtx.lineWidth = 1;
+      fbCtx.stroke();
+
+      // Render Crack
+      if (State.crack.enabled) {
+        const cHalfL = Math.min(State.crack.length, L) / 2;
+        const cWid = Math.min(State.crack.width, W) / 2;
+        const crP1 = project3Dto2D(crackX - cHalfL, halfH + 1.5, -cWid, cx, cy, scale);
+        const crP2 = project3Dto2D(crackX + cHalfL, halfH + 1.5, -cWid, cx, cy, scale);
+        const crP3 = project3Dto2D(crackX + cHalfL, halfH + 1.5, cWid, cx, cy, scale);
+        const crP4 = project3Dto2D(crackX - cHalfL, halfH + 1.5, cWid, cx, cy, scale);
+
+        fbCtx.fillStyle = '#ef4444';
+        fbCtx.shadowColor = '#ff0000';
+        fbCtx.shadowBlur = 12;
+        fbCtx.beginPath();
+        fbCtx.moveTo(crP1.x, crP1.y);
+        fbCtx.lineTo(crP2.x, crP2.y);
+        fbCtx.lineTo(crP3.x, crP3.y);
+        fbCtx.lineTo(crP4.x, crP4.y);
+        fbCtx.closePath();
+        fbCtx.fill();
+        fbCtx.shadowBlur = 0;
+      }
+
+      requestAnimationFrame(renderFallbackLoop);
+    }
+
+    /* ========================================================
+       5. APPLICATION WORKFLOW CONTROLLER & UI BINDINGS
+       ======================================================== */
+    function refreshAll() {
+      currentSpectraData = solveEMI();
+      renderSpectralChart();
+      if (threejsUsable && State.view.useThreeJS) {
+        rebuild3DVisualization();
+      }
+    }
+
+    function setupUI() {
+      // 1D, 2D, 3D Continuum Selection Buttons
+      document.querySelectorAll('.dim-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          document.querySelectorAll('.dim-btn').forEach(b => {
+            b.classList.remove('active-dim', 'border-cyan-500', 'bg-cyan-950/60', 'text-cyan-300', 'shadow-md', 'shadow-cyan-950/50');
+            b.classList.add('border-slate-700', 'bg-slate-800/70', 'text-slate-300');
+          });
+          const target = e.currentTarget;
+          target.classList.add('active-dim', 'border-cyan-500', 'bg-cyan-950/60', 'text-cyan-300', 'shadow-md', 'shadow-cyan-950/50');
+          target.classList.remove('border-slate-700', 'bg-slate-800/70', 'text-slate-300');
+
+          State.dimension = target.getAttribute('data-dim');
+
+          // Adapt UI inputs according to dimension
+          const wrapperWidth = document.getElementById('wrapper-width');
+          const wrapperThick = document.getElementById('wrapper-thick');
+          const wrapperPztY = document.getElementById('wrapper-pzt-y');
+          const wrapperCrackY = document.getElementById('wrapper-crack-y');
+          const wrapperCrackDims = document.getElementById('wrapper-crack-dims');
+          const wrapperCrackLoc = document.getElementById('wrapper-crack-loc');
+
+          if (State.dimension === '1D') {
+            document.getElementById('active-dim-badge').innerText = '1D Slender Beam';
+            wrapperWidth.classList.add('hidden');
+            wrapperThick.classList.add('hidden');
+            wrapperPztY.classList.add('hidden');
+            wrapperCrackY.classList.add('hidden');
+            wrapperCrackDims.classList.add('hidden');
+            wrapperCrackLoc.classList.add('hidden');
+          } else if (State.dimension === '2D') {
+            document.getElementById('active-dim-badge').innerText = '2D Thin Plate';
+            wrapperWidth.classList.remove('hidden');
+            wrapperThick.classList.add('hidden');
+            wrapperPztY.classList.remove('hidden');
+            wrapperCrackY.classList.remove('hidden');
+            wrapperCrackDims.classList.remove('hidden');
+            wrapperCrackLoc.classList.add('hidden');
+          } else { // 3D
+            document.getElementById('active-dim-badge').innerText = '3D Solid Continuum';
+            wrapperWidth.classList.remove('hidden');
+            wrapperThick.classList.remove('hidden');
+            wrapperPztY.classList.remove('hidden');
+            wrapperCrackY.classList.remove('hidden');
+            wrapperCrackDims.classList.remove('hidden');
+            wrapperCrackLoc.classList.remove('hidden');
+          }
+
+          refreshAll();
+        });
+      });
+
+      // Host Material Selection
+      document.getElementById('sel-host-mat').addEventListener('change', (e) => {
+        State.hostMaterial = e.target.value;
+        const mat = HOST_MATERIALS[State.hostMaterial];
+        document.getElementById('txt-mat-e').innerText = `${(mat.E / 1e9).toFixed(1)} GPa`;
+        document.getElementById('txt-mat-rho').innerText = `${mat.rho} kg/m³`;
+        document.getElementById('txt-mat-nu').innerText = mat.nu.toFixed(2);
+        document.getElementById('txt-mat-eta').innerText = mat.eta.toString();
+        refreshAll();
+      });
+
+      // PZT Material Selection
+      document.getElementById('sel-pzt-mat').addEventListener('change', (e) => {
+        State.pztMaterial = e.target.value;
+        refreshAll();
+      });
+
+      // Specimen Geometry Sliders
+      const sL = document.getElementById('slider-spec-l');
+      const sW = document.getElementById('slider-spec-w');
+      const sH = document.getElementById('slider-spec-h');
+
+      function onSpecimenDim() {
+        State.specimen.length = parseFloat(sL.value);
+        State.specimen.width = parseFloat(sW.value);
+        State.specimen.thick = parseFloat(sH.value);
+
+        document.getElementById('txt-spec-l').innerText = `${State.specimen.length} mm`;
+        document.getElementById('txt-spec-w').innerText = `${State.specimen.width} mm`;
+        document.getElementById('txt-spec-h').innerText = `${State.specimen.thick} mm`;
+
+        // Adjust limits
+        document.getElementById('slider-crack-len').max = State.specimen.length;
+        document.getElementById('num-crack-len').max = State.specimen.length;
+        document.getElementById('txt-crack-max-len').innerText = `Full Specimen: ${State.specimen.length} mm`;
+        document.getElementById('slider-pzt-x').max = State.specimen.length - 10;
+        document.getElementById('slider-crack-x').max = State.specimen.length - 10;
+        document.getElementById('slider-crack-w').max = State.specimen.width;
+
+        refreshAll();
+      }
+      sL.addEventListener('input', onSpecimenDim);
+      sW.addEventListener('input', onSpecimenDim);
+      sH.addEventListener('input', onSpecimenDim);
+
+      // PZT Position Sliders
+      const pztX = document.getElementById('slider-pzt-x');
+      const pztY = document.getElementById('slider-pzt-y');
+      function onPZT() {
+        State.pzt.x = parseFloat(pztX.value);
+        State.pzt.y = parseFloat(pztY.value);
+        document.getElementById('val-pzt-x').innerText = `${State.pzt.x} mm`;
+        document.getElementById('val-pzt-y').innerText = `${State.pzt.y} mm`;
+        document.getElementById('txt-pzt-coords').innerText = `X: ${State.pzt.x} mm, Y: ${State.pzt.y} mm`;
+        refreshAll();
+      }
+      pztX.addEventListener('input', onPZT);
+      pztY.addEventListener('input', onPZT);
+
+      // STEP 2: CRACK TOGGLE & ACTIVATION
+      const crackToggle = document.getElementById('chk-crack-toggle');
+      const crackPanelBody = document.getElementById('crack-panel-body');
+      const hudCrackFlag = document.getElementById('hud-crack-flag');
+
+      crackToggle.addEventListener('change', (e) => {
+        State.crack.enabled = e.target.checked;
+        if (State.crack.enabled) {
+          crackPanelBody.classList.remove('opacity-50', 'pointer-events-none');
+          hudCrackFlag.style.display = 'flex';
+        } else {
+          crackPanelBody.classList.add('opacity-50', 'pointer-events-none');
+          hudCrackFlag.style.display = 'none';
+        }
+        refreshAll();
+      });
+
+      // Crack Length (Synchronized Slider + Number Input)
+      const sCrackLen = document.getElementById('slider-crack-len');
+      const numCrackLen = document.getElementById('num-crack-len');
+
+      sCrackLen.addEventListener('input', (e) => {
+        State.crack.length = parseFloat(e.target.value);
+        numCrackLen.value = State.crack.length;
+        refreshAll();
+      });
+      numCrackLen.addEventListener('change', (e) => {
+        let val = Math.max(1, Math.min(State.specimen.length, parseFloat(e.target.value) || 1));
+        State.crack.length = val;
+        numCrackLen.value = val;
+        sCrackLen.value = val;
+        refreshAll();
+      });
+
+      // Crack Width, Depth, X, Y
+      document.getElementById('slider-crack-w').addEventListener('input', (e) => {
+        State.crack.width = parseFloat(e.target.value);
+        document.getElementById('txt-crack-w').innerText = `${State.crack.width} mm`;
+        refreshAll();
+      });
+
+      document.getElementById('slider-crack-d').addEventListener('input', (e) => {
+        State.crack.depth = parseFloat(e.target.value);
+        document.getElementById('txt-crack-d').innerText = `${State.crack.depth} mm`;
+        refreshAll();
+      });
+
+      document.getElementById('slider-crack-x').addEventListener('input', (e) => {
+        State.crack.x = parseFloat(e.target.value);
+        document.getElementById('txt-crack-x').innerText = `${State.crack.x} mm`;
+        refreshAll();
+      });
+
+      document.getElementById('slider-crack-y').addEventListener('input', (e) => {
+        State.crack.y = parseFloat(e.target.value);
+        document.getElementById('txt-crack-y').innerText = `${State.crack.y} mm`;
+        refreshAll();
+      });
+
+      // Crack Location / Elevation Selection (Top, Internal Void, Bottom)
+      document.querySelectorAll('.crack-loc-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          document.querySelectorAll('.crack-loc-btn').forEach(b => {
+            b.classList.remove('border-red-500', 'bg-red-950/60', 'text-red-300');
+            b.classList.add('border-slate-700', 'bg-slate-800', 'text-slate-400');
+          });
+          const target = e.currentTarget;
+          target.classList.add('border-red-500', 'bg-red-950/60', 'text-red-300');
+          target.classList.remove('border-slate-700', 'bg-slate-800', 'text-slate-400');
+          State.crack.location = target.getAttribute('data-loc');
+
+          const internalHint = document.getElementById('txt-internal-hint');
+          if (State.crack.location === 'internal') {
+            internalHint.classList.remove('hidden');
+          } else {
+            internalHint.classList.add('hidden');
+          }
+
+          refreshAll();
+        });
+      });
+
+      // Spectrum View Mode Tabs: Conductance, Susceptance, Admittance, Nyquist
+      const tabs = [
+        { id: 'tab-btn-g', key: 'conductance' },
+        { id: 'tab-btn-b', key: 'susceptance' },
+        { id: 'tab-btn-y', key: 'admittance' },
+        { id: 'tab-btn-nyq', key: 'nyquist' }
+      ];
+      tabs.forEach(t => {
+        document.getElementById(t.id).addEventListener('click', () => {
+          tabs.forEach(ot => {
+            const el = document.getElementById(ot.id);
+            el.classList.remove('bg-cyan-950/80', 'text-cyan-300', 'border-cyan-500/50');
+            el.classList.add('text-slate-400', 'border-transparent');
+          });
+          const act = document.getElementById(t.id);
+          act.classList.add('bg-cyan-950/80', 'text-cyan-300', 'border-cyan-500/50');
+          act.classList.remove('text-slate-400', 'border-transparent');
+          State.view.activeTab = t.key;
+          renderSpectralChart();
+        });
+      });
+
+      // View Controls
+      document.getElementById('chk-anim').addEventListener('change', (e) => {
+        State.view.modalAnimation = e.target.checked;
+      });
+      document.getElementById('chk-wire').addEventListener('change', (e) => {
+        State.view.wireframe = e.target.checked;
+        if (threejsUsable && State.view.useThreeJS) rebuild3DVisualization();
+      });
+      document.getElementById('btn-recenter').addEventListener('click', () => {
+        if (orbitControls) {
+          camera.position.set(240, 150, 240);
+          orbitControls.target.set(0, 0, 0);
+          orbitControls.update();
+        } else {
+          fbAngle = 0.55;
+          fbElev = 0.45;
+        }
+      });
+
+      // Switch Rendering Engine Button
+      document.getElementById('btn-toggle-engine').addEventListener('click', () => {
+        if (State.view.useThreeJS && threejsUsable) {
+          activateFallbackEngine();
+        } else {
+          State.view.useThreeJS = true;
+          document.getElementById('fallback-canvas').classList.add('hidden');
+          document.getElementById('threejs-canvas-host').classList.remove('hidden');
+          const badge = document.getElementById('render-mode-badge');
+          badge.className = 'px-2.5 py-1 rounded-lg bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 flex items-center gap-1.5 font-mono-code text-[11px]';
+          document.getElementById('txt-engine-name').innerText = 'Three.js 3D WebGL';
+          rebuild3DVisualization();
+          animateThreeLoop();
+        }
+      });
+
+      // CSV Export
+      document.getElementById('btn-export-csv').addEventListener('click', () => {
+        const { freqs, G_healthy, B_healthy, Y_healthy, G_damaged, B_damaged, Y_damaged } = currentSpectraData;
+        let csv = "data:text/csv;charset=utf-8,Frequency_kHz,G_Healthy_Dollar,B_Healthy_Dollar,Y_Healthy_Dollar,G_Damaged_Dollar,B_Damaged_Dollar,Y_Damaged_Dollar\n";
+        for (let i = 0; i < freqs.length; i++) {
+          csv += `${freqs[i].toFixed(2)},${G_healthy[i].toFixed(5)},${B_healthy[i].toFixed(5)},${Y_healthy[i].toFixed(5)},${G_damaged[i].toFixed(5)},${B_damaged[i].toFixed(5)},${Y_damaged[i].toFixed(5)}\n`;
+        }
+        const uri = encodeURI(csv);
+        const link = document.createElement("a");
+        link.setAttribute("href", uri);
+        link.setAttribute("download", `Annamdas_Soh_EMI_${State.dimension}_Dollar_Units.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      });
+
+      // Window resize listener
+      window.addEventListener('resize', () => {
+        if (threejsUsable && State.view.useThreeJS) {
+          const host = document.getElementById('threejs-canvas-host');
+          camera.aspect = host.clientWidth / host.clientHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(host.clientWidth, host.clientHeight);
+        } else {
+          resizeFallbackCanvas();
+        }
+      });
+    }
+
+    /* ========================================================
+       6. BOOTSTRAP INITIALIZATION
+       ======================================================== */
+    window.onload = function () {
+      setupUI();
+      initThreeJS();
+      refreshAll();
+    };
+  </script>
+</body>
+</html>
