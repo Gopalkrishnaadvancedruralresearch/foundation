@@ -1,0 +1,1723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>God Particle 3D Reconstruction for Visitors GARR Foundation</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Three.js and OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Cinzel:wght@600;800&family=Inter:wght@300;400;500;600;700&display=swap');
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #020617;
+      color: #e2e8f0;
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    .font-scifi {
+      font-family: 'Orbitron', monospace;
+    }
+    .font-arunachala {
+      font-family: 'Cinzel', serif;
+    }
+
+    /* Custom Glassmorphism */
+    .glass-panel {
+      background: rgba(10, 17, 34, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .glass-panel-arunachala {
+      background: rgba(30, 8, 38, 0.88) !important;
+      border: 1px solid rgba(245, 158, 11, 0.6) !important;
+      box-shadow: 0 0 35px rgba(234, 88, 12, 0.35) !important;
+    }
+
+    /* Glows */
+    .glow-cyan {
+      box-shadow: 0 0 25px rgba(6, 182, 212, 0.45);
+    }
+    .glow-shiva {
+      box-shadow: 0 0 30px rgba(249, 115, 22, 0.6), 0 0 15px rgba(217, 70, 239, 0.5);
+    }
+
+    /* Sleek range slider */
+    input[type=range] {
+      accent-color: #38bdf8;
+    }
+    .arunachala-active input[type=range] {
+      accent-color: #f97316;
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #020617;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #38bdf8;
+    }
+  </style>
+</head>
+<body class="h-screen w-screen flex flex-col justify-between select-none">
+
+  <!-- TOP HEADER -->
+  <header id="mainHeader" class="w-full glass-panel border-b border-cyan-900/50 z-40 px-3 py-2 sm:px-6 transition-all duration-300">
+    <div class="max-w-7xl mx-auto flex items-center justify-between gap-2">
+      
+      <!-- Logo and Institution Branding -->
+      <div class="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
+        <div class="relative w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-slate-900/95 border border-cyan-400/50 p-1 flex items-center justify-center shrink-0 shadow-lg shadow-cyan-950">
+          <img 
+            src="logo.jpeg" 
+            alt="GARR Foundation Logo" 
+            class="w-full h-full object-contain rounded-lg"
+            onerror="this.onerror=null; this.src='https://placehold.co/100x100/0b1528/38bdf8?text=GARRF';">
+          <span class="absolute -bottom-1 -right-1 flex h-2.5 w-2.5">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-500"></span>
+          </span>
+        </div>
+        <div class="min-w-0">
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="text-[9px] sm:text-[10px] uppercase tracking-wider text-amber-300 font-bold px-1.5 py-0.2 rounded bg-amber-950/70 border border-amber-600/50">
+              📍 Turumanavalai Arunachalam, TN
+            </span>
+            <span class="hidden sm:inline text-[10px] text-cyan-400 font-semibold">• Rural STEM Initiative</span>
+          </div>
+          <h1 class="text-xs sm:text-sm md:text-base font-bold tracking-tight text-white truncate">
+            Gopalkrishna Advanced Rural Research Foundation, India
+          </h1>
+          <p class="text-[10px] sm:text-xs text-slate-400 truncate">
+            Location: Turumanavalai Arunachalam, Tamilnadu | Dr. APJ Abdul Kalam Zero Research Funding Lab
+          </p>
+        </div>
+      </div>
+
+      <!-- Action Buttons Right: Shiva Mode + Theory Modal + Header Collapse -->
+      <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <!-- Arunachala-Shiva Cosmic Button -->
+        <button 
+          id="shivaModeBtn" 
+          class="relative px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl font-bold text-[11px] sm:text-xs transition-all duration-300 flex items-center gap-1.5 bg-gradient-to-r from-orange-600 via-amber-500 to-fuchsia-600 hover:from-orange-500 hover:to-pink-500 text-white shadow-md shadow-orange-950 border border-amber-300/60 active:scale-95">
+          <span class="text-base leading-none">🕉️</span>
+          <span class="hidden sm:inline font-arunachala tracking-wide">Arunachala-Shiva Mode</span>
+          <span class="sm:hidden font-arunachala">Shiva</span>
+        </button>
+
+        <!-- Gemini AI Physics Docent Button -->
+        <button 
+          id="aiDocentBtn" 
+          class="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-gradient-to-r from-indigo-600 via-cyan-600 to-teal-500 hover:from-indigo-500 hover:to-teal-400 text-white shadow-md shadow-cyan-950 border border-cyan-300/50 transition text-[11px] sm:text-xs font-semibold flex items-center gap-1.5 active:scale-95">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5 text-cyan-200 animate-spin"></i>
+          <span class="hidden sm:inline">Ask AI Docent</span>
+          <span class="sm:hidden">AI Docent</span>
+        </button>
+
+        <!-- Theory Help Button -->
+        <button 
+          id="theoryBtn" 
+          class="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/25 border border-cyan-400/40 text-cyan-300 hover:text-white transition text-[11px] sm:text-xs font-medium flex items-center gap-1">
+          <i data-lucide="book-open" class="w-3.5 h-3.5"></i>
+          <span class="hidden sm:inline">Help / Theory</span>
+        </button>
+
+        <!-- Header Minimize / Compact Toggle -->
+        <button 
+          id="toggleHeaderBtn" 
+          class="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700 text-xs"
+          title="Toggle Fullscreen View">
+          <i data-lucide="chevrons-up" id="headerChevron" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- MAIN 3D VIEWPORT CONTAINER -->
+  <main class="relative flex-1 w-full h-full overflow-hidden">
+    <!-- WebGL Canvas Container -->
+    <div id="webgl-container" class="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing"></div>
+
+    <!-- 1. LIVE TELEMETRY HUD (Top-Left, Fully Minimizable) -->
+    <div id="telemetryContainer" class="absolute top-3 left-3 z-20 pointer-events-auto transition-all duration-300">
+      
+      <!-- Minimized State Button (Pill) -->
+      <button 
+        id="telemetryExpandBtn" 
+        class="hidden glass-panel px-3 py-1.5 rounded-full border border-cyan-400/40 text-cyan-300 text-xs font-mono font-bold flex items-center gap-2 shadow-lg hover:border-cyan-300 active:scale-95">
+        <i data-lucide="activity" class="w-3.5 h-3.5 text-cyan-400"></i>
+        <span>Telemetry HUD</span>
+        <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+      </button>
+
+      <!-- Full Telemetry Box -->
+      <div id="telemetryBox" class="glass-panel w-72 sm:w-80 p-3 rounded-2xl border border-cyan-500/30 text-xs shadow-2xl">
+        <div class="flex items-center justify-between border-b border-cyan-900/60 pb-1.5 mb-1.5">
+          <div class="flex items-center gap-1.5">
+            <span class="inline-block w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+            <span class="font-scifi text-cyan-300 tracking-wider text-[11px]">QUANTUM TELEMETRY</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <span id="stateBadge" class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-400/40">HIGGS COHERENT</span>
+            <!-- Minimize Button -->
+            <button id="telemetryMinBtn" class="p-1 rounded-md hover:bg-slate-700/60 text-slate-400 hover:text-white" title="Minimize Telemetry">
+              <i data-lucide="minus" class="w-3 h-3"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="space-y-1 font-mono text-[10px] sm:text-[11px] text-slate-300">
+          <div class="flex justify-between">
+            <span class="text-slate-400">Rest Mass (m_H):</span>
+            <span class="text-sky-300">125.11 ± 0.11 GeV</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-400">Natural Lifespan:</span>
+            <span class="text-amber-300">1.56 × 10⁻²² s</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-400">Time Slowdown:</span>
+            <span id="slowdownFactorLabel" class="text-emerald-400 font-bold">5.12 × 10²² ×</span>
+          </div>
+          <div class="flex justify-between border-t border-slate-800/80 pt-1">
+            <span class="text-slate-400">Slow Observation:</span>
+            <span id="simulatedTimeLabel" class="text-cyan-400 font-bold">0.00 / 8.00 s</span>
+          </div>
+        </div>
+
+        <!-- AI Spectrometer Trigger in Telemetry -->
+        <div class="mt-2 pt-1.5 border-t border-slate-800 flex items-center justify-between">
+          <span class="text-[9px] text-cyan-400 flex items-center gap-1">
+            <i data-lucide="brain-circuit" class="w-3 h-3 text-cyan-300"></i> AI Kinematics
+          </span>
+          <button 
+            id="aiAnalyzeEventBtn"
+            class="px-2 py-0.5 rounded bg-cyan-950 hover:bg-cyan-800/80 border border-cyan-500/50 text-[10px] text-cyan-200 hover:text-white font-medium flex items-center gap-1 transition">
+            <i data-lucide="sparkles" class="w-2.5 h-2.5 text-amber-300"></i>
+            <span>Analyze Decay</span>
+          </button>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="w-full bg-slate-900/90 rounded-full h-1.5 mt-2 overflow-hidden border border-slate-800">
+          <div id="decayProgressBar" class="bg-gradient-to-r from-cyan-400 via-sky-400 to-amber-400 h-1.5 w-0 transition-all duration-75"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. ARUNACHALA STATUS BADGE (Top Center during Shiva mode) -->
+    <div id="arunachalaBanner" class="absolute top-3 left-1/2 -translate-x-1/2 z-20 pointer-events-none transition-all duration-500 opacity-0 transform -translate-y-4">
+      <div class="glass-panel-arunachala px-3.5 py-1.5 rounded-full text-center flex items-center gap-2 border border-amber-400 shadow-xl">
+        <span class="text-amber-300 text-sm animate-spin">🔥</span>
+        <span class="text-xs font-arunachala font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-orange-400 to-fuchsia-300">
+          ARUNACHALA COSMIC FIELD • GARRF TURUMANAVALAI
+        </span>
+        <span class="text-amber-300 text-sm animate-pulse">🕉️</span>
+      </div>
+    </div>
+
+    <!-- 3. CAMERA QUICK TOUCH HUD (Top Right) -->
+    <div class="absolute top-3 right-3 z-20 pointer-events-auto flex flex-col gap-1.5 items-end">
+      <!-- Quick View Controls -->
+      <div class="glass-panel p-1 rounded-xl flex items-center gap-1 border border-cyan-500/30">
+        <button id="zoomInBtn" class="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-xs" title="Zoom In">
+          <i data-lucide="zoom-in" class="w-3.5 h-3.5"></i>
+        </button>
+        <button id="zoomOutBtn" class="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-xs" title="Zoom Out">
+          <i data-lucide="zoom-out" class="w-3.5 h-3.5"></i>
+        </button>
+        <button id="camResetBtn" class="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-xs" title="Reset View">
+          <i data-lucide="compass" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- 4. FLOATING AI QUANTUM DOCENT PANEL (Right-side, Minimizable) -->
+    <div id="aiDocentPanel" class="absolute top-14 right-3 z-30 pointer-events-auto w-80 sm:w-96 glass-panel rounded-2xl border border-cyan-400/40 shadow-2xl p-3 flex flex-col transition-all duration-300 hidden">
+      <!-- Docent Header -->
+      <div class="flex items-center justify-between border-b border-cyan-900/60 pb-2 mb-2">
+        <div class="flex items-center gap-2">
+          <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-cyan-500 to-indigo-600 flex items-center justify-center text-white shadow-inner">
+            <i data-lucide="bot" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-1.5">
+              <span class="text-xs font-bold text-white font-scifi">GARRF AI DOCENT</span>
+              <span class="text-[9px] px-1.5 py-0.2 rounded bg-cyan-900/60 text-cyan-300 font-mono">Gemini 2.5</span>
+            </div>
+            <p class="text-[9px] text-slate-400">Dr. Kalam Zero-Funding Physics Mentor</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-1">
+          <!-- Language selector -->
+          <select id="aiLangSelect" class="bg-slate-900 border border-cyan-700/60 text-[10px] text-cyan-300 rounded px-1.5 py-0.5">
+            <option value="English">English</option>
+            <option value="Tamil">தமிழ் (Tamil)</option>
+            <option value="Hindi">हिन्दी (Hindi)</option>
+          </select>
+          <button id="aiDocentCloseBtn" class="p-1 text-slate-400 hover:text-white rounded hover:bg-slate-800">
+            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Prompt Chips -->
+      <div class="flex gap-1.5 overflow-x-auto pb-1.5 mb-1.5 scrollbar-thin">
+        <button class="ai-chip text-[9px] px-2 py-1 rounded-full bg-slate-800/90 hover:bg-cyan-900/70 border border-slate-700 text-slate-300 hover:text-cyan-200 shrink-0 transition" data-prompt="Why is it called the God Particle and what does the Higgs field actually do?">
+          ⚛️ Why God Particle?
+        </button>
+        <button class="ai-chip text-[9px] px-2 py-1 rounded-full bg-slate-800/90 hover:bg-cyan-900/70 border border-slate-700 text-slate-300 hover:text-cyan-200 shrink-0 transition" data-prompt="Explain how the Higgs boson breaks into four leptons in simple terms.">
+          🔍 Explain 4 Leptons
+        </button>
+        <button class="ai-chip text-[9px] px-2 py-1 rounded-full bg-slate-800/90 hover:bg-cyan-900/70 border border-slate-700 text-slate-300 hover:text-cyan-200 shrink-0 transition" data-prompt="What is the connection between the Cosmic Dance of Shiva Nataraja at CERN and Quantum Field Theory?">
+          🕉️ Shiva & CERN
+        </button>
+        <button class="ai-chip text-[9px] px-2 py-1 rounded-full bg-slate-800/90 hover:bg-cyan-900/70 border border-slate-700 text-slate-300 hover:text-cyan-200 shrink-0 transition" data-prompt="How does the GARR Foundation lab in Turumanavalai inspire rural Indian students in STEM?">
+          🌾 Rural STEM Impact
+        </button>
+      </div>
+
+      <!-- Chat History Box -->
+      <div id="aiChatHistory" class="flex-1 max-h-56 overflow-y-auto space-y-2 p-1 text-[11px] pr-1.5 mb-2">
+        <div class="bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 text-slate-300 leading-relaxed">
+          <span class="text-cyan-400 font-bold block mb-1">Vanakkam & Welcome! 🙏</span>
+          I am your Gemini-powered AI Quantum Docent for the <strong>Gopalkrishna Advanced Rural Research Foundation</strong> here in Turumanavalai Arunachalam. Ask me any questions about the 3D Higgs Boson reconstruction, decay channels, or how cosmic fields generate mass!
+        </div>
+      </div>
+
+      <!-- Chat Input Area -->
+      <div class="flex items-center gap-1.5 pt-1 border-t border-slate-800">
+        <input 
+          id="aiQuestionInput" 
+          type="text" 
+          placeholder="Ask a question about the God particle..." 
+          class="flex-1 bg-slate-900/90 border border-cyan-800/60 rounded-xl px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400">
+        <button 
+          id="aiSendBtn" 
+          class="p-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white transition active:scale-95 disabled:opacity-50"
+          title="Send query to Gemini">
+          <i data-lucide="send" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- 5. AI EVENT SPECTROMETER MODAL (Structured Output from Gemini) -->
+    <div id="aiAnalysisModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden items-center justify-center p-3 sm:p-5">
+      <div class="glass-panel w-full max-w-2xl max-h-[90vh] rounded-2xl border border-cyan-400/50 p-4 sm:p-6 overflow-y-auto shadow-2xl relative flex flex-col">
+        <div class="flex items-center justify-between border-b border-cyan-900/60 pb-3 mb-3">
+          <div class="flex items-center gap-2">
+            <div class="p-1.5 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-400/40">
+              <i data-lucide="microscope" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h3 class="text-sm sm:text-base font-bold text-white font-scifi">Gemini AI Quantum Event Spectrometer</h3>
+              <p class="text-[10px] text-cyan-300">GARRF Real-time Standard Model Kinematic Verification</p>
+            </div>
+          </div>
+          <button id="closeAnalysisModalBtn" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <!-- Dynamic Content Body -->
+        <div id="aiAnalysisBody" class="text-xs sm:text-sm text-slate-300 space-y-3">
+          <!-- Filled dynamically by Gemini call -->
+          <div class="flex flex-col items-center justify-center py-10 space-y-3">
+            <div class="w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
+            <p class="text-cyan-300 font-mono text-xs animate-pulse">Computing Quantum Kinematics with Gemini API...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. MAIN INTERACTIVE CONTROL PANEL (Bottom Center, Fully Minimizable for Mobile) -->
+    <div id="controlPanelWrapper" class="absolute bottom-2 left-0 right-0 z-30 px-2 sm:px-6 pointer-events-none transition-all duration-300">
+      
+      <!-- Minimized Bottom Floating Pill -->
+      <div class="flex justify-center mb-1">
+        <button 
+          id="controlsExpandBtn" 
+          class="hidden pointer-events-auto glass-panel px-4 py-2 rounded-full border border-cyan-400/50 text-cyan-300 text-xs font-bold flex items-center gap-2 shadow-2xl hover:border-cyan-300 active:scale-95 glow-cyan">
+          <i data-lucide="sliders" class="w-4 h-4 text-cyan-400"></i>
+          <span>Open Particle Controls</span>
+          <i data-lucide="chevron-up" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Full Controls Container -->
+      <div id="controlsContainer" class="max-w-4xl mx-auto glass-panel p-2.5 sm:p-4 rounded-2xl border border-cyan-500/40 shadow-2xl pointer-events-auto backdrop-blur-xl">
+        
+        <!-- Header row of controls with Minimize option -->
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-2.5">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+            <span class="text-xs font-bold font-scifi tracking-wider text-cyan-300 uppercase">Interactive Particle Chamber</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] text-slate-400 hidden sm:inline">Mobile Optimized</span>
+            <!-- Minimize Button -->
+            <button id="controlsMinBtn" class="flex items-center gap-1 text-[11px] text-slate-400 hover:text-white px-2 py-0.5 rounded-lg bg-slate-800/80 border border-slate-700">
+              <i data-lucide="minimize-2" class="w-3 h-3"></i>
+              <span>Hide for Full View</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-2 sm:gap-3 items-center">
+
+          <!-- Action Buttons (Cols: 5) -->
+          <div class="md:col-span-5 flex items-center gap-2">
+            <!-- Break God Particle Button -->
+            <button 
+              id="breakBtn" 
+              class="flex-1 py-2.5 px-3 sm:py-3 sm:px-4 rounded-xl font-scifi font-bold text-xs sm:text-sm tracking-wide bg-gradient-to-r from-rose-600 via-amber-600 to-amber-500 hover:from-rose-500 hover:to-amber-400 text-white shadow-lg border border-amber-300/40 flex items-center justify-center gap-1.5 transition transform active:scale-95 glow-amber">
+              <i data-lucide="zap" class="w-4 h-4 text-amber-200 animate-pulse"></i>
+              <span class="truncate">Break God Particle in Slow Pace</span>
+            </button>
+
+            <!-- Reform Button -->
+            <button 
+              id="resetBtn" 
+              class="py-2.5 px-3 sm:py-3 sm:px-3 rounded-xl bg-slate-800/90 hover:bg-slate-700 border border-slate-600/80 text-cyan-300 hover:text-white transition flex items-center justify-center gap-1 text-xs font-semibold shrink-0"
+              title="Reform Higgs Boson">
+              <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+              <span>Reform</span>
+            </button>
+          </div>
+
+          <!-- Decay Channel Selector (Cols: 4) -->
+          <div class="md:col-span-4 flex flex-col gap-0.5">
+            <label class="text-[10px] font-semibold text-cyan-300 uppercase tracking-wider flex items-center gap-1">
+              <i data-lucide="git-fork" class="w-3 h-3"></i>
+              Decay Mode:
+            </label>
+            <select id="channelSelect" class="w-full bg-slate-900/90 text-[11px] sm:text-xs text-white rounded-lg px-2.5 py-1.5 sm:py-2 border border-cyan-600/40 focus:outline-none focus:border-cyan-400 transition cursor-pointer">
+              <option value="golden">Golden Channel (H → ZZ* → 4 Leptons: 2e + 2μ)</option>
+              <option value="diphoton">Diphoton Channel (H → γγ: Photons)</option>
+              <option value="bbbar">Bottom Quarks Jet (H → b b̄ Hadron Jets)</option>
+            </select>
+          </div>
+
+          <!-- Slow Pace Slider (Cols: 3) -->
+          <div class="md:col-span-3 flex flex-col gap-0.5">
+            <div class="flex justify-between text-[10px] font-semibold">
+              <span class="text-slate-300 flex items-center gap-1">
+                <i data-lucide="clock" class="w-3 h-3 text-cyan-400"></i>
+                Slow Pace Duration:
+              </span>
+              <span id="paceValueLabel" class="text-cyan-400 font-mono font-bold">8 Seconds</span>
+            </div>
+            <input 
+              type="range" 
+              id="paceSlider" 
+              min="4" 
+              max="16" 
+              step="2" 
+              value="8" 
+              class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+            <div class="flex justify-between text-[8px] text-slate-500 font-mono">
+              <span>Fast (4s)</span>
+              <span>Ultra-Slow (16s)</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Legend Bar -->
+        <div class="mt-2 pt-1.5 border-t border-slate-800/80 flex flex-wrap items-center justify-between text-[10px] text-slate-400 gap-1">
+          <div class="flex items-center gap-3">
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-cyan-400 inline-block"></span> Electrons (e⁻/e⁺)</span>
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-purple-400 inline-block"></span> Muons (μ⁻/μ⁺)</span>
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-400 inline-block"></span> Photons (γ)</span>
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-500 inline-block"></span> Quarks / Jets</span>
+          </div>
+          <span class="hidden md:inline text-slate-500">Touch & Drag to rotate • Pinch to zoom</span>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- THEORY & EDUCATIONAL HELP MODAL (Minimizable & Responsive) -->
+  <div id="theoryModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden items-center justify-center p-3 sm:p-5">
+    <div id="theoryModalBox" class="glass-panel w-full max-w-3xl max-h-[92vh] rounded-2xl border border-cyan-400/40 p-4 sm:p-6 overflow-y-auto shadow-2xl relative flex flex-col transition-all">
+      
+      <!-- Modal Header -->
+      <div class="flex items-start justify-between border-b border-cyan-900/60 pb-3 mb-3">
+        <div>
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="text-[10px] font-scifi uppercase text-cyan-400 tracking-wider">Educational Physics Guide</span>
+            <span class="text-[10px] bg-amber-950 text-amber-300 border border-amber-700/60 px-2 py-0.2 rounded-full">
+              📍 Turumanavalai Arunachalam
+            </span>
+          </div>
+          <h3 class="text-base sm:text-xl font-bold text-white mt-1">What is the "God Particle" & How Does It Break?</h3>
+          <p class="text-[11px] text-slate-400">Gopalkrishna Advanced Rural Research Foundation • Kalam Zero Research Funding Lab</p>
+        </div>
+        
+        <div class="flex items-center gap-1">
+          <button id="closeModalBtn" class="p-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition" title="Close">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Theory Content Sections -->
+      <div class="space-y-3.5 text-xs sm:text-sm text-slate-300 leading-relaxed pr-1">
+        
+        <!-- Section 1: The Name & Real Meaning -->
+        <div class="p-3 rounded-xl bg-slate-900/70 border border-cyan-900/40">
+          <h4 class="font-bold text-cyan-300 flex items-center gap-1.5 mb-1 text-xs sm:text-sm">
+            <i data-lucide="atom" class="w-4 h-4 text-cyan-400"></i>
+            1. Why is it called the "God Particle"?
+          </h4>
+          <p>
+            Coined in 1993 by Nobel laureate Leon Lederman, the publisher chose the title <strong>"The God Particle"</strong> because the particle was so extraordinarily difficult to detect. In physics, its scientific name is the <strong>Higgs Boson</strong>. It represents the excitation of the all-pervading <em>Higgs Field</em>, which gives fundamental particles like quarks and electrons their rest mass.
+          </p>
+        </div>
+
+        <!-- Section 2: Arunachala-Shiva Cosmic Mode Meaning -->
+        <div class="p-3 rounded-xl bg-purple-950/40 border border-amber-500/40">
+          <h4 class="font-bold text-amber-300 flex items-center gap-1.5 mb-1 text-xs sm:text-sm">
+            <span class="text-base">🕉️</span>
+            2. The Arunachala-Shiva Connection & Cosmic Dance (Nataraja)
+          </h4>
+          <p>
+            At CERN in Geneva, a statue of <strong>Lord Shiva (Nataraja)</strong> stands outside, symbolizing the perpetual cosmic dance of subatomic matter creation and destruction. Here at <strong>Turumanavalai Arunachalam</strong>, the "Arunachala-Shiva Mode" bathes the visualization in the sacred fiery hues of the holy mountain, with celestial particles and <strong>GARRF</strong> orbiting the quantum core, uniting timeless ancient Indian philosophical intuition with modern particle physics.
+          </p>
+        </div>
+
+        <!-- Section 3: Lifetime & Slowdown Calculation -->
+        <div class="p-3 rounded-xl bg-slate-900/70 border border-cyan-900/40">
+          <h4 class="font-bold text-sky-300 flex items-center gap-1.5 mb-1 text-xs sm:text-sm">
+            <i data-lucide="timer" class="w-4 h-4 text-sky-400"></i>
+            3. Why We Need "Slow Pace": Incomprehensible Speed of Nature
+          </h4>
+          <p>
+            The Higgs boson has a mean physical lifespan of:
+            <span class="block my-1.5 py-1.5 px-3 rounded bg-black/70 font-mono text-center text-amber-300 border border-amber-800/60 text-xs">
+              τ ≈ 1.56 × 10⁻²² seconds &nbsp;|&nbsp; Mass = 125.11 GeV/c²
+            </span>
+            Because it decays so quickly, no human eye or direct camera could ever capture it. By selecting <strong>8 Seconds</strong> in our GARRF interactive simulator, we slow down nature by:
+            <span class="block my-1 font-mono text-cyan-300 text-xs text-center">
+              (8.00 s) ÷ (1.56 × 10⁻²² s) ≈ 5.12 × 10²² Times Slower!
+            </span>
+            This lets students see the quantum break into daughter particles at human perception scale.
+          </p>
+        </div>
+
+        <!-- Section 4: Decay Channels -->
+        <div class="p-3 rounded-xl bg-slate-900/70 border border-cyan-900/40">
+          <h4 class="font-bold text-emerald-300 flex items-center gap-1.5 mb-1 text-xs sm:text-sm">
+            <i data-lucide="git-branch" class="w-4 h-4 text-emerald-400"></i>
+            4. The Three Primary Decay Modes Displayed:
+          </h4>
+          <ul class="list-disc pl-5 space-y-1 text-slate-300 text-xs sm:text-sm">
+            <li><strong class="text-cyan-300">Golden Channel (H → ZZ* → 4 Leptons):</strong> The Higgs decays into two Z bosons, which spontaneously decay into 2 electrons and 2 muons. The magnetic field curves their trajectories according to their electric charges (Lorentz force).</li>
+            <li><strong class="text-amber-300">Diphoton Channel (H → γγ):</strong> Decays through virtual quantum loops into two opposed, ultra-energetic photon flashes recorded in the electromagnetic calorimeters.</li>
+            <li><strong class="text-rose-300">Bottom Quarks Jet (H → b b̄):</strong> The most frequent decay (~58%), creating showers of collimated hadrons.</li>
+          </ul>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="mt-4 pt-3 border-t border-slate-800 flex justify-end">
+        <button id="closeModalBtn2" class="px-5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-medium text-xs transition">
+          Back to 3D Simulation
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer id="mainFooter" class="w-full glass-panel border-t border-cyan-950/70 py-1.5 px-3 sm:px-6 z-40 text-[10px] sm:text-xs text-slate-400">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-1.5 truncate">
+        <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0"></span>
+        <span class="truncate">GARR Foundation • Rural STEM Mission • Turumanavalai Arunachalam, TN</span>
+      </div>
+      <div class="shrink-0 ml-2">
+        <span class="text-cyan-400 font-mono font-semibold">copyright@garrf.in</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- 3D AND APPLICATION JAVASCRIPT -->
+  <script>
+    // Initialize Lucide icons
+    lucide.createIcons();
+
+    /* ==========================================================================
+       THREE.JS 3D QUANTUM & ARUNACHALA COSMIC ENGINE
+       ========================================================================== */
+    const container = document.getElementById('webgl-container');
+    let scene, camera, renderer, controls;
+    let clock = new THREE.Clock();
+
+    // Scene Groups
+    let higgsGroup;
+    let detectorCageGroup;
+    let gridHelper;
+    let decayProductsGroup;
+    let garrfOrbitGroup;     // Group holding the 3D moving GARRF letters
+    let shivaAuraGroup;      // Cosmic Shiva Fire & Mandala Aura rings
+
+    // Mode Flags & Variables
+    let isShivaMode = false;
+    let isDecayed = false;
+    let decayActive = false;
+    let decayProgress = 0.0;
+    let decayDuration = 8.0;
+    const REAL_LIFETIME = 1.56e-22;
+
+    // Component References
+    let coreMesh, haloMesh, virtualSwarmPoints, centralLight;
+    let trackObjects = [];
+    let explosionSparks = null;
+    let garrfTextMeshes = [];
+
+    // UI References
+    const stateBadge = document.getElementById('stateBadge');
+    const slowdownFactorLabel = document.getElementById('slowdownFactorLabel');
+    const simulatedTimeLabel = document.getElementById('simulatedTimeLabel');
+    const decayProgressBar = document.getElementById('decayProgressBar');
+    const paceSlider = document.getElementById('paceSlider');
+    const paceValueLabel = document.getElementById('paceValueLabel');
+    const channelSelect = document.getElementById('channelSelect');
+    const shivaModeBtn = document.getElementById('shivaModeBtn');
+    const arunachalaBanner = document.getElementById('arunachalaBanner');
+
+    /* ==========================================================================
+       GEMINI API INTEGRATION (LLM CHAT & STRUCTURED SPECTROMETER)
+       ========================================================================== */
+    const GEMINI_API_KEY = ""; // Provided at runtime
+    const GEMINI_MODEL = "gemini-2.5-flash";
+
+    // Exponential backoff fetch wrapper
+    async function callGeminiWithBackoff(payload, maxRetries = 3) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+      let delay = 1000;
+
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          if (response.status === 429 && attempt < maxRetries - 1) {
+            await new Promise(r => setTimeout(r, delay));
+            delay *= 2;
+            continue;
+          }
+
+          if (!response.ok) {
+            throw new Error(`Gemini HTTP error ${response.status}`);
+          }
+
+          return await response.json();
+        } catch (err) {
+          if (attempt === maxRetries - 1) throw err;
+          await new Promise(r => setTimeout(r, delay));
+          delay *= 2;
+        }
+      }
+    }
+
+    // 1. AI Docent Conversation System
+    const aiDocentBtn = document.getElementById('aiDocentBtn');
+    const aiDocentPanel = document.getElementById('aiDocentPanel');
+    const aiDocentCloseBtn = document.getElementById('aiDocentCloseBtn');
+    const aiQuestionInput = document.getElementById('aiQuestionInput');
+    const aiSendBtn = document.getElementById('aiSendBtn');
+    const aiChatHistory = document.getElementById('aiChatHistory');
+    const aiLangSelect = document.getElementById('aiLangSelect');
+
+    let chatTurns = [];
+
+    function toggleAiDocent() {
+      const isHidden = aiDocentPanel.classList.contains('hidden');
+      if (isHidden) {
+        aiDocentPanel.classList.remove('hidden');
+        aiQuestionInput.focus();
+      } else {
+        aiDocentPanel.classList.add('hidden');
+      }
+    }
+
+    async function sendAiQuestion(userText) {
+      if (!userText || !userText.trim()) return;
+      const text = userText.trim();
+      const language = aiLangSelect.value;
+
+      // Append User message to UI
+      const userBubble = document.createElement('div');
+      userBubble.className = "bg-cyan-950/70 border border-cyan-800/60 p-2 rounded-xl text-cyan-200 self-end ml-4";
+      userBubble.innerHTML = `<span class="font-bold text-[9px] text-cyan-400 block">YOU</span>${escapeHtml(text)}`;
+      aiChatHistory.appendChild(userBubble);
+      aiQuestionInput.value = '';
+
+      // Typing loader
+      const loaderBubble = document.createElement('div');
+      loaderBubble.className = "bg-slate-900/90 border border-slate-800 p-2 rounded-xl text-slate-400 italic text-[10px] flex items-center gap-1.5";
+      loaderBubble.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping"></span> Gemini AI Docent is analyzing quantum fields...`;
+      aiChatHistory.appendChild(loaderBubble);
+      aiChatHistory.scrollTop = aiChatHistory.scrollHeight;
+
+      aiSendBtn.disabled = true;
+
+      // Construct system prompt with domain context
+      const systemPrompt = `You are the AI Quantum Physics Docent at the Gopalkrishna Advanced Rural Research Foundation (GARRF), located at Turumanavalai Arunachalam, Tamilnadu, India (Dr. APJ Abdul Kalam Zero Research Funding Lab).
+Your mission is to teach rural Indian students, visiting researchers, and youth about the Higgs Boson ("God particle"), quantum mechanics, particle detectors, and the spiritual-scientific connection between the sacred Arunachala hill / Lord Shiva Nataraja at CERN and quantum vacuum energy.
+Respond in ${language}.
+Keep answers clear, inspiring, pedagogically sound, and concise (under 120 words unless requested). Use bullet points where helpful.`;
+
+      const payload = {
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        contents: [
+          ...chatTurns,
+          { role: 'user', parts: [{ text: text }] }
+        ]
+      };
+
+      try {
+        const result = await callGeminiWithBackoff(payload);
+        const candidate = result.candidates?.[0];
+        const replyText = candidate?.content?.parts?.[0]?.text || "Unable to extract response from Gemini.";
+
+        // Update turn history
+        chatTurns.push({ role: 'user', parts: [{ text: text }] });
+        chatTurns.push({ role: 'model', parts: [{ text: replyText }] });
+
+        loaderBubble.remove();
+
+        const modelBubble = document.createElement('div');
+        modelBubble.className = "bg-slate-900/90 border border-cyan-900/50 p-2.5 rounded-xl text-slate-200 leading-relaxed";
+        modelBubble.innerHTML = `<span class="font-bold text-[9px] text-cyan-300 block mb-0.5">GEMINI AI DOCENT</span>${markedSimple(replyText)}`;
+        aiChatHistory.appendChild(modelBubble);
+      } catch (err) {
+        loaderBubble.remove();
+        const errBubble = document.createElement('div');
+        errBubble.className = "bg-rose-950/60 border border-rose-800/60 p-2 rounded-xl text-rose-300 text-[10px]";
+        errBubble.innerHTML = `⚠️ Error reaching Gemini AI. Please check your connection and retry.`;
+        aiChatHistory.appendChild(errBubble);
+      } finally {
+        aiSendBtn.disabled = false;
+        aiChatHistory.scrollTop = aiChatHistory.scrollHeight;
+      }
+    }
+
+    // Simple markdown formatter helper for bold, lists, and line breaks
+    function markedSimple(txt) {
+      return txt
+        .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white">$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em class="text-cyan-200">$1</em>')
+        .replace(/\n\n/g, '<br/><br/>')
+        .replace(/\n/g, '<br/>');
+    }
+
+    function escapeHtml(string) {
+      const entityMap = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+      return String(string).replace(/[&<>"']/g, s => entityMap[s]);
+    }
+
+    // 2. Structured AI Event Spectrometer (JSON Schema)
+    const aiAnalyzeEventBtn = document.getElementById('aiAnalyzeEventBtn');
+    const aiAnalysisModal = document.getElementById('aiAnalysisModal');
+    const closeAnalysisModalBtn = document.getElementById('closeAnalysisModalBtn');
+    const aiAnalysisBody = document.getElementById('aiAnalysisBody');
+
+    async function analyzeCurrentDecayEvent() {
+      aiAnalysisModal.classList.remove('hidden');
+      aiAnalysisModal.classList.add('flex');
+
+      aiAnalysisBody.innerHTML = `
+        <div class="flex flex-col items-center justify-center py-10 space-y-3">
+          <div class="w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
+          <p class="text-cyan-300 font-mono text-xs animate-pulse">Running Standard Model Kinematic Reconstruction with Gemini 2.5 Flash...</p>
+          <span class="text-[10px] text-slate-400">Evaluating Lorentz vectors & invariant mass balance</span>
+        </div>
+      `;
+
+      const currentMode = channelSelect.value;
+      const curSlowdown = paceSlider.value;
+      const isShiva = isShivaMode;
+
+      const prompt = `Analyze this simulated Higgs Boson decay event observed at GARR Foundation's detector chamber:
+- Decay Channel Selected: ${currentMode} (Options: golden = H->ZZ*->4 leptons, diphoton = H->gamma gamma, bbbar = H->b b_bar jets)
+- Rest Mass: 125.11 GeV
+- Natural Lifespan: 1.56e-22 s dilated to ${curSlowdown} seconds for visitor slow pace observation
+- Cosmic Mode: ${isShiva ? "Arunachala-Shiva Cosmic Field active" : "Standard Detector Mode"}
+- Laboratory: Gopalkrishna Advanced Rural Research Foundation (GARRF), Turumanavalai Arunachalam, TN.
+
+Provide a comprehensive, highly educational particle physics validation with verification of conservation laws, detector signatures, and practical rural lab takeaways.`;
+
+      const payload = {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "OBJECT",
+            properties: {
+              channelName: { type: "STRING" },
+              branchingRatioPercentage: { type: "STRING" },
+              conservationSummary: {
+                type: "OBJECT",
+                properties: {
+                  energyConserved: { type: "BOOLEAN" },
+                  momentumConserved: { type: "BOOLEAN" },
+                  chargeConserved: { type: "BOOLEAN" },
+                  notes: { type: "STRING" }
+                },
+                required: ["energyConserved", "momentumConserved", "chargeConserved", "notes"]
+              },
+              kinematicsBreakdown: {
+                type: "ARRAY",
+                items: {
+                  type: "OBJECT",
+                  properties: {
+                    particle: { type: "STRING" },
+                    energyDepositType: { type: "STRING" },
+                    detectorSubsystem: { type: "STRING" }
+                  },
+                  required: ["particle", "energyDepositType", "detectorSubsystem"]
+                }
+              },
+              ruralStemTakeaway: { type: "STRING" },
+              arunachalaInsight: { type: "STRING" }
+            },
+            required: ["channelName", "branchingRatioPercentage", "conservationSummary", "kinematicsBreakdown", "ruralStemTakeaway", "arunachalaInsight"]
+          }
+        }
+      };
+
+      try {
+        const result = await callGeminiWithBackoff(payload);
+        const rawJson = result.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!rawJson) throw new Error("Empty candidate received");
+
+        const data = JSON.parse(rawJson);
+        renderAnalysisResult(data);
+      } catch (err) {
+        aiAnalysisBody.innerHTML = `
+          <div class="p-4 rounded-xl bg-rose-950/50 border border-rose-800 text-rose-200 text-xs">
+            <h4 class="font-bold text-sm mb-1">Kinematic Analysis Disrupted</h4>
+            <p>Could not connect to Gemini API. Please ensure network connectivity and retry.</p>
+          </div>
+        `;
+      }
+    }
+
+    function renderAnalysisResult(data) {
+      aiAnalysisBody.innerHTML = `
+        <div class="space-y-3">
+          <!-- Top Overview Card -->
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <div class="p-2.5 rounded-xl bg-slate-900/80 border border-cyan-800/50">
+              <span class="text-[10px] text-slate-400 block">Decay Channel</span>
+              <span class="text-xs font-bold text-cyan-300 font-mono">${escapeHtml(data.channelName)}</span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-slate-900/80 border border-amber-800/50">
+              <span class="text-[10px] text-slate-400 block">SM Branching Ratio</span>
+              <span class="text-xs font-bold text-amber-300 font-mono">${escapeHtml(data.branchingRatioPercentage)}</span>
+            </div>
+            <div class="col-span-2 sm:col-span-1 p-2.5 rounded-xl bg-slate-900/80 border border-emerald-800/50">
+              <span class="text-[10px] text-slate-400 block">Conservation Laws</span>
+              <div class="flex items-center gap-1.5 text-[11px] font-bold text-emerald-300 mt-0.5">
+                <span>E: ${data.conservationSummary.energyConserved ? "✓" : "✗"}</span> • 
+                <span>P: ${data.conservationSummary.momentumConserved ? "✓" : "✗"}</span> • 
+                <span>Q: ${data.conservationSummary.chargeConserved ? "✓" : "✗"}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Conservation Details -->
+          <div class="p-3 rounded-xl bg-slate-900/90 border border-slate-800">
+            <h5 class="text-xs font-bold text-cyan-300 mb-1 flex items-center gap-1.5">
+              <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i> Conservation Law Audit
+            </h5>
+            <p class="text-[11px] text-slate-300 leading-relaxed">${escapeHtml(data.conservationSummary.notes)}</p>
+          </div>
+
+          <!-- Daughter Tracks Table -->
+          <div class="p-3 rounded-xl bg-slate-900/90 border border-slate-800">
+            <h5 class="text-xs font-bold text-sky-300 mb-2 flex items-center gap-1.5">
+              <i data-lucide="layers" class="w-3.5 h-3.5 text-sky-400"></i> Reconstructed Sub-Detector Signatures
+            </h5>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-[11px]">
+                <thead class="text-[9px] uppercase tracking-wider text-slate-400 border-b border-slate-800">
+                  <tr>
+                    <th class="pb-1">Daughter Track</th>
+                    <th class="pb-1">Deposit Type</th>
+                    <th class="pb-1">Subsystem</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/50">
+                  ${data.kinematicsBreakdown.map(k => `
+                    <tr>
+                      <td class="py-1 font-mono text-cyan-300">${escapeHtml(k.particle)}</td>
+                      <td class="py-1 text-slate-300">${escapeHtml(k.energyDepositType)}</td>
+                      <td class="py-1 text-amber-300">${escapeHtml(k.detectorSubsystem)}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Rural STEM & Arunachala Insights -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div class="p-3 rounded-xl bg-indigo-950/40 border border-indigo-700/40">
+              <h5 class="text-[11px] font-bold text-indigo-300 mb-1 flex items-center gap-1">
+                <i data-lucide="graduation-cap" class="w-3.5 h-3.5 text-indigo-400"></i> Rural STEM Inspiration
+              </h5>
+              <p class="text-[10px] text-slate-300">${escapeHtml(data.ruralStemTakeaway)}</p>
+            </div>
+            <div class="p-3 rounded-xl bg-orange-950/40 border border-orange-700/40">
+              <h5 class="text-[11px] font-bold text-amber-300 mb-1 flex items-center gap-1">
+                <span>🕉️</span> Arunachalam Cosmic Reflection
+              </h5>
+              <p class="text-[10px] text-slate-300">${escapeHtml(data.arunachalaInsight)}</p>
+            </div>
+          </div>
+        </div>
+      `;
+      lucide.createIcons();
+    }
+
+    function init3D() {
+      const width = container.clientWidth || window.innerWidth;
+      const height = container.clientHeight || window.innerHeight;
+
+      // 1. Scene setup
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x020617);
+      scene.fog = new THREE.FogExp2(0x020617, 0.015);
+
+      // 2. Camera setup
+      camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+      camera.position.set(0, 5, 22);
+
+      // 3. Renderer setup
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.2;
+      container.appendChild(renderer.domElement);
+
+      // 4. Orbit Controls
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.maxDistance = 55;
+      controls.minDistance = 3;
+
+      // 5. Lighting
+      const ambientLight = new THREE.AmbientLight(0x38bdf8, 0.45);
+      scene.add(ambientLight);
+
+      centralLight = new THREE.PointLight(0x00ffff, 4, 30);
+      centralLight.position.set(0, 0, 0);
+      scene.add(centralLight);
+
+      const secondaryLight = new THREE.DirectionalLight(0xffffff, 0.8);
+      secondaryLight.position.set(10, 20, 15);
+      scene.add(secondaryLight);
+
+      // 6. Grid Helper (Detector Coordinate Frame)
+      gridHelper = new THREE.GridHelper(30, 30, 0x0284c7, 0x0f172a);
+      gridHelper.position.y = -6;
+      scene.add(gridHelper);
+
+      // 7. Groups
+      detectorCageGroup = new THREE.Group();
+      scene.add(detectorCageGroup);
+      buildDetectorCage();
+
+      higgsGroup = new THREE.Group();
+      scene.add(higgsGroup);
+      buildHiggsCoherentState();
+
+      decayProductsGroup = new THREE.Group();
+      scene.add(decayProductsGroup);
+
+      garrfOrbitGroup = new THREE.Group();
+      scene.add(garrfOrbitGroup);
+      buildGarrfFloatingLetters();
+
+      shivaAuraGroup = new THREE.Group();
+      shivaAuraGroup.visible = false;
+      scene.add(shivaAuraGroup);
+      buildShivaCosmicAura();
+
+      window.addEventListener('resize', onWindowResize);
+    }
+
+    function buildDetectorCage() {
+      // Outer wireframe cylindrical solenoid
+      const cylGeo = new THREE.CylinderGeometry(8.5, 8.5, 24, 24, 6, true);
+      const cylMat = new THREE.MeshBasicMaterial({
+        color: 0x0369a1,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.18
+      });
+      const cylMesh = new THREE.Mesh(cylGeo, cylMat);
+      cylMesh.rotation.z = Math.PI / 2;
+      detectorCageGroup.add(cylMesh);
+
+      // Beam pipe along Z axis
+      const pipeGeo = new THREE.CylinderGeometry(0.35, 0.35, 34, 16);
+      const pipeMat = new THREE.MeshStandardMaterial({
+        color: 0x475569,
+        metalness: 0.9,
+        roughness: 0.2,
+        transparent: true,
+        opacity: 0.65
+      });
+      const pipeMesh = new THREE.Mesh(pipeGeo, pipeMat);
+      pipeMesh.rotation.z = Math.PI / 2;
+      detectorCageGroup.add(pipeMesh);
+
+      // Calorimeter ring markers
+      for (let i = -10; i <= 10; i += 5) {
+        const ringGeo = new THREE.TorusGeometry(8.55, 0.05, 8, 36);
+        const ringMat = new THREE.MeshBasicMaterial({ color: 0x0284c7, transparent: true, opacity: 0.25 });
+        const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+        ringMesh.position.x = i;
+        ringMesh.rotation.y = Math.PI / 2;
+        detectorCageGroup.add(ringMesh);
+      }
+    }
+
+    function buildHiggsCoherentState() {
+      // 1. Quantum Core Sphere
+      const coreGeo = new THREE.SphereGeometry(1.3, 32, 32);
+      const coreMat = new THREE.MeshStandardMaterial({
+        color: 0x38bdf8,
+        emissive: 0x0284c7,
+        emissiveIntensity: 0.85,
+        roughness: 0.2,
+        metalness: 0.5,
+        wireframe: false
+      });
+      coreMesh = new THREE.Mesh(coreGeo, coreMat);
+      higgsGroup.add(coreMesh);
+
+      // 2. Halo Energy Envelope
+      const haloGeo = new THREE.SphereGeometry(1.9, 32, 32);
+      const haloMat = new THREE.MeshBasicMaterial({
+        color: 0x38bdf8,
+        transparent: true,
+        opacity: 0.28,
+        wireframe: true
+      });
+      haloMesh = new THREE.Mesh(haloGeo, haloMat);
+      higgsGroup.add(haloMesh);
+
+      // 3. Virtual Quantum Excitation Swarm
+      const swarmCount = 220;
+      const swarmGeo = new THREE.BufferGeometry();
+      const posArray = new Float32Array(swarmCount * 3);
+      const colArray = new Float32Array(swarmCount * 3);
+
+      for (let i = 0; i < swarmCount; i++) {
+        const r = 1.2 + Math.random() * 1.8;
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1);
+
+        posArray[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+        posArray[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+        posArray[i * 3 + 2] = r * Math.cos(phi);
+
+        colArray[i * 3] = 0.2;
+        colArray[i * 3 + 1] = 0.8;
+        colArray[i * 3 + 2] = 1.0;
+      }
+
+      swarmGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+      swarmGeo.setAttribute('color', new THREE.BufferAttribute(colArray, 3));
+
+      const swarmMat = new THREE.PointsMaterial({
+        size: 0.12,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.85
+      });
+      virtualSwarmPoints = new THREE.Points(swarmGeo, swarmMat);
+      higgsGroup.add(virtualSwarmPoints);
+    }
+
+    function createTextCanvasTexture(word, isHighlighted = false) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 128;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, 512, 128);
+
+      // Gradient text effect with radiant Arunachala aura
+      const grad = ctx.createLinearGradient(0, 0, 512, 0);
+      grad.addColorStop(0, '#f59e0b');
+      grad.addColorStop(0.5, '#fbbf24');
+      grad.addColorStop(1, '#f97316');
+
+      ctx.fillStyle = grad;
+      ctx.shadowColor = isHighlighted ? '#ec4899' : '#f97316';
+      ctx.shadowBlur = 18;
+      ctx.font = '900 44px Orbitron, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(word, 256, 64);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.needsUpdate = true;
+      return texture;
+    }
+
+    function buildGarrfFloatingLetters() {
+      // Clear existing children if re-initializing
+      while (garrfOrbitGroup.children.length > 0) {
+        garrfOrbitGroup.remove(garrfOrbitGroup.children[0]);
+      }
+      garrfTextMeshes = [];
+
+      // Break full name into distinct words distributed around a wide cosmic celestial orbit
+      const words = [
+        "GOPALKRISHNA",
+        "ADVANCED",
+        "RURAL",
+        "RESEARCH",
+        "FOUNDATION",
+        "•",
+        "ARUNACHALAM",
+        "•"
+      ];
+      const orbitRadius = 15.5; // Expanded orbit so it floats gracefully around the entire detector
+
+      words.forEach((word, idx) => {
+        const isBullet = word === '•';
+        const mat = new THREE.SpriteMaterial({
+          map: createTextCanvasTexture(word, isBullet),
+          transparent: true,
+          opacity: 0.9,
+          blending: THREE.AdditiveBlending
+        });
+        const sprite = new THREE.Sprite(mat);
+        
+        // Scale width according to word length
+        const baseWidth = isBullet ? 1.8 : Math.max(3.8, word.length * 0.58);
+        sprite.scale.set(baseWidth, 1.9, 1);
+        
+        sprite.userData = {
+          angle: (idx / words.length) * Math.PI * 2,
+          radius: orbitRadius,
+          speed: 0.16, // Gentle, majestic cosmic orbital speed
+          yOffset: (idx % 2 === 0 ? 1 : -1) * 1.2,
+          phase: idx * 0.8
+        };
+        garrfOrbitGroup.add(sprite);
+        garrfTextMeshes.push(sprite);
+      });
+    }
+
+    function buildShivaCosmicAura() {
+      // 1. Fiery Torus Halo (Nataraja Cosmic Ring)
+      const ringGeo = new THREE.TorusGeometry(5.2, 0.15, 16, 100);
+      const ringMat = new THREE.MeshStandardMaterial({
+        color: 0xf97316,
+        emissive: 0xd946ef,
+        emissiveIntensity: 1.2,
+        roughness: 0.3
+      });
+      const cosmicRing = new THREE.Mesh(ringGeo, ringMat);
+      cosmicRing.name = "cosmicRing";
+      shivaAuraGroup.add(cosmicRing);
+
+      // 2. Cosmic Spark Particle Ring
+      const auraCount = 400;
+      const auraGeo = new THREE.BufferGeometry();
+      const pos = new Float32Array(auraCount * 3);
+      const col = new Float32Array(auraCount * 3);
+
+      for (let i = 0; i < auraCount; i++) {
+        const ang = Math.random() * Math.PI * 2;
+        const rad = 5.0 + (Math.random() - 0.5) * 1.5;
+        pos[i * 3] = Math.cos(ang) * rad;
+        pos[i * 3 + 1] = (Math.random() - 0.5) * 2.5;
+        pos[i * 3 + 2] = Math.sin(ang) * rad;
+
+        col[i * 3] = 1.0;
+        col[i * 3 + 1] = 0.4 + Math.random() * 0.4;
+        col[i * 3 + 2] = 0.1;
+      }
+      auraGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      auraGeo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+
+      const auraMat = new THREE.PointsMaterial({
+        size: 0.18,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.9,
+        blending: THREE.AdditiveBlending
+      });
+      const auraPoints = new THREE.Points(auraGeo, auraMat);
+      auraPoints.name = "auraPoints";
+      shivaAuraGroup.add(auraPoints);
+    }
+
+    function clearDecayProducts() {
+      while (decayProductsGroup.children.length > 0) {
+        const obj = decayProductsGroup.children[0];
+        if (obj.geometry) obj.geometry.dispose();
+        if (obj.material) {
+          if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose());
+          else obj.material.dispose();
+        }
+        decayProductsGroup.remove(obj);
+      }
+      trackObjects = [];
+      explosionSparks = null;
+    }
+
+    function createDecayTracks(channel) {
+      clearDecayProducts();
+
+      // Explosion flash cloud
+      const sparkCount = 180;
+      const sparkGeo = new THREE.BufferGeometry();
+      const sparkPos = new Float32Array(sparkCount * 3);
+      const sparkVels = [];
+      const sparkCols = new Float32Array(sparkCount * 3);
+
+      for (let i = 0; i < sparkCount; i++) {
+        sparkPos[i * 3] = 0;
+        sparkPos[i * 3 + 1] = 0;
+        sparkPos[i * 3 + 2] = 0;
+
+        const dir = new THREE.Vector3(
+          (Math.random() - 0.5) * 2,
+          (Math.random() - 0.5) * 2,
+          (Math.random() - 0.5) * 2
+        ).normalize().multiplyScalar(2 + Math.random() * 6);
+        sparkVels.push(dir);
+
+        sparkCols[i * 3] = isShivaMode ? 1.0 : 0.2;
+        sparkCols[i * 3 + 1] = isShivaMode ? 0.6 : 0.8;
+        sparkCols[i * 3 + 2] = isShivaMode ? 0.2 : 1.0;
+      }
+      sparkGeo.setAttribute('position', new THREE.BufferAttribute(sparkPos, 3));
+      sparkGeo.setAttribute('color', new THREE.BufferAttribute(sparkCols, 3));
+
+      const sparkMat = new THREE.PointsMaterial({
+        size: 0.16,
+        vertexColors: true,
+        transparent: true,
+        opacity: 1.0,
+        blending: THREE.AdditiveBlending
+      });
+      explosionSparks = new THREE.Points(sparkGeo, sparkMat);
+      explosionSparks.userData = { velocities: sparkVels };
+      decayProductsGroup.add(explosionSparks);
+
+      if (channel === 'golden') {
+        // H -> ZZ* -> 4 Leptons: 2 Electrons + 2 Muons
+        const config = [
+          { name: 'e⁻ (Electron)', color: 0x38bdf8, charge: -1, dir: new THREE.Vector3(1, 0.4, 0.6).normalize() },
+          { name: 'e⁺ (Positron)', color: 0x38bdf8, charge: +1, dir: new THREE.Vector3(0.9, -0.5, -0.6).normalize() },
+          { name: 'μ⁻ (Muon)',     color: 0xc084fc, charge: -1, dir: new THREE.Vector3(-1, 0.3, -0.5).normalize() },
+          { name: 'μ⁺ (Anti-Muon)', color: 0xc084fc, charge: +1, dir: new THREE.Vector3(-0.8, -0.6, 0.5).normalize() }
+        ];
+
+        config.forEach(item => {
+          const maxPts = 120;
+          const curvePositions = new Float32Array(maxPts * 3);
+          const geo = new THREE.BufferGeometry();
+          geo.setAttribute('position', new THREE.BufferAttribute(curvePositions, 3));
+
+          const mat = new THREE.LineBasicMaterial({
+            color: item.color,
+            linewidth: 2,
+            transparent: true,
+            opacity: 0.95
+          });
+          const line = new THREE.Line(geo, mat);
+          line.frustumCulled = false;
+
+          // Leading particle sphere
+          const pGeo = new THREE.SphereGeometry(0.18, 16, 16);
+          const pMat = new THREE.MeshStandardMaterial({
+            color: item.color,
+            emissive: item.color,
+            emissiveIntensity: 1.2
+          });
+          const pHead = new THREE.Mesh(pGeo, pMat);
+          decayProductsGroup.add(pHead);
+
+          decayProductsGroup.add(line);
+          trackObjects.push({
+            type: 'curved',
+            line: line,
+            head: pHead,
+            config: item,
+            maxPts: maxPts,
+            curCount: 1
+          });
+        });
+
+      } else if (channel === 'diphoton') {
+        // H -> gamma gamma (Opposite straight photon beams)
+        const dirs = [
+          new THREE.Vector3(1, 0.25, -0.2).normalize(),
+          new THREE.Vector3(-1, -0.25, 0.2).normalize()
+        ];
+
+        dirs.forEach((dir, i) => {
+          const maxPts = 80;
+          const pos = new Float32Array(maxPts * 3);
+          const geo = new THREE.BufferGeometry();
+          geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+
+          const mat = new THREE.LineDashedMaterial({
+            color: 0xfbbf24,
+            dashSize: 0.3,
+            gapSize: 0.15,
+            linewidth: 2
+          });
+          const line = new THREE.Line(geo, mat);
+          line.frustumCulled = false;
+
+          const pGeo = new THREE.SphereGeometry(0.24, 16, 16);
+          const pMat = new THREE.MeshStandardMaterial({
+            color: 0xfef08a,
+            emissive: 0xf59e0b,
+            emissiveIntensity: 2.0
+          });
+          const head = new THREE.Mesh(pGeo, pMat);
+          decayProductsGroup.add(head);
+
+          decayProductsGroup.add(line);
+          trackObjects.push({
+            type: 'straight',
+            line: line,
+            head: head,
+            dir: dir,
+            maxDist: 14.0
+          });
+        });
+
+      } else if (channel === 'bbbar') {
+        // H -> b b_bar (Jets of hadrons)
+        const jetAxes = [
+          new THREE.Vector3(0.8, 0.6, 0.2).normalize(),
+          new THREE.Vector3(-0.8, -0.6, -0.2).normalize()
+        ];
+
+        jetAxes.forEach(axis => {
+          for (let k = 0; k < 6; k++) {
+            const spread = new THREE.Vector3(
+              (Math.random() - 0.5) * 0.45,
+              (Math.random() - 0.5) * 0.45,
+              (Math.random() - 0.5) * 0.45
+            );
+            const dir = axis.clone().add(spread).normalize();
+
+            const maxPts = 70;
+            const pos = new Float32Array(maxPts * 3);
+            const geo = new THREE.BufferGeometry();
+            geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+
+            const mat = new THREE.LineBasicMaterial({
+              color: 0xf43f5e,
+              transparent: true,
+              opacity: 0.8
+            });
+            const line = new THREE.Line(geo, mat);
+            line.frustumCulled = false;
+
+            const head = new THREE.Mesh(
+              new THREE.SphereGeometry(0.12, 12, 12),
+              new THREE.MeshBasicMaterial({ color: 0xf43f5e })
+            );
+            decayProductsGroup.add(head);
+            decayProductsGroup.add(line);
+
+            trackObjects.push({
+              type: 'jet',
+              line: line,
+              head: head,
+              dir: dir,
+              speedMult: 0.8 + Math.random() * 0.4
+            });
+          }
+        });
+      }
+    }
+
+    function triggerDecaySlowPace() {
+      if (decayActive) return;
+      decayDuration = parseFloat(paceSlider.value);
+      decayProgress = 0.0;
+      decayActive = true;
+      isDecayed = true;
+
+      stateBadge.textContent = "DECAYING (SLOW PACE)";
+      stateBadge.className = "px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-400/40 animate-pulse";
+
+      createDecayTracks(channelSelect.value);
+    }
+
+    function reformHiggsBoson() {
+      decayActive = false;
+      isDecayed = false;
+      decayProgress = 0.0;
+
+      clearDecayProducts();
+
+      // Reset central core visibility and scale
+      coreMesh.scale.set(1, 1, 1);
+      haloMesh.scale.set(1, 1, 1);
+      coreMesh.material.opacity = 1.0;
+      coreMesh.material.transparent = false;
+      haloMesh.material.opacity = 0.28;
+      virtualSwarmPoints.visible = true;
+
+      // Reset HUD labels
+      stateBadge.textContent = isShivaMode ? "SHIVA-HIGGS ALIGNED" : "HIGGS COHERENT";
+      stateBadge.className = isShivaMode
+        ? "px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/30 text-amber-300 border border-amber-400"
+        : "px-1.5 py-0.5 rounded text-[9px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-400/40";
+      decayProgressBar.style.width = "0%";
+      simulatedTimeLabel.textContent = `0.00 / ${decayDuration.toFixed(2)} s`;
+    }
+
+    function toggleArunachalaShivaMode() {
+      isShivaMode = !isShivaMode;
+      document.body.classList.toggle('arunachala-active', isShivaMode);
+
+      if (isShivaMode) {
+        shivaAuraGroup.visible = true;
+        arunachalaBanner.classList.remove('opacity-0', '-translate-y-4');
+        arunachalaBanner.classList.add('opacity-100', 'translate-y-0');
+
+        centralLight.color.setHex(0xf97316);
+        coreMesh.material.color.setHex(0xf59e0b);
+        coreMesh.material.emissive.setHex(0xd946ef);
+        haloMesh.material.color.setHex(0xfbbf24);
+
+        scene.background.setHex(0x0f0417);
+        scene.fog.color.setHex(0x0f0417);
+
+        shivaModeBtn.innerHTML = `
+          <span class="text-base leading-none">🔥</span>
+          <span class="hidden sm:inline font-arunachala tracking-wide">Cosmic Shiva Active</span>
+          <span class="sm:hidden font-arunachala">Active</span>
+        `;
+        shivaModeBtn.classList.add('ring-2', 'ring-amber-300');
+      } else {
+        shivaAuraGroup.visible = false;
+        arunachalaBanner.classList.remove('opacity-100', 'translate-y-0');
+        arunachalaBanner.classList.add('opacity-0', '-translate-y-4');
+
+        centralLight.color.setHex(0x00ffff);
+        coreMesh.material.color.setHex(0x38bdf8);
+        coreMesh.material.emissive.setHex(0x0284c7);
+        haloMesh.material.color.setHex(0x38bdf8);
+
+        scene.background.setHex(0x020617);
+        scene.fog.color.setHex(0x020617);
+
+        shivaModeBtn.innerHTML = `
+          <span class="text-base leading-none">🕉️</span>
+          <span class="hidden sm:inline font-arunachala tracking-wide">Arunachala-Shiva Mode</span>
+          <span class="sm:hidden font-arunachala">Shiva</span>
+        `;
+        shivaModeBtn.classList.remove('ring-2', 'ring-amber-300');
+      }
+
+      if (!isDecayed) {
+        stateBadge.textContent = isShivaMode ? "SHIVA-HIGGS ALIGNED" : "HIGGS COHERENT";
+      }
+    }
+
+    function onWindowResize() {
+      const width = container.clientWidth || window.innerWidth;
+      const height = container.clientHeight || window.innerHeight;
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      renderer.setSize(width, height);
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const delta = clock.getDelta();
+      const elapsed = clock.getElapsedTime();
+
+      // Rotate Coherent Higgs & Swarm
+      if (!isDecayed || decayProgress < 0.4) {
+        higgsGroup.rotation.y += delta * 0.8;
+        haloMesh.rotation.x += delta * 0.5;
+        virtualSwarmPoints.rotation.z -= delta * 0.4;
+      }
+
+      garrfOrbitGroup.children.forEach(sprite => {
+        const u = sprite.userData;
+        u.angle += delta * (isShivaMode ? 0.38 : 0.22);
+        sprite.position.x = Math.cos(u.angle) * u.radius;
+        sprite.position.z = Math.sin(u.angle) * u.radius;
+        // Subtle vertical undulating wave motion for celestial realism
+        sprite.position.y = u.yOffset + Math.sin(elapsed * 1.5 + u.phase) * 0.9;
+      });
+
+      // Shiva Cosmic Aura Effects
+      if (isShivaMode && shivaAuraGroup.visible) {
+        const ring = shivaAuraGroup.getObjectByName("cosmicRing");
+        if (ring) {
+          ring.rotation.z += delta * 0.3;
+          ring.rotation.x = Math.sin(elapsed * 0.6) * 0.25;
+        }
+        const pts = shivaAuraGroup.getObjectByName("auraPoints");
+        if (pts) {
+          pts.rotation.y -= delta * 0.2;
+        }
+      }
+
+      // Handle Slow-Pace Decay Progression
+      if (decayActive) {
+        decayProgress += delta / decayDuration;
+        const currentSimTime = Math.min(decayProgress * decayDuration, decayDuration);
+        simulatedTimeLabel.textContent = `${currentSimTime.toFixed(2)} / ${decayDuration.toFixed(2)} s`;
+        decayProgressBar.style.width = `${Math.min(decayProgress * 100, 100)}%`;
+
+        // Dissolve coherent core during first 20% of progress
+        const coreFactor = Math.max(0, 1 - (decayProgress * 5));
+        coreMesh.scale.setScalar(Math.max(0.01, coreFactor));
+        haloMesh.scale.setScalar(Math.max(0.01, 1 + (decayProgress * 2)));
+        haloMesh.material.opacity = 0.28 * coreFactor;
+        if (coreFactor <= 0.05) virtualSwarmPoints.visible = false;
+
+        // Disperse Sparks
+        if (explosionSparks) {
+          const pos = explosionSparks.geometry.attributes.position.array;
+          const vels = explosionSparks.userData.velocities;
+          for (let i = 0; i < vels.length; i++) {
+            pos[i * 3] += vels[i].x * delta * (1 - decayProgress * 0.6);
+            pos[i * 3 + 1] += vels[i].y * delta * (1 - decayProgress * 0.6);
+            pos[i * 3 + 2] += vels[i].z * delta * (1 - decayProgress * 0.6);
+          }
+          explosionSparks.geometry.attributes.position.needsUpdate = true;
+          explosionSparks.material.opacity = Math.max(0, 1.0 - decayProgress * 0.9);
+        }
+
+        // Animate Daughter Tracks
+        const trackProgress = Math.min(1.0, decayProgress * 1.3);
+
+        trackObjects.forEach(tr => {
+          if (tr.type === 'curved') {
+            const maxRadius = 13.0 * trackProgress;
+            const posAttr = tr.line.geometry.attributes.position;
+            const pointsCount = Math.floor(tr.maxPts * trackProgress);
+            const B = 0.35 * tr.config.charge;
+
+            for (let i = 0; i < pointsCount; i++) {
+              const t = (i / tr.maxPts) * maxRadius;
+              const angle = t * B;
+              const x = (tr.config.dir.x * t) * Math.cos(angle) - (tr.config.dir.z * t) * Math.sin(angle);
+              const y = tr.config.dir.y * t;
+              const z = (tr.config.dir.x * t) * Math.sin(angle) + (tr.config.dir.z * t) * Math.cos(angle);
+
+              posAttr.setXYZ(i, x, y, z);
+
+              if (i === pointsCount - 1 && tr.head) {
+                tr.head.position.set(x, y, z);
+              }
+            }
+            posAttr.needsUpdate = true;
+            tr.line.geometry.setDrawRange(0, pointsCount);
+
+          } else if (tr.type === 'straight' || tr.type === 'jet') {
+            const dist = 12.0 * trackProgress * (tr.speedMult || 1.0);
+            const posAttr = tr.line.geometry.attributes.position;
+            posAttr.setXYZ(0, 0, 0, 0);
+            const endX = tr.dir.x * dist;
+            const endY = tr.dir.y * dist;
+            const endZ = tr.dir.z * dist;
+            posAttr.setXYZ(1, endX, endY, endZ);
+            posAttr.needsUpdate = true;
+            tr.line.geometry.setDrawRange(0, 2);
+
+            if (tr.head) {
+              tr.head.position.set(endX, endY, endZ);
+            }
+          }
+        });
+
+        // Decay sequence completion
+        if (decayProgress >= 1.0) {
+          decayActive = false;
+          stateBadge.textContent = "DECAY COMPLETED";
+          stateBadge.className = "px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40";
+        }
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    window.onload = function () {
+      init3D();
+      animate();
+
+      // --- SIMULATION CONTROL LISTENERS ---
+      const breakBtn = document.getElementById('breakBtn');
+      const resetBtn = document.getElementById('resetBtn');
+
+      breakBtn.addEventListener('click', triggerDecaySlowPace);
+      resetBtn.addEventListener('click', reformHiggsBoson);
+      shivaModeBtn.addEventListener('click', toggleArunachalaShivaMode);
+
+      paceSlider.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        paceValueLabel.textContent = `${val} Seconds`;
+        decayDuration = val;
+        const slowdownRatio = (val / REAL_LIFETIME).toExponential(2);
+        slowdownFactorLabel.textContent = `${slowdownRatio} ×`;
+        simulatedTimeLabel.textContent = `0.00 / ${val.toFixed(2)} s`;
+      });
+
+      // --- COLLAPSIBLE PANELS & MOBILE HUD LISTENERS ---
+      const telemetryBox = document.getElementById('telemetryBox');
+      const telemetryMinBtn = document.getElementById('telemetryMinBtn');
+      const telemetryExpandBtn = document.getElementById('telemetryExpandBtn');
+
+      telemetryMinBtn.addEventListener('click', () => {
+        telemetryBox.classList.add('hidden');
+        telemetryExpandBtn.classList.remove('hidden');
+      });
+      telemetryExpandBtn.addEventListener('click', () => {
+        telemetryBox.classList.remove('hidden');
+        telemetryExpandBtn.classList.add('hidden');
+      });
+
+      const controlsContainer = document.getElementById('controlsContainer');
+      const controlsMinBtn = document.getElementById('controlsMinBtn');
+      const controlsExpandBtn = document.getElementById('controlsExpandBtn');
+
+      controlsMinBtn.addEventListener('click', () => {
+        controlsContainer.classList.add('hidden');
+        controlsExpandBtn.classList.remove('hidden');
+      });
+      controlsExpandBtn.addEventListener('click', () => {
+        controlsContainer.classList.remove('hidden');
+        controlsExpandBtn.classList.add('hidden');
+      });
+
+      // Header toggle for maximum mobile canvas space
+      const mainHeader = document.getElementById('mainHeader');
+      const toggleHeaderBtn = document.getElementById('toggleHeaderBtn');
+      const headerChevron = document.getElementById('headerChevron');
+      let isHeaderCollapsed = false;
+
+      toggleHeaderBtn.addEventListener('click', () => {
+        isHeaderCollapsed = !isHeaderCollapsed;
+        if (isHeaderCollapsed) {
+          mainHeader.classList.add('-translate-y-full');
+          toggleHeaderBtn.classList.add('fixed', 'top-2', 'right-2', 'z-50');
+          headerChevron.setAttribute('data-lucide', 'chevrons-down');
+        } else {
+          mainHeader.classList.remove('-translate-y-full');
+          toggleHeaderBtn.classList.remove('fixed', 'top-2', 'right-2', 'z-50');
+          headerChevron.setAttribute('data-lucide', 'chevrons-up');
+        }
+        lucide.createIcons();
+      });
+
+      // Camera Quick Touch Controls
+      document.getElementById('zoomInBtn').addEventListener('click', () => {
+        camera.position.multiplyScalar(0.85);
+      });
+      document.getElementById('zoomOutBtn').addEventListener('click', () => {
+        camera.position.multiplyScalar(1.15);
+      });
+      document.getElementById('camResetBtn').addEventListener('click', () => {
+        camera.position.set(0, 5, 22);
+        controls.target.set(0, 0, 0);
+      });
+
+      // --- THEORY MODAL LISTENERS ---
+      const theoryBtn = document.getElementById('theoryBtn');
+      const theoryModal = document.getElementById('theoryModal');
+      const closeModalBtn = document.getElementById('closeModalBtn');
+      const closeModalBtn2 = document.getElementById('closeModalBtn2');
+
+      const openModal = () => { theoryModal.classList.remove('hidden'); theoryModal.classList.add('flex'); };
+      const closeModal = () => { theoryModal.classList.add('hidden'); theoryModal.classList.remove('flex'); };
+
+      theoryBtn.addEventListener('click', openModal);
+      closeModalBtn.addEventListener('click', closeModal);
+      closeModalBtn2.addEventListener('click', closeModal);
+      theoryModal.addEventListener('click', (e) => {
+        if (e.target === theoryModal) closeModal();
+      });
+
+      // --- GEMINI AI LISTENERS ---
+      aiDocentBtn.addEventListener('click', toggleAiDocent);
+      aiDocentCloseBtn.addEventListener('click', () => aiDocentPanel.classList.add('hidden'));
+
+      aiSendBtn.addEventListener('click', () => sendAiQuestion(aiQuestionInput.value));
+      aiQuestionInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') sendAiQuestion(aiQuestionInput.value);
+      });
+
+      // Quick Prompt Chips
+      document.querySelectorAll('.ai-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+          const prompt = chip.getAttribute('data-prompt');
+          sendAiQuestion(prompt);
+        });
+      });
+
+      // AI Kinematics Spectrometer
+      aiAnalyzeEventBtn.addEventListener('click', analyzeCurrentDecayEvent);
+      closeAnalysisModalBtn.addEventListener('click', () => {
+        aiAnalysisModal.classList.add('hidden');
+        aiAnalysisModal.classList.remove('flex');
+      });
+      aiAnalysisModal.addEventListener('click', (e) => {
+        if (e.target === aiAnalysisModal) {
+          aiAnalysisModal.classList.add('hidden');
+          aiAnalysisModal.classList.remove('flex');
+        }
+      });
+
+      // Auto-collapse control panel on small screens initially for maximum 3D view
+      if (window.innerWidth < 640) {
+        telemetryMinBtn.click();
+      }
+    };
+  </script>
+</body>
+</html>
