@@ -1,0 +1,2169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KuKudu Ku, our Village Roaster &mdash; GARRF Autonomous Biped Sim-to-Real Digital Twin Explorer</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Three.js and OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              gold: '#F59E0B',
+              orange: '#EA580C',
+              cyan: '#06B6D4',
+              neon: '#10B981',
+              dark: '#080C16'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: #060913;
+      user-select: none;
+      touch-action: none;
+    }
+    canvas#webgl-canvas {
+      width: 100vw;
+      height: 100vh;
+      display: block;
+      cursor: grab;
+    }
+    canvas#webgl-canvas:active {
+      cursor: grabbing;
+    }
+    .glass-panel {
+      background: rgba(11, 18, 33, 0.90);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.7);
+    }
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0,0,0,0.3);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.2);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255,255,255,0.4);
+    }
+  </style>
+</head>
+<body class="text-slate-100 flex flex-col h-screen overflow-hidden">
+
+  <!-- ================= TOP HEADER & BRANDING ================= -->
+  <header class="fixed top-0 left-0 right-0 z-30 flex flex-wrap items-center justify-between px-3 md:px-5 py-2 glass-panel border-b border-slate-700/70">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-lg overflow-hidden border border-amber-500/50 bg-slate-900 flex-shrink-0 flex items-center justify-center shadow-md shadow-amber-500/20">
+        <img src="logo.jpeg" alt="GARRF Logo" onerror="this.onerror=null; this.src='https://placehold.co/80x80/0f172a/f59e0b?text=GARRF'" class="w-full h-full object-cover">
+      </div>
+      <div>
+        <div class="flex items-center space-x-2">
+          <span class="text-xs sm:text-sm md:text-base font-bold tracking-tight bg-gradient-to-r from-amber-400 via-orange-300 to-yellow-200 bg-clip-text text-transparent">
+            KuKudu Ku, our Village Roaster 🐓
+          </span>
+          <span title="India" class="text-sm md:text-base">🇮🇳</span>
+        </div>
+        <p class="text-[10px] sm:text-[11px] md:text-xs text-slate-300 font-medium">
+          Gopalkrishna Advanced Rural Research Foundation &mdash; <span class="text-cyan-400">Dr. APJ Abdul Kalam Sim-to-Real Zero Funding Initiative</span>
+        </p>
+      </div>
+    </div>
+
+    <!-- Arena Badge & Live Status -->
+    <div class="hidden lg:flex flex-col items-center px-3 py-1 bg-amber-950/40 rounded-lg border border-amber-500/30">
+      <span class="text-[11px] font-bold text-amber-300 flex items-center space-x-1">
+        <span>🏡</span>
+        <span>GopalKrishna Advanced Rural Research Foundation's Village backyard</span>
+      </span>
+      <span class="text-[9px] text-emerald-400 font-mono">4,096 Swarm Sim-to-Real Active | 50 Hz Control Loop</span>
+    </div>
+
+    <!-- Quick Action Bar -->
+    <div class="flex items-center space-x-2 mt-1 sm:mt-0">
+      <button id="btn-toggle-hud" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-xs font-semibold text-slate-300 transition flex items-center space-x-1" title="Toggle Clean View">
+        <span id="hud-toggle-icon">👁️</span>
+        <span class="hidden md:inline" id="hud-toggle-text">Clean View</span>
+      </button>
+
+      <button id="btn-activate" class="flex items-center space-x-1.5 px-3 md:px-4 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white rounded-lg font-bold text-xs tracking-wide uppercase transition shadow-lg shadow-emerald-900/50 cursor-pointer">
+        <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        <span id="activate-text">#Activate</span>
+      </button>
+
+      <button id="btn-push-duck" title="Perturb robot to evaluate self-righting balance" class="px-2.5 md:px-3 py-1.5 bg-rose-600/80 hover:bg-rose-500 text-white rounded-lg text-xs font-semibold flex items-center space-x-1 border border-rose-400/40 transition">
+        <span>⚡ Push</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ================= 3D VIEWPORT CANVAS ================= -->
+  <div class="relative flex-1 w-full h-full">
+    <canvas id="webgl-canvas"></canvas>
+
+    <!-- FLOATING CAMERA PRESET BAR -->
+    <div class="absolute top-16 left-1/2 transform -translate-x-1/2 z-20 flex items-center space-x-1 bg-slate-900/90 backdrop-blur-md px-2.5 py-1.5 rounded-full border border-slate-700 shadow-xl text-[11px]">
+      <span class="text-slate-400 text-[10px] font-mono px-1">CAM:</span>
+      <button id="cam-front" class="px-2.5 py-1 bg-cyan-600 hover:bg-cyan-500 text-white rounded-full font-bold shadow transition">Front View</button>
+      <button id="cam-iso" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-full transition">3D Iso</button>
+      <button id="cam-side" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-full transition">Side (Right)</button>
+      <button id="cam-top" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-full transition">Top (Plan)</button>
+      <button id="cam-ball" class="px-2.5 py-1 bg-amber-600 hover:bg-amber-500 text-white rounded-full font-semibold transition" title="Focus Camera on Kick Target">⚽ Ball Cam</button>
+      <button id="cam-fpv" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-full transition">Rooster Eye</button>
+      <button id="cam-free" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-amber-300 rounded-full font-semibold transition" title="Orbit Mode">🔄 Free 360°</button>
+    </div>
+
+    <!-- FLOATING STATUS BANNER -->
+    <div id="kick-routine-banner" class="hidden absolute top-28 left-1/2 transform -translate-x-1/2 z-20 bg-amber-500/95 text-slate-950 font-bold px-4 py-1.5 rounded-full text-xs shadow-xl flex items-center space-x-2 border border-yellow-300 transition-all">
+      <span id="banner-icon">⚽</span>
+      <span id="kick-routine-status-text">Approaching ball: Calculating vector...</span>
+    </div>
+
+    <!-- FLOATING HUD - LEFT PANEL -->
+    <div id="panel-left" class="absolute top-28 left-3 w-80 max-h-[calc(100vh-8.5rem)] overflow-y-auto glass-panel rounded-xl p-3.5 space-y-3 z-20 transition-all border border-slate-700/70">
+      
+      <!-- Student Profile & Persistence -->
+      <div class="border-b border-slate-700/60 pb-2.5">
+        <div class="flex items-center justify-between mb-1">
+          <label class="text-[11px] uppercase tracking-wider text-slate-400 font-bold">Student Researcher</label>
+          <span id="save-status-indicator" class="text-[10px] text-emerald-400 font-mono">Synced</span>
+        </div>
+        <div class="flex space-x-1.5">
+          <input type="text" id="student-name" value="Arav Sharma" class="w-full bg-slate-900/90 border border-slate-700 text-xs px-2.5 py-1.5 rounded-lg text-slate-200 focus:outline-none focus:border-cyan-500">
+          <button id="btn-quick-save" title="Save Project State to Browser" class="px-3 py-1.5 bg-cyan-700 hover:bg-cyan-600 rounded-lg text-xs font-bold text-white transition flex items-center">
+            💾
+          </button>
+        </div>
+        <div class="grid grid-cols-2 gap-1.5 mt-2">
+          <button id="btn-save-project" class="py-1 px-2 text-[11px] bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded text-slate-300 font-medium">Save Project (JSON)</button>
+          <button id="btn-load-project" class="py-1 px-2 text-[11px] bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded text-slate-300 font-medium">Resume Project</button>
+          <input type="file" id="file-load-project" accept=".json" class="hidden">
+        </div>
+      </div>
+
+      <!-- Real Ground Picture Upload & Arena Settings -->
+      <div class="border-b border-slate-700/60 pb-3 space-y-2.5">
+        <div class="flex items-center justify-between">
+          <label class="text-[11px] uppercase tracking-wider text-cyan-400 font-bold">Arena Ground & Terrain</label>
+          <span id="ground-source-tag" class="text-[10px] px-1.5 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800 font-mono">Rural Courtyard</span>
+        </div>
+
+        <label for="real-ground-input" class="w-full py-2 px-3 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white rounded-lg text-xs font-bold tracking-wide flex items-center justify-center space-x-2 cursor-pointer shadow-md transition">
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
+          <span>Upload Lab / Backyard Photo</span>
+        </label>
+        <input type="file" id="real-ground-input" accept="image/*" class="hidden">
+
+        <div class="flex items-center space-x-1.5 text-[11px]">
+          <span class="text-slate-400 text-[10px]">Preset:</span>
+          <select id="env-preset" class="flex-1 bg-slate-900 border border-slate-700 text-xs px-2 py-1 rounded text-slate-200">
+            <option value="rural_backyard" selected>GARRF Village Backyard (Soil & Twigs)</option>
+            <option value="civil_lab">Civil Lab Floor (Rebar & Nails)</option>
+            <option value="cracked_concrete">Cracked Concrete Courtyard</option>
+            <option value="polished_epoxy">Smooth AISIA Lab Floor</option>
+          </select>
+        </div>
+
+        <div class="bg-slate-900/80 p-2.5 rounded-lg border border-slate-800 space-y-2 text-[10px]">
+          <div class="flex justify-between items-center text-slate-400">
+            <span>Camera Pitch Angle:</span>
+            <span id="lbl-pitch" class="font-mono text-cyan-300">30° Tilt</span>
+          </div>
+          <input type="range" id="slider-pitch" min="15" max="65" value="30" class="w-full h-1 bg-slate-700 rounded appearance-none cursor-pointer accent-cyan-500">
+
+          <div class="flex justify-between items-center text-slate-400">
+            <span>Texture Scale:</span>
+            <span id="lbl-scale" class="font-mono text-cyan-300">1.0x</span>
+          </div>
+          <input type="range" id="slider-scale" min="0.5" max="4.0" step="0.1" value="1.0" class="w-full h-1 bg-slate-700 rounded appearance-none cursor-pointer accent-cyan-500">
+
+          <div class="flex justify-between items-center text-slate-400">
+            <span>Ground Friction Coefficient (μ):</span>
+            <span id="lbl-friction" class="font-mono text-emerald-400">0.78 (Rural Soil)</span>
+          </div>
+          <input type="range" id="slider-friction" min="0.1" max="1.0" step="0.05" value="0.78" class="w-full h-1 bg-slate-700 rounded appearance-none cursor-pointer accent-emerald-500">
+
+          <div class="flex justify-between items-center text-slate-400">
+            <span>Hazard Density (Twigs, Stones, Rebar):</span>
+            <span id="lbl-hazard" class="font-mono text-amber-400">Medium</span>
+          </div>
+          <input type="range" id="slider-hazard" min="1" max="3" value="2" class="w-full h-1 bg-slate-700 rounded appearance-none cursor-pointer accent-amber-500">
+          
+          <div class="grid grid-cols-2 gap-1 pt-1">
+            <button id="btn-regen-hazards" class="py-1 bg-amber-900/40 hover:bg-amber-800/60 border border-amber-600/50 rounded text-[10px] text-amber-300 font-semibold transition">
+              Re-seed Backyard
+            </button>
+            <button id="btn-spawn-obstacle-front" class="py-1 bg-rose-900/40 hover:bg-rose-800/60 border border-rose-500/50 rounded text-[10px] text-rose-300 font-semibold transition">
+              + Obstacle Ahead
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dissection & Internal Anatomy Slider -->
+      <div class="space-y-2">
+        <div class="flex items-center justify-between">
+          <label class="text-[11px] uppercase tracking-wider text-amber-400 font-bold">Inspect Robot Anatomy</label>
+          <span id="dissect-val" class="text-xs font-mono text-slate-300">0%</span>
+        </div>
+        <input type="range" id="slider-dissection" min="0" max="100" value="0" class="w-full h-1.5 bg-slate-700 rounded appearance-none cursor-pointer accent-amber-500">
+        <div class="flex justify-between text-[10px] text-slate-400">
+          <span>Intact Model</span>
+          <span>100% Exploded View</span>
+        </div>
+        <div class="grid grid-cols-2 gap-1.5 pt-1 text-[10px]">
+          <button id="btn-toggle-xray" class="py-1 px-2 bg-slate-800 border border-slate-700 rounded text-slate-300 hover:bg-slate-700">Shell: Transparent</button>
+          <button id="btn-toggle-lidar-cone" class="py-1 px-2 bg-slate-800 border border-slate-700 rounded text-slate-300 hover:bg-slate-700">Toggle LiDAR Ray</button>
+        </div>
+      </div>
+
+      <!-- Real Robot Deployment Exporter -->
+      <div class="pt-2 border-t border-slate-700/60">
+        <label class="text-[11px] uppercase tracking-wider text-emerald-400 font-bold block mb-1.5">Sim-to-Real Hardware Flash</label>
+        <button id="btn-export-firmware" class="w-full py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-lg text-xs font-semibold tracking-wide flex items-center justify-center space-x-1.5 shadow-md transition">
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+          <span>Export Real Policy (.py / .json)</span>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- FLOATING HUD - RIGHT PANEL -->
+    <div id="panel-right" class="absolute top-28 right-3 w-80 max-h-[calc(100vh-8.5rem)] overflow-y-auto glass-panel rounded-xl p-3.5 space-y-3 z-20 border border-slate-700/70">
+      
+      <div>
+        <div class="flex items-center justify-between border-b border-slate-700/60 pb-1.5 mb-2">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400">Perception & Navigation (50 Hz)</span>
+          <span id="rl-state-badge" class="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/40">STANDBY</span>
+        </div>
+
+        <div class="bg-slate-900/90 p-2 rounded-lg border border-slate-800 mb-2">
+          <div class="flex justify-between items-center text-[10px] text-slate-400 mb-1">
+            <span>Forward LiDAR Clearance:</span>
+            <span id="lidar-proximity-dist" class="font-mono font-bold text-emerald-400">> 2.50 m (CLEAR)</span>
+          </div>
+          <div class="w-full bg-slate-950 h-2 rounded-full overflow-hidden border border-slate-800">
+            <div id="lidar-proximity-bar" class="h-full bg-emerald-500 transition-all duration-100" style="width: 100%;"></div>
+          </div>
+          <div class="flex justify-between text-[9px] text-slate-500 mt-1 font-mono">
+            <span>DANGER (&lt;0.35m)</span>
+            <span>STEER (0.8m)</span>
+            <span>CLEAR (&gt;1.5m)</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 text-xs font-mono">
+          <div class="bg-slate-900/80 p-2 rounded border border-slate-800">
+            <div class="text-[10px] text-slate-400 uppercase">Episode</div>
+            <div id="metric-episode" class="text-base text-cyan-400 font-bold">#156</div>
+          </div>
+          <div class="bg-slate-900/80 p-2 rounded border border-slate-800">
+            <div class="text-[10px] text-slate-400 uppercase">Step Count</div>
+            <div id="metric-steps" class="text-base text-cyan-400 font-bold">3,120</div>
+          </div>
+          <div class="bg-slate-900/80 p-2 rounded border border-slate-800">
+            <div class="text-[10px] text-slate-400 uppercase">Policy Reward</div>
+            <div id="metric-reward" class="text-base text-emerald-400 font-bold">+942.5</div>
+          </div>
+          <div class="bg-slate-900/80 p-2 rounded border border-slate-800">
+            <div class="text-[10px] text-slate-400 uppercase">Ball Distance</div>
+            <div id="metric-ball-dist" class="text-base text-yellow-400 font-bold">1.40 m</div>
+          </div>
+        </div>
+
+        <div class="mt-2 bg-slate-900/90 p-2 rounded-lg border border-slate-800">
+          <div class="flex justify-between items-center text-[10px] text-slate-400 mb-1">
+            <span>Inner-Ear IMU Balance Horizon</span>
+            <span id="imu-angles" class="font-mono text-cyan-300">P: 0.0° | R: 0.0°</span>
+          </div>
+          <div class="relative w-full h-10 bg-slate-950 rounded overflow-hidden flex items-center justify-center border border-slate-800">
+            <div id="imu-horizon-line" class="absolute w-full h-[1.5px] bg-emerald-400 shadow-[0_0_8px_#10b981] transition-transform duration-75"></div>
+            <div class="absolute w-2 h-2 rounded-full border border-amber-400 pointer-events-none"></div>
+          </div>
+        </div>
+
+        <div class="mt-2">
+          <div class="flex justify-between text-[10px] text-slate-400 mb-1">
+            <span>PPO Actor-Critic Reward History</span>
+            <span class="text-emerald-400 font-mono">4,096 Swarm</span>
+          </div>
+          <canvas id="chart-reward" class="w-full h-16 bg-slate-950 rounded border border-slate-800"></canvas>
+        </div>
+      </div>
+
+      <!-- Live Foot Force & Ground Interaction -->
+      <div class="border-t border-slate-700/60 pt-2">
+        <label class="text-[11px] uppercase tracking-wider text-cyan-400 font-bold block mb-1">Ground Contact Force</label>
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <div id="foot-l-card" class="bg-slate-900/80 p-2 rounded border border-slate-700 text-center">
+            <span class="text-[10px] text-slate-400 block">Left Webbed Foot</span>
+            <span id="foot-l-force" class="font-mono text-emerald-400 font-semibold text-sm">4.5 N</span>
+          </div>
+          <div id="foot-r-card" class="bg-slate-900/80 p-2 rounded border border-slate-700 text-center">
+            <span class="text-[10px] text-slate-400 block">Right Webbed Foot</span>
+            <span id="foot-r-force" class="font-mono text-emerald-400 font-semibold text-sm">0.0 N (Swing)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Autonomous Objectives & Action Primitives -->
+      <div class="border-t border-slate-700/60 pt-2 space-y-2">
+        <label class="text-[11px] uppercase tracking-wider text-amber-400 font-bold block">Autonomous Objectives</label>
+        
+        <div class="grid grid-cols-2 gap-2">
+          <button id="btn-action-kick" class="py-2 px-2 bg-gradient-to-r from-amber-500 to-rose-600 hover:from-amber-400 hover:to-rose-500 text-slate-950 font-black rounded-lg text-xs tracking-wide uppercase flex items-center justify-center space-x-1 shadow-lg transition">
+            <span>⚽ Kick Ball</span>
+          </button>
+          <button id="btn-action-fetch" class="py-2 px-2 bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 text-slate-950 font-black rounded-lg text-xs tracking-wide uppercase flex items-center justify-center space-x-1 shadow-lg transition">
+            <span>🦮 Fetch Ball</span>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-3 gap-1.5 text-[11px]">
+          <button id="btn-action-walk" class="py-1 px-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded text-center text-slate-200">Roam Free</button>
+          <button id="btn-action-sit" class="py-1 px-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded text-center text-slate-200">Sit</button>
+          <button id="btn-action-grasp" class="py-1 px-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded text-center text-slate-200">Beak Grasp</button>
+          <button id="btn-action-reset-ball" class="py-1 px-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded text-center text-slate-200" title="Reset ball directly in front">Place Ball</button>
+          <button id="btn-action-recover" class="py-1 px-1 bg-amber-900/40 hover:bg-amber-800/60 border border-amber-600/50 rounded text-center text-amber-200">Recover</button>
+          <button id="btn-stop-action" class="py-1 px-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded text-center text-rose-300">Halt</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- DISSECTION INSPECTION MODAL -->
+    <div id="dissect-info-panel" class="hidden absolute bottom-12 left-1/2 transform -translate-x-1/2 z-20 w-96 glass-panel rounded-xl p-3.5 border border-cyan-500/50 shadow-2xl transition">
+      <div class="flex items-center justify-between border-b border-slate-700 pb-2 mb-2">
+        <div class="flex items-center space-x-2">
+          <span class="w-3 h-3 rounded-full bg-cyan-400 animate-pulse"></span>
+          <span id="inspect-part-name" class="font-bold text-sm text-cyan-300">Dynamixel XL330-M288-T</span>
+        </div>
+        <button id="btn-close-inspect" class="text-slate-400 hover:text-white text-sm font-bold">&times;</button>
+      </div>
+      <div class="space-y-1.5 text-xs">
+        <div class="flex justify-between text-slate-300">
+          <span class="text-slate-400">Subsystem:</span>
+          <span id="inspect-category" class="font-medium">15x Actuator Array</span>
+        </div>
+        <div class="flex justify-between text-slate-300">
+          <span class="text-slate-400">Torque / Resolution:</span>
+          <span id="inspect-specs" class="font-mono text-emerald-400">0.52 N.m @ 5.0V | 4096 CPR</span>
+        </div>
+        <div class="flex justify-between text-slate-300">
+          <span class="text-slate-400">Bus & PID:</span>
+          <span id="inspect-bus" class="font-mono text-amber-400">TTL 1Mbps | P:800, I:0, D:32</span>
+        </div>
+        <p id="inspect-desc" class="text-[11px] text-slate-300 pt-1 leading-relaxed border-t border-slate-800">
+          Smart joint servo with magnetic encoder and current feedback for ground reaction impedance control.
+        </p>
+      </div>
+    </div>
+
+    <!-- MOUSE ORBIT CONTROLS HELPER TIP -->
+    <div class="hidden md:flex absolute bottom-8 left-4 z-10 glass-panel px-3 py-1.5 rounded-lg border border-slate-800 text-[10px] text-slate-300 space-x-3 pointer-events-none">
+      <span>🖱️ <b>Left Drag:</b> 360° Orbit</span>
+      <span>•</span>
+      <span>🖱️ <b>Right Drag:</b> Pan View</span>
+      <span>•</span>
+      <span>🖱️ <b>Scroll:</b> Zoom</span>
+    </div>
+
+  </div>
+
+  <!-- ================= FOOTER ================= -->
+  <footer class="fixed bottom-0 left-0 right-0 z-30 py-1.5 px-4 glass-panel border-t border-slate-800 flex flex-col md:flex-row items-center justify-between text-[11px] text-slate-400">
+    <div class="flex items-center space-x-2">
+      <span>Copyright ©️ Dr Annamdas Venu Gopal Madhav for this version of simulator</span>
+      <span class="hidden md:inline text-slate-600">|</span>
+      <span class="hidden md:inline text-cyan-400 font-medium">KuKudu Ku, our Village Roaster Digital Twin</span>
+    </div>
+    <div class="flex items-center space-x-3 mt-0.5 md:mt-0 font-mono text-[10px] text-slate-400">
+      <span>Actuators: <span class="text-amber-400">15/15 Active</span></span>
+      <span>•</span>
+      <span>Friction (μ): <span id="footer-friction-val" class="text-emerald-400">0.78</span></span>
+      <span>•</span>
+      <span>Arena: <span id="footer-ground-status" class="text-amber-300">GARRF Village Backyard</span></span>
+    </div>
+  </footer>
+
+  <!-- ================= MAIN SIMULATION JAVASCRIPT ================= -->
+  <script>
+    const State = {
+      learningActive: false,
+      dissectionAmount: 0.0,
+      isShellTransparent: false,
+      lidarConeVisible: true,
+      cameraMode: 'front',
+      
+      episode: 156,
+      steps: 3120,
+      reward: 942.5,
+      epsilon: 0.065,
+      loss: 0.0098,
+      studentName: 'Arav Sharma',
+      
+      currentAction: 'idle',
+      currentEnv: 'rural_backyard',
+      keystonePitch: 30,
+      textureScale: 1.0,
+      groundFriction: 0.78,
+      hazardLevel: 2,
+      
+      robotRadius: 0.28,
+      isFallen: false,
+      fallTimer: 0,
+      fallReason: '',
+      fallDirection: new THREE.Vector3(0, 0, 1),
+      walkPhase: 0,
+      graspPhase: 0,
+      actionTimer: 0,
+      
+      ballMesh: null,
+      ballVelocity: new THREE.Vector3(0, 0, 0),
+      ballRadius: 0.16,
+      fetchAttached: false,
+      homePosition: new THREE.Vector3(0, 0, 0),
+      
+      policyWeights: Array.from({ length: 15 }, () => Array.from({ length: 16 }, () => (Math.random() * 2 - 1).toFixed(4))),
+      rewardHistory: [180, 310, 420, 560, 680, 790, 850, 910, 942.5]
+    };
+
+    const RobotPartsDatabase = {
+      'casing_torso': {
+        name: 'Aerodynamic SLS Nylon Torso Shell',
+        category: 'Chassis Protection',
+        specs: '1.2mm Lightweight PA12 Nylon | 42g',
+        bus: 'N/A Chassis Enclosure',
+        desc: 'Impact-resistant lightweight casing housing the battery pack and central controller board.'
+      },
+      'casing_head': {
+        name: 'Head & Perception Rig Dome',
+        category: 'Sensor Housing',
+        specs: 'UV Resistant PETG | Dual Sensor Bay',
+        bus: 'N/A Protective Cowling',
+        desc: 'Protects the forward LiDAR time-of-flight aperture and RGB wide-angle monocular vision camera.'
+      },
+      'servo_neck_pitch': {
+        name: 'Dynamixel XL330-M288-T (Neck Tilt)',
+        category: '15-Servo Actuator Array',
+        specs: '0.52 N.m @ 5.0V | 4096 CPR Hall Sensor',
+        bus: 'TTL Daisy-Chain (ID: 0x01)',
+        desc: 'Controls head tilt angle to scan ground for low-lying obstacles, stones, and soccer ball.'
+      },
+      'servo_neck_yaw': {
+        name: 'Dynamixel XL330-M288-T (Neck Yaw)',
+        category: '15-Servo Actuator Array',
+        specs: '0.52 N.m @ 5.0V | 4096 CPR Hall Sensor',
+        bus: 'TTL Daisy-Chain (ID: 0x02)',
+        desc: 'Enables 180° horizontal vision sweeps for real-time target ball tracking.'
+      },
+      'servo_beak': {
+        name: 'Dynamixel XL330-M077-T (Beak Gripper)',
+        category: 'Micro Gripper Actuator',
+        specs: '0.22 N.m High Speed | 4096 CPR',
+        bus: 'TTL Daisy-Chain (ID: 0x03)',
+        desc: 'Precision beak for nudging, grasping, and retrieving ball and field specimens.'
+      },
+      'servo_leg_motor': {
+        name: 'Dynamixel XL330-M288-T (Leg Articulation)',
+        category: 'Bipedal 6-DoF Joint Actuator',
+        specs: '0.52 N.m @ 5.0V | Current Feedback Control',
+        bus: 'Daisy-chained DXL Bus (IDs: 0x04 - 0x0F)',
+        desc: 'High-precision smart servo providing compliance, kick impulse, and dynamic balance.'
+      },
+      'lidar_sensor': {
+        name: 'Mini Solid-State Time-of-Flight LiDAR Array',
+        category: 'Spatial Perception & Raycasting',
+        specs: '0.05m - 8.0m Range | 100 Hz Sweep | 13 Dynamic Rays',
+        bus: 'I2C / UART 115200 Baud',
+        desc: 'Measures distances to stones, logs, steel bars, and target ball in real time.'
+      },
+      'camera_eye': {
+        name: 'RGB Wide-Angle Low-Distortion Camera',
+        category: 'Visual Odometry & Target Tracking',
+        specs: '1080p @ 60 FPS | 130° Diagonal FOV',
+        bus: 'MIPI CSI-2 Interface',
+        desc: 'Feeds live ground and ball tracking features directly into the neural policy network.'
+      },
+      'imu_balance': {
+        name: 'Dual 6-DoF Inertial Measurement Unit (IMU)',
+        category: 'Inner-Ear Vestibular Balance',
+        specs: '±16g Accelerometer, ±2000°/s Gyroscope',
+        bus: 'SPI 10 MHz High-Speed Bus',
+        desc: 'Provides 500 Hz pitch/roll angular velocity readings for balance and tripping recovery.'
+      },
+      'battery_pack': {
+        name: 'LiPo 2S 7.4V 1800mAh High-Discharge Core',
+        category: 'Power Subsystem',
+        specs: '30C Continuous Discharge | Integrated BMS',
+        bus: 'XT30 Regulated Bus',
+        desc: 'Provides ultra-clean power to the 15-servo array and embedded compute processor.'
+      },
+      'controller_board': {
+        name: 'Hugging Face / OpenBiped Neural Controller',
+        category: 'Main Embedded Brain',
+        specs: 'Quad-Core Cortex-A53 + Neural Accelerator',
+        bus: 'Dual CAN-FD / DXL TTL Bus Hub',
+        desc: 'Executes lightweight quantized reinforcement learning policy at 50 Hz on physical duck.'
+      }
+    };
+
+    const canvas = document.getElementById('webgl-canvas');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0a101d);
+    scene.fog = new THREE.FogExp2(0x0a101d, 0.022);
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(0, 1.35, 3.6);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.06;
+    controls.screenSpacePanning = true;
+    controls.minDistance = 0.45;
+    controls.maxDistance = 28;
+    controls.maxPolarAngle = Math.PI / 2 + 0.05;
+    controls.target.set(0, 0.55, 0);
+
+    const ambientLight = new THREE.AmbientLight(0xfff7ed, 0.9);
+    scene.add(ambientLight);
+
+    const frontFillLight = new THREE.DirectionalLight(0xffffff, 0.95);
+    frontFillLight.position.set(0, 2.5, 6.0);
+    scene.add(frontFillLight);
+
+    const sunLight = new THREE.DirectionalLight(0xffedd5, 1.35);
+    sunLight.position.set(5, 9, 4);
+    sunLight.castShadow = true;
+    sunLight.shadow.mapSize.width = 2048;
+    sunLight.shadow.mapSize.height = 2048;
+    sunLight.shadow.camera.near = 0.5;
+    sunLight.shadow.camera.far = 30;
+    sunLight.shadow.camera.left = -8;
+    sunLight.shadow.camera.right = 8;
+    sunLight.shadow.camera.top = 8;
+    sunLight.shadow.camera.bottom = -8;
+    scene.add(sunLight);
+
+    const cyanRim = new THREE.PointLight(0x06b6d4, 1.4, 12);
+    cyanRim.position.set(-5, 2.2, -3);
+    scene.add(cyanRim);
+
+    const amberRim = new THREE.PointLight(0xf59e0b, 1.4, 12);
+    amberRim.position.set(5, 2.0, 3);
+    scene.add(amberRim);
+
+    function setCameraPreset(mode) {
+      State.cameraMode = mode;
+      const duckPos = duckRobot.position.clone();
+      const duckCenter = duckPos.clone().add(new THREE.Vector3(0, 0.55, 0));
+
+      if (mode === 'front') {
+        controls.target.copy(duckCenter);
+        camera.position.set(duckPos.x, duckPos.y + 0.65, duckPos.z + 2.7);
+      } else if (mode === 'side') {
+        controls.target.copy(duckCenter);
+        camera.position.set(duckPos.x + 3.0, duckPos.y + 0.6, duckPos.z);
+      } else if (mode === 'top') {
+        controls.target.copy(duckCenter);
+        camera.position.set(duckPos.x, duckPos.y + 4.8, duckPos.z + 0.05);
+      } else if (mode === 'iso') {
+        controls.target.copy(duckCenter);
+        camera.position.set(duckPos.x + 2.4, duckPos.y + 1.8, duckPos.z + 3.0);
+      } else if (mode === 'ball') {
+        if (State.ballMesh) {
+          const midPoint = duckPos.clone().add(State.ballMesh.position).multiplyScalar(0.5);
+          midPoint.y = 0.45;
+          controls.target.copy(midPoint);
+          camera.position.set(midPoint.x + 1.6, midPoint.y + 1.2, midPoint.z + 2.0);
+        }
+      }
+      controls.update();
+      highlightCamButton(mode);
+    }
+
+    function highlightCamButton(mode) {
+      ['cam-front', 'cam-iso', 'cam-side', 'cam-top', 'cam-ball', 'cam-fpv', 'cam-free'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+        if (id === `cam-${mode}`) {
+          btn.className = 'px-2.5 py-1 bg-cyan-600 hover:bg-cyan-500 text-white rounded-full font-bold shadow transition';
+        } else {
+          btn.className = 'px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-full transition';
+        }
+      });
+    }
+
+    document.getElementById('cam-front').addEventListener('click', () => setCameraPreset('front'));
+    document.getElementById('cam-iso').addEventListener('click', () => setCameraPreset('iso'));
+    document.getElementById('cam-side').addEventListener('click', () => setCameraPreset('side'));
+    document.getElementById('cam-top').addEventListener('click', () => setCameraPreset('top'));
+    document.getElementById('cam-ball').addEventListener('click', () => setCameraPreset('ball'));
+    document.getElementById('cam-fpv').addEventListener('click', () => {
+      State.cameraMode = 'fpv';
+      highlightCamButton('fpv');
+    });
+    document.getElementById('cam-free').addEventListener('click', () => {
+      State.cameraMode = 'orbit';
+      highlightCamButton('free');
+    });
+
+    const floorCanvas = document.createElement('canvas');
+    floorCanvas.width = 1024;
+    floorCanvas.height = 1024;
+    const floorCtx = floorCanvas.getContext('2d');
+    const floorTexture = new THREE.CanvasTexture(floorCanvas);
+    floorTexture.wrapS = THREE.RepeatWrapping;
+    floorTexture.wrapT = THREE.RepeatWrapping;
+
+    let uploadedGroundImage = null;
+    let floorMesh = null;
+
+    function renderGroundTexture() {
+      const w = floorCanvas.width;
+      const h = floorCanvas.height;
+      floorCtx.save();
+
+      if (uploadedGroundImage) {
+        floorCtx.fillStyle = '#272018';
+        floorCtx.fillRect(0, 0, w, h);
+
+        floorCtx.save();
+        floorCtx.translate(w / 2, h / 2);
+        const pitchRad = (State.keystonePitch * Math.PI) / 180;
+        const scale = State.textureScale;
+        floorCtx.transform(scale, 0, 0, Math.cos(pitchRad) * scale, 0, 0);
+        floorCtx.drawImage(uploadedGroundImage, -w / 2, -h / 2, w, h);
+        floorCtx.restore();
+
+        floorCtx.strokeStyle = 'rgba(245, 158, 11, 0.3)';
+        floorCtx.lineWidth = 1.5;
+        const gridStep = 64;
+        for (let x = 0; x < w; x += gridStep) {
+          floorCtx.beginPath(); floorCtx.moveTo(x, 0); floorCtx.lineTo(x, h); floorCtx.stroke();
+        }
+        for (let y = 0; y < h; y += gridStep) {
+          floorCtx.beginPath(); floorCtx.moveTo(0, y); floorCtx.lineTo(w, y); floorCtx.stroke();
+        }
+
+        floorCtx.font = 'bold 22px monospace';
+        floorCtx.fillStyle = '#F59E0B';
+        floorCtx.fillText("KuKudu Ku - REAL PHOTO CALIBRATED", 36, 60);
+        floorCtx.fillText(`CAMERA TILT: ${State.keystonePitch}° | FRICTION μ: ${State.groundFriction.toFixed(2)}`, 36, h - 40);
+
+      } else {
+        if (State.currentEnv === 'rural_backyard') {
+          floorCtx.fillStyle = '#3a2719';
+          floorCtx.fillRect(0, 0, w, h);
+
+          for (let i = 0; i < 9000; i++) {
+            const rx = Math.random() * w;
+            const ry = Math.random() * h;
+            const tone = Math.floor(Math.random() * 50 + 35);
+            floorCtx.fillStyle = `rgb(${tone + 30}, ${tone + 10}, ${tone - 5})`;
+            floorCtx.fillRect(rx, ry, Math.random() * 3 + 1, Math.random() * 3 + 1);
+          }
+
+          floorCtx.strokeStyle = 'rgba(180, 150, 70, 0.45)';
+          floorCtx.lineWidth = 1.5;
+          for (let g = 0; g < 400; g++) {
+            const gx = Math.random() * w;
+            const gy = Math.random() * h;
+            floorCtx.beginPath();
+            floorCtx.moveTo(gx, gy);
+            floorCtx.lineTo(gx + (Math.random() - 0.5) * 16, gy - Math.random() * 22);
+            floorCtx.stroke();
+          }
+
+          floorCtx.fillStyle = 'rgba(150, 140, 130, 0.6)';
+          for (let s = 0; s < 300; s++) {
+            floorCtx.beginPath();
+            floorCtx.arc(Math.random() * w, Math.random() * h, Math.random() * 3 + 1, 0, Math.PI * 2);
+            floorCtx.fill();
+          }
+
+          floorCtx.strokeStyle = 'rgba(217, 119, 6, 0.5)';
+          floorCtx.lineWidth = 4;
+          floorCtx.strokeRect(40, 40, w - 80, h - 80);
+
+          floorCtx.font = 'bold 24px monospace';
+          floorCtx.fillStyle = 'rgba(251, 191, 36, 0.7)';
+          floorCtx.fillText("GOPALKRISHNA ADVANCED RURAL RESEARCH FOUNDATION", 55, 80);
+          floorCtx.fillText("KUKUDU KU - VILLAGE BACKYARD ARENA", 55, h - 60);
+
+        } else if (State.currentEnv === 'civil_lab') {
+          floorCtx.fillStyle = '#1e2430';
+          floorCtx.fillRect(0, 0, w, h);
+          for (let i = 0; i < 4000; i++) {
+            const tone = Math.floor(Math.random() * 40 + 25);
+            floorCtx.fillStyle = `rgb(${tone}, ${tone+4}, ${tone+8})`;
+            floorCtx.fillRect(Math.random() * w, Math.random() * h, 2, 2);
+          }
+          floorCtx.strokeStyle = 'rgba(245, 158, 11, 0.4)';
+          floorCtx.lineWidth = 3;
+          floorCtx.strokeRect(40, 40, w - 80, h - 80);
+        } else if (State.currentEnv === 'cracked_concrete') {
+          floorCtx.fillStyle = '#2b2e35';
+          floorCtx.fillRect(0, 0, w, h);
+          for (let i = 0; i < 4000; i++) {
+            const c = Math.floor(Math.random() * 30 + 35);
+            floorCtx.fillStyle = `rgb(${c}, ${c}, ${c})`;
+            floorCtx.fillRect(Math.random() * w, Math.random() * h, 2, 2);
+          }
+        } else if (State.currentEnv === 'polished_epoxy') {
+          floorCtx.fillStyle = '#0f172a';
+          floorCtx.fillRect(0, 0, w, h);
+          floorCtx.strokeStyle = 'rgba(6, 182, 212, 0.4)';
+          floorCtx.lineWidth = 1;
+          for (let x = 0; x < w; x += 64) {
+            floorCtx.beginPath(); floorCtx.moveTo(x, 0); floorCtx.lineTo(x, h); floorCtx.stroke();
+            floorCtx.beginPath(); floorCtx.moveTo(0, x); floorCtx.lineTo(w, x); floorCtx.stroke();
+          }
+        }
+      }
+      floorCtx.restore();
+      floorTexture.needsUpdate = true;
+    }
+
+    renderGroundTexture();
+
+    const floorGeo = new THREE.PlaneGeometry(36, 36);
+    const floorMat = new THREE.MeshStandardMaterial({
+      map: floorTexture,
+      roughness: 0.88,
+      metalness: 0.08
+    });
+    floorMesh = new THREE.Mesh(floorGeo, floorMat);
+    floorMesh.rotation.x = -Math.PI / 2;
+    floorMesh.receiveShadow = true;
+    scene.add(floorMesh);
+
+    const fenceGroup = new THREE.Group();
+    scene.add(fenceGroup);
+    const postMat = new THREE.MeshStandardMaterial({ color: 0x5c3a21, roughness: 0.9 });
+    const bound = 14.0;
+    for (let f = -bound; f <= bound; f += 2.5) {
+      [-bound, bound].forEach(z => {
+        const p = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.07, 0.8, 8), postMat);
+        p.position.set(f, 0.4, z);
+        p.castShadow = true;
+        fenceGroup.add(p);
+      });
+      [-bound, bound].forEach(x => {
+        const p = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.07, 0.8, 8), postMat);
+        p.position.set(x, 0.4, f);
+        p.castShadow = true;
+        fenceGroup.add(p);
+      });
+    }
+
+    const hazardsGroup = new THREE.Group();
+    scene.add(hazardsGroup);
+    let physicalObstacles = [];
+
+    function populateHazardsFromFloor(densityLevel = 2) {
+      while (hazardsGroup.children.length > 0) {
+        hazardsGroup.remove(hazardsGroup.children[0]);
+      }
+      physicalObstacles = [];
+
+      const stoneMat = new THREE.MeshStandardMaterial({ color: 0x78716c, roughness: 0.85, metalness: 0.1 });
+      const woodMat = new THREE.MeshStandardMaterial({ color: 0x6c4424, roughness: 0.9, metalness: 0.05 });
+      const rebarMat = new THREE.MeshStandardMaterial({ color: 0x8b5a2b, metalness: 0.7, roughness: 0.4 });
+
+      const count = densityLevel === 1 ? 12 : (densityLevel === 2 ? 22 : 36);
+
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const dist = 1.4 + Math.random() * 7.5;
+        const hx = Math.cos(angle) * dist;
+        const hz = Math.sin(angle) * dist;
+
+        const dice = Math.random();
+        if (dice < 0.45) {
+          const logLen = 0.5 + Math.random() * 0.8;
+          const log = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.045, logLen, 10), woodMat);
+          log.position.set(hx, 0.04, hz);
+          log.rotation.x = Math.PI / 2;
+          log.rotation.z = Math.random() * Math.PI;
+          log.castShadow = true;
+          hazardsGroup.add(log);
+          physicalObstacles.push({
+            mesh: log,
+            position: new THREE.Vector2(hx, hz),
+            radius: 0.28,
+            name: 'Backyard Wood Log',
+            isHardTrip: true
+          });
+        } else if (dice < 0.8) {
+          const stone = new THREE.Mesh(
+            new THREE.DodecahedronGeometry(0.09 + Math.random() * 0.06, 1),
+            stoneMat
+          );
+          stone.position.set(hx, 0.08, hz);
+          stone.scale.set(1.1, 0.7, 1.2);
+          stone.castShadow = true;
+          hazardsGroup.add(stone);
+          physicalObstacles.push({
+            mesh: stone,
+            position: new THREE.Vector2(hx, hz),
+            radius: 0.26,
+            name: 'Courtyard Stone',
+            isHardTrip: true
+          });
+        } else {
+          const barLen = 0.7 + Math.random() * 0.6;
+          const rebar = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, barLen, 8), rebarMat);
+          rebar.position.set(hx, 0.03, hz);
+          rebar.rotation.x = Math.PI / 2;
+          rebar.rotation.z = Math.random() * Math.PI;
+          rebar.castShadow = true;
+          hazardsGroup.add(rebar);
+          physicalObstacles.push({
+            mesh: rebar,
+            position: new THREE.Vector2(hx, hz),
+            radius: 0.3,
+            name: 'Steel Rebar Trip Bar',
+            isHardTrip: true
+          });
+        }
+      }
+
+      const ballCanvas = document.createElement('canvas');
+      ballCanvas.width = 512;
+      ballCanvas.height = 512;
+      const bCtx = ballCanvas.getContext('2d');
+      bCtx.fillStyle = '#f8fafc';
+      bCtx.fillRect(0, 0, 512, 512);
+      bCtx.fillStyle = '#dc2626';
+      for (let px = 64; px < 512; px += 128) {
+        for (let py = 64; py < 512; py += 128) {
+          bCtx.beginPath();
+          bCtx.arc(px, py, 36, 0, Math.PI * 2);
+          bCtx.fill();
+        }
+      }
+      const ballTex = new THREE.CanvasTexture(ballCanvas);
+
+      const ballMesh = new THREE.Mesh(
+        new THREE.SphereGeometry(State.ballRadius, 32, 32),
+        new THREE.MeshStandardMaterial({
+          map: ballTex,
+          roughness: 0.3,
+          metalness: 0.1
+        })
+      );
+      ballMesh.position.set(0.1, State.ballRadius, 1.4);
+      ballMesh.castShadow = true;
+      ballMesh.receiveShadow = true;
+      hazardsGroup.add(ballMesh);
+      State.ballMesh = ballMesh;
+      State.ballVelocity.set(0, 0, 0);
+      State.fetchAttached = false;
+    }
+
+    populateHazardsFromFloor(2);
+
+    function spawnObstacleDirectlyInFront() {
+      const forward = new THREE.Vector3(0, 0, 1.25).applyAxisAngle(new THREE.Vector3(0, 1, 0), duckRobot.rotation.y);
+      const targetPos = duckRobot.position.clone().add(forward);
+      
+      const block = new THREE.Mesh(
+        new THREE.BoxGeometry(0.3, 0.18, 0.28),
+        new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.5, metalness: 0.2 })
+      );
+      block.position.set(targetPos.x, 0.09, targetPos.z);
+      block.rotation.y = duckRobot.rotation.y;
+      block.castShadow = true;
+      hazardsGroup.add(block);
+
+      physicalObstacles.push({
+        mesh: block,
+        position: new THREE.Vector2(targetPos.x, targetPos.z),
+        radius: 0.32,
+        name: 'Placed Test Barrier',
+        isHardTrip: true
+      });
+
+      updateStatusBanner("⚠️ Placed obstacle right ahead! Watch KuKudu Ku detect & steer...", true, "⚠️");
+      setTimeout(() => updateStatusBanner("", false), 2600);
+    }
+    document.getElementById('btn-spawn-obstacle-front').addEventListener('click', spawnObstacleDirectlyInFront);
+
+    const duckRobot = new THREE.Group();
+    scene.add(duckRobot);
+    duckRobot.position.set(0, 0, 0);
+
+    const dissectableParts = [];
+    function registerDissectable(mesh, key, explosionVector) {
+      mesh.userData = {
+        key: key,
+        originalPos: mesh.position.clone(),
+        explosionDir: explosionVector.clone()
+      };
+      dissectableParts.push(mesh);
+    }
+
+    const duckYellowMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.35, metalness: 0.1 });
+    const duckOrangeMat = new THREE.MeshStandardMaterial({ color: 0xea580c, roughness: 0.4, metalness: 0.1 });
+    const servoMetallicMat = new THREE.MeshStandardMaterial({ color: 0x1e2430, metalness: 0.85, roughness: 0.3 });
+    const servoBrassAccent = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.9, roughness: 0.2 });
+    const pcbGreenMat = new THREE.MeshStandardMaterial({ color: 0x064e3b, metalness: 0.4, roughness: 0.5 });
+    const sensorGlassMat = new THREE.MeshPhysicalMaterial({ color: 0x0284c7, transmission: 0.75, opacity: 1, transparent: true, roughness: 0.1, ior: 1.5 });
+
+    function createServoActuator(labelId) {
+      const servoGroup = new THREE.Group();
+      const housing = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.11), servoMetallicMat);
+      housing.castShadow = true;
+      servoGroup.add(housing);
+
+      const horn = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.02, 16), servoBrassAccent);
+      horn.rotation.x = Math.PI / 2;
+      horn.position.z = 0.058;
+      servoGroup.add(horn);
+
+      const led = new THREE.Mesh(new THREE.SphereGeometry(0.008, 8, 8), new THREE.MeshBasicMaterial({ color: 0x10b981 }));
+      led.position.set(0.025, 0.025, 0.056);
+      servoGroup.add(led);
+
+      servoGroup.userData.isServo = true;
+      servoGroup.userData.servoId = labelId;
+      return servoGroup;
+    }
+
+    // Torso height adjusted so feet stay cleanly above ground
+    const torsoGroup = new THREE.Group();
+    duckRobot.add(torsoGroup);
+    torsoGroup.position.set(0, 0.56, 0);
+
+    const bodyShellGeo = new THREE.SphereGeometry(0.24, 32, 24);
+    bodyShellGeo.scale(1.0, 1.15, 1.35);
+    const bodyShell = new THREE.Mesh(bodyShellGeo, duckYellowMat);
+    bodyShell.castShadow = true;
+    bodyShell.receiveShadow = true;
+    torsoGroup.add(bodyShell);
+    registerDissectable(bodyShell, 'casing_torso', new THREE.Vector3(0, 0.35, 0));
+
+    const controller = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.02, 0.22), pcbGreenMat);
+    controller.position.set(0, 0.04, 0);
+    torsoGroup.add(controller);
+    registerDissectable(controller, 'controller_board', new THREE.Vector3(0, 0.1, 0));
+
+    const ledArray = [];
+    for (let i = 0; i < 4; i++) {
+      const ledM = new THREE.Mesh(new THREE.SphereGeometry(0.007, 8, 8), new THREE.MeshBasicMaterial({ color: i % 2 === 0 ? 0x06b6d4 : 0x10b981 }));
+      ledM.position.set(-0.05 + i * 0.035, 0.052, 0.06);
+      torsoGroup.add(ledM);
+      ledArray.push(ledM);
+    }
+
+    const battery = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.07, 0.14), new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.5, roughness: 0.5 }));
+    battery.position.set(0, -0.08, -0.04);
+    torsoGroup.add(battery);
+    registerDissectable(battery, 'battery_pack', new THREE.Vector3(0, -0.2, -0.1));
+
+    const imuRing = new THREE.Mesh(new THREE.TorusGeometry(0.04, 0.004, 8, 24), new THREE.MeshBasicMaterial({ color: 0x06b6d4, wireframe: true }));
+    imuRing.position.set(0, 0.02, 0.08);
+    torsoGroup.add(imuRing);
+    registerDissectable(imuRing, 'imu_balance', new THREE.Vector3(0, 0.15, 0.15));
+
+    const headGroup = new THREE.Group();
+    headGroup.position.set(0, 0.26, 0.2);
+    torsoGroup.add(headGroup);
+
+    const neckYawServo = createServoActuator('0x01');
+    neckYawServo.position.set(0, -0.08, 0.02);
+    headGroup.add(neckYawServo);
+    registerDissectable(neckYawServo, 'servo_neck_yaw', new THREE.Vector3(0, -0.12, 0.08));
+
+    const headShellGeo = new THREE.SphereGeometry(0.16, 24, 20);
+    headShellGeo.scale(1.0, 1.05, 1.15);
+    const headShell = new THREE.Mesh(headShellGeo, duckYellowMat);
+    headShell.position.set(0, 0.08, 0.06);
+    headShell.castShadow = true;
+    headGroup.add(headShell);
+    registerDissectable(headShell, 'casing_head', new THREE.Vector3(0, 0.35, 0.2));
+
+    const leftEyeGroup = new THREE.Group();
+    leftEyeGroup.position.set(-0.09, 0.1, 0.18);
+    headGroup.add(leftEyeGroup);
+
+    const camLens = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.02, 16), sensorGlassMat);
+    camLens.rotation.x = Math.PI / 2;
+    leftEyeGroup.add(camLens);
+    registerDissectable(camLens, 'camera_eye', new THREE.Vector3(-0.15, 0.15, 0.2));
+
+    const camConeGeo = new THREE.ConeGeometry(0.28, 0.7, 16, 1, true);
+    camConeGeo.rotateX(-Math.PI / 2);
+    camConeGeo.translate(0, 0, 0.35);
+    const camCone = new THREE.Mesh(camConeGeo, new THREE.MeshBasicMaterial({ color: 0x06b6d4, wireframe: true, transparent: true, opacity: 0.25 }));
+    leftEyeGroup.add(camCone);
+
+    const rightEyeGroup = new THREE.Group();
+    rightEyeGroup.position.set(0.09, 0.1, 0.18);
+    headGroup.add(rightEyeGroup);
+
+    const lidarSensor = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.035, 16), servoMetallicMat);
+    lidarSensor.rotation.x = Math.PI / 2;
+    rightEyeGroup.add(lidarSensor);
+    registerDissectable(lidarSensor, 'lidar_sensor', new THREE.Vector3(0.15, 0.15, 0.2));
+
+    const lidarRayGroup = new THREE.Group();
+    rightEyeGroup.add(lidarRayGroup);
+    const lidarBeams = [];
+    const NUM_LIDAR_BEAMS = 13;
+    const MAX_LIDAR_DIST = 2.6;
+
+    for (let r = 0; r < NUM_LIDAR_BEAMS; r++) {
+      const angleFraction = (r / (NUM_LIDAR_BEAMS - 1)) - 0.5;
+      const beamAngleRad = angleFraction * (Math.PI * 0.55);
+      
+      const geom = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Vector3(Math.sin(beamAngleRad) * MAX_LIDAR_DIST, -0.22, Math.cos(beamAngleRad) * MAX_LIDAR_DIST)
+      ]);
+      const mat = new THREE.LineBasicMaterial({
+        color: 0x10b981,
+        transparent: true,
+        opacity: 0.85,
+        linewidth: 2
+      });
+      const line = new THREE.Line(geom, mat);
+      lidarRayGroup.add(line);
+      lidarBeams.push({ line, angle: beamAngleRad, distance: MAX_LIDAR_DIST });
+    }
+
+    const beakUpper = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.16, 4), duckOrangeMat);
+    beakUpper.rotation.x = Math.PI / 2;
+    beakUpper.scale.set(1.2, 0.45, 1.0);
+    beakUpper.position.set(0, 0.04, 0.24);
+    headGroup.add(beakUpper);
+
+    const beakLower = new THREE.Mesh(new THREE.ConeGeometry(0.075, 0.13, 4), duckOrangeMat);
+    beakLower.rotation.x = Math.PI / 2;
+    beakLower.scale.set(1.1, 0.35, 0.9);
+    beakLower.position.set(0, 0.0, 0.23);
+    headGroup.add(beakLower);
+    registerDissectable(beakUpper, 'servo_beak', new THREE.Vector3(0, 0.08, 0.25));
+
+    /* CREATING BIPED LEGS WITH UPRIGHT GROUND PIVOT OFFSETS */
+    function createLeg(isLeft = true) {
+      const side = isLeft ? -1 : 1;
+      const legRoot = new THREE.Group();
+      legRoot.position.set(side * 0.14, -0.15, 0.02);
+      torsoGroup.add(legRoot);
+
+      const hipServo = createServoActuator(isLeft ? '0x04' : '0x0A');
+      legRoot.add(hipServo);
+      registerDissectable(hipServo, 'servo_leg_motor', new THREE.Vector3(side * 0.18, -0.05, 0));
+
+      const thighGroup = new THREE.Group();
+      thighGroup.position.set(0, -0.06, 0);
+      legRoot.add(thighGroup);
+
+      const thighMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.14, 12), servoMetallicMat);
+      thighMesh.position.set(0, -0.07, 0);
+      thighMesh.castShadow = true;
+      thighGroup.add(thighMesh);
+
+      const kneeServo = createServoActuator(isLeft ? '0x06' : '0x0C');
+      kneeServo.position.set(0, -0.14, 0);
+      thighGroup.add(kneeServo);
+      registerDissectable(kneeServo, 'servo_leg_motor', new THREE.Vector3(side * 0.18, -0.15, 0));
+
+      const shinGroup = new THREE.Group();
+      shinGroup.position.set(0, -0.14, 0);
+      thighGroup.add(shinGroup);
+
+      const shinMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.15, 12), servoMetallicMat);
+      shinMesh.position.set(0, -0.075, 0);
+      shinMesh.castShadow = true;
+      shinGroup.add(shinMesh);
+
+      const ankleServo = createServoActuator(isLeft ? '0x08' : '0x0E');
+      ankleServo.position.set(0, -0.15, 0);
+      shinGroup.add(ankleServo);
+      registerDissectable(ankleServo, 'servo_leg_motor', new THREE.Vector3(side * 0.18, -0.22, 0));
+
+      const footGroup = new THREE.Group();
+      footGroup.position.set(0, -0.18, 0.04);
+      shinGroup.add(footGroup);
+
+      const footShape = new THREE.Shape();
+      footShape.moveTo(-0.06, -0.08);
+      footShape.lineTo(0.06, -0.08);
+      footShape.lineTo(0.09, 0.12);
+      footShape.lineTo(0.02, 0.07);
+      footShape.lineTo(0, 0.14);
+      footShape.lineTo(-0.02, 0.07);
+      footShape.lineTo(-0.09, 0.12);
+      footShape.closePath();
+
+      const footGeo = new THREE.ExtrudeGeometry(footShape, { 
+        depth: 0.02, 
+        bevelEnabled: true, 
+        bevelSegments: 2, 
+        steps: 1, 
+        bevelSize: 0.006, 
+        bevelThickness: 0.006 
+      });
+      footGeo.rotateX(Math.PI / 2);
+
+      // Positive vertical translation shifts foot geometry upward so bottom sits flush on ground plane
+      footGeo.translate(0, 0.01, 0);
+
+      const footMesh = new THREE.Mesh(footGeo, duckOrangeMat);
+      footMesh.castShadow = true;
+      footMesh.receiveShadow = true;
+      footGroup.add(footMesh);
+
+      const sensorRing = new THREE.Mesh(
+        new THREE.RingGeometry(0.025, 0.045, 16).rotateX(-Math.PI / 2),
+        new THREE.MeshBasicMaterial({ color: 0x10b981, transparent: true, opacity: 0.7 })
+      );
+      sensorRing.position.set(0, 0.001, 0.03);
+      footGroup.add(sensorRing);
+
+      return { legRoot, thighGroup, shinGroup, footGroup, sensorRing, footMesh };
+    }
+
+    const leftLeg = createLeg(true);
+    const rightLeg = createLeg(false);
+
+    function updateLidarPerception() {
+      const duckPos = duckRobot.position;
+      const duckYaw = duckRobot.rotation.y;
+      let minGlobalDist = MAX_LIDAR_DIST;
+
+      const detectables = [...physicalObstacles];
+      if (State.ballMesh && !State.currentAction.startsWith('KICK') && !State.currentAction.startsWith('FETCH')) {
+        detectables.push({
+          mesh: State.ballMesh,
+          position: new THREE.Vector2(State.ballMesh.position.x, State.ballMesh.position.z),
+          radius: State.ballRadius
+        });
+      }
+
+      lidarBeams.forEach((beam) => {
+        const worldBeamAngle = duckYaw + beam.angle;
+        const dirX = Math.sin(worldBeamAngle);
+        const dirZ = Math.cos(worldBeamAngle);
+
+        let hitDist = MAX_LIDAR_DIST;
+        
+        detectables.forEach(obs => {
+          const ox = obs.mesh.position.x - duckPos.x;
+          const oz = obs.mesh.position.z - duckPos.z;
+
+          const t = ox * dirX + oz * dirZ;
+          if (t > 0 && t < MAX_LIDAR_DIST) {
+            const d2 = (ox * ox + oz * oz) - (t * t);
+            const r2 = (obs.radius * 1.25) * (obs.radius * 1.25);
+            if (d2 <= r2) {
+              const insideDist = t - Math.sqrt(Math.max(0, r2 - d2));
+              if (insideDist > 0 && insideDist < hitDist) {
+                hitDist = insideDist;
+              }
+            }
+          }
+        });
+
+        beam.distance = hitDist;
+        if (hitDist < minGlobalDist) minGlobalDist = hitDist;
+
+        const points = [
+          new THREE.Vector3(0, 0, 0),
+          new THREE.Vector3(Math.sin(beam.angle) * hitDist, -0.22, Math.cos(beam.angle) * hitDist)
+        ];
+        beam.line.geometry.setFromPoints(points);
+
+        if (hitDist < 0.5) {
+          beam.line.material.color.setHex(0xef4444);
+          beam.line.material.opacity = 1.0;
+        } else if (hitDist < 1.1) {
+          beam.line.material.color.setHex(0xf59e0b);
+          beam.line.material.opacity = 0.85;
+        } else {
+          beam.line.material.color.setHex(0x10b981);
+          beam.line.material.opacity = 0.55;
+        }
+      });
+
+      const proxDistLabel = document.getElementById('lidar-proximity-dist');
+      const proxBar = document.getElementById('lidar-proximity-bar');
+      if (proxDistLabel && proxBar) {
+        if (minGlobalDist >= MAX_LIDAR_DIST - 0.05) {
+          proxDistLabel.textContent = `> ${MAX_LIDAR_DIST.toFixed(2)} m (CLEAR)`;
+          proxDistLabel.className = 'font-mono font-bold text-emerald-400';
+          proxBar.style.width = '100%';
+          proxBar.className = 'h-full bg-emerald-500 transition-all duration-100';
+        } else if (minGlobalDist < 0.5) {
+          proxDistLabel.textContent = `${minGlobalDist.toFixed(2)} m (DANGER THREAT)`;
+          proxDistLabel.className = 'font-mono font-bold text-rose-400 animate-pulse';
+          const pct = Math.max(8, (minGlobalDist / MAX_LIDAR_DIST) * 100);
+          proxBar.style.width = `${pct}%`;
+          proxBar.className = 'h-full bg-rose-500 transition-all duration-100';
+        } else {
+          proxDistLabel.textContent = `${minGlobalDist.toFixed(2)} m (STEERING AROUND)`;
+          proxDistLabel.className = 'font-mono font-bold text-amber-400';
+          const pct = Math.max(8, (minGlobalDist / MAX_LIDAR_DIST) * 100);
+          proxBar.style.width = `${pct}%`;
+          proxBar.className = 'h-full bg-amber-500 transition-all duration-100';
+        }
+      }
+    }
+
+    function resolveHardCollisionsAndTrips() {
+      if (State.isFallen) return;
+
+      const duckPos = duckRobot.position;
+      const duckRadius = State.robotRadius;
+
+      for (let i = 0; i < physicalObstacles.length; i++) {
+        const obs = physicalObstacles[i];
+        const dx = duckPos.x - obs.mesh.position.x;
+        const dz = duckPos.z - obs.mesh.position.z;
+        const dist = Math.hypot(dx, dz);
+        const minDist = duckRadius + obs.radius;
+
+        if (dist < minDist) {
+          const overlap = minDist - dist;
+          const nx = dist > 0.0001 ? dx / dist : 0;
+          const nz = dist > 0.0001 ? dz / dist : 1;
+
+          duckPos.x += nx * overlap;
+          duckPos.z += nz * overlap;
+
+          if (obs.isHardTrip && (State.currentAction === 'walk' || State.learningActive)) {
+            triggerTrippingFall(obs.name, new THREE.Vector3(-nx, 0, -nz));
+            return;
+          }
+        }
+      }
+
+      if (State.ballMesh && !State.fetchAttached) {
+        const ball = State.ballMesh;
+        const dx = ball.position.x - duckPos.x;
+        const dz = ball.position.z - duckPos.z;
+        const dist = Math.hypot(dx, dz);
+        const minDist = duckRadius + State.ballRadius;
+
+        if (dist < minDist) {
+          const overlap = minDist - dist;
+          const pushX = dist > 0.0001 ? dx / dist : 0;
+          const pushZ = dist > 0.0001 ? dz / dist : 1;
+
+          if (State.currentAction !== 'KICK_WINDUP' && State.currentAction !== 'KICK_STRIKE') {
+            ball.position.x += pushX * overlap * 1.1;
+            ball.position.z += pushZ * overlap * 1.1;
+
+            State.ballVelocity.x += pushX * 1.5;
+            State.ballVelocity.z += pushZ * 1.5;
+
+            duckPos.x -= pushX * overlap * 0.15;
+            duckPos.z -= pushZ * overlap * 0.15;
+          }
+        }
+      }
+    }
+
+    function triggerTrippingFall(obstacleName, fallDir) {
+      State.isFallen = true;
+      State.fallTimer = 0;
+      State.currentAction = 'fallen';
+      State.fallReason = obstacleName;
+      State.fallDirection.copy(fallDir).normalize();
+      
+      State.reward -= 15.0;
+      updateTelemetryHUD();
+      updateStatusBanner(`💥 Tripped over ${obstacleName}! Recovering balance...`, true, "💥");
+    }
+
+    const banner = document.getElementById('kick-routine-banner');
+    const bannerText = document.getElementById('kick-routine-status-text');
+    const bannerIcon = document.getElementById('banner-icon');
+
+    function updateStatusBanner(text, show = true, icon = "⚽") {
+      if (show) {
+        banner.classList.remove('hidden');
+        bannerText.textContent = text;
+        bannerIcon.textContent = icon;
+      } else {
+        banner.classList.add('hidden');
+      }
+    }
+
+    function navigateTowardTarget(targetPos, dt, stopThreshold = 0.48) {
+      const duckPos = duckRobot.position;
+      
+      let desiredDirX = targetPos.x - duckPos.x;
+      let desiredDirZ = targetPos.z - duckPos.z;
+      const targetDist = Math.hypot(desiredDirX, desiredDirZ);
+
+      if (targetDist <= stopThreshold) {
+        return { arrived: true, distance: targetDist };
+      }
+
+      desiredDirX /= targetDist;
+      desiredDirZ /= targetDist;
+
+      let repX = 0;
+      let repZ = 0;
+      physicalObstacles.forEach(obs => {
+        const ox = duckPos.x - obs.mesh.position.x;
+        const oz = duckPos.z - obs.mesh.position.z;
+        const d = Math.hypot(ox, oz);
+        const avoidR = obs.radius + 0.65;
+        if (d < avoidR && d > 0.05) {
+          const strength = (avoidR - d) / avoidR;
+          repX += (ox / d) * strength * 2.5;
+          repZ += (oz / d) * strength * 2.5;
+        }
+      });
+
+      let finalDirX = desiredDirX + repX;
+      let finalDirZ = desiredDirZ + repZ;
+      const finalLen = Math.hypot(finalDirX, finalDirZ);
+      if (finalLen > 0.001) {
+        finalDirX /= finalLen;
+        finalDirZ /= finalLen;
+      }
+
+      const targetHeading = Math.atan2(finalDirX, finalDirZ);
+      let headingDiff = targetHeading - duckRobot.rotation.y;
+      while (headingDiff > Math.PI) headingDiff -= Math.PI * 2;
+      while (headingDiff < -Math.PI) headingDiff += Math.PI * 2;
+
+      duckRobot.rotation.y += headingDiff * Math.min(1.0, dt * 5.0);
+
+      State.walkPhase += dt * 10;
+      const phase = State.walkPhase;
+      const leftSwing = Math.sin(phase);
+      const rightSwing = -leftSwing;
+
+      leftLeg.thighGroup.rotation.x = leftSwing * 0.42;
+      leftLeg.shinGroup.rotation.x = Math.max(0, -leftSwing * 0.6);
+      rightLeg.thighGroup.rotation.x = rightSwing * 0.42;
+      rightLeg.shinGroup.rotation.x = Math.max(0, -rightSwing * 0.6);
+      duckRobot.position.y = Math.abs(Math.cos(phase * 2)) * 0.035;
+
+      if (Math.abs(headingDiff) < 0.65) {
+        const step = Math.min(targetDist - stopThreshold + 0.05, 0.65 * State.groundFriction * dt);
+        duckRobot.translateZ(Math.max(0, step));
+        State.steps += 1;
+      }
+
+      return { arrived: false, distance: targetDist };
+    }
+
+    function startKickBallRoutine() {
+      if (!State.ballMesh) return;
+      State.currentAction = 'KICK_NAV';
+      State.actionTimer = 0;
+      State.fetchAttached = false;
+      updateStatusBanner("Kick Ball: Navigating directly toward soccer ball...", true, "⚽");
+      setCameraPreset('ball');
+    }
+
+    function startFetchBallRoutine() {
+      if (!State.ballMesh) return;
+      State.currentAction = 'FETCH_NAV';
+      State.actionTimer = 0;
+      State.fetchAttached = false;
+      updateStatusBanner("Fetch Ball: Locating & approaching soccer ball...", true, "🦮");
+      setCameraPreset('ball');
+    }
+
+    function resetBallPosition() {
+      if (!State.ballMesh) return;
+      State.fetchAttached = false;
+      const forward = new THREE.Vector3(0, 0, 0.85).applyAxisAngle(new THREE.Vector3(0, 1, 0), duckRobot.rotation.y);
+      State.ballMesh.position.copy(duckRobot.position).add(forward);
+      State.ballMesh.position.y = State.ballRadius;
+      State.ballVelocity.set(0, 0, 0);
+      updateStatusBanner("Soccer ball placed cleanly in front of KuKudu Ku.", true, "⚽");
+      setTimeout(() => updateStatusBanner("", false), 1800);
+    }
+
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    window.addEventListener('click', (e) => {
+      if (e.target.closest('.glass-panel') || e.target.closest('header') || e.target.closest('footer') || e.target.closest('button') || e.target.closest('input') || e.target.closest('select')) return;
+
+      mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+
+      const hits = raycaster.intersectObjects(duckRobot.children, true);
+      if (hits.length > 0) {
+        let current = hits[0].object;
+        let matchedKey = null;
+        while (current && current !== duckRobot) {
+          if (current.userData && current.userData.key) {
+            matchedKey = current.userData.key;
+            break;
+          }
+          if (current.userData && current.userData.isServo) {
+            matchedKey = 'servo_leg_motor';
+            break;
+          }
+          current = current.parent;
+        }
+        if (matchedKey && RobotPartsDatabase[matchedKey]) {
+          showPartDetails(matchedKey);
+        }
+      }
+    });
+
+    function showPartDetails(key) {
+      const data = RobotPartsDatabase[key];
+      document.getElementById('inspect-part-name').textContent = data.name;
+      document.getElementById('inspect-category').textContent = data.category;
+      document.getElementById('inspect-specs').textContent = data.specs;
+      document.getElementById('inspect-bus').textContent = data.bus;
+      document.getElementById('inspect-desc').textContent = data.desc;
+      document.getElementById('dissect-info-panel').classList.remove('hidden');
+    }
+
+    document.getElementById('btn-close-inspect').addEventListener('click', () => {
+      document.getElementById('dissect-info-panel').classList.add('hidden');
+    });
+
+    const rewardCanvas = document.getElementById('chart-reward');
+    const rewardCtx = rewardCanvas.getContext('2d');
+
+    function drawRewardChart() {
+      const w = rewardCanvas.width = rewardCanvas.clientWidth;
+      const h = rewardCanvas.height = rewardCanvas.clientHeight;
+      rewardCtx.clearRect(0, 0, w, h);
+
+      rewardCtx.strokeStyle = 'rgba(16, 185, 129, 0.25)';
+      rewardCtx.lineWidth = 1;
+      rewardCtx.beginPath();
+      rewardCtx.moveTo(0, h/2); rewardCtx.lineTo(w, h/2);
+      rewardCtx.stroke();
+
+      const data = State.rewardHistory;
+      if (data.length < 2) return;
+
+      const min = Math.min(...data) - 40;
+      const max = Math.max(...data) + 40;
+
+      rewardCtx.beginPath();
+      rewardCtx.strokeStyle = '#10B981';
+      rewardCtx.lineWidth = 2.5;
+
+      for (let i = 0; i < data.length; i++) {
+        const x = (i / (data.length - 1)) * w;
+        const norm = (data[i] - min) / (max - min);
+        const y = h - norm * (h - 8) - 4;
+        if (i === 0) rewardCtx.moveTo(x, y);
+        else rewardCtx.lineTo(x, y);
+      }
+      rewardCtx.stroke();
+    }
+    drawRewardChart();
+
+    function updateTelemetryHUD() {
+      document.getElementById('metric-episode').textContent = `#${State.episode}`;
+      document.getElementById('metric-steps').textContent = State.steps.toLocaleString();
+      document.getElementById('metric-reward').textContent = (State.reward >= 0 ? '+' : '') + State.reward.toFixed(1);
+
+      if (State.ballMesh) {
+        const dist = duckRobot.position.distanceTo(State.ballMesh.position);
+        document.getElementById('metric-ball-dist').textContent = `${dist.toFixed(2)} m`;
+      }
+
+      const badge = document.getElementById('rl-state-badge');
+      if (State.learningActive) {
+        badge.textContent = 'EXPLORING (50 Hz)';
+        badge.className = 'px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 animate-pulse';
+      } else {
+        badge.textContent = State.currentAction.toUpperCase();
+        badge.className = 'px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/40';
+      }
+    }
+
+    let hudVisible = true;
+    document.getElementById('btn-toggle-hud').addEventListener('click', () => {
+      hudVisible = !hudVisible;
+      document.getElementById('panel-left').style.display = hudVisible ? 'block' : 'none';
+      document.getElementById('panel-right').style.display = hudVisible ? 'block' : 'none';
+      document.getElementById('hud-toggle-text').textContent = hudVisible ? 'Clean View' : 'Show Panels';
+    });
+
+    const btnActivate = document.getElementById('btn-activate');
+    const activateText = document.getElementById('activate-text');
+    btnActivate.addEventListener('click', () => {
+      State.learningActive = !State.learningActive;
+      if (State.learningActive) {
+        activateText.textContent = '#Learning Active';
+        btnActivate.classList.remove('from-emerald-600', 'to-teal-500');
+        btnActivate.classList.add('from-amber-600', 'to-orange-500');
+        if (State.currentAction === 'idle' || State.currentAction === 'sit') {
+          State.currentAction = 'walk';
+        }
+      } else {
+        activateText.textContent = '#Activate';
+        btnActivate.classList.remove('from-amber-600', 'to-orange-500');
+        btnActivate.classList.add('from-emerald-600', 'to-teal-500');
+      }
+      updateTelemetryHUD();
+    });
+
+    const groundInput = document.getElementById('real-ground-input');
+    groundInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          const img = new Image();
+          img.onload = () => {
+            uploadedGroundImage = img;
+            renderGroundTexture();
+            document.getElementById('ground-source-tag').textContent = 'Custom Ground';
+            document.getElementById('footer-ground-status').textContent = 'Custom Ground Photo';
+            populateHazardsFromFloor(State.hazardLevel);
+          };
+          img.src = evt.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    document.getElementById('slider-pitch').addEventListener('input', (e) => {
+      State.keystonePitch = parseFloat(e.target.value);
+      document.getElementById('lbl-pitch').textContent = `${State.keystonePitch}° Tilt`;
+      renderGroundTexture();
+    });
+
+    document.getElementById('slider-scale').addEventListener('input', (e) => {
+      State.textureScale = parseFloat(e.target.value);
+      document.getElementById('lbl-scale').textContent = `${State.textureScale.toFixed(1)}x`;
+      renderGroundTexture();
+    });
+
+    document.getElementById('slider-friction').addEventListener('input', (e) => {
+      State.groundFriction = parseFloat(e.target.value);
+      document.getElementById('lbl-friction').textContent = `${State.groundFriction.toFixed(2)}`;
+      document.getElementById('footer-friction-val').textContent = `${State.groundFriction.toFixed(2)}`;
+    });
+
+    document.getElementById('slider-hazard').addEventListener('input', (e) => {
+      State.hazardLevel = parseInt(e.target.value);
+      const labels = ['Low Density', 'Medium Density', 'High Density'];
+      document.getElementById('lbl-hazard').textContent = labels[State.hazardLevel - 1];
+      populateHazardsFromFloor(State.hazardLevel);
+    });
+
+    document.getElementById('btn-regen-hazards').addEventListener('click', () => {
+      populateHazardsFromFloor(State.hazardLevel);
+    });
+
+    document.getElementById('env-preset').addEventListener('change', (e) => {
+      State.currentEnv = e.target.value;
+      uploadedGroundImage = null;
+      document.getElementById('ground-source-tag').textContent = e.target.options[e.target.selectedIndex].text;
+      document.getElementById('footer-ground-status').textContent = e.target.options[e.target.selectedIndex].text;
+      renderGroundTexture();
+      populateHazardsFromFloor(State.hazardLevel);
+    });
+
+    document.getElementById('slider-dissection').addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value) / 100.0;
+      State.dissectionAmount = val;
+      document.getElementById('dissect-val').textContent = `${Math.round(val * 100)}%`;
+      dissectableParts.forEach(mesh => {
+        if (mesh.userData && mesh.userData.originalPos && mesh.userData.explosionDir) {
+          mesh.position.copy(mesh.userData.originalPos).addScaledVector(mesh.userData.explosionDir, val * 1.8);
+        }
+      });
+    });
+
+    document.getElementById('btn-toggle-xray').addEventListener('click', () => {
+      State.isShellTransparent = !State.isShellTransparent;
+      duckYellowMat.transparent = State.isShellTransparent;
+      duckYellowMat.opacity = State.isShellTransparent ? 0.35 : 1.0;
+      duckYellowMat.wireframe = State.isShellTransparent;
+      duckYellowMat.needsUpdate = true;
+      document.getElementById('btn-toggle-xray').textContent = State.isShellTransparent ? "Shell: Solid Opaque" : "Shell: Transparent";
+    });
+
+    document.getElementById('btn-toggle-lidar-cone').addEventListener('click', () => {
+      State.lidarConeVisible = !State.lidarConeVisible;
+      camCone.visible = State.lidarConeVisible;
+      lidarRayGroup.visible = State.lidarConeVisible;
+    });
+
+    document.getElementById('btn-action-kick').addEventListener('click', startKickBallRoutine);
+    document.getElementById('btn-action-fetch').addEventListener('click', startFetchBallRoutine);
+    document.getElementById('btn-action-reset-ball').addEventListener('click', resetBallPosition);
+
+    document.getElementById('btn-action-walk').addEventListener('click', () => {
+      State.currentAction = 'walk';
+      State.fetchAttached = false;
+      updateStatusBanner("Autonomous Roam: Active LiDAR Obstacle Avoidance", true, "🚶");
+      setTimeout(() => updateStatusBanner("", false), 2000);
+    });
+
+    document.getElementById('btn-action-sit').addEventListener('click', () => {
+      State.currentAction = 'sit';
+      State.fetchAttached = false;
+      updateStatusBanner("", false);
+    });
+
+    document.getElementById('btn-action-grasp').addEventListener('click', () => {
+      State.currentAction = 'grasp';
+      State.graspPhase = 0;
+      updateStatusBanner("", false);
+    });
+
+    document.getElementById('btn-action-recover').addEventListener('click', () => {
+      State.isFallen = false;
+      State.currentAction = 'recover';
+      updateStatusBanner("Initiating self-righting dynamic recovery...", true, "🔄");
+      setTimeout(() => updateStatusBanner("", false), 2000);
+    });
+
+    document.getElementById('btn-stop-action').addEventListener('click', () => {
+      State.currentAction = 'idle';
+      State.fetchAttached = false;
+      updateStatusBanner("Halted.", true, "⏹️");
+      setTimeout(() => updateStatusBanner("", false), 1500);
+    });
+
+    document.getElementById('btn-push-duck').addEventListener('click', () => {
+      triggerTrippingFall("External Force Push", new THREE.Vector3(0, 0, -1));
+    });
+
+    const studentInput = document.getElementById('student-name');
+    studentInput.addEventListener('change', (e) => { State.studentName = e.target.value; });
+
+    function quickSave() {
+      const data = {
+        student: State.studentName,
+        episode: State.episode,
+        steps: State.steps,
+        reward: State.reward,
+        epsilon: State.epsilon,
+        policyWeights: State.policyWeights,
+        rewardHistory: State.rewardHistory,
+        keystonePitch: State.keystonePitch,
+        groundFriction: State.groundFriction,
+        env: State.currentEnv
+      };
+      localStorage.setItem('GARRF_MicroDuck_Save', JSON.stringify(data));
+      document.getElementById('save-status-indicator').textContent = 'Saved ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    document.getElementById('btn-quick-save').addEventListener('click', quickSave);
+
+    document.getElementById('btn-save-project').addEventListener('click', () => {
+      const projectData = {
+        foundation: 'Gopalkrishna Advanced Rural Research Foundation',
+        arena: "GopalKrishna Advanced Rural Research Foundation's Village backyard",
+        project: 'KuKudu Ku, our Village Roaster RL Simulator',
+        student: State.studentName,
+        episode: State.episode,
+        steps: State.steps,
+        reward: State.reward,
+        epsilon: State.epsilon,
+        policyWeights: State.policyWeights,
+        rewardHistory: State.rewardHistory,
+        calibratedTilt: State.keystonePitch,
+        calibratedFriction: State.groundFriction,
+        timestamp: new Date().toISOString()
+      };
+      const blob = new Blob([JSON.stringify(projectData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `KuKuduKu_RL_${State.studentName.replace(/\s+/g, '_')}_Ep${State.episode}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    document.getElementById('btn-load-project').addEventListener('click', () => {
+      document.getElementById('file-load-project').click();
+    });
+
+    document.getElementById('file-load-project').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        try {
+          const d = JSON.parse(evt.target.result);
+          if (d.student) { State.studentName = d.student; studentInput.value = d.student; }
+          if (d.episode) State.episode = d.episode;
+          if (d.steps) State.steps = d.steps;
+          if (d.reward) State.reward = d.reward;
+          if (d.epsilon) State.epsilon = d.epsilon;
+          if (d.policyWeights) State.policyWeights = d.policyWeights;
+          if (d.rewardHistory) State.rewardHistory = d.rewardHistory;
+          if (d.calibratedTilt) {
+            State.keystonePitch = d.calibratedTilt;
+            document.getElementById('slider-pitch').value = d.calibratedTilt;
+            document.getElementById('lbl-pitch').textContent = `${d.calibratedTilt}° Tilt`;
+          }
+          if (d.calibratedFriction) {
+            State.groundFriction = d.calibratedFriction;
+            document.getElementById('slider-friction').value = d.calibratedFriction;
+            document.getElementById('lbl-friction').textContent = `${d.calibratedFriction.toFixed(2)}`;
+          }
+          renderGroundTexture();
+          drawRewardChart();
+          updateTelemetryHUD();
+          document.getElementById('save-status-indicator').textContent = 'Loaded';
+        } catch (err) {
+          console.error("Invalid save file", err);
+        }
+      };
+      reader.readAsText(file);
+    });
+
+    document.getElementById('btn-export-firmware').addEventListener('click', () => {
+      const pyScript = `"""
+KuKudu Ku, our Village Roaster - Autonomous Biped Sim-to-Real Policy
+Gopalkrishna Advanced Rural Research Foundation (GARRF)
+Student Researcher: ${State.studentName}
+Arena: GopalKrishna Advanced Rural Research Foundation's Village backyard
+Copyright (c) Dr. Annamdas Venu Gopal Madhav - Open-Access Digital Twin Framework
+Episodes: ${State.episode} | Reward: ${State.reward.toFixed(2)} | Friction (mu): ${State.groundFriction.toFixed(2)}
+Includes: 13-Ray LiDAR Obstacle Avoidance, Closed-Loop Kick & Fetch Skills.
+"""
+
+import time
+import numpy as np
+
+ACTUATOR_IDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+POLICY_WEIGHTS = np.array(${JSON.stringify(State.policyWeights)}, dtype=np.float32)
+
+class KuKuduKuRealController:
+    def __init__(self, serial_port='/dev/ttyUSB0', baudrate=1000000):
+        print(f"[*] Initializing KuKudu Ku Controller on {serial_port} ({baudrate} bps)...")
+        self.rate_hz = 50.0
+        self.dt = 1.0 / self.rate_hz
+        print(f"[+] Loaded Policy Matrix shape: {POLICY_WEIGHTS.shape}")
+
+    def step(self, imu_roll_pitch, lidar_rays):
+        obs = np.zeros(16, dtype=np.float32)
+        obs[0:2] = imu_roll_pitch
+        obs[2:15] = lidar_rays[:13]
+        torques = np.dot(POLICY_WEIGHTS, obs)
+        return np.clip(torques, -0.52, 0.52)
+
+if __name__ == '__main__':
+    rooster = KuKuduKuRealController()
+    print("[!] KuKudu Ku Sim-to-Real Policy Ready for Deployment.")
+`;
+      const blob = new Blob([pyScript], { type: 'text/x-python' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `kukuduku_real_policy_${State.studentName.replace(/\s+/g, '_')}.py`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    const clock = new THREE.Clock();
+    let animClock = 0;
+
+    function resetLegsToStanding(dt = 0.1) {
+      leftLeg.thighGroup.rotation.x = THREE.MathUtils.lerp(leftLeg.thighGroup.rotation.x, 0, dt * 8);
+      leftLeg.shinGroup.rotation.x = THREE.MathUtils.lerp(leftLeg.shinGroup.rotation.x, 0, dt * 8);
+      leftLeg.footGroup.rotation.x = THREE.MathUtils.lerp(leftLeg.footGroup.rotation.x, 0, dt * 8);
+
+      rightLeg.thighGroup.rotation.x = THREE.MathUtils.lerp(rightLeg.thighGroup.rotation.x, 0, dt * 8);
+      rightLeg.shinGroup.rotation.x = THREE.MathUtils.lerp(rightLeg.shinGroup.rotation.x, 0, dt * 8);
+      rightLeg.footGroup.rotation.x = THREE.MathUtils.lerp(rightLeg.footGroup.rotation.x, 0, dt * 8);
+
+      duckRobot.rotation.z = THREE.MathUtils.lerp(duckRobot.rotation.z, 0, dt * 8);
+      duckRobot.position.y = THREE.MathUtils.lerp(duckRobot.position.y, 0, dt * 8);
+    }
+
+    function updateSimulation(dt) {
+      animClock += dt;
+
+      ledArray.forEach((led, idx) => {
+        led.visible = Math.sin(animClock * 8 + idx) > 0;
+      });
+
+      lidarRayGroup.rotation.y = Math.sin(animClock * 4) * 0.15;
+      updateLidarPerception();
+      resolveHardCollisionsAndTrips();
+
+      const rollDeg = duckRobot.rotation.z * (180 / Math.PI);
+      const pitchDeg = duckRobot.rotation.x * (180 / Math.PI);
+      document.getElementById('imu-angles').textContent = `P: ${pitchDeg.toFixed(1)}° | R: ${rollDeg.toFixed(1)}°`;
+      const horizonLine = document.getElementById('imu-horizon-line');
+      if (horizonLine) {
+        horizonLine.style.transform = `translateY(${pitchDeg * 1.2}px) rotate(${rollDeg}deg)`;
+      }
+
+      if (State.ballMesh) {
+        const ball = State.ballMesh;
+
+        if (State.fetchAttached) {
+          const beakWorldPos = new THREE.Vector3(0, 0, 0.45).applyAxisAngle(new THREE.Vector3(0, 1, 0), duckRobot.rotation.y);
+          ball.position.copy(duckRobot.position).add(beakWorldPos);
+          ball.position.y = State.ballRadius;
+          State.ballVelocity.set(0, 0, 0);
+        } else if (State.ballVelocity.lengthSq() > 0.0001) {
+          ball.position.x += State.ballVelocity.x * dt;
+          ball.position.z += State.ballVelocity.z * dt;
+
+          const speed = State.ballVelocity.length();
+          const rollAngle = (speed * dt) / State.ballRadius;
+          const rollAxis = new THREE.Vector3(-State.ballVelocity.z, 0, State.ballVelocity.x).normalize();
+          ball.rotateOnWorldAxis(rollAxis, rollAngle);
+
+          const frictionDecel = Math.max(0.6, State.groundFriction * 3.2);
+          State.ballVelocity.multiplyScalar(Math.max(0, 1.0 - frictionDecel * dt));
+
+          const boundLimit = 13.5;
+          if (Math.abs(ball.position.x) > boundLimit) {
+            ball.position.x = Math.sign(ball.position.x) * boundLimit;
+            State.ballVelocity.x *= -0.65;
+          }
+          if (Math.abs(ball.position.z) > boundLimit) {
+            ball.position.z = Math.sign(ball.position.z) * boundLimit;
+            State.ballVelocity.z *= -0.65;
+          }
+        }
+      }
+
+      if (State.isFallen) {
+        State.fallTimer += dt;
+        duckRobot.rotation.x = THREE.MathUtils.lerp(duckRobot.rotation.x, -1.2, dt * 6);
+        duckRobot.rotation.z = THREE.MathUtils.lerp(duckRobot.rotation.z, 0.45, dt * 6);
+        duckRobot.position.y = THREE.MathUtils.lerp(duckRobot.position.y, 0.12, dt * 6);
+
+        leftLeg.thighGroup.rotation.x = 0.8;
+        rightLeg.thighGroup.rotation.x = -0.5;
+
+        if (State.fallTimer > 2.4) {
+          State.isFallen = false;
+          State.currentAction = 'recover';
+          updateStatusBanner("🔄 Autonomous self-righting recovery...", true, "🔄");
+        }
+        return;
+      }
+
+      if (State.currentAction === 'recover') {
+        duckRobot.rotation.x = THREE.MathUtils.lerp(duckRobot.rotation.x, 0, dt * 5);
+        duckRobot.rotation.z = THREE.MathUtils.lerp(duckRobot.rotation.z, 0, dt * 5);
+        duckRobot.position.y = THREE.MathUtils.lerp(duckRobot.position.y, 0, dt * 5);
+        resetLegsToStanding(dt);
+
+        if (Math.abs(duckRobot.rotation.x) < 0.05 && Math.abs(duckRobot.rotation.z) < 0.05) {
+          State.currentAction = State.learningActive ? 'walk' : 'idle';
+          updateStatusBanner("KuKudu Ku balanced & standing upright!", true, "✅");
+          setTimeout(() => updateStatusBanner("", false), 1800);
+        }
+        return;
+      }
+
+      if (State.currentAction === 'KICK_NAV') {
+        if (!State.ballMesh) { State.currentAction = 'idle'; return; }
+        
+        const res = navigateTowardTarget(State.ballMesh.position, dt, 0.45);
+        updateStatusBanner(`Kick Ball: Approaching target (${res.distance.toFixed(2)}m remaining)...`, true, "⚽");
+
+        if (res.arrived) {
+          State.currentAction = 'KICK_STABILIZE';
+          State.actionTimer = 0;
+          updateStatusBanner("Kick Ball: Balancing center-of-mass on left foot...", true, "⚖️");
+        }
+        return;
+      }
+
+      if (State.currentAction === 'KICK_STABILIZE') {
+        State.actionTimer += dt;
+        duckRobot.rotation.z = THREE.MathUtils.lerp(duckRobot.rotation.z, 0.09, dt * 8);
+        leftLeg.thighGroup.rotation.z = THREE.MathUtils.lerp(leftLeg.thighGroup.rotation.z, -0.06, dt * 8);
+        leftLeg.sensorRing.material.color.setHex(0x10b981);
+        rightLeg.sensorRing.material.color.setHex(0x334155);
+        document.getElementById('foot-l-force').textContent = '7.8 N (Support)';
+        document.getElementById('foot-r-force').textContent = '0.0 N (Airborne)';
+
+        if (State.actionTimer > 0.25) {
+          State.currentAction = 'KICK_WINDUP';
+          State.actionTimer = 0;
+          updateStatusBanner("Kick Ball: Cocking right leg backward...", true, "🦵");
+        }
+        return;
+      }
+
+      if (State.currentAction === 'KICK_WINDUP') {
+        State.actionTimer += dt;
+        rightLeg.thighGroup.rotation.x = THREE.MathUtils.lerp(rightLeg.thighGroup.rotation.x, -0.95, dt * 14);
+        rightLeg.shinGroup.rotation.x = THREE.MathUtils.lerp(rightLeg.shinGroup.rotation.x, 1.15, dt * 14);
+        headGroup.rotation.x = THREE.MathUtils.lerp(headGroup.rotation.x, 0.25, dt * 8);
+
+        if (State.actionTimer > 0.25) {
+          State.currentAction = 'KICK_STRIKE';
+          State.actionTimer = 0;
+          updateStatusBanner("Kick Ball: High-velocity strike!", true, "⚡");
+        }
+        return;
+      }
+
+      if (State.currentAction === 'KICK_STRIKE') {
+        State.actionTimer += dt;
+        rightLeg.thighGroup.rotation.x = THREE.MathUtils.lerp(rightLeg.thighGroup.rotation.x, 1.05, dt * 32);
+        rightLeg.shinGroup.rotation.x = THREE.MathUtils.lerp(rightLeg.shinGroup.rotation.x, -0.3, dt * 32);
+
+        if (State.ballMesh && State.actionTimer < 0.12) {
+          const forward = new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), duckRobot.rotation.y);
+          forward.x += (Math.random() - 0.5) * 0.1;
+          const kickImpulseSpeed = 5.6 + Math.random() * 2.0;
+          State.ballVelocity.copy(forward.multiplyScalar(kickImpulseSpeed));
+
+          State.reward += 20.0;
+          State.rewardHistory.push(parseFloat(State.reward.toFixed(1)));
+          if (State.rewardHistory.length > 20) State.rewardHistory.shift();
+          drawRewardChart();
+          updateTelemetryHUD();
+        }
+
+        if (State.actionTimer > 0.22) {
+          State.currentAction = 'KICK_FOLLOWTHROUGH';
+          State.actionTimer = 0;
+          updateStatusBanner("Kick Ball: Follow-through & dynamic ground recovery...", true, "🎯");
+        }
+        return;
+      }
+
+      if (State.currentAction === 'KICK_FOLLOWTHROUGH') {
+        State.actionTimer += dt;
+        rightLeg.thighGroup.rotation.x = THREE.MathUtils.lerp(rightLeg.thighGroup.rotation.x, 0.0, dt * 10);
+        rightLeg.shinGroup.rotation.x = THREE.MathUtils.lerp(rightLeg.shinGroup.rotation.x, 0.0, dt * 10);
+        duckRobot.rotation.z = THREE.MathUtils.lerp(duckRobot.rotation.z, 0.0, dt * 8);
+        headGroup.rotation.x = THREE.MathUtils.lerp(headGroup.rotation.x, 0.0, dt * 8);
+
+        if (State.actionTimer > 0.4) {
+          State.currentAction = 'idle';
+          resetLegsToStanding(0.5);
+          updateStatusBanner("SUCCESS! Ball kicked powerfully into the backyard.", true, "🎉");
+          setTimeout(() => updateStatusBanner("", false), 2500);
+          if (State.cameraMode === 'ball') setCameraPreset('ball');
+        }
+        return;
+      }
+
+      if (State.currentAction === 'FETCH_NAV') {
+        if (!State.ballMesh) { State.currentAction = 'idle'; return; }
+
+        const res = navigateTowardTarget(State.ballMesh.position, dt, 0.42);
+        updateStatusBanner(`Fetch Ball: Tracking ball (${res.distance.toFixed(2)}m to reach)...`, true, "🦮");
+
+        if (res.arrived) {
+          State.currentAction = 'FETCH_ALIGN';
+          State.actionTimer = 0;
+          updateStatusBanner("Fetch Ball: Lowering beak to grasp...", true, "🎯");
+        }
+        return;
+      }
+
+      if (State.currentAction === 'FETCH_ALIGN') {
+        State.actionTimer += dt;
+        headGroup.rotation.x = THREE.MathUtils.lerp(headGroup.rotation.x, 0.42, dt * 8);
+        beakLower.position.y = THREE.MathUtils.lerp(beakLower.position.y, -0.04, dt * 8);
+        duckRobot.position.y = THREE.MathUtils.lerp(duckRobot.position.y, -0.1, dt * 6);
+
+        if (State.actionTimer > 0.35) {
+          State.currentAction = 'FETCH_GRASP';
+          State.actionTimer = 0;
+          updateStatusBanner("Fetch Ball: Beak attached! Returning ball to base...", true, "🔒");
+        }
+        return;
+      }
+
+      if (State.currentAction === 'FETCH_GRASP') {
+        State.actionTimer += dt;
+        beakLower.position.y = THREE.MathUtils.lerp(beakLower.position.y, 0.0, dt * 12);
+        State.fetchAttached = true;
+
+        if (State.actionTimer > 0.3) {
+          State.currentAction = 'FETCH_RETURN';
+          updateStatusBanner("Fetch Ball: Bringing ball back to backyard base...", true, "🏡");
+        }
+        return;
+      }
+
+      if (State.currentAction === 'FETCH_RETURN') {
+        const res = navigateTowardTarget(State.homePosition, dt, 0.5);
+        updateStatusBanner(`Fetch Ball: Returning to base (${res.distance.toFixed(2)}m)...`, true, "🏡");
+
+        if (res.arrived) {
+          State.fetchAttached = false;
+          State.currentAction = 'idle';
+          headGroup.rotation.x = 0;
+          resetLegsToStanding(0.5);
+          State.reward += 25.0;
+          State.rewardHistory.push(parseFloat(State.reward.toFixed(1)));
+          if (State.rewardHistory.length > 20) State.rewardHistory.shift();
+          drawRewardChart();
+          updateTelemetryHUD();
+          updateStatusBanner("MISSION ACCOMPLISHED! Ball retrieved cleanly to base.", true, "🏆");
+          setTimeout(() => updateStatusBanner("", false), 2800);
+        }
+        return;
+      }
+
+      if (State.currentAction === 'sit') {
+        duckRobot.position.y = THREE.MathUtils.lerp(duckRobot.position.y, -0.22, dt * 4);
+        leftLeg.thighGroup.rotation.x = THREE.MathUtils.lerp(leftLeg.thighGroup.rotation.x, -1.2, dt * 4);
+        rightLeg.thighGroup.rotation.x = THREE.MathUtils.lerp(rightLeg.thighGroup.rotation.x, -1.2, dt * 4);
+        leftLeg.shinGroup.rotation.x = THREE.MathUtils.lerp(leftLeg.shinGroup.rotation.x, 2.2, dt * 4);
+        rightLeg.shinGroup.rotation.x = THREE.MathUtils.lerp(rightLeg.shinGroup.rotation.x, 2.2, dt * 4);
+        return;
+      }
+
+      if (State.currentAction === 'grasp') {
+        State.graspPhase += dt * 5;
+        beakLower.position.y = -Math.abs(Math.sin(State.graspPhase)) * 0.04;
+        headGroup.rotation.x = Math.sin(State.graspPhase) * 0.2;
+        if (State.graspPhase > Math.PI * 2) {
+          State.currentAction = 'idle';
+          headGroup.rotation.x = 0;
+          beakLower.position.y = 0;
+        }
+        return;
+      }
+
+      if (State.currentAction === 'walk' || State.learningActive) {
+        let leftThreat = 0;
+        let rightThreat = 0;
+        lidarBeams.forEach(b => {
+          if (b.distance < 1.1) {
+            const threat = 1.1 - b.distance;
+            if (b.angle < -0.05) rightThreat += threat;
+            else if (b.angle > 0.05) leftThreat += threat;
+          }
+        });
+
+        if (leftThreat + rightThreat > 0.1) {
+          const turn = rightThreat > leftThreat ? 2.2 : -2.2;
+          duckRobot.rotation.y += turn * dt;
+        }
+
+        const gaitSpeed = THREE.MathUtils.lerp(2.2, 3.8, State.groundFriction);
+        State.walkPhase += dt * gaitSpeed * 3.5;
+        const phase = State.walkPhase;
+
+        const leftSwing = Math.sin(phase);
+        const rightSwing = -leftSwing;
+
+        leftLeg.thighGroup.rotation.x = leftSwing * 0.45;
+        leftLeg.shinGroup.rotation.x = Math.max(0, -leftSwing * 0.65);
+        leftLeg.footGroup.rotation.x = -leftSwing * 0.25;
+
+        rightLeg.thighGroup.rotation.x = rightSwing * 0.45;
+        rightLeg.shinGroup.rotation.x = Math.max(0, -rightSwing * 0.65);
+        rightLeg.footGroup.rotation.x = -rightSwing * 0.25;
+
+        duckRobot.position.y = Math.abs(Math.cos(phase * 2)) * 0.035;
+        duckRobot.rotation.z = Math.sin(phase) * 0.05;
+        headGroup.rotation.y = -Math.sin(phase) * 0.12;
+
+        const moveDist = 0.35 * State.groundFriction * dt;
+        duckRobot.translateZ(moveDist);
+        State.steps += 1;
+
+        const leftGrounded = leftSwing <= 0;
+        const rightGrounded = rightSwing <= 0;
+        leftLeg.sensorRing.material.color.setHex(leftGrounded ? 0x10b981 : 0x334155);
+        rightLeg.sensorRing.material.color.setHex(rightGrounded ? 0x10b981 : 0x334155);
+        document.getElementById('foot-l-force').textContent = leftGrounded ? `${(4.0 + Math.random() * 0.8).toFixed(1)} N` : '0.0 N (Swing)';
+        document.getElementById('foot-r-force').textContent = rightGrounded ? `${(4.0 + Math.random() * 0.8).toFixed(1)} N` : '0.0 N (Swing)';
+
+        if (State.learningActive) {
+          State.reward += dt * 2.5;
+          if (Math.random() < 0.03) {
+            State.episode += 1;
+            State.rewardHistory.push(parseFloat(State.reward.toFixed(1)));
+            if (State.rewardHistory.length > 20) State.rewardHistory.shift();
+            drawRewardChart();
+            State.epsilon = Math.max(0.01, State.epsilon * 0.998);
+            updateTelemetryHUD();
+          }
+        }
+
+        if (duckRobot.position.length() > 13) {
+          duckRobot.position.set(0, 0, 0);
+          duckRobot.rotation.y = Math.random() * Math.PI * 2;
+        }
+      } else {
+        resetLegsToStanding(dt);
+        duckRobot.position.y = Math.sin(animClock * 2) * 0.01;
+        headGroup.rotation.y = Math.sin(animClock * 1.5) * 0.08;
+      }
+
+      if (State.cameraMode === 'ball' && State.ballMesh) {
+        const midPoint = duckRobot.position.clone().add(State.ballMesh.position).multiplyScalar(0.5);
+        midPoint.y = 0.45;
+        controls.target.lerp(midPoint, dt * 4);
+      } else if (State.cameraMode === 'fpv') {
+        const eyeWorldPos = new THREE.Vector3();
+        headGroup.getWorldPosition(eyeWorldPos);
+        eyeWorldPos.y += 0.08;
+        camera.position.copy(eyeWorldPos);
+        const forwardLook = new THREE.Vector3(0, 0, 4).applyAxisAngle(new THREE.Vector3(0, 1, 0), duckRobot.rotation.y);
+        controls.target.copy(eyeWorldPos.clone().add(forwardLook));
+      }
+    }
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      drawRewardChart();
+    });
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const dt = Math.min(clock.getDelta(), 0.1);
+
+      updateSimulation(dt);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    window.onload = function() {
+      animate();
+      setCameraPreset('front');
+      updateTelemetryHUD();
+      console.log("[+] KuKudu Ku, our Village Roaster Sim-to-Real Digital Twin Initialized.");
+      console.log("[+] Arena: GopalKrishna Advanced Rural Research Foundation's Village backyard.");
+    };
+  </script>
+</body>
+</html>
