@@ -777,6 +777,77 @@
       border-color: var(--accent);
       box-shadow: 0 0 8px var(--accent-glow);
     }
+    
+    .mic-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      padding: 9px 14px;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+    .mic-btn:hover { background: rgba(255, 255, 255, 0.15); }
+    .mic-btn.listening {
+      background: #ef4444 !important;
+      border-color: #f87171 !important;
+      box-shadow: 0 0 16px rgba(239, 68, 68, 0.8) !important;
+      animation: pulse 1s infinite;
+    }
+    .gemini-config-bar {
+      width: 100%;
+      max-width: 840px;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(147, 197, 253, 0.25);
+      border-radius: 14px;
+      padding: 10px 14px;
+      margin-bottom: 12px;
+      font-size: 0.72rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .gemini-config-bar input {
+      flex: 1;
+      min-width: 220px;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 0.72rem;
+      outline: none;
+    }
+    .gemini-status-tag {
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 0.65rem;
+      font-weight: 800;
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .cam-instruction-banner {
+      width: 100%;
+      max-width: 840px;
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: 10px;
+      padding: 8px 12px;
+      margin-bottom: 12px;
+      font-size: 0.72rem;
+      color: #fef08a;
+      line-height: 1.4;
+      display: none;
+    }
+
     .input-bar button {
       background: var(--accent);
       border: none;
@@ -875,6 +946,25 @@
       <button class="mode-tab-btn" onclick="setInterfaceTheme('warm')" id="theme-warm">
         <span>☀️ Warm Amber</span>
       </button>
+    </div>
+  </div>
+
+  <!-- Android Camera Troubleshooter Banner -->
+  <div class="cam-instruction-banner" id="camHelpBanner">
+    <b>ℹ️ How to Enable Android Camera Access:</b><br>
+    Your URL starts with <code>content://</code> or <code>file://</code>. Android Chrome blocks camera on local file links by default for security. To grant access:<br>
+    1. Tap Chrome's <b>⋮ (3 dots)</b> &rarr; <b>Settings</b> &rarr; <b>Site settings</b> &rarr; <b>Camera</b> &rarr; Make sure it is allowed.<br>
+    2. Alternatively, host this single HTML file on GitHub Pages, Google Drive, or run via local server (<code>http://localhost</code>) where Android Chrome permits full camera streaming!
+  </div>
+
+  <!-- Autonomous Onboard AI Engine (100% Zero-API, Free & Offline-Ready) -->
+  <div class="gemini-config-bar">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span style="font-weight: 800; color: #38bdf8;">🧠 Autonomous AI Companion Engine:</span>
+      <span class="gemini-status-tag" style="background: rgba(16, 185, 129, 0.2); color: #34d399; border-color: #34d399;">100% FREE • NO API KEY REQUIRED</span>
+    </div>
+    <div style="font-size: 0.72rem; color: #cbd5e1;">
+      Empowered by <b>Counsel-Chat</b>, <b>EmpatheticDialogues</b>, <b>Persona-Chat</b> & <b>DailyDialog</b>
     </div>
   </div>
 
@@ -1022,7 +1112,10 @@
       <!-- Chips are dynamically rendered per selected Indian language -->
     </div>
     <div class="input-bar">
-      <input type="text" id="userTextInput" placeholder="Talk with your companion..." onkeydown="if(event.key==='Enter') sendUserMessage()">
+      <button class="mic-btn" id="voiceMicBtn" onclick="toggleSpeechRecognition()" title="Click to speak (Microphone)">
+        <span id="micIcon">🎙️</span>
+      </button>
+      <input type="text" id="userTextInput" placeholder="Talk or tap mic to speak..." onkeydown="if(event.key==='Enter') sendUserMessage()">
       <button onclick="sendUserMessage()" id="sendBtnLabel">Send</button>
     </div>
   </div>
@@ -1568,6 +1661,83 @@
       else await startCameraMonitoring();
     }
 
+    
+    // -------------------------------------------------------------
+    // 100% AUTONOMOUS ONBOARD INTELLIGENCE & VOICE RECOGNITION (MIC) ENGINE
+    // -------------------------------------------------------------
+
+    // SPEECH-TO-TEXT (MICROPHONE RECOGNITION)
+    let speechRecognizer = null;
+    let isListening = false;
+
+    function initSpeechRecognition() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        console.warn("Speech recognition not supported on this browser.");
+        return null;
+      }
+      const recognizer = new SpeechRecognition();
+      recognizer.continuous = false;
+      recognizer.interimResults = false;
+
+      recognizer.onstart = () => {
+        isListening = true;
+        const micBtn = document.getElementById('voiceMicBtn');
+        if (micBtn) micBtn.classList.add('listening');
+        document.getElementById('micIcon').innerText = '🔴';
+        document.getElementById('userTextInput').placeholder = 'Listening... Speak now!';
+      };
+
+      recognizer.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        const input = document.getElementById('userTextInput');
+        input.value = transcript;
+        sendUserMessage();
+      };
+
+      recognizer.onerror = (event) => {
+        console.error("Speech recognition error:", event.error);
+        stopListeningUI();
+      };
+
+      recognizer.onend = () => {
+        stopListeningUI();
+      };
+
+      return recognizer;
+    }
+
+    function stopListeningUI() {
+      isListening = false;
+      const micBtn = document.getElementById('voiceMicBtn');
+      if (micBtn) micBtn.classList.remove('listening');
+      document.getElementById('micIcon').innerText = '🎙️';
+      document.getElementById('userTextInput').placeholder = I18N[currentLang].inputPlaceholder;
+    }
+
+    function toggleSpeechRecognition() {
+      markUserActivity();
+      if (!speechRecognizer) {
+        speechRecognizer = initSpeechRecognition();
+      }
+      if (!speechRecognizer) {
+        alert("Speech-to-text recognition is not supported in this browser. Please use Chrome on Android or desktop.");
+        return;
+      }
+
+      if (isListening) {
+        speechRecognizer.stop();
+        stopListeningUI();
+      } else {
+        speechRecognizer.lang = I18N[currentLang].code;
+        try {
+          speechRecognizer.start();
+        } catch (e) {
+          console.warn("Recognizer already started", e);
+        }
+      }
+    }
+
     async function startCameraMonitoring() {
       const video = document.getElementById('webcamVideo');
       const overlay = document.getElementById('camOfflineOverlay');
@@ -1609,10 +1779,12 @@
         console.error("Camera access error:", err);
         cameraActive = false;
         overlay.style.display = 'flex';
-        statusText.innerText = "Camera access denied or unavailable. Grant permission in browser settings.";
+        statusText.innerText = "Camera access blocked. Tap 'Help' banner above for Android Chrome fix.";
         badge.className = 'cam-badge away';
         badge.innerText = 'ACCESS DENIED';
         hudVision.innerText = 'VISION: DENIED';
+        const helpBanner = document.getElementById('camHelpBanner');
+        if (helpBanner) helpBanner.style.display = 'block';
       }
     }
 
@@ -1988,12 +2160,13 @@
       { patterns: [/favorite song/i, /favourite song/i, /music do you like/i], mood: 'cheerful', reply: "If I had ears, I'd probably loop some upbeat lofi or classic synthwave! What are you listening to lately?" }
     ];
 
-    function evaluateInput(raw) {
+        function evaluateInput(raw) {
       markUserActivity();
       const rawTrim = raw.trim();
       const text = rawTrim.toLowerCase().replace(/[.,!?;:]/g, ' ').replace(/\s+/g, ' ').trim();
       const p = COMPANIONS[activeKey];
       const lang = currentLang;
+
 
       // 1. CHECK MULTILINGUAL EMOTIONS & GREETINGS (Telugu, Hindi, Tamil, Kannada, English)
       for (const item of MULTILINGUAL_MATCHERS) {
