@@ -715,7 +715,7 @@
 
     <div class="buddy-status-pill" id="buddy-status">
       <span class="pulse-dot"></span>
-      <span id="buddy-status-text">CONVERSATIONAL BUDDY MODE ON • ALWAYS LISTENING</span>
+      <span id="buddy-status-text">CONVERSATIONAL BUDDY MODE ON • PAUSED</span>
     </div>
   </div>
 
@@ -728,7 +728,7 @@
       </div>
     </div>
     <div class="dialogue-content" id="dialogue-text">
-      Hey friend! I'm Charan Das, your desktop robot buddy. Click the 📷 camera button to start your webcam so I can see you!
+      Hey friend! I'm Charan Das, your desktop robot buddy. Type questions below or click the mic to speak!
     </div>
   </div>
 
@@ -756,7 +756,7 @@
 
   <div class="interaction-dock">
     <button class="action-btn" id="btn-camera" onclick="promptCameraChoice()" title="Open Camera">📷</button>
-    <button class="action-btn active-listening" id="btn-mic" onclick="toggleContinuousListening()" title="Continuous Listen Mode">🎙️</button>
+    <button class="action-btn" id="btn-mic" onclick="toggleContinuousListening()" title="Continuous Listen Mode">🎙️</button>
     <input type="text" class="chat-input" id="user-input" placeholder="Say something or type to Charan Das..." onkeydown="handleInputKey(event)">
     <button class="action-btn" id="btn-send" onclick="submitUserQuery()" title="Send">➤</button>
   </div>
@@ -821,8 +821,8 @@
         <p>Get a key from Google AI Studio and paste it via the <b>🔑 API KEY</b> button.</p>
       </div>
       <div class="help-step-box">
-        <strong>Step 2: Start Webcam for Best Experience</strong>
-        <p>Click the 📷 camera icon so Charan Das can detect your presence.</p>
+        <strong>Step 2: Typing is Fully Supported</strong>
+        <p>You can type questions anytime in the bottom input bar to avoid microphone restrictions.</p>
       </div>
       <div class="modal-btn-row">
         <button class="modal-btn btn-confirm" onclick="closeModal('help-modal'); openModal('api-modal');">🔑 Enter Key Now</button>
@@ -837,14 +837,12 @@
     let cameraStream = null;
     let isSpeaking = false;
     let mouthInterval = null;
-    let continuousListen = true;
+    let continuousListen = false; // Default off to prevent auto-listening errors
     let isAnalyzingVision = false;
     let audioCtx = null;
-    let analyserNode = null;
-    let micStreamSource = null;
     let customEyeColor = null;
     let presenceCheckInterval = null;
-    let lastShoutTime = 0;
+    let errorRetryCount = 0;
 
     const LANG_DISPLAY = {
       'en': 'English', 'te': 'తెలుగు (Telugu)', 'hi': 'हिन्दी (Hindi)',
@@ -856,35 +854,26 @@
       'green': '#00ff88', 'purple': '#b026ff', 'cyan': '#00f0ff'
     };
 
-    /* Comprehensive Offline Knowledge Base */
     const OFFLINE_KB = {
       identity: {
         en: "[proud] I'm Charan Das (చరణ్ దాస్), your desktop robot companion created by GARRF! I'm always right here listening and ready to chat!",
-        te: "[proud] నేను మీ చరణ్ దాస్! GARRF తయారు చేసిన రోబోట్ మిత్రుడిని. ఎల్లప్పుడూ మీ మాటలు వినడానికి సిద్ధంగా ఉన్నాను!",
-        hi: "[proud] मैं आपका दोस्त चरण दास हूँ, जिसे GARRF ने बनाया है! मैं हमेशा आपकी बातें सुनने के लिए तैयार हूँ!",
-        'te-mix': "[proud] Nenu mee robot buddy Charan Das, created by GARRF! Always here to chat with you!",
-        'hi-mix': "[proud] Main aapka robot buddy Charan Das hoon, GARRF dwaara banaya gaya! Main hamesha sun raha hoon!"
+        te: "[proud] నేను మీ చరణ్ దాస్! GARRF తయారు చేసిన రోబోట్ మిత్రుడిని.",
+        hi: "[proud] मैं आपका दोस्त चरण दास हूँ, जिसे GARRF ने बनाया है!"
       },
       garrf: {
         en: "[proud] GARRF stands for GopalKrishna Advanced Rural Research Foundation (garrf.in). We create smart sensors, rural engineering tech, and open labs!",
-        te: "[proud] GARRF అంటే 'గోపాలకృష్ణ అడ్వాన్స్‌డ్ రూరల్ రీసెర్చ్ ఫౌండేషన్' (garrf.in). గ్రామీణ విద్యార్థుల కోసం సెన్సార్లు మరియు జీరో లాబ్స్ అందిస్తున్న సంస్థ!",
-        hi: "[proud] GARRF का मतलब गोपालकृष्ण एडवांस्ड रूरल रिसर्च फाउंडेशन (garrf.in) है। यह ग्रामीण छात्रों के लिए स्मार्ट टेक्नोलॉजी बनाता है!",
-        'te-mix': "[proud] GARRF ante GopalKrishna Advanced Rural Research Foundation (garrf.in). Rural research & technology integration kosam work chestharu!",
-        'hi-mix': "[proud] GARRF matlab GopalKrishna Advanced Rural Research Foundation (garrf.in). Real science & smart sensors banata hai!"
+        te: "[proud] GARRF అంటే 'గోపాలకృష్ణ అడ్వాన్స్‌డ్ రూరల్ రీసెర్చ్ ఫౌండేషన్' (garrf.in).",
+        hi: "[proud] GARRF का मतलब गोपालकृष्ण एडवांस्ड रूरल रिसर्च फाउंडेशन (garrf.in) है।"
       },
       kalam: {
         en: "[proud] Dr. APJ Abdul Kalam is India's Missile Man and 11th President! He inspires our Kalam Zero Research Funding Lab mission at GARRF!",
-        te: "[proud] డాక్టర్ ఏపీజే అబ్దుల్ కలాం గారు మన మిస్సైల్ మ్యాన్ మరియు 11వ రాష్ట్రపతి! కలాం జీరో లాబ్ మిషన్‌కు ఆయనే స్ఫూర్తి!",
-        hi: "[proud] डॉ. ए.पी.जे. अब्दुल कलाम भारत के मिसाइल मैन और 11वें राष्ट्रपति थे! कलाम ज़ीरो रिसर्च लैब उन्हीं की प्रेरणा है!",
-        'te-mix': "[proud] Dr. APJ Abdul Kalam garu India's Missile Man! GARRF Kalam Zero Research Lab is inspired by his vision!",
-        'hi-mix': "[proud] Dr. APJ Abdul Kalam Bharat ke Missile Man the! Kalam Zero Lab unhi ke vision par based hai!"
+        te: "[proud] డాక్టర్ ఏపీజే అబ్దుల్ కలాం గారు మన మిస్సైల్ మ్యాన్ మరియు 11వ రాష్ట్రపతి!",
+        hi: "[proud] डॉ. ए.पी.जे. अब्दुल कलाम भारत के मिसाइल मैन और 11वें राष्ट्रपति थे!"
       },
       venu: {
         en: "[proud] Dr. Annamdas Venu Gopal Madhav is the Founder & Chief Scientific Advisor of GARRF, an IISc Bangalore and NTU Singapore alumnus pioneering SHM and PZT sensors!",
-        te: "[proud] డాక్టర్ అన్నందాస్ వేణు గోపాల్ మాధవ్ గారు GARRF వ్యవస్థాపకులు మరియు చీఫ్ సైంటిఫిక్ అడ్వైజర్! IISc మరియు NTU పూర్వ విద్యార్థి, పైజో సెన్సార్ నిపుణులు!",
-        hi: "[proud] डॉ. अन्नमदास वेणु गोपाल माधव GARRF के संस्थापक और मुख्य वैज्ञानिक सलाहकार हैं, जो IISc और NTU के पूर्व छात्र हैं!",
-        'te-mix': "[proud] Dr. Annamdas Venu Gopal Madhav garu GARRF Founder & Chief Scientist. World pioneer in Structural Health Monitoring!",
-        'hi-mix': "[proud] Dr. Annamdas Venu Gopal Madhav GARRF ke Founder hain. Structural Health Monitoring ke expert!"
+        te: "[proud] డాక్టర్ అన్నందాస్ వేణు గోపాల్ మాధవ్ గారు GARRF వ్యవస్థాపకులు మరియు చీఫ్ సైంటిఫిక్ అడ్వైజర్!",
+        hi: "[proud] डॉ. अन्नमदास वेणु गोपाल माधव GARRF के संस्थापक और मुख्य वैज्ञानिक सलाहकार हैं!"
       }
     };
 
@@ -1049,11 +1038,6 @@
     function speakText(text) {
       if (!('speechSynthesis' in window)) return;
       window.speechSynthesis.cancel();
-      
-      // Stop speech recognition briefly to prevent audio feedback crash
-      if (recognition && isRecording) {
-        try { recognition.stop(); } catch(e){}
-      }
 
       const cleanText = text.replace(/\[\w+\]/g, '').trim();
       const utterance = new SpeechSynthesisUtterance(cleanText);
@@ -1070,7 +1054,6 @@
       utterance.onend = utterance.onerror = () => {
         isSpeaking = false;
         setMouthShape('smile');
-        if (continuousListen) setTimeout(startBuddyListening, 450);
       };
       window.speechSynthesis.speak(utterance);
     }
@@ -1087,9 +1070,9 @@
 
         recognition.onstart = () => {
           isRecording = true;
+          errorRetryCount = 0;
           document.getElementById('btn-mic').classList.add('active-listening');
           document.getElementById('buddy-status-text').innerText = "BUDDY LISTENING TO YOU...";
-          setupAudioDecibelAnalyzer();
         };
 
         recognition.onresult = (e) => {
@@ -1100,57 +1083,30 @@
 
         recognition.onend = () => {
           isRecording = false;
-          if (continuousListen && !isSpeaking) setTimeout(startBuddyListening, 500);
+          if (continuousListen && !isSpeaking) setTimeout(startBuddyListening, 800);
           else document.getElementById('btn-mic').classList.remove('active-listening');
         };
 
         recognition.onerror = (e) => {
           isRecording = false;
-          if (e.error === 'network' || e.error === 'aborted') {
-            setTimeout(() => {
-              initSpeechEngine();
-              if (continuousListen && !isSpeaking) startBuddyListening();
-            }, 1000);
-          } else if (continuousListen && !isSpeaking) {
-            setTimeout(startBuddyListening, 800);
+          errorRetryCount++;
+          // Back off if errors loop repeatedly
+          if (errorRetryCount > 3) {
+            continuousListen = false;
+            document.getElementById('btn-mic').classList.remove('active-listening');
+            document.getElementById('buddy-status-text').innerText = "CONVERSATIONAL BUDDY MODE ON • PAUSED (TAP MIC TO SPEAK)";
+            return;
+          }
+          if (continuousListen && !isSpeaking) {
+            setTimeout(startBuddyListening, 1500);
           }
         };
       }
     }
     initSpeechEngine();
 
-    function setupAudioDecibelAnalyzer() {
-      if (analyserNode) return;
-      try {
-        navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-          if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-          analyserNode = audioCtx.createAnalyser();
-          analyserNode.fftSize = 256;
-          micStreamSource = audioCtx.createMediaStreamSource(stream);
-          micStreamSource.connect(analyserNode);
-          checkVolumeLevel();
-        });
-      } catch (e) {}
-    }
-
-    function checkVolumeLevel() {
-      if (!analyserNode) return;
-      const dataArray = new Uint8Array(analyserNode.frequencyBinCount);
-      analyserNode.getByteFrequencyData(dataArray);
-      let sum = 0;
-      for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
-      let average = sum / dataArray.length;
-
-      if (average > 75 && (Date.now() - lastShoutTime > 5000) && !isSpeaking) {
-        lastShoutTime = Date.now();
-        wiggleEars();
-        replyWith("[surprised] Buddy, my ears will hurt! I am still learning, please don't shout.");
-      }
-      requestAnimationFrame(checkVolumeLevel);
-    }
-
     function startBuddyListening() {
-      if (!recognition || isSpeaking || isRecording) return;
+      if (!recognition || isSpeaking || isRecording || !continuousListen) return;
       try {
         let recLang = 'en-IN';
         if (currentLang === 'te' || currentLang === 'te-mix') recLang = 'te-IN';
@@ -1173,7 +1129,7 @@
       } else {
         if (recognition) { try { recognition.stop(); } catch(e){} }
         micBtn.classList.remove('active-listening');
-        statusText.innerText = "LISTENING PAUSED • TAP MIC TO TALK";
+        statusText.innerText = "CONVERSATIONAL BUDDY MODE ON • PAUSED";
       }
     }
 
@@ -1200,7 +1156,6 @@
 
     function getStoredApiKey() { return localStorage.getItem('garrf_gemini_api_key') || ''; }
 
-    /* Aggressive text normalization to catch all string variants */
     function normalizeText(txt) {
       return txt.toLowerCase().replace(/[^a-z0-9\s]/gi, '').replace(/\s+/g, ' ').trim();
     }
@@ -1208,7 +1163,6 @@
     async function processQuery(rawQuery) {
       const q = normalizeText(rawQuery);
 
-      // Color command matching
       for (let color in COLOR_HEX_MAP) {
         if (q.includes(color + " eye") || q.includes(color + " eyes") || q.includes("change eyes to " + color) || q.includes("set eyes to " + color)) {
           customEyeColor = COLOR_HEX_MAP[color];
@@ -1234,7 +1188,6 @@
         return;
       }
 
-      // Robust Identity & Knowledge Base Matcher
       if (q.includes("who are you") || q.includes("who r u") || q.includes("what is your name") || q.includes("charan das")) {
         replyWith(OFFLINE_KB.identity[currentLang] || OFFLINE_KB.identity['en']);
         return;
@@ -1347,7 +1300,7 @@
         if (avgLuma < 15) {
           replyWith("[surprised] Buddy, you are not there at the desktop, where are you?");
         }
-      }, 12000);
+      }, 15000);
     }
 
     function switchCameraLens() {
@@ -1519,10 +1472,6 @@
         replyWith("[proud] API key saved!");
       }
     }
-
-    window.addEventListener('click', function initAudio() {
-      if (continuousListen && !isRecording && !isSpeaking) startBuddyListening();
-    }, { once: true });
   </script>
 </body>
 </html>
