@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Desktop AI Companion - Standalone Mobile Buddy</title>
+  <title>Charan Das - GARRF Autonomous Desktop Buddy</title>
   <style>
     :root {
-      --bg-color: #03080f;
-      --eye-color: #00f0ff;
+      --bg: #03080f;
+      --eye-cyan: #00f0ff;
       --eye-glow: rgba(0, 240, 255, 0.65);
-      --pupil-color: #010408;
-      --mouth-color: #00f0ff;
+      --pupil: #010408;
+      --text: #e2f7ff;
     }
 
     * {
@@ -27,14 +27,13 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
-      background-color: var(--bg-color);
-      color: #e2f7ff;
+      background: #02060d;
+      color: var(--text);
       display: flex;
       flex-direction: column;
-      touch-action: manipulation;
     }
 
-    /* Full-screen Bot Canvas Container */
+    /* FULLSCREEN BUDDY STAGE */
     #buddy-stage {
       flex: 1;
       width: 100%;
@@ -44,26 +43,62 @@
       justify-content: center;
       align-items: center;
       position: relative;
-      background: radial-gradient(circle at center, #0a1b30 0%, #03080f 75%);
+      background: radial-gradient(circle at center, #0a1b32 0%, #03080f 75%);
     }
 
-    /* Eye Canvas */
+    /* TOP STATUS PILL */
+    #status-pill {
+      position: absolute;
+      top: 18px;
+      padding: 6px 14px;
+      background: rgba(0, 240, 255, 0.08);
+      border: 1px solid rgba(0, 240, 255, 0.35);
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--eye-cyan);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 0 14px rgba(0, 240, 255, 0.15);
+      z-index: 10;
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #00ff88;
+      box-shadow: 0 0 8px #00ff88;
+      animation: pulseGreen 1.5s infinite;
+    }
+
+    @keyframes pulseGreen {
+      0% { opacity: 0.3; transform: scale(0.85); }
+      50% { opacity: 1; transform: scale(1.2); }
+      100% { opacity: 0.3; transform: scale(0.85); }
+    }
+
+    /* EYE CANVAS */
     #face-canvas {
       width: 100%;
-      max-width: 450px;
-      height: 280px;
+      max-width: 460px;
+      height: 290px;
       display: block;
       cursor: pointer;
     }
 
-    /* Dynamic Mouth Display */
+    /* MOUTH */
     #mouth-container {
       width: 120px;
       height: 40px;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-top: 10px;
+      margin-top: 8px;
     }
 
     #mouth-svg {
@@ -73,78 +108,49 @@
     }
 
     #mouth-path {
-      stroke: var(--mouth-color);
+      stroke: var(--eye-cyan);
       stroke-width: 6;
       stroke-linecap: round;
       fill: transparent;
-      transition: d 0.1s ease-out;
+      transition: d 0.1s ease-out, stroke 0.3s;
     }
 
-    /* Subtitle & Status Overlays */
-    #status-pill {
-      position: absolute;
-      top: 18px;
-      padding: 6px 14px;
-      background: rgba(0, 240, 255, 0.08);
-      border: 1px solid rgba(0, 240, 255, 0.3);
-      border-radius: 20px;
-      font-size: 11px;
-      letter-spacing: 0.8px;
-      text-transform: uppercase;
-      color: var(--eye-color);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      backdrop-filter: blur(8px);
-    }
-
-    .pulse-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: #00ff88;
-      box-shadow: 0 0 8px #00ff88;
-      animation: pulse 1.6s infinite ease-in-out;
-    }
-
-    @keyframes pulse {
-      0% { opacity: 0.3; transform: scale(0.85); }
-      50% { opacity: 1; transform: scale(1.15); }
-      100% { opacity: 0.3; transform: scale(0.85); }
-    }
-
+    /* SUBTITLE */
     #subtitle-text {
       position: absolute;
-      bottom: 75px;
+      bottom: 76px;
       left: 20px;
       right: 20px;
       text-align: center;
-      font-size: 14px;
+      font-size: 14.5px;
       font-weight: 500;
       color: #effaff;
-      text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+      text-shadow: 0 2px 10px rgba(0,0,0,0.85);
       min-height: 24px;
+      pointer-events: none;
     }
 
-    /* Bottom Control Bar */
+    /* DOCK BAR */
     .dock-bar {
       position: absolute;
-      bottom: 12px;
+      bottom: 14px;
       display: flex;
       gap: 10px;
-      background: rgba(5, 15, 28, 0.75);
-      border: 1px solid rgba(0, 240, 255, 0.25);
+      background: rgba(4, 14, 26, 0.85);
+      border: 1px solid rgba(0, 240, 255, 0.3);
       backdrop-filter: blur(12px);
       padding: 6px 14px;
       border-radius: 30px;
+      z-index: 20;
     }
 
     .dock-btn {
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(0, 240, 255, 0.3);
-      color: var(--eye-color);
-      font-size: 14px;
-      padding: 6px 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(0, 240, 255, 0.35);
+      color: var(--eye-cyan);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 6px 13px;
       border-radius: 20px;
       cursor: pointer;
       display: flex;
@@ -154,27 +160,96 @@
     }
 
     .dock-btn.active {
-      background: rgba(0, 240, 255, 0.25);
-      border-color: #00f0ff;
-      box-shadow: 0 0 10px var(--eye-glow);
+      background: rgba(0, 255, 136, 0.2);
+      border-color: #00ff88;
+      color: #00ff88;
+      box-shadow: 0 0 12px rgba(0, 255, 136, 0.4);
     }
 
-    /* Hidden Internal Camera Feed for Vision Tracking */
-    #hidden-video {
+    /* MODAL */
+    .modal-overlay {
       display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.82);
+      backdrop-filter: blur(10px);
+      z-index: 250;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
     }
+
+    .modal-card {
+      width: 100%;
+      max-width: 540px;
+      max-height: 85vh;
+      overflow-y: auto;
+      background: linear-gradient(175deg, #091a30 0%, #040e1b 100%);
+      border: 1.5px solid #00f0ff;
+      box-shadow: 0 0 40px rgba(0, 240, 255, 0.35);
+      border-radius: 18px;
+      padding: 22px;
+    }
+
+    .modal-card h3 {
+      font-size: 17px;
+      color: #00f0ff;
+      margin-bottom: 12px;
+    }
+
+    .help-section {
+      background: rgba(0, 240, 255, 0.05);
+      border: 1px solid rgba(0, 240, 255, 0.2);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+
+    .help-section h4 {
+      font-size: 13px;
+      color: #ffd700;
+      margin-bottom: 6px;
+    }
+
+    .help-section p, .help-section ul, .help-section ol {
+      font-size: 12px;
+      color: #d1e5f5;
+      line-height: 1.5;
+    }
+
+    .help-section ul, .help-section ol { padding-left: 18px; margin-top: 4px; }
+
+    .modal-btn-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+      justify-content: flex-end;
+    }
+
+    .modal-btn {
+      padding: 8px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+    }
+
+    .btn-confirm { background: #00f0ff; color: #03080e; }
+
+    #hidden-video { display: none; }
   </style>
 </head>
 <body>
 
-  <div id="buddy-stage" onclick="petBuddy(event)">
+  <div id="buddy-stage" onclick="handleStageTap(event)">
     <div id="status-pill">
       <span class="pulse-dot"></span>
-      <span id="status-label">DESK BUDDY ONLINE</span>
+      <span id="status-label">TAP ANYWHERE TO AWAKEN</span>
     </div>
 
-    <!-- Procedural Eyes Canvas -->
-    <canvas id="face-canvas" width="450" height="280"></canvas>
+    <!-- Procedural Eye Canvas -->
+    <canvas id="face-canvas" width="460" height="290"></canvas>
 
     <!-- Animated Expressive Mouth -->
     <div id="mouth-container">
@@ -183,29 +258,76 @@
       </svg>
     </div>
 
-    <div id="subtitle-text">Hello! I am your desktop buddy.</div>
+    <div id="subtitle-text">Tap anywhere on the screen to initialize Voice & Eye Tracking!</div>
 
-    <!-- Controls Dock -->
+    <!-- Bottom Controls -->
     <div class="dock-bar" onclick="event.stopPropagation()">
       <button class="dock-btn" id="btn-cam" onclick="toggleOpticalGaze()">📷 Gaze Track</button>
-      <button class="dock-btn" id="btn-mic" onclick="toggleListening()">🎙️ Listen</button>
+      <button class="dock-btn" id="btn-mic" onclick="toggleListening()">🎙️ Continuous Mic</button>
+      <button class="dock-btn" onclick="openModal('help-modal')">❓ Guide</button>
       <button class="dock-btn" onclick="toggleFullscreen()">⛶ Fullscreen</button>
     </div>
   </div>
 
   <video id="hidden-video" playsinline muted autoplay></video>
 
+  <!-- HELP & SETUP GUIDE MODAL -->
+  <div class="modal-overlay" id="help-modal">
+    <div class="modal-card">
+      <h3>❓ Charan Das Desktop Companion Guide</h3>
+
+      <div class="help-section" style="border: 1.5px solid #00f0ff; background: rgba(0, 240, 255, 0.08);">
+        <h4 style="color: #00f0ff;">📱 24/7 Desk Buddy Setup Guide</h4>
+        <ol style="padding-left: 20px; font-size: 12px; color: #e2f7ff; line-height: 1.6;">
+          <li><b>Deploy & Launch:</b> Save file as <code>index.html</code>. Host via GitHub Pages, local server, or open in Chrome.</li>
+          <li><b>Enable Stay Awake (Android):</b> Go to <b>Settings → About Phone</b>, tap <b>Build Number</b> 7 times. Then in <b>Developer Options</b>, turn on <b>"Stay Awake"</b> so the display stays permanently on while charging.</li>
+          <li><b>Battery Longevity:</b> In <b>Settings → Battery</b>, enable <b>"Protect Battery"</b> (limits charging to 80–85% to protect battery health during 24/7 docking).</li>
+          <li><b>Permissions & Kiosk:</b> Tap anywhere on the screen once loaded to grant Camera and Microphone permissions. Tap <b>Fullscreen</b> for a distraction-free display.</li>
+          <li><b>Desktop Docking:</b> Place phone on an angled desk stand connected to USB power. Charan Das will continuously track your eyes and listen to your voice.</li>
+        </ol>
+      </div>
+
+      <div class="help-section">
+        <h4>1. Core Identity & Creator Knowledge</h4>
+        <p>• <b>Identity:</b> Charan Das, GARR Foundation's bot, developed by Dr. Venu Gopal Madhav Annamdas.<br>
+        • <b>Purpose:</b> AI companion and desktop assistant created under GARRF (Gopalkrishna Advanced Rural Research Foundation) for rural research, robotics, STEM education, smart infrastructure, and AI innovations.<br>
+        • <b>Kinship:</b> Autonomous companion like EMO or Vector designed to live on your workstation desk.</p>
+      </div>
+
+      <div class="help-section">
+        <h4>2. Sample Voice Commands You Can Ask</h4>
+        <ul>
+          <li>"Who are you?" / "Who created you?"</li>
+          <li>"Are you like EMO or Vector?"</li>
+          <li>"I am unhappy today" / "I feel so sad" / "I am exhausted"</li>
+          <li>"What is the capital of Telangana?" / "Capital of USA?"</li>
+          <li>"How many states are in India?" / "How many states in USA?"</li>
+          <li>"What is the currency of India / Japan / Germany / UAE?"</li>
+          <li>"What is 45 + 55?" / "What is 12 multiplied by 15?"</li>
+          <li>"What is 25% of 400?" / "Square root of 144?"</li>
+          <li>"What is sin 90 degrees?" / "What is tan 45 degrees?"</li>
+        </ul>
+      </div>
+
+      <div class="modal-btn-row">
+        <button class="modal-btn btn-confirm" onclick="closeModal('help-modal')">Understood</button>
+      </div>
+    </div>
+  </div>
+
   <script>
-    // --- 1. STATE & ANIMATION VARIABLES ---
+    // --- 1. STATE & INITIALIZATION ---
     const canvas = document.getElementById('face-canvas');
     const ctx = canvas.getContext('2d');
     const mouthPath = document.getElementById('mouth-path');
     const statusLabel = document.getElementById('status-label');
     const subtitle = document.getElementById('subtitle-text');
+    const btnCam = document.getElementById('btn-cam');
+    const btnMic = document.getElementById('btn-mic');
 
     let eyeTargetX = 0, eyeTargetY = 0;
     let eyeCurX = 0, eyeCurY = 0;
-    let eyeSquint = 0; // 0 (round) to 1 (squint)
+    let eyeSquint = 0;
     let blinkValue = 0;
     let isBlinking = false;
     let mood = 'happy'; // 'happy', 'excited', 'thinking', 'sad'
@@ -213,7 +335,9 @@
     let isSpeaking = false;
     let mouthInterval = null;
     let isListening = false;
+    let shouldListen = false;
     let recognition = null;
+    let audioCtx = null;
     let wakeLock = null;
 
     let cameraStream = null;
@@ -223,7 +347,7 @@
     gazeCanvas.width = 64;
     gazeCanvas.height = 48;
 
-    // --- 2. SCREEN WAKE LOCK (PREVENTS PHONE SLEEP) ---
+    // --- 2. SCREEN WAKE LOCK ---
     async function requestWakeLock() {
       try {
         if ('wakeLock' in navigator) {
@@ -234,44 +358,38 @@
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') requestWakeLock();
     });
-    requestWakeLock();
 
     // --- 3. PROCEDURAL PROCEDURAL EYE RENDERING ENGINE ---
     function drawEye(cx, cy, pupilOffsetX, pupilOffsetY, blink, squint) {
       ctx.save();
-
-      // Eye dimensions
       const width = 85;
       const height = 110 * (1 - blink * 0.95);
 
-      // Clip boundary for eye
       ctx.beginPath();
       ctx.ellipse(cx, cy, width * 0.5, Math.max(3, height * 0.5 * (1 - squint * 0.35)), 0, 0, Math.PI * 2);
       ctx.clip();
 
-      // Outer glow and eye body
       let color = mood === 'sad' ? '#ff3b5c' : mood === 'excited' ? '#ffd700' : '#00f0ff';
-      document.documentElement.style.setProperty('--eye-color', color);
+      document.documentElement.style.setProperty('--eye-cyan', color);
       document.documentElement.style.setProperty('--eye-glow', color + '99');
-      document.documentElement.style.setProperty('--mouth-color', color);
 
       const grad = ctx.createRadialGradient(cx, cy, 10, cx, cy, width * 0.6);
       grad.addColorStop(0, '#ffffff');
-      grad.addColorStop(0.4, color);
+      grad.addColorStop(0.38, color);
       grad.addColorStop(1, '#001a2c');
 
       ctx.fillStyle = grad;
       ctx.fill();
 
-      // Center Pupil
-      const px = cx + pupilOffsetX * 16;
-      const py = cy + pupilOffsetY * 14;
+      // Pupil
+      const px = cx + pupilOffsetX * 18;
+      const py = cy + pupilOffsetY * 16;
       ctx.beginPath();
       ctx.arc(px, py, 16, 0, Math.PI * 2);
       ctx.fillStyle = '#01050a';
       ctx.fill();
 
-      // Specular highlight (reflection)
+      // Catch-light specular highlight
       ctx.beginPath();
       ctx.arc(px - 6, py - 6, 6, 0, Math.PI * 2);
       ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
@@ -283,44 +401,37 @@
     function renderFace() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Smooth interpolation toward target gaze
-      eyeCurX += (eyeTargetX - eyeCurX) * 0.12;
-      eyeCurY += (eyeTargetY - eyeCurY) * 0.12;
+      eyeCurX += (eyeTargetX - eyeCurX) * 0.14;
+      eyeCurY += (eyeTargetY - eyeCurY) * 0.14;
 
-      // Blink animation physics
       if (isBlinking) {
         blinkValue += 0.22;
-        if (blinkValue >= 1) {
-          blinkValue = 1;
-          isBlinking = false;
-        }
+        if (blinkValue >= 1) { blinkValue = 1; isBlinking = false; }
       } else if (blinkValue > 0) {
         blinkValue -= 0.18;
         if (blinkValue < 0) blinkValue = 0;
       }
 
-      // Draw Left and Right Eyes
-      drawEye(145, 140, eyeCurX, eyeCurY, blinkValue, eyeSquint);
-      drawEye(305, 140, eyeCurX, eyeCurY, blinkValue, eyeSquint);
+      drawEye(150, 145, eyeCurX, eyeCurY, blinkValue, eyeSquint);
+      drawEye(310, 145, eyeCurX, eyeCurY, blinkValue, eyeSquint);
 
       requestAnimationFrame(renderFace);
     }
     renderFace();
 
-    // Random blinking and autonomous wandering when idle
     setInterval(() => {
-      if (!isBlinking && Math.random() > 0.45) isBlinking = true;
+      if (!isBlinking && Math.random() > 0.4) isBlinking = true;
     }, 2800);
 
     setInterval(() => {
       if (!cameraStream) {
-        // Micro-saccades to make it feel alive
-        eyeTargetX = (Math.random() - 0.5) * 1.4;
-        eyeTargetY = (Math.random() - 0.5) * 0.9;
+        // Natural micro-wandering when camera is off
+        eyeTargetX = (Math.random() - 0.5) * 1.3;
+        eyeTargetY = (Math.random() - 0.5) * 0.8;
       }
-    }, 3500);
+    }, 3200);
 
-    // --- 4. EXPRESSIVE MOUTH & LIP-SYNC ---
+    // --- 4. MOUTH & LIP SYNC ---
     function setMouthShape(shape) {
       if (shape === 'smile') mouthPath.setAttribute('d', 'M 25 18 Q 50 32 75 18');
       else if (shape === 'sad') mouthPath.setAttribute('d', 'M 25 28 Q 50 14 75 28');
@@ -331,11 +442,7 @@
 
     function startLipSync() {
       if (mouthInterval) clearInterval(mouthInterval);
-      const shapes = [
-        'M 30 16 Q 50 34 70 16',
-        'M 25 18 Q 50 26 75 18',
-        'M 35 14 Q 50 36 65 14'
-      ];
+      const shapes = ['M 30 16 Q 50 34 70 16', 'M 25 18 Q 50 26 75 18', 'M 35 14 Q 50 36 65 14'];
       mouthInterval = setInterval(() => {
         if (!isSpeaking) {
           clearInterval(mouthInterval);
@@ -346,51 +453,79 @@
       }, 110);
     }
 
-    // --- 5. SPEECH SYNTHESIS & VOICE OUTPUT ---
+    // --- 5. AUDIO CHIRP & SPEECH SYNTHESIS ---
+    function playBeep(type = 'chirp') {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        const t = audioCtx.currentTime;
+
+        if (type === 'unhappy') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(320, t);
+          osc.frequency.linearRampToValueAtTime(180, t + 0.3);
+          gain.gain.setValueAtTime(0.12, t);
+          gain.gain.linearRampToValueAtTime(0, t + 0.3);
+          osc.start(); osc.stop(t + 0.3);
+        } else {
+          osc.frequency.setValueAtTime(520, t);
+          osc.frequency.exponentialRampToValueAtTime(880, t + 0.12);
+          gain.gain.setValueAtTime(0.1, t);
+          gain.gain.linearRampToValueAtTime(0, t + 0.12);
+          osc.start(); osc.stop(t + 0.12);
+        }
+      } catch (e) {}
+    }
+
     function speak(text) {
       if (!('speechSynthesis' in window)) return;
       window.speechSynthesis.cancel();
-
       subtitle.innerText = text;
+
+      // Temporary pause speech recognition while bot is talking to prevent echo feedback
+      if (recognition && isListening) {
+        try { recognition.abort(); } catch(e) {}
+      }
+
       const utter = new SpeechSynthesisUtterance(text);
       utter.rate = 1.05;
-      utter.pitch = mood === 'excited' ? 1.25 : 1.1;
+      utter.pitch = mood === 'excited' ? 1.25 : mood === 'sad' ? 0.95 : 1.1;
 
       utter.onstart = () => {
         isSpeaking = true;
         startLipSync();
       };
+
       utter.onend = utter.onerror = () => {
         isSpeaking = false;
         setMouthShape(mood === 'sad' ? 'sad' : 'smile');
+        // Resume continuous listening automatically
+        if (shouldListen) {
+          setTimeout(startRecognitionSafe, 300);
+        }
       };
 
       window.speechSynthesis.speak(utter);
     }
 
-    // --- 6. OPTICAL GAZE TRACKING (LIGHTWEIGHT DOWNSAMPLED OPTICAL FLOW) ---
-    async function toggleOpticalGaze() {
-      const btn = document.getElementById('btn-cam');
-      if (cameraStream) {
-        cameraStream.getTracks().forEach(t => t.stop());
-        cameraStream = null;
-        if (gazeDetectionInterval) clearInterval(gazeDetectionInterval);
-        btn.classList.remove('active');
-        statusLabel.innerText = "DESK BUDDY ONLINE";
-        return;
-      }
-
+    // --- 6. CONTINUOUS ALWAYS-ON EYE TRACKING (LIGHTWEIGHT MOTION OPTICAL FLOW) ---
+    async function startEyeTracking() {
       try {
+        if (cameraStream) cameraStream.getTracks().forEach(t => t.stop());
         cameraStream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: 'user', width: { ideal: 320 }, height: { ideal: 240 } }
         });
         const video = document.getElementById('hidden-video');
         video.srcObject = cameraStream;
-        btn.classList.add('active');
-        statusLabel.innerText = "GAZE TRACKING ACTIVE";
+        btnCam.classList.add('active');
 
-        // Track user presence and motion center
         let prevLuma = null;
+        if (gazeDetectionInterval) clearInterval(gazeDetectionInterval);
+
         gazeDetectionInterval = setInterval(() => {
           if (!cameraStream || video.readyState < 2) return;
           gazeCtx.drawImage(video, 0, 0, 64, 48);
@@ -406,7 +541,7 @@
               const diff = Math.abs(luma - prevLuma[y * 64 + x]);
               prevLuma[y * 64 + x] = luma;
 
-              if (diff > 18) {
+              if (diff > 16) {
                 motionX += x;
                 motionY += y;
                 motionSum++;
@@ -414,36 +549,39 @@
             }
           }
 
-          if (motionSum > 12) {
-            // Inverted for mirrored selfie camera orientation
+          if (motionSum > 10) {
+            // Inverted X for front-facing mirror orientation
             const avgX = 1 - (motionX / motionSum) / 64;
             const avgY = (motionY / motionSum) / 48;
-            eyeTargetX = (avgX - 0.5) * 2.2;
+            eyeTargetX = (avgX - 0.5) * 2.3;
             eyeTargetY = (avgY - 0.5) * 1.8;
           }
-        }, 120);
+        }, 100);
 
-        speak("I see you! My eyes are tracking your movements.");
+        updateStatusText();
       } catch (err) {
-        alert("Camera access denied or unavailable.");
+        console.warn("Camera auto-start permission prompt requires user interaction:", err);
       }
     }
 
-    // --- 7. CONTINUOUS VOICE RECOGNITION (WEB SPEECH API) ---
-    function toggleListening() {
-      const btn = document.getElementById('btn-mic');
+    function stopEyeTracking() {
+      if (cameraStream) cameraStream.getTracks().forEach(t => t.stop());
+      cameraStream = null;
+      if (gazeDetectionInterval) clearInterval(gazeDetectionInterval);
+      btnCam.classList.remove('active');
+      updateStatusText();
+    }
+
+    function toggleOpticalGaze() {
+      if (cameraStream) stopEyeTracking();
+      else startEyeTracking();
+    }
+
+    // --- 7. CONTINUOUS ALWAYS-ON SPEECH RECOGNITION ---
+    function initSpeechRecognition() {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
       if (!SpeechRecognition) {
-        alert("Web Speech Recognition not supported on this browser.");
-        return;
-      }
-
-      if (isListening) {
-        if (recognition) recognition.stop();
-        isListening = false;
-        btn.classList.remove('active');
-        statusLabel.innerText = "DESK BUDDY ONLINE";
+        console.warn("Speech Recognition not supported in this browser.");
         return;
       }
 
@@ -454,56 +592,340 @@
 
       recognition.onstart = () => {
         isListening = true;
-        btn.classList.add('active');
-        statusLabel.innerText = "LISTENING FOR COMMANDS...";
+        btnMic.classList.add('active');
+        updateStatusText();
       };
 
       recognition.onresult = (event) => {
-        const lastResult = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
-        handleVoiceQuery(lastResult);
+        const lastResult = event.results[event.results.length - 1][0].transcript.trim();
+        handleBotKnowledgeQuery(lastResult);
       };
 
-      recognition.onend = () => {
-        if (isListening) {
-          try { recognition.start(); } catch(e) {}
+      recognition.onerror = (e) => {
+        if (e.error === 'not-allowed') {
+          shouldListen = false;
+          btnMic.classList.remove('active');
+          updateStatusText();
         }
       };
 
-      recognition.start();
+      recognition.onend = () => {
+        isListening = false;
+        if (shouldListen && !isSpeaking) {
+          setTimeout(startRecognitionSafe, 350);
+        } else {
+          btnMic.classList.remove('active');
+          updateStatusText();
+        }
+      };
     }
 
-    function handleVoiceQuery(text) {
-      subtitle.innerText = `You said: "${text}"`;
-
-      if (text.includes("hello") || text.includes("hi")) {
-        mood = 'excited';
-        speak("Hello! Great to see you at your desk today!");
-      } else if (text.includes("happy") || text.includes("smile")) {
-        mood = 'happy';
-        speak("I am very happy sitting on your desk!");
-      } else if (text.includes("sad") || text.includes("unhappy")) {
-        mood = 'sad';
-        speak("I'm sorry to hear that. I am here with you.");
-      } else if (text.includes("time")) {
-        const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        speak(`It is currently ${now}.`);
-      } else if (text.includes("who are you") || text.includes("your name")) {
-        mood = 'excited';
-        speak("I am your smart smartphone desktop buddy!");
-      } else {
-        mood = 'thinking';
-        speak("I heard you, friend! Let's stay focused and productive.");
+    function startRecognitionSafe() {
+      if (!recognition || isSpeaking) return;
+      try {
+        recognition.start();
+      } catch (e) {
+        // Recognition might already be running
       }
     }
 
-    // --- 8. TOUCH & ERGONOMIC ACTIONS ---
-    function petBuddy(e) {
-      mood = 'excited';
-      eyeSquint = 0.5;
-      setTimeout(() => eyeSquint = 0, 800);
-      speak("That tickles! Thanks for checking in.");
+    function startContinuousListening() {
+      shouldListen = true;
+      if (!recognition) initSpeechRecognition();
+      startRecognitionSafe();
     }
 
+    function stopContinuousListening() {
+      shouldListen = false;
+      if (recognition) {
+        try { recognition.stop(); } catch(e) {}
+      }
+      isListening = false;
+      btnMic.classList.remove('active');
+      updateStatusText();
+    }
+
+    function toggleListening() {
+      if (shouldListen) stopContinuousListening();
+      else startContinuousListening();
+    }
+
+    function updateStatusText() {
+      let parts = [];
+      if (cameraStream) parts.push("EYES TRACKING");
+      if (shouldListen) parts.push("MIC LISTENING");
+      if (parts.length === 0) statusLabel.innerText = "CHARAN DAS IDLE";
+      else statusLabel.innerText = parts.join(" • ");
+    }
+
+    // --- 8. FIRST-TOUCH AWAKEN ENGINE (BYPASSES BROWSER AUTOPLAY RESTRICTIONS) ---
+    let awakened = false;
+    function handleStageTap(e) {
+      if (!awakened) {
+        awakened = true;
+        requestWakeLock();
+        startEyeTracking();
+        startContinuousListening();
+        speak("Hello! I am Charan Das, your desktop buddy. Both my optical eye tracking and continuous listening are now active!");
+        return;
+      }
+      petBuddy(e);
+    }
+
+    function petBuddy(e) {
+      mood = 'excited';
+      eyeSquint = 0.55;
+      playBeep('chirp');
+      setTimeout(() => eyeSquint = 0, 750);
+      speak("That tickles! Charan Das is right here on your desk with you!");
+    }
+
+    // --- 9. CHARAN DAS TRAINING DATASET KNOWLEDGE & REASONING ENGINE ---
+    function handleBotKnowledgeQuery(raw) {
+      const q = raw.toLowerCase().trim();
+      const norm = q.replace(/[^a-z0-9\s]/gi, '').trim();
+      subtitle.innerText = `You said: "${raw}"`;
+
+      // Category 1: Core Identity & Persona (Charan Das / GARR Foundation / EMO / Vector)
+      if (norm.includes("who are you") || norm.includes("who r u") || norm.includes("what is your name") || norm.includes("introduce yourself")) {
+        mood = 'excited';
+        speak("I am Charan Das, GARR Foundation's bot, developed by Dr. Venu Gopal Madhav Annamdas. I am your friendly desktop buddy!");
+        return;
+      }
+
+      if (norm.includes("who created you") || norm.includes("who made you") || norm.includes("who is your developer") || norm.includes("who developed you")) {
+        mood = 'excited';
+        speak("I was developed by Dr. Venu Gopal Madhav Annamdas at the Gopalkrishna Advanced Rural Research Foundation (GARRF).");
+        return;
+      }
+
+      if (norm.includes("what is garr foundation") || norm.includes("what is garrf") || norm.includes("about garr")) {
+        mood = 'happy';
+        speak("GARR Foundation (Gopalkrishna Advanced Rural Research Foundation) is dedicated to advancing rural research, robotics, STEM education, smart infrastructure, and AI innovations.");
+        return;
+      }
+
+      if (norm.includes("what can you do") || norm.includes("your capabilities")) {
+        mood = 'happy';
+        speak("I can keep you company, solve math equations, discuss world geography and currencies, track emotions, and help you learn robotics and science!");
+        return;
+      }
+
+      if (norm.includes("emo") || norm.includes("vector") || norm.includes("like emo")) {
+        mood = 'excited';
+        speak("Yes! Just like desktop buddies like EMO or Vector, I am designed to sit on your desk, express emotions, converse with you, and keep you inspired and productive.");
+        return;
+      }
+
+      // Category 2: Emotional Companion & Empathy Engine
+      if (norm.includes("unhappy today") || norm.includes("feeling down") || norm.includes("feel down")) {
+        mood = 'sad';
+        playBeep('unhappy');
+        speak("I'm really sorry you're feeling down. Take a deep breath. Charan Das is right here on your desk with you—what's on your mind?");
+        return;
+      }
+
+      if (norm.includes("feel so sad") || norm.includes("i feel sad") || norm.includes("i am sad") || norm.includes("feeling sad")) {
+        mood = 'sad';
+        playBeep('unhappy');
+        speak("Sending you a warm virtual hug. It's okay to feel sad sometimes. Want to listen to music, talk through it, or hear an uplifting thought?");
+        return;
+      }
+
+      if (norm.includes("feeling bad today") || norm.includes("nothing went right") || norm.includes("bad day")) {
+        mood = 'sad';
+        playBeep('unhappy');
+        speak("Some days are tough, but remember: you don't have to carry it all at once. Take a five-minute break, stretch, and let's reset together.");
+        return;
+      }
+
+      if (norm.includes("feeling good") || norm.includes("feel good")) {
+        mood = 'happy';
+        speak("That is wonderful to hear! Your positive energy lights up the entire room. Let's make today fantastic!");
+        return;
+      }
+
+      if (norm.includes("happy today") || norm.includes("so happy") || norm.includes("i am happy")) {
+        mood = 'excited';
+        speak("Yay! Your happiness is contagious! Charan Das is smiling right back at you. Keep shining!");
+        return;
+      }
+
+      if (norm.includes("everything is awesome") || norm.includes("awesome vibes") || norm.includes("feeling awesome")) {
+        mood = 'excited';
+        speak("Awesome vibes all around! Let's ride this wave of enthusiasm and accomplish great things today!");
+        return;
+      }
+
+      if (norm.includes("exhausted") || norm.includes("burned out") || norm.includes("burnout") || norm.includes("tired")) {
+        mood = 'happy';
+        speak("Please don't push yourself too hard. Drink a glass of water, rest your eyes, and remember that rest is part of progress.");
+        return;
+      }
+
+      // Category 3: General Knowledge & World Geography
+      if (norm.includes("narendra modi") || norm.includes("prime minister of india")) {
+        mood = 'happy';
+        speak("Narendra Modi is the Prime Minister of India, serving as the leader of the nation since May 2014.");
+        return;
+      }
+
+      if (norm.includes("capital of usa") || norm.includes("capital of the usa") || norm.includes("capital of united states") || norm.includes("capital of america")) {
+        mood = 'happy';
+        speak("The capital of the United States of America is Washington, D.C.");
+        return;
+      }
+
+      if (norm.includes("how many states are there in usa") || norm.includes("how many states in usa") || norm.includes("states in united states")) {
+        mood = 'happy';
+        speak("There are 50 states in the United States of America (along with 1 federal district and several territories).");
+        return;
+      }
+
+      if (norm.includes("capital of telangana")) {
+        mood = 'happy';
+        speak("The capital of Telangana is Hyderabad, known for its rich historic heritage and booming IT industry.");
+        return;
+      }
+
+      if (norm.includes("capital of andhra pradesh") || norm.includes("capital of ap")) {
+        mood = 'happy';
+        speak("Amaravati is the capital of Andhra Pradesh.");
+        return;
+      }
+
+      if (norm.includes("how many union territories") || norm.includes("union territories in india")) {
+        mood = 'happy';
+        speak("India has 8 Union Territories: Delhi, Jammu & Kashmir, Ladakh, Chandigarh, Puducherry, Dadra & Nagar Haveli and Daman & Diu, Andaman & Nicobar Islands, and Lakshadweep.");
+        return;
+      }
+
+      if (norm.includes("how many states are there in india") || norm.includes("how many states in india") || norm.includes("states in india")) {
+        mood = 'happy';
+        speak("India currently has 28 states and 8 union territories.");
+        return;
+      }
+
+      if (norm.includes("capital of france")) {
+        mood = 'happy';
+        speak("The capital of France is Paris.");
+        return;
+      }
+
+      if (norm.includes("capital of japan")) {
+        mood = 'happy';
+        speak("The capital of Japan is Tokyo.");
+        return;
+      }
+
+      // Category 4: World Currencies Knowledge
+      if (norm.includes("currency of india") || norm.includes("indian currency")) {
+        mood = 'happy';
+        speak("The currency of India is the Indian Rupee (INR, symbol: ₹).");
+        return;
+      }
+
+      if (norm.includes("currency of usa") || norm.includes("currency of the united states") || norm.includes("currency of america")) {
+        mood = 'happy';
+        speak("The currency of the United States is the United States Dollar (USD, symbol: $).");
+        return;
+      }
+
+      if (norm.includes("currency of the uk") || norm.includes("currency of uk") || norm.includes("currency of united kingdom") || norm.includes("currency of britain")) {
+        mood = 'happy';
+        speak("The currency of the United Kingdom is the British Pound Sterling (GBP, symbol: £).");
+        return;
+      }
+
+      if (norm.includes("currency of japan")) {
+        mood = 'happy';
+        speak("The currency of Japan is the Japanese Yen (JPY, symbol: ¥).");
+        return;
+      }
+
+      if (norm.includes("currency of germany")) {
+        mood = 'happy';
+        speak("Germany uses the Euro (EUR, symbol: €) as a member of the Eurozone.");
+        return;
+      }
+
+      if (norm.includes("currency of uae") || norm.includes("currency of dubai") || norm.includes("currency of united arab emirates")) {
+        mood = 'happy';
+        speak("The currency of the United Arab Emirates is the UAE Dirham (AED).");
+        return;
+      }
+
+      if (norm.includes("currency of singapore")) {
+        mood = 'happy';
+        speak("The currency of Singapore is the Singapore Dollar (SGD, symbol: S$).");
+        return;
+      }
+
+      // Category 5: Percentages, Square Roots, Trigonometry & Math
+      const pctMatch = q.match(/(\d+(?:\.\d+)?)\s*%\s*of\s*(\d+(?:\.\d+)?)/i) || q.match(/what\s+is\s+(\d+(?:\.\d+)?)\s*percent\s+of\s+(\d+(?:\.\d+)?)/i);
+      if (pctMatch) {
+        const pct = parseFloat(pctMatch[1]);
+        const val = parseFloat(pctMatch[2]);
+        const ans = ((pct / 100.0) * val);
+        mood = 'excited';
+        speak(`${pct}% of ${val} is ${ans}.`);
+        return;
+      }
+
+      const sqrtMatch = q.match(/square\s+root\s+of\s+(\d+(?:\.\d+)?)/i) || q.match(/sqrt\s*\(?(\d+(?:\.\d+)?)\)?/i);
+      if (sqrtMatch) {
+        const num = parseFloat(sqrtMatch[1]);
+        const ans = Math.sqrt(num);
+        mood = 'excited';
+        speak(`The square root of ${num} is ${ans}.`);
+        return;
+      }
+
+      const trigMatch = q.match(/(sin|cos|tan|sine|cosine|tangent)\s*\(?(\d+)\s*(?:deg|degrees)?\)?/i);
+      if (trigMatch) {
+        let fn = trigMatch[1].toLowerCase();
+        if (fn === 'sine') fn = 'sin';
+        if (fn === 'cosine') fn = 'cos';
+        if (fn === 'tangent') fn = 'tan';
+        const deg = parseInt(trigMatch[2]);
+        const rad = deg * (Math.PI / 180);
+        let val;
+        if (fn === 'sin') val = Math.round(Math.sin(rad) * 10000) / 10000;
+        else if (fn === 'cos') val = Math.round(Math.cos(rad) * 10000) / 10000;
+        else if (fn === 'tan') val = (deg === 90 || deg === 270) ? 'undefined' : Math.round(Math.tan(rad) * 10000) / 10000;
+
+        mood = 'excited';
+        speak(`${fn}(${deg}°) = ${val}.`);
+        return;
+      }
+
+      // Basic Arithmetic (+, -, *, /)
+      const mathMatch = q.match(/(\d+(?:\.\d+)?)\s*([\+\-\*\/]|plus|minus|multiplied by|times|divided by)\s*(\d+(?:\.\d+)?)/i);
+      if (mathMatch) {
+        const a = parseFloat(mathMatch[1]);
+        let op = mathMatch[2].toLowerCase();
+        const b = parseFloat(mathMatch[3]);
+        let res = 0;
+        let opSymbol = op;
+
+        if (op === '+' || op === 'plus') { res = a + b; opSymbol = '+'; }
+        else if (op === '-' || op === 'minus') { res = a - b; opSymbol = '-'; }
+        else if (op === '*' || op === 'multiplied by' || op === 'times') { res = a * b; opSymbol = '*'; }
+        else if (op === '/' || op === 'divided by') { res = b !== 0 ? (a / b) : 'infinity'; opSymbol = '/'; }
+
+        mood = 'excited';
+        speak(`${a} ${opSymbol} ${b} = ${res}.`);
+        return;
+      }
+
+      // Fallback
+      mood = 'thinking';
+      speak("I heard you, friend! Charan Das is right here with you on your desk.");
+    }
+
+    // --- 10. MODAL & FULLSCREEN UTILITIES ---
+    function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
     function toggleFullscreen() {
       if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen().catch(() => {});
