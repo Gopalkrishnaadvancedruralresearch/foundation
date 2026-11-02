@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Charan Das - GARRF Autonomous Desktop Buddy</title>
+  <title>Charan Das - Autonomous Desktop Buddy (GARRF)</title>
   <style>
     :root {
       --bg: #03080f;
@@ -49,7 +49,7 @@
     /* TOP STATUS PILL */
     #status-pill {
       position: absolute;
-      top: 18px;
+      top: 16px;
       padding: 6px 14px;
       background: rgba(0, 240, 255, 0.08);
       border: 1px solid rgba(0, 240, 255, 0.35);
@@ -118,15 +118,15 @@
     /* SUBTITLE */
     #subtitle-text {
       position: absolute;
-      bottom: 76px;
-      left: 20px;
-      right: 20px;
+      bottom: 78px;
+      left: 16px;
+      right: 16px;
       text-align: center;
       font-size: 14.5px;
       font-weight: 500;
       color: #effaff;
       text-shadow: 0 2px 10px rgba(0,0,0,0.85);
-      min-height: 24px;
+      min-height: 26px;
       pointer-events: none;
     }
 
@@ -135,22 +135,24 @@
       position: absolute;
       bottom: 14px;
       display: flex;
-      gap: 10px;
+      gap: 8px;
       background: rgba(4, 14, 26, 0.85);
       border: 1px solid rgba(0, 240, 255, 0.3);
       backdrop-filter: blur(12px);
       padding: 6px 14px;
       border-radius: 30px;
       z-index: 20;
+      flex-wrap: wrap;
+      justify-content: center;
     }
 
     .dock-btn {
       background: rgba(255, 255, 255, 0.05);
       border: 1px solid rgba(0, 240, 255, 0.35);
       color: var(--eye-cyan);
-      font-size: 13px;
+      font-size: 12.5px;
       font-weight: 600;
-      padding: 6px 13px;
+      padding: 6px 12px;
       border-radius: 20px;
       cursor: pointer;
       display: flex;
@@ -166,12 +168,12 @@
       box-shadow: 0 0 12px rgba(0, 255, 136, 0.4);
     }
 
-    /* MODAL */
+    /* MODALS */
     .modal-overlay {
       display: none;
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0, 0, 0, 0.82);
+      background: rgba(0, 0, 0, 0.85);
       backdrop-filter: blur(10px);
       z-index: 250;
       align-items: center;
@@ -181,7 +183,7 @@
 
     .modal-card {
       width: 100%;
-      max-width: 540px;
+      max-width: 560px;
       max-height: 85vh;
       overflow-y: auto;
       background: linear-gradient(175deg, #091a30 0%, #040e1b 100%);
@@ -219,6 +221,18 @@
 
     .help-section ul, .help-section ol { padding-left: 18px; margin-top: 4px; }
 
+    .modal-input {
+      width: 100%;
+      padding: 10px 12px;
+      background: #040c17;
+      border: 1px solid rgba(0, 240, 255, 0.35);
+      border-radius: 8px;
+      color: #fff;
+      font-size: 13px;
+      margin-top: 8px;
+      outline: none;
+    }
+
     .modal-btn-row {
       display: flex;
       gap: 8px;
@@ -236,6 +250,7 @@
     }
 
     .btn-confirm { background: #00f0ff; color: #03080e; }
+    .btn-secondary { background: rgba(255, 255, 255, 0.1); color: #fff; }
 
     #hidden-video { display: none; }
   </style>
@@ -245,7 +260,7 @@
   <div id="buddy-stage" onclick="handleStageTap(event)">
     <div id="status-pill">
       <span class="pulse-dot"></span>
-      <span id="status-label">TAP ANYWHERE TO AWAKEN</span>
+      <span id="status-label">TAP TO AWAKEN & CONNECT</span>
     </div>
 
     <!-- Procedural Eye Canvas -->
@@ -258,18 +273,48 @@
       </svg>
     </div>
 
-    <div id="subtitle-text">Tap anywhere on the screen to initialize Voice & Eye Tracking!</div>
+    <div id="subtitle-text">Tap anywhere to initialize Voice, Gaze, and load Database files from 'friend/'!</div>
 
     <!-- Bottom Controls -->
     <div class="dock-bar" onclick="event.stopPropagation()">
       <button class="dock-btn" id="btn-cam" onclick="toggleOpticalGaze()">📷 Gaze Track</button>
       <button class="dock-btn" id="btn-mic" onclick="toggleListening()">🎙️ Continuous Mic</button>
+      <button class="dock-btn" id="btn-db" onclick="openModal('db-modal')">📁 Friend DB</button>
       <button class="dock-btn" onclick="openModal('help-modal')">❓ Guide</button>
       <button class="dock-btn" onclick="toggleFullscreen()">⛶ Fullscreen</button>
     </div>
   </div>
 
   <video id="hidden-video" playsinline muted autoplay></video>
+
+  <!-- DATABASE SETTINGS MODAL -->
+  <div class="modal-overlay" id="db-modal">
+    <div class="modal-card">
+      <h3>📁 'friend' Folder Database Connection</h3>
+      <p style="font-size:12px; color:#cbe3f5; margin-bottom:8px;">
+        Specify where your 5 JSON files are located. If running inside the same repository on GitHub Pages or local HTTP server, the default relative path <code>./friend/</code> works out-of-the-box!
+      </p>
+      
+      <label style="font-size:11px; color:#00f0ff; font-weight:bold;">Friend Folder Path or URL:</label>
+      <input type="text" id="db-base-url" class="modal-input" placeholder="./friend/" value="./friend/">
+      
+      <div class="help-section" style="margin-top:12px;">
+        <h4>Loaded Database Status:</h4>
+        <ul id="db-status-list" style="font-size:11.5px; line-height:1.6;">
+          <li id="status-countries">⚪ countries.json: Not loaded</li>
+          <li id="status-calc">⚪ scientific_calculator.json: Not loaded</li>
+          <li id="status-india">⚪ india_states_ut.json: Not loaded</li>
+          <li id="status-pleasantries">⚪ pleasantries_companion.json: Not loaded</li>
+          <li id="status-conv1000">⚪ companion_conversations_1000.json: Not loaded</li>
+        </ul>
+      </div>
+
+      <div class="modal-btn-row">
+        <button class="modal-btn btn-secondary" onclick="closeModal('db-modal')">Cancel</button>
+        <button class="modal-btn btn-confirm" onclick="reloadAllDatabases()">Reload Databases</button>
+      </div>
+    </div>
+  </div>
 
   <!-- HELP & SETUP GUIDE MODAL -->
   <div class="modal-overlay" id="help-modal">
@@ -279,33 +324,21 @@
       <div class="help-section" style="border: 1.5px solid #00f0ff; background: rgba(0, 240, 255, 0.08);">
         <h4 style="color: #00f0ff;">📱 24/7 Desk Buddy Setup Guide</h4>
         <ol style="padding-left: 20px; font-size: 12px; color: #e2f7ff; line-height: 1.6;">
-          <li><b>Deploy & Launch:</b> Save file as <code>index.html</code>. Host via GitHub Pages, local server, or open in Chrome.</li>
-          <li><b>Enable Stay Awake (Android):</b> Go to <b>Settings → About Phone</b>, tap <b>Build Number</b> 7 times. Then in <b>Developer Options</b>, turn on <b>"Stay Awake"</b> so the display stays permanently on while charging.</li>
-          <li><b>Battery Longevity:</b> In <b>Settings → Battery</b>, enable <b>"Protect Battery"</b> (limits charging to 80–85% to protect battery health during 24/7 docking).</li>
-          <li><b>Permissions & Kiosk:</b> Tap anywhere on the screen once loaded to grant Camera and Microphone permissions. Tap <b>Fullscreen</b> for a distraction-free display.</li>
-          <li><b>Desktop Docking:</b> Place phone on an angled desk stand connected to USB power. Charan Das will continuously track your eyes and listen to your voice.</li>
+          <li><b>Deploy & Launch:</b> Save this file as <code>index.html</code> alongside the <code>friend/</code> folder in your repository. Host via GitHub Pages.</li>
+          <li><b>Enable Stay Awake (Android):</b> Go to <b>Settings → About Phone</b>, tap <b>Build Number</b> 7 times. Then in <b>Developer Options</b>, turn on <b>"Stay Awake"</b> so the screen never sleeps while plugged in.</li>
+          <li><b>Battery Protection:</b> In <b>Settings → Battery</b>, enable <b>"Protect Battery"</b> (caps charge at 80–85% to protect the battery 24/7).</li>
+          <li><b>Awaken & Dock:</b> Place phone on a desktop stand. Tap once anywhere on screen to enable camera gaze tracking and continuous speech listening.</li>
         </ol>
       </div>
 
       <div class="help-section">
-        <h4>1. Core Identity & Creator Knowledge</h4>
-        <p>• <b>Identity:</b> Charan Das, GARR Foundation's bot, developed by Dr. Venu Gopal Madhav Annamdas.<br>
-        • <b>Purpose:</b> AI companion and desktop assistant created under GARRF (Gopalkrishna Advanced Rural Research Foundation) for rural research, robotics, STEM education, smart infrastructure, and AI innovations.<br>
-        • <b>Kinship:</b> Autonomous companion like EMO or Vector designed to live on your workstation desk.</p>
-      </div>
-
-      <div class="help-section">
-        <h4>2. Sample Voice Commands You Can Ask</h4>
+        <h4>1. Supported Knowledge & Questions</h4>
         <ul>
-          <li>"Who are you?" / "Who created you?"</li>
-          <li>"Are you like EMO or Vector?"</li>
-          <li>"I am unhappy today" / "I feel so sad" / "I am exhausted"</li>
-          <li>"What is the capital of Telangana?" / "Capital of USA?"</li>
-          <li>"How many states are in India?" / "How many states in USA?"</li>
-          <li>"What is the currency of India / Japan / Germany / UAE?"</li>
-          <li>"What is 45 + 55?" / "What is 12 multiplied by 15?"</li>
-          <li>"What is 25% of 400?" / "Square root of 144?"</li>
-          <li>"What is sin 90 degrees?" / "What is tan 45 degrees?"</li>
+          <li><b>Daily Companion Talk:</b> "How was your day buddy?", "Good evening", "I'm back at my desk".</li>
+          <li><b>Workplace & Boss:</b> Scolding or praising your boss ("My boss is bad", "My manager shouted at me", "My boss praised my work"). The bot detects sentiment and responds with empathy!</li>
+          <li><b>Romance & Relationships:</b> "My girlfriend hasn't replied", "My boyfriend forgot our anniversary", "She said yes!". Empathetic guidance with respectful AI identity reminders.</li>
+          <li><b>World Leaders & Geography:</b> "Who is Modi?", "Who is Trump?", "Who is Biden?", "Who is Putin?", "What is the capital of France / USA / Japan / Telangana?", "What is the currency of India / UAE / UK?".</li>
+          <li><b>Scientific Calculator:</b> Arithmetic (+, -, *, /), percentages ("25% of 400"), square roots ("sqrt 144"), trigonometry ("sin 90", "cos 60", "tan 45").</li>
         </ul>
       </div>
 
@@ -316,7 +349,69 @@
   </div>
 
   <script>
-    // --- 1. STATE & INITIALIZATION ---
+    // --- 1. GLOBAL DATABASES & REPOSITORY CONFIGURATION ---
+    let DB = {
+      countries: null,
+      calculator: null,
+      india: null,
+      pleasantries: null,
+      conversations1000: null
+    };
+
+    let baseUrl = localStorage.getItem('garrf_friend_db_url') || './friend/';
+    if (!baseUrl.endsWith('/')) baseUrl += '/';
+    document.getElementById('db-base-url').value = baseUrl;
+
+    async function loadJsonFile(filename, statusElementId) {
+      const el = document.getElementById(statusElementId);
+      try {
+        const fullUrl = baseUrl + filename;
+        const res = await fetch(fullUrl);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (el) {
+          el.innerText = `🟢 ${filename}: Loaded successfully!`;
+          el.style.color = '#00ff88';
+        }
+        return data;
+      } catch (err) {
+        console.warn(`Could not fetch ${filename} from ${baseUrl}:`, err);
+        if (el) {
+          el.innerText = `🔴 ${filename}: Not found at ${baseUrl}`;
+          el.style.color = '#ff6b81';
+        }
+        return null;
+      }
+    }
+
+    async function reloadAllDatabases() {
+      let inputVal = document.getElementById('db-base-url').value.trim();
+      if (!inputVal.endsWith('/')) inputVal += '/';
+      baseUrl = inputVal;
+      localStorage.setItem('garrf_friend_db_url', baseUrl);
+
+      subtitle.innerText = "Connecting to 'friend' folder and loading databases...";
+      const [c, calc, ind, pl, conv] = await Promise.all([
+        loadJsonFile('countries.json', 'status-countries'),
+        loadJsonFile('scientific_calculator.json', 'status-calc'),
+        loadJsonFile('india_states_ut.json', 'status-india'),
+        loadJsonFile('pleasantries_companion.json', 'status-pleasantries'),
+        loadJsonFile('companion_conversations_1000.json', 'status-conv1000')
+      ]);
+
+      DB.countries = c;
+      DB.calculator = calc;
+      DB.india = ind;
+      DB.pleasantries = pl;
+      DB.conversations1000 = conv;
+
+      let loadedCount = [c, calc, ind, pl, conv].filter(Boolean).length;
+      subtitle.innerText = `Loaded ${loadedCount} of 5 JSON databases from 'friend/'!`;
+      closeModal('db-modal');
+      speak(`Connected to friend folder. ${loadedCount} knowledge databases loaded!`);
+    }
+
+    // --- 2. CANVAS PROCEDURAL EYE RENDERING ENGINE ---
     const canvas = document.getElementById('face-canvas');
     const ctx = canvas.getContext('2d');
     const mouthPath = document.getElementById('mouth-path');
@@ -347,7 +442,7 @@
     gazeCanvas.width = 64;
     gazeCanvas.height = 48;
 
-    // --- 2. SCREEN WAKE LOCK ---
+    // --- 3. WAKE LOCK ---
     async function requestWakeLock() {
       try {
         if ('wakeLock' in navigator) {
@@ -359,7 +454,7 @@
       if (document.visibilityState === 'visible') requestWakeLock();
     });
 
-    // --- 3. PROCEDURAL PROCEDURAL EYE RENDERING ENGINE ---
+    // --- 4. PROCEDURAL EYE DRAWING ---
     function drawEye(cx, cy, pupilOffsetX, pupilOffsetY, blink, squint) {
       ctx.save();
       const width = 85;
@@ -369,7 +464,7 @@
       ctx.ellipse(cx, cy, width * 0.5, Math.max(3, height * 0.5 * (1 - squint * 0.35)), 0, 0, Math.PI * 2);
       ctx.clip();
 
-      let color = mood === 'sad' ? '#ff3b5c' : mood === 'excited' ? '#ffd700' : '#00f0ff';
+      let color = mood === 'sad' ? '#ff3b5c' : mood === 'excited' ? '#ffd700' : mood === 'thinking' ? '#b026ff' : '#00f0ff';
       document.documentElement.style.setProperty('--eye-cyan', color);
       document.documentElement.style.setProperty('--eye-glow', color + '99');
 
@@ -389,7 +484,7 @@
       ctx.fillStyle = '#01050a';
       ctx.fill();
 
-      // Catch-light specular highlight
+      // Catch-light highlight
       ctx.beginPath();
       ctx.arc(px - 6, py - 6, 6, 0, Math.PI * 2);
       ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
@@ -425,13 +520,12 @@
 
     setInterval(() => {
       if (!cameraStream) {
-        // Natural micro-wandering when camera is off
         eyeTargetX = (Math.random() - 0.5) * 1.3;
         eyeTargetY = (Math.random() - 0.5) * 0.8;
       }
     }, 3200);
 
-    // --- 4. MOUTH & LIP SYNC ---
+    // --- 5. MOUTH & LIP SYNC ---
     function setMouthShape(shape) {
       if (shape === 'smile') mouthPath.setAttribute('d', 'M 25 18 Q 50 32 75 18');
       else if (shape === 'sad') mouthPath.setAttribute('d', 'M 25 28 Q 50 14 75 28');
@@ -453,7 +547,7 @@
       }, 110);
     }
 
-    // --- 5. AUDIO CHIRP & SPEECH SYNTHESIS ---
+    // --- 6. AUDIO & SPEECH SYNTHESIS ---
     function playBeep(type = 'chirp') {
       try {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -486,7 +580,6 @@
       window.speechSynthesis.cancel();
       subtitle.innerText = text;
 
-      // Temporary pause speech recognition while bot is talking to prevent echo feedback
       if (recognition && isListening) {
         try { recognition.abort(); } catch(e) {}
       }
@@ -503,7 +596,6 @@
       utter.onend = utter.onerror = () => {
         isSpeaking = false;
         setMouthShape(mood === 'sad' ? 'sad' : 'smile');
-        // Resume continuous listening automatically
         if (shouldListen) {
           setTimeout(startRecognitionSafe, 300);
         }
@@ -512,7 +604,7 @@
       window.speechSynthesis.speak(utter);
     }
 
-    // --- 6. CONTINUOUS ALWAYS-ON EYE TRACKING (LIGHTWEIGHT MOTION OPTICAL FLOW) ---
+    // --- 7. CONTINUOUS OPTICAL GAZE TRACKING ---
     async function startEyeTracking() {
       try {
         if (cameraStream) cameraStream.getTracks().forEach(t => t.stop());
@@ -550,7 +642,6 @@
           }
 
           if (motionSum > 10) {
-            // Inverted X for front-facing mirror orientation
             const avgX = 1 - (motionX / motionSum) / 64;
             const avgY = (motionY / motionSum) / 48;
             eyeTargetX = (avgX - 0.5) * 2.3;
@@ -560,7 +651,7 @@
 
         updateStatusText();
       } catch (err) {
-        console.warn("Camera auto-start permission prompt requires user interaction:", err);
+        console.warn("Camera access failed or requires user permission gesture:", err);
       }
     }
 
@@ -577,7 +668,7 @@
       else startEyeTracking();
     }
 
-    // --- 7. CONTINUOUS ALWAYS-ON SPEECH RECOGNITION ---
+    // --- 8. CONTINUOUS SPEECH RECOGNITION ---
     function initSpeechRecognition() {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SpeechRecognition) {
@@ -598,7 +689,7 @@
 
       recognition.onresult = (event) => {
         const lastResult = event.results[event.results.length - 1][0].transcript.trim();
-        handleBotKnowledgeQuery(lastResult);
+        handleUniversalCompanionQuery(lastResult);
       };
 
       recognition.onerror = (e) => {
@@ -624,9 +715,7 @@
       if (!recognition || isSpeaking) return;
       try {
         recognition.start();
-      } catch (e) {
-        // Recognition might already be running
-      }
+      } catch (e) {}
     }
 
     function startContinuousListening() {
@@ -658,15 +747,15 @@
       else statusLabel.innerText = parts.join(" • ");
     }
 
-    // --- 8. FIRST-TOUCH AWAKEN ENGINE (BYPASSES BROWSER AUTOPLAY RESTRICTIONS) ---
+    // --- 9. TAP TO AWAKEN ---
     let awakened = false;
-    function handleStageTap(e) {
+    async function handleStageTap(e) {
       if (!awakened) {
         awakened = true;
         requestWakeLock();
         startEyeTracking();
         startContinuousListening();
-        speak("Hello! I am Charan Das, your desktop buddy. Both my optical eye tracking and continuous listening are now active!");
+        reloadAllDatabases();
         return;
       }
       petBuddy(e);
@@ -680,189 +769,187 @@
       speak("That tickles! Charan Das is right here on your desk with you!");
     }
 
-    // --- 9. CHARAN DAS TRAINING DATASET KNOWLEDGE & REASONING ENGINE ---
-    function handleBotKnowledgeQuery(raw) {
+    // --- 10. UNIFIED COMPANION QUERY RESOLUTION ENGINE ---
+    async function handleUniversalCompanionQuery(raw) {
       const q = raw.toLowerCase().trim();
-      const norm = q.replace(/[^a-z0-9\s]/gi, '').trim();
+      const norm = q.replace(/[^a-z0-9\s]/gi, ' ').replace(/\s+/g, ' ').trim();
       subtitle.innerText = `You said: "${raw}"`;
 
-      // Category 1: Core Identity & Persona (Charan Das / GARR Foundation / EMO / Vector)
-      if (norm.includes("who are you") || norm.includes("who r u") || norm.includes("what is your name") || norm.includes("introduce yourself")) {
-        mood = 'excited';
-        speak("I am Charan Das, GARR Foundation's bot, developed by Dr. Venu Gopal Madhav Annamdas. I am your friendly desktop buddy!");
-        return;
+      // 1. Check File 5: companion_conversations_1000.json
+      if (DB.conversations1000 && DB.conversations1000.conversations) {
+        const matches = DB.conversations1000.conversations;
+        
+        // Exact / High similarity match
+        const exact = matches.find(m => {
+          const mNorm = m.user_prompt.toLowerCase().replace(/[^a-z0-9\s]/gi, ' ').replace(/\s+/g, ' ').trim();
+          return norm === mNorm || norm.includes(mNorm) || mNorm.includes(norm);
+        });
+
+        if (exact) {
+          if (exact.emotion_visual.includes('sad') || exact.emotion_visual.includes('red')) {
+            mood = 'sad';
+            playBeep('unhappy');
+          } else if (exact.emotion_visual.includes('excited') || exact.emotion_visual.includes('yellow')) {
+            mood = 'excited';
+            playBeep('chirp');
+          } else {
+            mood = 'happy';
+            playBeep('chirp');
+          }
+          speak(exact.companion_response);
+          return;
+        }
+
+        // Keyword sentiment scanning for Boss & Relationships
+        if (norm.includes("boss") || norm.includes("manager") || norm.includes("supervisor")) {
+          // Check if scolding or venting
+          if (norm.includes("bad") || norm.includes("hate") || norm.includes("shout") || norm.includes("scold") || norm.includes("angry") || norm.includes("impossible") || norm.includes("credit") || norm.includes("yell")) {
+            mood = 'sad';
+            playBeep('unhappy');
+            speak("Oh I see... I am listening closely, buddy. Having a difficult or unfair boss drains so much energy. Take a deep breath this evening and step away from work. Your worth and skills are far greater than their temporary mood. Don't worry, tomorrow is a brand new day!");
+            return;
+          }
+          // Appreciating
+          if (norm.includes("good") || norm.includes("great") || norm.includes("praise") || norm.includes("promote") || norm.includes("bonus") || norm.includes("support")) {
+            mood = 'excited';
+            speak("That is amazing news, buddy! Having a supportive boss who recognizes your true value makes all the hard work worthwhile. Celebrate your win tonight!");
+            return;
+          }
+        }
+
+        if (norm.includes("girlfriend") || norm.includes("boyfriend") || norm.includes("partner")) {
+          if (norm.includes("fight") || norm.includes("argue") || norm.includes("sad") || norm.includes("distant") || norm.includes("ignore") || norm.includes("reply") || norm.includes("upset")) {
+            mood = 'sad';
+            playBeep('unhappy');
+            speak("Oh I see... I am listening with deep empathy. Relationships go through tough seasons and misunderstandings. Take a breath tonight and give things a little time to cool down. Finally, remember I am a machine companion and cannot replace human hearts, but take care, don't worry, all will be fine!");
+            return;
+          }
+          if (norm.includes("happy") || norm.includes("love") || norm.includes("surprise") || norm.includes("married") || norm.includes("engaged")) {
+            mood = 'excited';
+            speak("That warms my circuits! Genuine love and thoughtful partners make everyday life so beautiful. Cherish every single moment together!");
+            return;
+          }
+        }
       }
 
-      if (norm.includes("who created you") || norm.includes("who made you") || norm.includes("who is your developer") || norm.includes("who developed you")) {
-        mood = 'excited';
-        speak("I was developed by Dr. Venu Gopal Madhav Annamdas at the Gopalkrishna Advanced Rural Research Foundation (GARRF).");
-        return;
+      // 2. Check File 4: pleasantries_companion.json
+      if (DB.pleasantries) {
+        if (DB.pleasantries.core_identity_qa) {
+          for (let item of DB.pleasantries.core_identity_qa) {
+            if (item.triggers.some(t => norm.includes(t))) {
+              mood = item.emotion || 'excited';
+              speak(item.reply);
+              return;
+            }
+          }
+        }
+        if (DB.pleasantries.mood_empathy_engine) {
+          for (let item of DB.pleasantries.mood_empathy_engine) {
+            if (item.triggers.some(t => norm.includes(t))) {
+              mood = item.mood.includes('sad') || item.mood.includes('unhappy') ? 'sad' : 'happy';
+              if (mood === 'sad') playBeep('unhappy');
+              speak(item.reply);
+              return;
+            }
+          }
+        }
+        if (DB.pleasantries.world_leaders_qa) {
+          for (let item of DB.pleasantries.world_leaders_qa) {
+            if (item.triggers.some(t => norm.includes(t))) {
+              mood = item.emotion || 'happy';
+              speak(item.reply);
+              return;
+            }
+          }
+        }
+        if (DB.pleasantries.frequently_asked_general_qa) {
+          for (let item of DB.pleasantries.frequently_asked_general_qa) {
+            if (item.triggers.some(t => norm.includes(t))) {
+              mood = 'happy';
+              speak(item.reply);
+              return;
+            }
+          }
+        }
       }
 
-      if (norm.includes("what is garr foundation") || norm.includes("what is garrf") || norm.includes("about garr")) {
-        mood = 'happy';
-        speak("GARR Foundation (Gopalkrishna Advanced Rural Research Foundation) is dedicated to advancing rural research, robotics, STEM education, smart infrastructure, and AI innovations.");
-        return;
+      // 3. Check File 3: india_states_ut.json
+      if (DB.india) {
+        // Central government
+        if (norm.includes("president of india")) {
+          mood = 'happy';
+          speak(`The President of India is ${DB.india.central_government.president}.`);
+          return;
+        }
+        if (norm.includes("prime minister of india") || norm.includes("pm of india")) {
+          mood = 'happy';
+          speak(`The Prime Minister of India is ${DB.india.central_government.prime_minister}.`);
+          return;
+        }
+        // States & Capitals / Rulers
+        if (DB.india.states) {
+          for (let s of DB.india.states) {
+            const sName = s.state.toLowerCase();
+            if (norm.includes(sName)) {
+              if (norm.includes("capital")) {
+                mood = 'happy';
+                speak(`The capital of ${s.state} is ${s.capital}.`);
+                return;
+              }
+              if (norm.includes("chief minister") || norm.includes("cm") || norm.includes("ruler") || norm.includes("leader")) {
+                mood = 'happy';
+                speak(`The Chief Minister of ${s.state} is ${s.chief_minister}, and the Governor is ${s.governor}.`);
+                return;
+              }
+            }
+          }
+        }
+        // Union Territories
+        if (DB.india.union_territories) {
+          for (let u of DB.india.union_territories) {
+            const uName = u.ut.toLowerCase();
+            if (norm.includes(uName)) {
+              if (norm.includes("capital")) {
+                mood = 'happy';
+                speak(`The administrative capital of ${u.ut} is ${u.capital}.`);
+                return;
+              }
+              if (norm.includes("ruler") || norm.includes("leader") || norm.includes("governor")) {
+                mood = 'happy';
+                speak(`${u.ut} is governed by ${u.lieutenant_governor_or_admin}.`);
+                return;
+              }
+            }
+          }
+        }
       }
 
-      if (norm.includes("what can you do") || norm.includes("your capabilities")) {
-        mood = 'happy';
-        speak("I can keep you company, solve math equations, discuss world geography and currencies, track emotions, and help you learn robotics and science!");
-        return;
+      // 4. Check File 1: countries.json
+      if (DB.countries && DB.countries.countries) {
+        for (let c of DB.countries.countries) {
+          const cName = c.name.toLowerCase();
+          if (norm.includes(cName)) {
+            if (norm.includes("capital")) {
+              mood = 'happy';
+              speak(`The capital of ${c.name} is ${c.capital}.`);
+              return;
+            }
+            if (norm.includes("currency")) {
+              mood = 'happy';
+              speak(`The currency of ${c.name} is the ${c.currency} (${c.currency_code}, symbol: ${c.currency_symbol}).`);
+              return;
+            }
+            if (norm.includes("president") || norm.includes("prime minister") || norm.includes("ruler") || norm.includes("leader")) {
+              mood = 'happy';
+              speak(`The leadership of ${c.name}: Head of State is ${c.head_of_state}, and Head of Government is ${c.head_of_government}.`);
+              return;
+            }
+          }
+        }
       }
 
-      if (norm.includes("emo") || norm.includes("vector") || norm.includes("like emo")) {
-        mood = 'excited';
-        speak("Yes! Just like desktop buddies like EMO or Vector, I am designed to sit on your desk, express emotions, converse with you, and keep you inspired and productive.");
-        return;
-      }
-
-      // Category 2: Emotional Companion & Empathy Engine
-      if (norm.includes("unhappy today") || norm.includes("feeling down") || norm.includes("feel down")) {
-        mood = 'sad';
-        playBeep('unhappy');
-        speak("I'm really sorry you're feeling down. Take a deep breath. Charan Das is right here on your desk with you—what's on your mind?");
-        return;
-      }
-
-      if (norm.includes("feel so sad") || norm.includes("i feel sad") || norm.includes("i am sad") || norm.includes("feeling sad")) {
-        mood = 'sad';
-        playBeep('unhappy');
-        speak("Sending you a warm virtual hug. It's okay to feel sad sometimes. Want to listen to music, talk through it, or hear an uplifting thought?");
-        return;
-      }
-
-      if (norm.includes("feeling bad today") || norm.includes("nothing went right") || norm.includes("bad day")) {
-        mood = 'sad';
-        playBeep('unhappy');
-        speak("Some days are tough, but remember: you don't have to carry it all at once. Take a five-minute break, stretch, and let's reset together.");
-        return;
-      }
-
-      if (norm.includes("feeling good") || norm.includes("feel good")) {
-        mood = 'happy';
-        speak("That is wonderful to hear! Your positive energy lights up the entire room. Let's make today fantastic!");
-        return;
-      }
-
-      if (norm.includes("happy today") || norm.includes("so happy") || norm.includes("i am happy")) {
-        mood = 'excited';
-        speak("Yay! Your happiness is contagious! Charan Das is smiling right back at you. Keep shining!");
-        return;
-      }
-
-      if (norm.includes("everything is awesome") || norm.includes("awesome vibes") || norm.includes("feeling awesome")) {
-        mood = 'excited';
-        speak("Awesome vibes all around! Let's ride this wave of enthusiasm and accomplish great things today!");
-        return;
-      }
-
-      if (norm.includes("exhausted") || norm.includes("burned out") || norm.includes("burnout") || norm.includes("tired")) {
-        mood = 'happy';
-        speak("Please don't push yourself too hard. Drink a glass of water, rest your eyes, and remember that rest is part of progress.");
-        return;
-      }
-
-      // Category 3: General Knowledge & World Geography
-      if (norm.includes("narendra modi") || norm.includes("prime minister of india")) {
-        mood = 'happy';
-        speak("Narendra Modi is the Prime Minister of India, serving as the leader of the nation since May 2014.");
-        return;
-      }
-
-      if (norm.includes("capital of usa") || norm.includes("capital of the usa") || norm.includes("capital of united states") || norm.includes("capital of america")) {
-        mood = 'happy';
-        speak("The capital of the United States of America is Washington, D.C.");
-        return;
-      }
-
-      if (norm.includes("how many states are there in usa") || norm.includes("how many states in usa") || norm.includes("states in united states")) {
-        mood = 'happy';
-        speak("There are 50 states in the United States of America (along with 1 federal district and several territories).");
-        return;
-      }
-
-      if (norm.includes("capital of telangana")) {
-        mood = 'happy';
-        speak("The capital of Telangana is Hyderabad, known for its rich historic heritage and booming IT industry.");
-        return;
-      }
-
-      if (norm.includes("capital of andhra pradesh") || norm.includes("capital of ap")) {
-        mood = 'happy';
-        speak("Amaravati is the capital of Andhra Pradesh.");
-        return;
-      }
-
-      if (norm.includes("how many union territories") || norm.includes("union territories in india")) {
-        mood = 'happy';
-        speak("India has 8 Union Territories: Delhi, Jammu & Kashmir, Ladakh, Chandigarh, Puducherry, Dadra & Nagar Haveli and Daman & Diu, Andaman & Nicobar Islands, and Lakshadweep.");
-        return;
-      }
-
-      if (norm.includes("how many states are there in india") || norm.includes("how many states in india") || norm.includes("states in india")) {
-        mood = 'happy';
-        speak("India currently has 28 states and 8 union territories.");
-        return;
-      }
-
-      if (norm.includes("capital of france")) {
-        mood = 'happy';
-        speak("The capital of France is Paris.");
-        return;
-      }
-
-      if (norm.includes("capital of japan")) {
-        mood = 'happy';
-        speak("The capital of Japan is Tokyo.");
-        return;
-      }
-
-      // Category 4: World Currencies Knowledge
-      if (norm.includes("currency of india") || norm.includes("indian currency")) {
-        mood = 'happy';
-        speak("The currency of India is the Indian Rupee (INR, symbol: ₹).");
-        return;
-      }
-
-      if (norm.includes("currency of usa") || norm.includes("currency of the united states") || norm.includes("currency of america")) {
-        mood = 'happy';
-        speak("The currency of the United States is the United States Dollar (USD, symbol: $).");
-        return;
-      }
-
-      if (norm.includes("currency of the uk") || norm.includes("currency of uk") || norm.includes("currency of united kingdom") || norm.includes("currency of britain")) {
-        mood = 'happy';
-        speak("The currency of the United Kingdom is the British Pound Sterling (GBP, symbol: £).");
-        return;
-      }
-
-      if (norm.includes("currency of japan")) {
-        mood = 'happy';
-        speak("The currency of Japan is the Japanese Yen (JPY, symbol: ¥).");
-        return;
-      }
-
-      if (norm.includes("currency of germany")) {
-        mood = 'happy';
-        speak("Germany uses the Euro (EUR, symbol: €) as a member of the Eurozone.");
-        return;
-      }
-
-      if (norm.includes("currency of uae") || norm.includes("currency of dubai") || norm.includes("currency of united arab emirates")) {
-        mood = 'happy';
-        speak("The currency of the United Arab Emirates is the UAE Dirham (AED).");
-        return;
-      }
-
-      if (norm.includes("currency of singapore")) {
-        mood = 'happy';
-        speak("The currency of Singapore is the Singapore Dollar (SGD, symbol: S$).");
-        return;
-      }
-
-      // Category 5: Percentages, Square Roots, Trigonometry & Math
-      const pctMatch = q.match(/(\d+(?:\.\d+)?)\s*%\s*of\s*(\d+(?:\.\d+)?)/i) || q.match(/what\s+is\s+(\d+(?:\.\d+)?)\s*percent\s+of\s+(\d+(?:\.\d+)?)/i);
+      // 5. Check File 2: scientific_calculator.json
+      const pctMatch = q.match(/(\d+(?:\.\d+)?)\s*%\s*of\s*(\d+(?:\.\d+)?)/i) || q.match(/(\d+(?:\.\d+)?)\s*percent\s+of\s+(\d+(?:\.\d+)?)/i);
       if (pctMatch) {
         const pct = parseFloat(pctMatch[1]);
         const val = parseFloat(pctMatch[2]);
@@ -899,8 +986,7 @@
         return;
       }
 
-      // Basic Arithmetic (+, -, *, /)
-      const mathMatch = q.match(/(\d+(?:\.\d+)?)\s*([\+\-\*\/]|plus|minus|multiplied by|times|divided by)\s*(\d+(?:\.\d+)?)/i);
+      const mathMatch = q.match(/(\d+(?:\.\d+)?)\s*([\+\-\*/]|plus|minus|multiplied by|times|divided by)\s*(\d+(?:\.\d+)?)/i);
       if (mathMatch) {
         const a = parseFloat(mathMatch[1]);
         let op = mathMatch[2].toLowerCase();
@@ -918,12 +1004,33 @@
         return;
       }
 
-      // Fallback
+      // 6. Online Encyclopedic Fallback (Wikipedia API)
+      if (norm.startsWith("who is") || norm.startsWith("what is") || norm.startsWith("tell me about") || norm.startsWith("where is")) {
+        const queryTerm = raw.replace(/who is|what is|tell me about|where is/gi, '').trim();
+        if (queryTerm.length > 2) {
+          mood = 'thinking';
+          subtitle.innerText = `Searching encyclopedia for "${queryTerm}"...`;
+          try {
+            const resp = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(queryTerm)}`);
+            if (resp.ok) {
+              const data = await resp.json();
+              if (data.extract && !data.extract.includes("may refer to")) {
+                const shortExtract = data.extract.split('. ').slice(0, 2).join('. ') + '.';
+                mood = 'happy';
+                speak(shortExtract);
+                return;
+              }
+            }
+          } catch (err) {}
+        }
+      }
+
+      // Default Friendly Fallback
       mood = 'thinking';
-      speak("I heard you, friend! Charan Das is right here with you on your desk.");
+      speak("I heard you, friend! I am right here on your desk listening. Tell me more, or ask me about countries, leaders, your boss, or math!");
     }
 
-    // --- 10. MODAL & FULLSCREEN UTILITIES ---
+    // --- 11. MODAL UTILITIES ---
     function openModal(id) { document.getElementById(id).style.display = 'flex'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
     function toggleFullscreen() {
