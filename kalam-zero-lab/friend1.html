@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Desktop AI Companion - Standalone Mobile Buddy</title>
+  <style>
+    :root {
+      --bg-color: #03080f;
+      --eye-color: #00f0ff;
+      --eye-glow: rgba(0, 240, 255, 0.65);
+      --pupil-color: #010408;
+      --mouth-color: #00f0ff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--bg-color);
+      color: #e2f7ff;
+      display: flex;
+      flex-direction: column;
+      touch-action: manipulation;
+    }
+
+    /* Full-screen Bot Canvas Container */
+    #buddy-stage {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      background: radial-gradient(circle at center, #0a1b30 0%, #03080f 75%);
+    }
+
+    /* Eye Canvas */
+    #face-canvas {
+      width: 100%;
+      max-width: 450px;
+      height: 280px;
+      display: block;
+      cursor: pointer;
+    }
+
+    /* Dynamic Mouth Display */
+    #mouth-container {
+      width: 120px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 10px;
+    }
+
+    #mouth-svg {
+      width: 100%;
+      height: 100%;
+      filter: drop-shadow(0 0 10px var(--eye-glow));
+    }
+
+    #mouth-path {
+      stroke: var(--mouth-color);
+      stroke-width: 6;
+      stroke-linecap: round;
+      fill: transparent;
+      transition: d 0.1s ease-out;
+    }
+
+    /* Subtitle & Status Overlays */
+    #status-pill {
+      position: absolute;
+      top: 18px;
+      padding: 6px 14px;
+      background: rgba(0, 240, 255, 0.08);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      border-radius: 20px;
+      font-size: 11px;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--eye-color);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      backdrop-filter: blur(8px);
+    }
+
+    .pulse-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #00ff88;
+      box-shadow: 0 0 8px #00ff88;
+      animation: pulse 1.6s infinite ease-in-out;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 0.3; transform: scale(0.85); }
+      50% { opacity: 1; transform: scale(1.15); }
+      100% { opacity: 0.3; transform: scale(0.85); }
+    }
+
+    #subtitle-text {
+      position: absolute;
+      bottom: 75px;
+      left: 20px;
+      right: 20px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 500;
+      color: #effaff;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+      min-height: 24px;
+    }
+
+    /* Bottom Control Bar */
+    .dock-bar {
+      position: absolute;
+      bottom: 12px;
+      display: flex;
+      gap: 10px;
+      background: rgba(5, 15, 28, 0.75);
+      border: 1px solid rgba(0, 240, 255, 0.25);
+      backdrop-filter: blur(12px);
+      padding: 6px 14px;
+      border-radius: 30px;
+    }
+
+    .dock-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      color: var(--eye-color);
+      font-size: 14px;
+      padding: 6px 12px;
+      border-radius: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s;
+    }
+
+    .dock-btn.active {
+      background: rgba(0, 240, 255, 0.25);
+      border-color: #00f0ff;
+      box-shadow: 0 0 10px var(--eye-glow);
+    }
+
+    /* Hidden Internal Camera Feed for Vision Tracking */
+    #hidden-video {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="buddy-stage" onclick="petBuddy(event)">
+    <div id="status-pill">
+      <span class="pulse-dot"></span>
+      <span id="status-label">DESK BUDDY ONLINE</span>
+    </div>
+
+    <!-- Procedural Eyes Canvas -->
+    <canvas id="face-canvas" width="450" height="280"></canvas>
+
+    <!-- Animated Expressive Mouth -->
+    <div id="mouth-container">
+      <svg id="mouth-svg" viewBox="0 0 100 40">
+        <path id="mouth-path" d="M 25 20 Q 50 20 75 20" />
+      </svg>
+    </div>
+
+    <div id="subtitle-text">Hello! I am your desktop buddy.</div>
+
+    <!-- Controls Dock -->
+    <div class="dock-bar" onclick="event.stopPropagation()">
+      <button class="dock-btn" id="btn-cam" onclick="toggleOpticalGaze()">📷 Gaze Track</button>
+      <button class="dock-btn" id="btn-mic" onclick="toggleListening()">🎙️ Listen</button>
+      <button class="dock-btn" onclick="toggleFullscreen()">⛶ Fullscreen</button>
+    </div>
+  </div>
+
+  <video id="hidden-video" playsinline muted autoplay></video>
+
+  <script>
+    // --- 1. STATE & ANIMATION VARIABLES ---
+    const canvas = document.getElementById('face-canvas');
+    const ctx = canvas.getContext('2d');
+    const mouthPath = document.getElementById('mouth-path');
+    const statusLabel = document.getElementById('status-label');
+    const subtitle = document.getElementById('subtitle-text');
+
+    let eyeTargetX = 0, eyeTargetY = 0;
+    let eyeCurX = 0, eyeCurY = 0;
+    let eyeSquint = 0; // 0 (round) to 1 (squint)
+    let blinkValue = 0;
+    let isBlinking = false;
+    let mood = 'happy'; // 'happy', 'excited', 'thinking', 'sad'
+
+    let isSpeaking = false;
+    let mouthInterval = null;
+    let isListening = false;
+    let recognition = null;
+    let wakeLock = null;
+
+    let cameraStream = null;
+    let gazeDetectionInterval = null;
+    let gazeCanvas = document.createElement('canvas');
+    let gazeCtx = gazeCanvas.getContext('2d');
+    gazeCanvas.width = 64;
+    gazeCanvas.height = 48;
+
+    // --- 2. SCREEN WAKE LOCK (PREVENTS PHONE SLEEP) ---
+    async function requestWakeLock() {
+      try {
+        if ('wakeLock' in navigator) {
+          wakeLock = await navigator.wakeLock.request('screen');
+        }
+      } catch (err) {}
+    }
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') requestWakeLock();
+    });
+    requestWakeLock();
+
+    // --- 3. PROCEDURAL PROCEDURAL EYE RENDERING ENGINE ---
+    function drawEye(cx, cy, pupilOffsetX, pupilOffsetY, blink, squint) {
+      ctx.save();
+
+      // Eye dimensions
+      const width = 85;
+      const height = 110 * (1 - blink * 0.95);
+
+      // Clip boundary for eye
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, width * 0.5, Math.max(3, height * 0.5 * (1 - squint * 0.35)), 0, 0, Math.PI * 2);
+      ctx.clip();
+
+      // Outer glow and eye body
+      let color = mood === 'sad' ? '#ff3b5c' : mood === 'excited' ? '#ffd700' : '#00f0ff';
+      document.documentElement.style.setProperty('--eye-color', color);
+      document.documentElement.style.setProperty('--eye-glow', color + '99');
+      document.documentElement.style.setProperty('--mouth-color', color);
+
+      const grad = ctx.createRadialGradient(cx, cy, 10, cx, cy, width * 0.6);
+      grad.addColorStop(0, '#ffffff');
+      grad.addColorStop(0.4, color);
+      grad.addColorStop(1, '#001a2c');
+
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      // Center Pupil
+      const px = cx + pupilOffsetX * 16;
+      const py = cy + pupilOffsetY * 14;
+      ctx.beginPath();
+      ctx.arc(px, py, 16, 0, Math.PI * 2);
+      ctx.fillStyle = '#01050a';
+      ctx.fill();
+
+      // Specular highlight (reflection)
+      ctx.beginPath();
+      ctx.arc(px - 6, py - 6, 6, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    function renderFace() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Smooth interpolation toward target gaze
+      eyeCurX += (eyeTargetX - eyeCurX) * 0.12;
+      eyeCurY += (eyeTargetY - eyeCurY) * 0.12;
+
+      // Blink animation physics
+      if (isBlinking) {
+        blinkValue += 0.22;
+        if (blinkValue >= 1) {
+          blinkValue = 1;
+          isBlinking = false;
+        }
+      } else if (blinkValue > 0) {
+        blinkValue -= 0.18;
+        if (blinkValue < 0) blinkValue = 0;
+      }
+
+      // Draw Left and Right Eyes
+      drawEye(145, 140, eyeCurX, eyeCurY, blinkValue, eyeSquint);
+      drawEye(305, 140, eyeCurX, eyeCurY, blinkValue, eyeSquint);
+
+      requestAnimationFrame(renderFace);
+    }
+    renderFace();
+
+    // Random blinking and autonomous wandering when idle
+    setInterval(() => {
+      if (!isBlinking && Math.random() > 0.45) isBlinking = true;
+    }, 2800);
+
+    setInterval(() => {
+      if (!cameraStream) {
+        // Micro-saccades to make it feel alive
+        eyeTargetX = (Math.random() - 0.5) * 1.4;
+        eyeTargetY = (Math.random() - 0.5) * 0.9;
+      }
+    }, 3500);
+
+    // --- 4. EXPRESSIVE MOUTH & LIP-SYNC ---
+    function setMouthShape(shape) {
+      if (shape === 'smile') mouthPath.setAttribute('d', 'M 25 18 Q 50 32 75 18');
+      else if (shape === 'sad') mouthPath.setAttribute('d', 'M 25 28 Q 50 14 75 28');
+      else if (shape === 'open') mouthPath.setAttribute('d', 'M 35 15 Q 50 35 65 15');
+      else mouthPath.setAttribute('d', 'M 25 20 Q 50 20 75 20');
+    }
+    setMouthShape('smile');
+
+    function startLipSync() {
+      if (mouthInterval) clearInterval(mouthInterval);
+      const shapes = [
+        'M 30 16 Q 50 34 70 16',
+        'M 25 18 Q 50 26 75 18',
+        'M 35 14 Q 50 36 65 14'
+      ];
+      mouthInterval = setInterval(() => {
+        if (!isSpeaking) {
+          clearInterval(mouthInterval);
+          setMouthShape(mood === 'sad' ? 'sad' : 'smile');
+          return;
+        }
+        mouthPath.setAttribute('d', shapes[Math.floor(Math.random() * shapes.length)]);
+      }, 110);
+    }
+
+    // --- 5. SPEECH SYNTHESIS & VOICE OUTPUT ---
+    function speak(text) {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+
+      subtitle.innerText = text;
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.rate = 1.05;
+      utter.pitch = mood === 'excited' ? 1.25 : 1.1;
+
+      utter.onstart = () => {
+        isSpeaking = true;
+        startLipSync();
+      };
+      utter.onend = utter.onerror = () => {
+        isSpeaking = false;
+        setMouthShape(mood === 'sad' ? 'sad' : 'smile');
+      };
+
+      window.speechSynthesis.speak(utter);
+    }
+
+    // --- 6. OPTICAL GAZE TRACKING (LIGHTWEIGHT DOWNSAMPLED OPTICAL FLOW) ---
+    async function toggleOpticalGaze() {
+      const btn = document.getElementById('btn-cam');
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(t => t.stop());
+        cameraStream = null;
+        if (gazeDetectionInterval) clearInterval(gazeDetectionInterval);
+        btn.classList.remove('active');
+        statusLabel.innerText = "DESK BUDDY ONLINE";
+        return;
+      }
+
+      try {
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user', width: { ideal: 320 }, height: { ideal: 240 } }
+        });
+        const video = document.getElementById('hidden-video');
+        video.srcObject = cameraStream;
+        btn.classList.add('active');
+        statusLabel.innerText = "GAZE TRACKING ACTIVE";
+
+        // Track user presence and motion center
+        let prevLuma = null;
+        gazeDetectionInterval = setInterval(() => {
+          if (!cameraStream || video.readyState < 2) return;
+          gazeCtx.drawImage(video, 0, 0, 64, 48);
+          const frame = gazeCtx.getImageData(0, 0, 64, 48).data;
+
+          let motionX = 0, motionY = 0, motionSum = 0;
+          if (!prevLuma) prevLuma = new Uint8Array(64 * 48);
+
+          for (let y = 0; y < 48; y++) {
+            for (let x = 0; x < 64; x++) {
+              const idx = (y * 64 + x) * 4;
+              const luma = frame[idx] * 0.299 + frame[idx + 1] * 0.587 + frame[idx + 2] * 0.114;
+              const diff = Math.abs(luma - prevLuma[y * 64 + x]);
+              prevLuma[y * 64 + x] = luma;
+
+              if (diff > 18) {
+                motionX += x;
+                motionY += y;
+                motionSum++;
+              }
+            }
+          }
+
+          if (motionSum > 12) {
+            // Inverted for mirrored selfie camera orientation
+            const avgX = 1 - (motionX / motionSum) / 64;
+            const avgY = (motionY / motionSum) / 48;
+            eyeTargetX = (avgX - 0.5) * 2.2;
+            eyeTargetY = (avgY - 0.5) * 1.8;
+          }
+        }, 120);
+
+        speak("I see you! My eyes are tracking your movements.");
+      } catch (err) {
+        alert("Camera access denied or unavailable.");
+      }
+    }
+
+    // --- 7. CONTINUOUS VOICE RECOGNITION (WEB SPEECH API) ---
+    function toggleListening() {
+      const btn = document.getElementById('btn-mic');
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+      if (!SpeechRecognition) {
+        alert("Web Speech Recognition not supported on this browser.");
+        return;
+      }
+
+      if (isListening) {
+        if (recognition) recognition.stop();
+        isListening = false;
+        btn.classList.remove('active');
+        statusLabel.innerText = "DESK BUDDY ONLINE";
+        return;
+      }
+
+      recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US';
+
+      recognition.onstart = () => {
+        isListening = true;
+        btn.classList.add('active');
+        statusLabel.innerText = "LISTENING FOR COMMANDS...";
+      };
+
+      recognition.onresult = (event) => {
+        const lastResult = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
+        handleVoiceQuery(lastResult);
+      };
+
+      recognition.onend = () => {
+        if (isListening) {
+          try { recognition.start(); } catch(e) {}
+        }
+      };
+
+      recognition.start();
+    }
+
+    function handleVoiceQuery(text) {
+      subtitle.innerText = `You said: "${text}"`;
+
+      if (text.includes("hello") || text.includes("hi")) {
+        mood = 'excited';
+        speak("Hello! Great to see you at your desk today!");
+      } else if (text.includes("happy") || text.includes("smile")) {
+        mood = 'happy';
+        speak("I am very happy sitting on your desk!");
+      } else if (text.includes("sad") || text.includes("unhappy")) {
+        mood = 'sad';
+        speak("I'm sorry to hear that. I am here with you.");
+      } else if (text.includes("time")) {
+        const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        speak(`It is currently ${now}.`);
+      } else if (text.includes("who are you") || text.includes("your name")) {
+        mood = 'excited';
+        speak("I am your smart smartphone desktop buddy!");
+      } else {
+        mood = 'thinking';
+        speak("I heard you, friend! Let's stay focused and productive.");
+      }
+    }
+
+    // --- 8. TOUCH & ERGONOMIC ACTIONS ---
+    function petBuddy(e) {
+      mood = 'excited';
+      eyeSquint = 0.5;
+      setTimeout(() => eyeSquint = 0, 800);
+      speak("That tickles! Thanks for checking in.");
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+  </script>
+</body>
+</html>
