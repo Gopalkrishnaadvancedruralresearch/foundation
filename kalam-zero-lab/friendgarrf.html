@@ -645,6 +645,65 @@
     font-weight: 700;
     font-size: 12px;
   }
+
+  /* Onboarding Setup Card */
+  .setup-checklist-card {
+    width: 100%;
+    max-width: 820px;
+    background: rgba(13, 23, 42, 0.85);
+    border: 1px solid rgba(0, 240, 255, 0.35);
+    border-radius: 16px;
+    padding: 8px 16px;
+    margin-top: 6px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    z-index: 15;
+  }
+  .checklist-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11.5px;
+    font-weight: 800;
+    color: var(--cyan-glow);
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+  .checklist-items {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  @media (max-width: 700px) {
+    .checklist-items { grid-template-columns: repeat(2, 1fr); }
+  }
+  .check-item {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 6px 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s;
+    user-select: none;
+  }
+  .check-item.pending {
+    color: #facc15;
+    border-color: rgba(250, 204, 21, 0.4);
+    background: rgba(250, 204, 21, 0.06);
+  }
+  .check-item.done {
+    color: #4ade80;
+    border-color: rgba(74, 222, 128, 0.4);
+    background: rgba(74, 222, 128, 0.08);
+  }
+  .check-item:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+  }
+
 </style>
 </head>
 <body>
@@ -657,6 +716,32 @@
     <span id="awakenStatus">TAP TO AWAKEN</span>
   </div>
   <span class="db-status-badge" id="dbIndicator">Friend DB: Ready</span>
+</div>
+
+
+<div class="setup-checklist-card" id="setupCard">
+  <div class="checklist-header">
+    <span>⚡ DESKTOP BUDDY SETUP CHECKLIST (Complete to Activate Full Brain):</span>
+    <span id="setupProgress">1/4 Done</span>
+  </div>
+  <div class="checklist-items">
+    <div class="check-item pending" id="chkDb" onclick="openFriendDbManager()">
+      <span class="chk-icon">📁</span>
+      <span class="chk-label">1. Connect Friend DB</span>
+    </div>
+    <div class="check-item pending" id="chkMic" onclick="toggleContinuousMic()">
+      <span class="chk-icon">🎙️</span>
+      <span class="chk-label">2. Continuous Mic</span>
+    </div>
+    <div class="check-item pending" id="chkGaze" onclick="toggleGazeTrack()">
+      <span class="chk-icon">📷</span>
+      <span class="chk-label">3. Gaze Track (Cam)</span>
+    </div>
+    <div class="check-item pending" id="chkCal" onclick="openCalendar()">
+      <span class="chk-icon">📅</span>
+      <span class="chk-label">4. Activate Calendar</span>
+    </div>
+  </div>
 </div>
 
 <main class="bot-stage" id="dragStage">
@@ -707,7 +792,7 @@
       <span class="q-tag">Q)</span> <span id="queryText">System Check</span>
     </div>
     <div class="dialogue-row reply" id="replyRow">
-      <span class="re-tag">Re)</span> <span id="replyText">Hi buddy, connect me to Database first! Click "📁 Friend DB" below to link my knowledge base before we begin.</span>
+      <span class="re-tag">Re)</span> <span id="replyText">Hi buddy! Before we start, please complete my 4 setup steps below: 1. Connect Friend DB, 2. Turn on Continuous Mic, 3. Turn on Gaze Track, and 4. Activate Calendar!</span>
     </div>
   </div>
 
@@ -760,8 +845,61 @@
 
 <script>
   let isAwake = false;
+
+  let calActivated = false;
+
+  function updateChecklistUI() {
+    const chkDb = document.getElementById('chkDb');
+    const chkMic = document.getElementById('chkMic');
+    const chkGaze = document.getElementById('chkGaze');
+    const chkCal = document.getElementById('chkCal');
+    const prog = document.getElementById('setupProgress');
+
+    let doneCount = 0;
+
+    if (friendDB.connected) {
+      chkDb.className = "check-item done";
+      chkDb.innerHTML = `<span class="chk-icon">✓</span> <span class="chk-label">1. Friend DB (Active)</span>`;
+      doneCount++;
+    } else {
+      chkDb.className = "check-item pending";
+      chkDb.innerHTML = `<span class="chk-icon">📁</span> <span class="chk-label">1. Connect Friend DB</span>`;
+    }
+
+    if (continuousMicActive) {
+      chkMic.className = "check-item done";
+      chkMic.innerHTML = `<span class="chk-icon">✓</span> <span class="chk-label">2. Mic (Listening)</span>`;
+      doneCount++;
+    } else {
+      chkMic.className = "check-item pending";
+      chkMic.innerHTML = `<span class="chk-icon">🎙️</span> <span class="chk-label">2. Continuous Mic</span>`;
+    }
+
+    if (gazeActive) {
+      chkGaze.className = "check-item done";
+      chkGaze.innerHTML = `<span class="chk-icon">✓</span> <span class="chk-label">3. Gaze (Active)</span>`;
+      doneCount++;
+    } else {
+      chkGaze.className = "check-item pending";
+      chkGaze.innerHTML = `<span class="chk-icon">📷</span> <span class="chk-label">3. Gaze Track (Cam)</span>`;
+    }
+
+    if (calActivated || (friendDB.calendarData !== null)) {
+      chkCal.className = "check-item done";
+      chkCal.innerHTML = `<span class="chk-icon">✓</span> <span class="chk-label">4. Calendar (Synced)</span>`;
+      doneCount++;
+    } else {
+      chkCal.className = "check-item pending";
+      chkCal.innerHTML = `<span class="chk-icon">📅</span> <span class="chk-label">4. Activate Calendar</span>`;
+    }
+
+    if (prog) prog.innerText = `${doneCount}/4 Activated`;
+  }
+
   let gazeActive = false;
+    updateChecklistUI();
   let continuousMicActive = false;
+    updateChecklistUI();
   let speechRec = null;
   let areHandsUp = false;
 
@@ -1000,6 +1138,7 @@
 
     if (!gazeActive) {
       gazeActive = true;
+    updateChecklistUI();
       btn.classList.add('active');
       displayQA("Action", "Gaze Tracking activated. My eyes are following you!");
 
@@ -1012,6 +1151,7 @@
       }
     } else {
       gazeActive = false;
+    updateChecklistUI();
       btn.classList.remove('active');
       video.style.display = "none";
       if (video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
@@ -1026,10 +1166,12 @@
     if (!continuousMicActive) {
       startSpeechRecognition();
       continuousMicActive = true;
+    updateChecklistUI();
       btn.classList.add('mic-active');
       displayQA("Action", "Continuous Mic ON: Speak to me naturally anytime!");
     } else {
       continuousMicActive = false;
+    updateChecklistUI();
       btn.classList.remove('mic-active');
       if (speechRec) speechRec.stop();
       displayQA("Action", "Continuous Mic turned off.");
@@ -1444,12 +1586,76 @@
     else if (q.includes('how many states') && (q.includes('usa') || q.includes('united states'))) {
       reply = "There are 50 states in the USA, along with 1 federal district (Washington, D.C.) and territories.";
     }
-    else if (q.includes('currency of india')) {
-      reply = "The currency of India is the Indian Rupee (INR, symbol: ₹).";
+    // D. CURRENCIES & MONEY ROUTER (friend/countries.json + Built-in Global Currency Engine)
+    if (q.includes('currency') || q.includes('money of') || q.includes('symbol of')) {
+      // 1. Search uploaded friend/countries.json
+      if (friendDB.countriesData) {
+        const cList = Array.isArray(friendDB.countriesData)
+          ? friendDB.countriesData
+          : (friendDB.countriesData.countries || Object.values(friendDB.countriesData));
+
+        if (Array.isArray(cList)) {
+          for (const c of cList) {
+            const cName = (c.name || c.country || "").toLowerCase();
+            if (cName && (q.includes(cName) || cName.includes(q.replace('currency of', '').trim()))) {
+              const curr = c.currency || c.money || c.currency_name || c.code;
+              const sym = c.symbol ? ` (symbol: ${c.symbol})` : '';
+              reply = `The currency of ${c.name || c.country} is the ${curr}${sym}.`;
+              break;
+            }
+          }
+        } else if (typeof friendDB.countriesData === 'object') {
+          for (const [cKey, cVal] of Object.entries(friendDB.countriesData)) {
+            if (q.includes(cKey.toLowerCase())) {
+              const curr = typeof cVal === 'object' ? (cVal.currency || JSON.stringify(cVal)) : cVal;
+              reply = `The currency of ${cKey} is the ${curr}.`;
+              break;
+            }
+          }
+        }
+      }
+
+      // 2. Comprehensive Global Currencies Engine
+      if (!reply) {
+        const CURRENCY_MAP = {
+          "singapore": "Singapore Dollar (SGD, symbol: S$)",
+          "india": "Indian Rupee (INR, symbol: ₹)",
+          "usa": "US Dollar (USD, symbol: $)",
+          "united states": "US Dollar (USD, symbol: $)",
+          "america": "US Dollar (USD, symbol: $)",
+          "uk": "British Pound Sterling (GBP, symbol: £)",
+          "united kingdom": "British Pound Sterling (GBP, symbol: £)",
+          "britain": "British Pound Sterling (GBP, symbol: £)",
+          "england": "British Pound Sterling (GBP, symbol: £)",
+          "japan": "Japanese Yen (JPY, symbol: ¥)",
+          "germany": "Euro (EUR, symbol: €)",
+          "france": "Euro (EUR, symbol: €)",
+          "italy": "Euro (EUR, symbol: €)",
+          "spain": "Euro (EUR, symbol: €)",
+          "europe": "Euro (EUR, symbol: €)",
+          "uae": "UAE Dirham (AED)",
+          "dubai": "UAE Dirham (AED)",
+          "saudi arabia": "Saudi Riyal (SAR)",
+          "china": "Chinese Yuan / Renminbi (CNY, symbol: ¥)",
+          "russia": "Russian Ruble (RUB, symbol: ₽)",
+          "canada": "Canadian Dollar (CAD, symbol: $)",
+          "australia": "Australian Dollar (AUD, symbol: $)",
+          "switzerland": "Swiss Franc (CHF)",
+          "bangladesh": "Bangladeshi Taka (BDT, symbol: ৳)",
+          "sri lanka": "Sri Lankan Rupee (LKR)",
+          "nepal": "Nepalese Rupee (NPR)",
+          "malaysia": "Malaysian Ringgit (MYR, symbol: RM)"
+        };
+
+        for (const [countryKey, currencyVal] of Object.entries(CURRENCY_MAP)) {
+          if (q.includes(countryKey)) {
+            reply = `The currency of ${countryKey.toUpperCase()} is the ${currencyVal}.`;
+            break;
+          }
+        }
+      }
     }
-    else if (q.includes('currency of usa') || q.includes('currency of us')) {
-      reply = "The currency of the United States is the US Dollar (USD, symbol: $).";
-    }
+
 
     // E. CREATOR & IDENTITY (Dr. Venu Gopal Madhav Annamdas & GARRF)
     else if (q.includes('who are you') || q.includes('your name')) {
@@ -1487,31 +1693,46 @@
       } catch(e){}
     }
 
-    // GENERAL KNOWLEDGE SEARCH ACROSS LOADED DATASETS (charan_das_true_buddy_25k.jsonl & companion_conversations_1000.json)
+    // 3-TIER COMPANION DATASET MATCHER (charan_das_true_buddy_25k.jsonl & companion_conversations_1000.json)
     if (!reply && friendDB.companionQnA.length > 0) {
-      const qTokens = q.split(' ').filter(w => w.length > 2 && !['what', 'when', 'where', 'which', 'who', 'how', 'the', 'tell'].includes(w));
-      let bestItem = null;
-      let maxScore = 0;
+      const cleanInput = q.replace(/[^a-z0-9 ]/g, '').trim();
 
+      // Tier 1: Direct substring / phrase match
       for (let i = 0; i < friendDB.companionQnA.length; i++) {
         const item = friendDB.companionQnA[i];
-        const p = (item.instruction || item.prompt || item.q || "").toLowerCase();
-        if (!p) continue;
-
-        let score = 0;
-        for (const token of qTokens) {
-          if (p.includes(token)) score++;
-        }
-
-        if (score > maxScore) {
-          maxScore = score;
-          bestItem = item;
-          if (maxScore >= 3) break; // High confidence match
+        const cleanPrompt = (item.instruction || item.prompt || item.q || "").toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
+        if (cleanPrompt && (cleanPrompt === cleanInput || cleanPrompt.includes(cleanInput) || cleanInput.includes(cleanPrompt))) {
+          reply = item.output || item.response || item.a || "";
+          break;
         }
       }
 
-      if (bestItem && maxScore >= Math.max(1, Math.min(2, qTokens.length))) {
-        reply = bestItem.output || bestItem.response || bestItem.a || "";
+      // Tier 2: Keyword overlap scoring for natural variations
+      if (!reply) {
+        const qWords = cleanInput.split(' ').filter(w => w.length > 2);
+        let bestItem = null;
+        let highestOverlap = 0;
+
+        for (let i = 0; i < friendDB.companionQnA.length; i++) {
+          const item = friendDB.companionQnA[i];
+          const p = (item.instruction || item.prompt || item.q || "").toLowerCase();
+          if (!p) continue;
+
+          let count = 0;
+          for (const word of qWords) {
+            if (p.includes(word)) count++;
+          }
+
+          if (count > highestOverlap) {
+            highestOverlap = count;
+            bestItem = item;
+            if (highestOverlap >= 4) break;
+          }
+        }
+
+        if (bestItem && highestOverlap >= Math.min(2, qWords.length)) {
+          reply = bestItem.output || bestItem.response || bestItem.a || "";
+        }
       }
     }
 
@@ -1564,6 +1785,8 @@
   }
 
   function openCalendar() {
+    calActivated = true;
+    updateChecklistUI();
     const now = new Date();
     showCustomModal("📅 Charan Das Calendar & Clock", `
       <p><strong>Today's Date:</strong> ${now.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
@@ -1677,6 +1900,7 @@
   // 4. Unlock bot and update status
   function finalizeDbConnection(count, msg) {
     friendDB.connected = true;
+    updateChecklistUI();
     const badge = document.getElementById('dbIndicator');
     if (badge) {
       badge.className = "db-status-badge db-connected";
