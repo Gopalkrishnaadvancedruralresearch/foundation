@@ -1080,12 +1080,13 @@
   }
 
   // Physical Actions
-  function triggerJump() {
+    function triggerJump(customPrompt) {
     const b = document.getElementById('botWrapper');
     b.classList.remove('jumping');
     void b.offsetWidth;
     b.classList.add('jumping');
-    displayQA("Can you jump?", "Watch me! *springs up into the air* Boing!");
+    const p = customPrompt || "Can you jump?";
+    displayQA(p, "Watch me! *springs up into the air* Boing!");
     botSpeak("Watch me! Boing! I can jump!");
     setTimeout(() => b.classList.remove('jumping'), 750);
   }
@@ -1210,38 +1211,90 @@
   }
 
   // Vision Presence Detector
-  let lastCameraFrame = null;
+  // Ultra-Accurate Optical Presence Detector (Hardware FaceDetector + 2-Frame Temporal Motion + Strict Skin Chrominance)
   async function detectUserPresence(videoElement) {
     if (!videoElement || videoElement.videoWidth === 0 || videoElement.paused || videoElement.ended) {
       return { detected: false };
     }
+
+    // 1. Hardware FaceDetector API (Chromium / Edge / Modern Android)
+    if ('FaceDetector' in window) {
+      try {
+        const detector = new window.FaceDetector({ fastMode: true, maxDetectedFaces: 1 });
+        const faces = await detector.detect(videoElement);
+        if (faces && faces.length > 0) {
+          return { detected: true, method: 'face_api' };
+        } else {
+          return { detected: false, method: 'face_api_none' };
+        }
+      } catch(e) {
+        // Fall back to computer vision
+      }
+    }
+
+    // 2. Two-Frame Temporal Motion & Coherent Skin Cluster Analysis
     try {
-      const W = 80;
-      const H = 60;
+      const W = 64;
+      const H = 48;
       const canvas = document.createElement('canvas');
       canvas.width = W;
       canvas.height = H;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(videoElement, 0, 0, W, H);
-      const data = ctx.getImageData(0, 0, W, H).data;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
+      // Frame 1
+      ctx.drawImage(videoElement, 0, 0, W, H);
+      const f1 = ctx.getImageData(0, 0, W, H).data;
+
+      // Wait 160ms to detect living human micro-movement (breathing, face jitter, head motion)
+      await new Promise(r => setTimeout(r, 160));
+
+      // Frame 2
+      ctx.drawImage(videoElement, 0, 0, W, H);
+      const f2 = ctx.getImageData(0, 0, W, H).data;
+
+      let motionPixels = 0;
       let skinPixels = 0;
-      let count = 0;
-      for (let y = 10; y < 50; y++) {
-        for (let x = 16; x < 64; x++) {
+      let centerSamples = 0;
+
+      // Analyze center 60% of viewport
+      for (let y = 8; y < 40; y++) {
+        for (let x = 12; x < 52; x++) {
           const idx = (y * W + x) * 4;
-          const r = data[idx], g = data[idx + 1], b = data[idx + 2];
-          const Cb = -0.168736 * r - 0.331264 * g + 0.5 * b + 128;
-          const Cr = 0.5 * r - 0.418688 * g - 0.081312 * b + 128;
-          if (Cb >= 77 && Cb <= 127 && Cr >= 133 && Cr <= 173 && r > g && (r - g) >= 8) {
+          const r1 = f1[idx], g1 = f1[idx + 1], b1 = f1[idx + 2];
+          const r2 = f2[idx], g2 = f2[idx + 1], b2 = f2[idx + 2];
+
+          // Temporal delta between the two frames
+          const diff = Math.abs(r1 - r2) + Math.abs(g1 - g2) + Math.abs(b1 - b2);
+          if (diff > 18) {
+            motionPixels++;
+          }
+
+          // Strict Human Skin Chrominance (YCbCr)
+          const Cb = -0.168736 * r2 - 0.331264 * g2 + 0.5 * b2 + 128;
+          const Cr = 0.5 * r2 - 0.418688 * g2 - 0.081312 * b2 + 128;
+
+          if (Cb >= 80 && Cb <= 125 && Cr >= 135 && Cr <= 170 && r2 > 50 && r2 > g2 && (r2 - g2) >= 12 && g2 > b2) {
             skinPixels++;
           }
-          count++;
+          centerSamples++;
         }
       }
-      return { detected: (skinPixels / count) >= 0.045 };
-    } catch(e) {
-      return { detected: true };
+
+      const skinRatio = skinPixels / centerSamples;
+      const motionRatio = motionPixels / centerSamples;
+
+      console.log(`[Presence Check] Skin: ${(skinRatio * 100).toFixed(1)}%, Motion: ${(motionRatio * 100).toFixed(1)}%`);
+
+      // If someone is present:
+      // Either substantial face coverage (>= 16% of center) OR living movement with skin presence (motion >= 2% and skin >= 5%)
+      if (skinRatio >= 0.16 || (skinRatio >= 0.05 && motionRatio >= 0.02)) {
+        return { detected: true };
+      }
+
+      // Empty room, chair, or background wall
+      return { detected: false };
+    } catch(err) {
+      return { detected: false };
     }
   }
 
@@ -1274,25 +1327,25 @@
       reply = "You're most welcome! That's what buddies are for!";
     }
 
-    // 2. Body Actions & Expressions
+        // 2. Body Actions & Expressions
     if (!reply) {
-      if (q.includes('can you jump') || q.includes('do a jump')) {
-        triggerJump();
+      if (q.includes('jump')) {
+        triggerJump(rawClean);
         return;
       }
       if (q.includes('run around') || q.includes('can you run')) {
         reply = "Sorry, I can't run around because I sit right on your desk, but I can jump, wiggle, and look around!";
         wiggleBot();
-      } else if (q.includes('hand up') || q.includes('hands up') || q.includes('raise your hands')) {
+      } else if (q.includes('hand up') || q.includes('hands up') || q.includes('raise your hands') || q.includes('raise hands') || q.includes('handsup')) {
         toggleHandsUp(true);
         reply = "Both hands up! Look, I'm reaching for the sky!";
-      } else if (q.includes('hands down') || q.includes('lower your hands')) {
+      } else if (q.includes('hands down') || q.includes('lower your hands') || q.includes('handsdown')) {
         toggleHandsUp(false);
         reply = "Hands back down and resting comfortably.";
-      } else if (q.includes('close your eyes') || q.includes('close eyes')) {
+      } else if (q.includes('close your eyes') || q.includes('close eyes') || q.includes('shut your eyes')) {
         closeEyes(true);
         reply = "My eyes are closed now. Resting peacefully on your desk!";
-      } else if (q.includes('open your eyes') || q.includes('open eyes')) {
+      } else if (q.includes('open your eyes') || q.includes('open eyes') || q.includes('wake up')) {
         closeEyes(false);
         reply = "My eyes are open! I'm ready to learn and play.";
       } else if (q.includes('wink')) {
@@ -1369,10 +1422,16 @@
 
     // 8. Civics & Persona
     if (!reply) {
-      if (q.includes('who are you') || q.includes('your name')) {
-        reply = "I am Charan Das, GARR Foundation's bot, developed by Dr. Venu Gopal Madhav Annamdas. I am your friendly desktop companion!";
-      } else if (q.includes('who made') || q.includes('who created') || q.includes('developer') || q.includes('venu')) {
-        reply = "I was developed by Dr. Venu Gopal Madhav Annamdas under the Gopalkrishna Advanced Rural Research Foundation (GARRF).";
+      if (q.includes('founder') || q.includes('venu') || q.includes('annamdas') || q.includes('who is your founder') || q.includes('who founded')) {
+        wiggleBot();
+        reply = "My founder and creator is Dr. Annamdas Venu Gopal Madhav, Founder, Director, and Chief Scientific Advisor of GARRF! Visit our website garrf.in for more details.";
+      } else if (q.includes('garrf') || q.includes('foundation') || q.includes('gopalkrishna advanced rural research foundation')) {
+        wiggleBot();
+        reply = "GARRF (Gopalkrishna Advanced Rural Research Foundation) is a Section 8 non-profit organization running the Dr. APJ Abdul Kalam Research Zero Funding Initiative. Visit our website garrf.in for more details.";
+      } else if (q.includes('who are you') || q.includes('your name')) {
+        reply = "I am Charan Das, GARR Foundation's desktop companion bot, developed by Dr. Annamdas Venu Gopal Madhav. Visit our website garrf.in for more details!";
+      } else if (q.includes('who made') || q.includes('who created') || q.includes('developer')) {
+        reply = "I was developed by Dr. Annamdas Venu Gopal Madhav under the Gopalkrishna Advanced Rural Research Foundation (GARRF). Visit our website garrf.in for more details.";
       } else if (q.includes('modi') || q.includes('prime minister')) {
         reply = "Narendra Modi is the Prime Minister of India, serving as the leader of the nation since May 2014.";
       } else if (q.includes('union territories') || q.includes('union territory')) {
