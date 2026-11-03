@@ -847,7 +847,9 @@
     loadedFiles: {},
     statesData: null,
     countriesData: null,
-    companionQnA: []
+    calendarData: null,
+    companionQnA: [],
+    pleasantries: []
   };
 
   let eyeColors = [
@@ -1083,70 +1085,101 @@
 
   // 8. TRUE BUDDY INTELLIGENCE & INTERACTIVE CONVERSATION ROUTER
   
-  // Real-time Optical Presence Detector (FaceDetector API + Pixel Contrast Variance)
+  // Robust Optical Presence Detector (FaceDetector API + YCbCr Skin Chrominance + Temporal Frame Delta)
+  let lastCameraFrame = null;
+
   async function detectUserPresence(videoElement) {
-    if (!videoElement || videoElement.videoWidth === 0) {
-      return { detected: false };
+    if (!videoElement || videoElement.videoWidth === 0 || videoElement.paused || videoElement.ended) {
+      return { detected: false, reason: "video_unavailable" };
     }
 
-    // 1. Native Hardware FaceDetector API (Built-in Chromium/Edge feature)
+    // 1. Hardware FaceDetector API (if enabled in browser)
     if ('FaceDetector' in window) {
       try {
         const detector = new window.FaceDetector({ fastMode: true, maxDetectedFaces: 1 });
         const faces = await detector.detect(videoElement);
         if (faces && faces.length > 0) {
-          return { detected: true, method: 'face' };
+          return { detected: true, method: 'face_detector' };
+        } else {
+          return { detected: false, method: 'face_detector_empty' };
         }
       } catch(err) {
-        // Fallback to optical frame analysis if FaceDetector flag is restricted
+        // Fall through to computer vision chrominance analysis
       }
     }
 
-    // 2. Optical Center-Frame Motion/Luminance & Edge Density Analysis
+    // 2. Optical Computer Vision: YCbCr Skin Color Cluster & Temporal Motion Detection
     try {
+      const W = 80;
+      const H = 60;
       const canvas = document.createElement('canvas');
-      canvas.width = 64;
-      canvas.height = 48;
+      canvas.width = W;
+      canvas.height = H;
       const ctx = canvas.getContext('2d');
-      ctx.drawImage(videoElement, 0, 0, 64, 48);
-      const imgData = ctx.getImageData(0, 0, 64, 48).data;
+      ctx.drawImage(videoElement, 0, 0, W, H);
+      const frame = ctx.getImageData(0, 0, W, H);
+      const data = frame.data;
 
-      let sumLum = 0;
-      let centerLum = 0;
-      let centerCount = 0;
-      let centerDiff = 0;
+      let skinPixels = 0;
+      let centerSampleCount = 0;
+      let motionDelta = 0;
 
-      // Focus on central 50% where a person sits
-      for (let y = 12; y < 36; y++) {
-        for (let x = 16; x < 48; x++) {
-          const idx = (y * 64 + x) * 4;
-          const r = imgData[idx];
-          const g = imgData[idx + 1];
-          const b = imgData[idx + 2];
-          const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-          centerLum += lum;
-          centerCount++;
+      // Scan central 60% of frame where head and face reside
+      const startX = Math.floor(W * 0.2);
+      const endX = Math.floor(W * 0.8);
+      const startY = Math.floor(H * 0.15);
+      const endY = Math.floor(H * 0.85);
+
+      for (let y = startY; y < endY; y++) {
+        for (let x = startX; x < endX; x++) {
+          const idx = (y * W + x) * 4;
+          const r = data[idx];
+          const g = data[idx + 1];
+          const b = data[idx + 2];
+
+          // Compute YCbCr
+          const Cb = -0.168736 * r - 0.331264 * g + 0.5 * b + 128;
+          const Cr = 0.5 * r - 0.418688 * g - 0.081312 * b + 128;
+
+          // Standard Universal Human Skin Chrominance Range
+          if (Cb >= 77 && Cb <= 127 && Cr >= 133 && Cr <= 173 && r > 45 && g > 35 && b > 20) {
+            // Ensure R > G > B property typical of human complexion
+            if (r > g && (r - g) >= 8) {
+              skinPixels++;
+            }
+          }
+
+          // Check temporal motion compared to previous frame
+          if (lastCameraFrame) {
+            const diff = Math.abs(r - lastCameraFrame[idx]) + 
+                         Math.abs(g - lastCameraFrame[idx + 1]) + 
+                         Math.abs(b - lastCameraFrame[idx + 2]);
+            if (diff > 25) {
+              motionDelta++;
+            }
+          }
+          centerSampleCount++;
         }
       }
-      const avgCenter = centerLum / centerCount;
 
-      // Calculate contrast variance in center
-      for (let y = 12; y < 36; y++) {
-        for (let x = 16; x < 48; x++) {
-          const idx = (y * 64 + x) * 4;
-          const lum = 0.299 * imgData[idx] + 0.587 * imgData[idx + 1] + 0.114 * imgData[idx + 2];
-          centerDiff += Math.abs(lum - avgCenter);
-        }
-      }
-      const variance = centerDiff / centerCount;
+      // Store current frame for next comparison
+      lastCameraFrame = new Uint8ClampedArray(data);
 
-      // If camera is covered, pointing at flat ceiling, or empty uniform background
-      if (avgCenter > 25 && variance > 16) {
-        return { detected: true, method: 'contrast' };
+      const skinRatio = skinPixels / centerSampleCount;
+      const motionRatio = motionDelta / centerSampleCount;
+
+      console.log(`[Presence CV] Skin Ratio: ${(skinRatio * 100).toFixed(2)}%, Motion Delta: ${(motionRatio * 100).toFixed(2)}%`);
+
+      // A person in frame typically exhibits at least 4.5% skin cluster in face/neck area
+      // OR active physical movement in front of camera
+      if (skinRatio >= 0.045 || (skinRatio >= 0.02 && motionRatio >= 0.03)) {
+        return { detected: true, skinRatio, motionRatio };
       }
-      return { detected: false, method: 'contrast' };
-    } catch(e) {
-      return { detected: true }; // Graceful fallback
+
+      return { detected: false, skinRatio, motionRatio };
+    } catch(err) {
+      console.warn("Presence detector error:", err);
+      return { detected: false };
     }
   }
 
@@ -1292,7 +1325,95 @@
       }
     }
 
-    // C. CAPITAL ROUTER (Never fails India, Telangana, USA, etc.)
+    // LIVE CLOCK, CURRENT DATE & DAY ROUTER (clock.json / calendar.json live skill)
+    if (q.includes('time now') || q.includes('current time') || q.includes('what time is it') || q.includes('what is the time')) {
+      const now = new Date();
+      reply = `The current time is ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}.`;
+      displayQA(rawClean, reply);
+      botSpeak(reply);
+      return;
+    }
+    if (q.includes('what day is today') || q.includes('which day is today') || q.includes('what day is it') || q.includes('tell me the day')) {
+      const now = new Date();
+      reply = `Today is ${now.toLocaleDateString(undefined, { weekday: 'long' })}.`;
+      displayQA(rawClean, reply);
+      botSpeak(reply);
+      return;
+    }
+    if (q.includes('date today') || q.includes('current date') || q.includes('what is the date') || q.includes('today date') || q.includes("today's date")) {
+      const now = new Date();
+      reply = `Today's date is ${now.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}.`;
+      displayQA(rawClean, reply);
+      botSpeak(reply);
+      return;
+    }
+
+        // FESTIVAL, HOLIDAY & CALENDAR ROUTER ("When is Deepavali / Diwali?")
+    if (q.includes('diwali') || q.includes('deepavali') || q.includes('when is') || q.includes('date of') || q.includes('festival') || q.includes('holiday')) {
+      // 1. Search uploaded friend/calendar.json
+      if (friendDB.calendarData) {
+        // Form A: Array of events
+        const eventList = Array.isArray(friendDB.calendarData) 
+          ? friendDB.calendarData 
+          : (friendDB.calendarData.events || friendDB.calendarData.festivals || friendDB.calendarData.holidays || []);
+
+        if (Array.isArray(eventList) && eventList.length > 0) {
+          for (const ev of eventList) {
+            const evName = (ev.name || ev.event || ev.festival || ev.title || "").toLowerCase();
+            if (evName && (q.includes(evName) || (evName.includes('diwali') && (q.includes('diwali') || q.includes('deepavali'))))) {
+              reply = `According to our calendar database, ${ev.name || ev.event || ev.festival || 'Deepavali'} is on ${ev.date || ev.day || 'the scheduled date'}. ${ev.description || ''}`.trim();
+              break;
+            }
+          }
+        } else if (typeof friendDB.calendarData === 'object') {
+          // Form B: Direct key-value object
+          for (const [key, val] of Object.entries(friendDB.calendarData)) {
+            const k = key.toLowerCase();
+            if (q.includes(k) || ((k.includes('diwali') || k.includes('deepavali')) && (q.includes('diwali') || q.includes('deepavali')))) {
+              const dateVal = typeof val === 'object' ? (val.date || JSON.stringify(val)) : val;
+              reply = `According to our calendar, ${key} is on ${dateVal}.`;
+              break;
+            }
+          }
+        }
+      }
+
+      // 2. Search friendDB.companionQnA (25k dataset / 1000 QA)
+      if (!reply && friendDB.companionQnA.length > 0) {
+        const targetWord = (q.includes('diwali') || q.includes('deepavali')) ? 'diwali' : '';
+        for (const item of friendDB.companionQnA) {
+          const prompt = (item.instruction || item.prompt || item.q || "").toLowerCase();
+          if (targetWord && (prompt.includes('diwali') || prompt.includes('deepavali'))) {
+            reply = item.output || item.response || item.a || "";
+            break;
+          } else if (prompt && (prompt.includes(q) || q.includes(prompt))) {
+            reply = item.output || item.response || item.a || "";
+            break;
+          }
+        }
+      }
+
+      // 3. Built-in Indian Festivals & Holidays Engine
+      if (!reply) {
+        if (q.includes('deepavali') || q.includes('diwali')) {
+          reply = "Deepavali (Diwali), the festival of lights, falls in the autumn month of Kartika (October/November). In 2026, Deepavali is celebrated on Sunday, November 8, 2026!";
+        } else if (q.includes('sankranti') || q.includes('pongal')) {
+          reply = "Makar Sankranti and Pongal, the harvest festival, is celebrated every year on January 14th.";
+        } else if (q.includes('holi')) {
+          reply = "Holi, the vibrant festival of colors, falls in March (Phalguna Purnima). In 2026, Holi is celebrated on March 3, 2026!";
+        } else if (q.includes('dussehra') || q.includes('dasara') || q.includes('vijayadashami')) {
+          reply = "Dussehra (Vijayadashami) marks the triumph of good over evil, celebrated in October following Navratri. In 2026, Dussehra is celebrated on October 20, 2026!";
+        } else if (q.includes('independence day')) {
+          reply = "India's Independence Day is celebrated annually on August 15th.";
+        } else if (q.includes('republic day')) {
+          reply = "India's Republic Day is celebrated annually on January 26th.";
+        } else if (q.includes('gandhi jayanti')) {
+          reply = "Gandhi Jayanti is observed annually on October 2nd.";
+        }
+      }
+    }
+
+        // C. CAPITAL ROUTER (Never fails India, Telangana, USA, etc.)
     else if (q.includes('capital')) {
       if (q.includes('india')) {
         reply = "The capital of India is New Delhi.";
@@ -1366,7 +1487,35 @@
       } catch(e){}
     }
 
-    // Friendly Conversational Fallback
+    // GENERAL KNOWLEDGE SEARCH ACROSS LOADED DATASETS (charan_das_true_buddy_25k.jsonl & companion_conversations_1000.json)
+    if (!reply && friendDB.companionQnA.length > 0) {
+      const qTokens = q.split(' ').filter(w => w.length > 2 && !['what', 'when', 'where', 'which', 'who', 'how', 'the', 'tell'].includes(w));
+      let bestItem = null;
+      let maxScore = 0;
+
+      for (let i = 0; i < friendDB.companionQnA.length; i++) {
+        const item = friendDB.companionQnA[i];
+        const p = (item.instruction || item.prompt || item.q || "").toLowerCase();
+        if (!p) continue;
+
+        let score = 0;
+        for (const token of qTokens) {
+          if (p.includes(token)) score++;
+        }
+
+        if (score > maxScore) {
+          maxScore = score;
+          bestItem = item;
+          if (maxScore >= 3) break; // High confidence match
+        }
+      }
+
+      if (bestItem && maxScore >= Math.max(1, Math.min(2, qTokens.length))) {
+        reply = bestItem.output || bestItem.response || bestItem.a || "";
+      }
+    }
+
+        // Friendly Conversational Fallback
     if (!reply) {
       reply = "I hear you, my friend! You can tell me more about your thoughts, ask about capitals or currencies, have me jump, or raise my hands!";
     }
@@ -1511,6 +1660,9 @@
         if (filename.includes('countries')) friendDB.countriesData = data;
         if (filename.includes('pleasantries')) {
           friendDB.pleasantries = Array.isArray(data) ? data : (data.pleasantries || []);
+        }
+        if (filename.includes('calendar')) {
+          friendDB.calendarData = data;
         }
         if (filename.includes('companion_conversations')) {
           const arr = Array.isArray(data) ? data : (data.conversations || []);
