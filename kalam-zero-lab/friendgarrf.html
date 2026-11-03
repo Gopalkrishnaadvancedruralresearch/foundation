@@ -1025,13 +1025,99 @@
   }
 
   // 8. TRUE BUDDY INTELLIGENCE & INTERACTIVE CONVERSATION ROUTER
-  function handleBotInteraction(rawText) {
+  
+  // Real-time Optical Presence Detector (FaceDetector API + Pixel Contrast Variance)
+  async function detectUserPresence(videoElement) {
+    if (!videoElement || videoElement.videoWidth === 0) {
+      return { detected: false };
+    }
+
+    // 1. Native Hardware FaceDetector API (Built-in Chromium/Edge feature)
+    if ('FaceDetector' in window) {
+      try {
+        const detector = new window.FaceDetector({ fastMode: true, maxDetectedFaces: 1 });
+        const faces = await detector.detect(videoElement);
+        if (faces && faces.length > 0) {
+          return { detected: true, method: 'face' };
+        }
+      } catch(err) {
+        // Fallback to optical frame analysis if FaceDetector flag is restricted
+      }
+    }
+
+    // 2. Optical Center-Frame Motion/Luminance & Edge Density Analysis
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = 64;
+      canvas.height = 48;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(videoElement, 0, 0, 64, 48);
+      const imgData = ctx.getImageData(0, 0, 64, 48).data;
+
+      let sumLum = 0;
+      let centerLum = 0;
+      let centerCount = 0;
+      let centerDiff = 0;
+
+      // Focus on central 50% where a person sits
+      for (let y = 12; y < 36; y++) {
+        for (let x = 16; x < 48; x++) {
+          const idx = (y * 64 + x) * 4;
+          const r = imgData[idx];
+          const g = imgData[idx + 1];
+          const b = imgData[idx + 2];
+          const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+          centerLum += lum;
+          centerCount++;
+        }
+      }
+      const avgCenter = centerLum / centerCount;
+
+      // Calculate contrast variance in center
+      for (let y = 12; y < 36; y++) {
+        for (let x = 16; x < 48; x++) {
+          const idx = (y * 64 + x) * 4;
+          const lum = 0.299 * imgData[idx] + 0.587 * imgData[idx + 1] + 0.114 * imgData[idx + 2];
+          centerDiff += Math.abs(lum - avgCenter);
+        }
+      }
+      const variance = centerDiff / centerCount;
+
+      // If camera is covered, pointing at flat ceiling, or empty uniform background
+      if (avgCenter > 25 && variance > 16) {
+        return { detected: true, method: 'contrast' };
+      }
+      return { detected: false, method: 'contrast' };
+    } catch(e) {
+      return { detected: true }; // Graceful fallback
+    }
+  }
+
+  async function handleBotInteraction(rawText) {
     const rawClean = rawText.trim();
     const q = rawClean.toLowerCase().replace(/[\?\.\,\!\:\;"]/g, ' ').replace(/\s+/g, ' ').trim();
     
     let reply = "";
 
-    // A. PHYSICAL CAPABILITIES & BODY COMMANDS
+    // A. VISION & PRESENCE DETECTION ("Can you see me?")
+    if (q.includes('can you see me') || q.includes('do you see me') || q.includes('see me')) {
+      const video = document.getElementById('webcamVideo');
+      const isCameraLive = gazeActive && video && video.srcObject && video.srcObject.active;
+
+      if (!isCameraLive) {
+        reply = "No, I cannot see you. Your camera is turned off! Please click 'Gaze Track' below so I can see you.";
+      } else {
+        // Camera is ON: check if user is physically in front of lens or away with headphones
+        const presence = await detectUserPresence(video);
+        if (presence.detected) {
+          wiggleBot();
+          reply = "Yes, I can see you right there at your desk!";
+        } else {
+          reply = "No, I can't see you right now. I can hear your voice through your headphones, but you seem to be away from the desk!";
+        }
+      }
+    }
+    else // A. PHYSICAL CAPABILITIES & BODY COMMANDS
     if (q.includes('can you jump') || q.includes('do a jump')) {
       triggerJump();
       return;
