@@ -1439,10 +1439,99 @@
     showCustomModal("📁 Friend DB Knowledge Architecture", content);
   }
 
+    // --- GITHUB & LOCAL FRIEND DB KNOWLEDGE ENGINE ---
+  window.addEventListener('DOMContentLoaded', () => {
+    attemptAutoFetchFriendFolder();
+  });
+
+  // 1. Automatic GitHub Pages relative fetch from ./friend/
+  async function attemptAutoFetchFriendFolder() {
+    let successCount = 0;
+    // Determine base path for GitHub Pages subfolder repositories
+    const basePath = window.location.pathname.endsWith('/') 
+      ? window.location.pathname 
+      : window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+
+    for (const filename of FRIEND_FILES) {
+      try {
+        // Try relative path from repository root
+        const targetUrl = `./friend/${filename}`;
+        const resp = await fetch(targetUrl);
+        if (resp.ok) {
+          const text = await resp.text();
+          ingestDatabaseFile(filename, text);
+          successCount++;
+        }
+      } catch (err) {
+        // file:/// or CORS failure in local browser; falls back to manual folder picker
+      }
+    }
+
+    if (successCount > 0) {
+      finalizeDbConnection(successCount, "Auto-connected via GitHub repository (./friend/)");
+    }
+  }
+
+  // 2. Local folder picker fallback for offline/local desktop users
   function handleFolderSelect(e) {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    let count = 0;
+    Array.from(files).forEach(file => {
+      const match = FRIEND_FILES.find(f => file.name.endsWith(f));
+      if (match) {
+        const reader = new FileReader();
+        reader.onload = (re) => {
+          ingestDatabaseFile(match, re.target.result);
+          count++;
+          finalizeDbConnection(count, `Connected via local friend folder (${count} files synced)`);
+        };
+        reader.readAsText(file);
+      }
+    });
     closeModal();
-    displayQA("Friend DB", "Local friend database files linked successfully!");
-    botSpeak("Friend database synchronized!");
+  }
+
+  // 3. Ingest and parse files into live memory
+  function ingestDatabaseFile(filename, text) {
+    friendDB.loadedFiles[filename] = true;
+    try {
+      if (filename.endsWith('.jsonl')) {
+        const lines = text.trim().split('\n');
+        for (let i = 0; i < Math.min(lines.length, 10000); i++) {
+          try {
+            const row = JSON.parse(lines[i]);
+            friendDB.companionQnA.push(row);
+          } catch(e){}
+        }
+      } else if (filename.endsWith('.json')) {
+        const data = JSON.parse(text);
+        if (filename.includes('india_states')) friendDB.statesData = data;
+        if (filename.includes('countries')) friendDB.countriesData = data;
+        if (filename.includes('pleasantries')) {
+          friendDB.pleasantries = Array.isArray(data) ? data : (data.pleasantries || []);
+        }
+        if (filename.includes('companion_conversations')) {
+          const arr = Array.isArray(data) ? data : (data.conversations || []);
+          friendDB.companionQnA.push(...arr);
+        }
+      }
+    } catch(err) {
+      console.warn("Parse warning:", filename, err);
+    }
+  }
+
+  // 4. Unlock bot and update status
+  function finalizeDbConnection(count, msg) {
+    friendDB.connected = true;
+    const badge = document.getElementById('dbIndicator');
+    if (badge) {
+      badge.className = "db-status-badge db-connected";
+      badge.innerText = `✓ Friend DB: Connected (${Object.keys(friendDB.loadedFiles).length}/8 Files)`;
+    }
+    displayQA("Friend DB", `Friend Database connected successfully (${count} files synced)! I am now unlocked and ready. How was your day?`);
+    botSpeak("Friend Database connected! I am unlocked and ready. How was your day?");
   }
 
   function showCustomModal(title, content) {
