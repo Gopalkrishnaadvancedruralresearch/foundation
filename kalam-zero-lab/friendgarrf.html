@@ -787,7 +787,7 @@
   </div>
 </main>
 
-<!-- Bottom Dock (Cleaned - Removed manual folder picker button) -->
+<!-- Bottom Dock -->
 <footer class="bottom-dock">
   <button class="dock-btn" id="gazeBtn" onclick="toggleGazeTrack()">
     <span>📷 Gaze Track</span>
@@ -861,7 +861,7 @@
   ];
 
   let friendDB = {
-    connected: true, // Always unlocked and active!
+    connected: true,
     loadedFiles: {},
     statesData: null,
     countriesData: null,
@@ -937,7 +937,6 @@
   ];
   let eyeColorIdx = 0;
 
-  // Auto-fetch from github friend/ folder quietly in background
   window.addEventListener('DOMContentLoaded', () => {
     attemptAutoFetch();
   });
@@ -981,7 +980,6 @@
     } catch(err) {}
   }
 
-  // 3D Mouse Drag & Zoom Engine
   const dragStage = document.getElementById('dragStage');
   const botScene = document.getElementById('botScene');
 
@@ -1029,7 +1027,6 @@
     update3DTransform();
   }
 
-  // Eye Routines
   function livingEyeMovement() {
     if (!gazeActive) {
       const pL = document.getElementById('pupilL');
@@ -1067,7 +1064,7 @@
 
   function winkEye(side = 'right') {
     const target = side === 'left' ? document.getElementById('eyeL') : document.getElementById('eyeR');
-    const other = side === 'left' ? document.getElementById('eyeR') : document.getElementById('eyeL');
+    const other = side === 'left' ? document.getElementById('eyeR' ) : document.getElementById('eyeL');
     target.style.transform = 'scaleY(0.08)';
     other.style.transform = 'scaleY(1.15)';
     const head = document.getElementById('botHead');
@@ -1079,8 +1076,7 @@
     }, 900);
   }
 
-  // Physical Actions
-    function triggerJump(customPrompt) {
+  function triggerJump(customPrompt) {
     const b = document.getElementById('botWrapper');
     b.classList.remove('jumping');
     void b.offsetWidth;
@@ -1114,7 +1110,6 @@
     wiggleBot();
   }
 
-  // Gaze Tracking
   function trackGaze(x, y) {
     const pL = document.getElementById('pupilL');
     const pR = document.getElementById('pupilR');
@@ -1152,7 +1147,6 @@
     }
   }
 
-  // Continuous Mic
   function toggleContinuousMic() {
     const btn = document.getElementById('micBtn');
     if (!continuousMicActive) {
@@ -1210,29 +1204,22 @@
     document.getElementById('replyText').innerText = answer;
   }
 
-  // Vision Presence Detector
-  // Ultra-Accurate Optical Presence Detector (Hardware FaceDetector + 2-Frame Temporal Motion + Strict Skin Chrominance)
   async function detectUserPresence(videoElement) {
     if (!videoElement || videoElement.videoWidth === 0 || videoElement.paused || videoElement.ended) {
       return { detected: false };
     }
-
-    // 1. Hardware FaceDetector API (Chromium / Edge / Modern Android)
     if ('FaceDetector' in window) {
       try {
         const detector = new window.FaceDetector({ fastMode: true, maxDetectedFaces: 1 });
         const faces = await detector.detect(videoElement);
         if (faces && faces.length > 0) {
-          return { detected: true, method: 'face_api' };
+          return { detected: true };
         } else {
-          return { detected: false, method: 'face_api_none' };
+          return { detected: false };
         }
-      } catch(e) {
-        // Fall back to computer vision
-      }
+      } catch(e) {}
     }
 
-    // 2. Two-Frame Temporal Motion & Coherent Skin Cluster Analysis
     try {
       const W = 64;
       const H = 48;
@@ -1241,14 +1228,11 @@
       canvas.height = H;
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
-      // Frame 1
       ctx.drawImage(videoElement, 0, 0, W, H);
       const f1 = ctx.getImageData(0, 0, W, H).data;
 
-      // Wait 160ms to detect living human micro-movement (breathing, face jitter, head motion)
-      await new Promise(r => setTimeout(r, 160));
+      await new Promise(r => setTimeout(r, 200));
 
-      // Frame 2
       ctx.drawImage(videoElement, 0, 0, W, H);
       const f2 = ctx.getImageData(0, 0, W, H).data;
 
@@ -1256,24 +1240,26 @@
       let skinPixels = 0;
       let centerSamples = 0;
 
-      // Analyze center 60% of viewport
-      for (let y = 8; y < 40; y++) {
-        for (let x = 12; x < 52; x++) {
+      const startX = Math.floor(W * 0.3);
+      const endX = Math.floor(W * 0.7);
+      const startY = Math.floor(H * 0.2);
+      const endY = Math.floor(H * 0.8);
+
+      for (let y = startY; y < endY; y++) {
+        for (let x = startX; x < endX; x++) {
           const idx = (y * W + x) * 4;
           const r1 = f1[idx], g1 = f1[idx + 1], b1 = f1[idx + 2];
           const r2 = f2[idx], g2 = f2[idx + 1], b2 = f2[idx + 2];
 
-          // Temporal delta between the two frames
           const diff = Math.abs(r1 - r2) + Math.abs(g1 - g2) + Math.abs(b1 - b2);
-          if (diff > 18) {
+          if (diff > 35) {
             motionPixels++;
           }
 
-          // Strict Human Skin Chrominance (YCbCr)
           const Cb = -0.168736 * r2 - 0.331264 * g2 + 0.5 * b2 + 128;
           const Cr = 0.5 * r2 - 0.418688 * g2 - 0.081312 * b2 + 128;
 
-          if (Cb >= 80 && Cb <= 125 && Cr >= 135 && Cr <= 170 && r2 > 50 && r2 > g2 && (r2 - g2) >= 12 && g2 > b2) {
+          if (Cb >= 85 && Cb <= 122 && Cr >= 138 && Cr <= 168 && r2 > 60 && r2 > g2 && (r2 - g2) >= 15 && g2 > b2) {
             skinPixels++;
           }
           centerSamples++;
@@ -1283,28 +1269,20 @@
       const skinRatio = skinPixels / centerSamples;
       const motionRatio = motionPixels / centerSamples;
 
-      console.log(`[Presence Check] Skin: ${(skinRatio * 100).toFixed(1)}%, Motion: ${(motionRatio * 100).toFixed(1)}%`);
-
-      // If someone is present:
-      // Either substantial face coverage (>= 16% of center) OR living movement with skin presence (motion >= 2% and skin >= 5%)
-      if (skinRatio >= 0.16 || (skinRatio >= 0.05 && motionRatio >= 0.02)) {
+      if (skinRatio >= 0.08 && motionRatio >= 0.015) {
         return { detected: true };
       }
-
-      // Empty room, chair, or background wall
       return { detected: false };
     } catch(err) {
       return { detected: false };
     }
   }
 
-  // Main Comprehensive Chat Router
   async function handleBotInteraction(rawText) {
     const rawClean = rawText.trim();
     const q = rawClean.toLowerCase().replace(/[\?\.\,\!\:\;"]/g, ' ').replace(/\s+/g, ' ').trim();
     let reply = "";
 
-    // 1. Pleasantries & Greetings
     if (q === 'hi' || q === 'hello' || q === 'hey' || q === 'hi buddy' || q === 'hello buddy' || q === 'hey charan das') {
       wiggleBot();
       const list = [
@@ -1327,7 +1305,6 @@
       reply = "You're most welcome! That's what buddies are for!";
     }
 
-        // 2. Body Actions & Expressions
     if (!reply) {
       if (q.includes('jump')) {
         triggerJump(rawClean);
@@ -1358,7 +1335,6 @@
       }
     }
 
-    // 3. Vision & Presence
     if (!reply && (q.includes('can you see me') || q.includes('do you see me') || q.includes('see me'))) {
       const video = document.getElementById('webcamVideo');
       const isCameraLive = gazeActive && video && video.srcObject && video.srcObject.active;
@@ -1375,7 +1351,6 @@
       }
     }
 
-    // 4. Live Clock, Day & Date
     if (!reply) {
       if (q.includes('time now') || q.includes('current time') || q.includes('what time is it') || q.includes('what is the time')) {
         const now = new Date();
@@ -1389,27 +1364,66 @@
       }
     }
 
-    // 5. Currency Engine (Singapore, UK, USA, Japan, India, etc.)
-    if (!reply && (q.includes('currency') || q.includes('money of'))) {
-      for (const [country, curVal] of Object.entries(BUILTIN_CURRENCIES)) {
-        if (q.includes(country)) {
-          reply = `The currency of ${country.toUpperCase()} is the ${curVal}.`;
-          break;
-        }
-      }
-    }
-
-    // 6. Capital Cities Engine
+    // Capital Cities & States (Assam, Telangana, USA, UK, Europe, etc.)
     if (!reply && q.includes('capital')) {
-      for (const [place, cap] of Object.entries(BUILTIN_CAPITALS)) {
-        if (q.includes(place)) {
-          reply = `The capital of ${place.toUpperCase()} is ${cap}.`;
-          break;
+      if (friendDB.statesData) {
+        const sList = Array.isArray(friendDB.statesData) ? friendDB.statesData : (friendDB.statesData.states || []);
+        for (const s of sList) {
+          const sName = (s.name || s.state || "").toLowerCase();
+          if (sName && q.includes(sName)) {
+            reply = `The capital of ${s.name || s.state} is ${s.capital}.`;
+            break;
+          }
+        }
+      }
+      if (!reply && friendDB.countriesData) {
+        const cList = Array.isArray(friendDB.countriesData) ? friendDB.countriesData : (friendDB.countriesData.countries || Object.values(friendDB.countriesData));
+        for (const c of cList) {
+          const cName = (c.name || c.country || "").toLowerCase();
+          const aliases = c.aliases || [];
+          const matchAlias = aliases.some(a => q.includes(a.toLowerCase()));
+          if ((cName && q.includes(cName)) || matchAlias) {
+            reply = `The capital of ${c.name || c.country} is ${c.capital}.`;
+            break;
+          }
+        }
+      }
+      if (!reply) {
+        for (const [place, cap] of Object.entries(BUILTIN_CAPITALS)) {
+          if (q.includes(place)) {
+            reply = `The capital of ${place.toUpperCase()} is ${cap}.`;
+            break;
+          }
         }
       }
     }
 
-    // 7. Festivals & Calendar (Deepavali, Diwali, Sankranti, Holi, etc.)
+    // Currency Engine (Singapore, UK, Germany, Poland, Europe, etc.)
+    if (!reply && (q.includes('currency') || q.includes('money of'))) {
+      if (friendDB.countriesData) {
+        const cList = Array.isArray(friendDB.countriesData) ? friendDB.countriesData : (friendDB.countriesData.countries || Object.values(friendDB.countriesData));
+        for (const c of cList) {
+          const cName = (c.name || c.country || "").toLowerCase();
+          const aliases = c.aliases || [];
+          const matchAlias = aliases.some(a => q.includes(a.toLowerCase()));
+          if ((cName && q.includes(cName)) || matchAlias) {
+            const curr = c.currency || c.money || c.code;
+            const sym = c.symbol ? ` (symbol: ${c.symbol})` : '';
+            reply = `The currency of ${c.name || c.country} is the ${curr}${sym}.`;
+            break;
+          }
+        }
+      }
+      if (!reply) {
+        for (const [countryKey, currencyVal] of Object.entries(BUILTIN_CURRENCIES)) {
+          if (q.includes(countryKey)) {
+            reply = `The currency of ${countryKey.toUpperCase()} is the ${currencyVal}.`;
+            break;
+          }
+        }
+      }
+    }
+
     if (!reply && (q.includes('deepavali') || q.includes('diwali') || q.includes('when is') || q.includes('festival'))) {
       if (q.includes('deepavali') || q.includes('diwali')) {
         reply = "Deepavali (Diwali), the festival of lights, falls in the autumn month of Kartika. In 2026, Deepavali is celebrated on Sunday, November 8, 2026!";
@@ -1420,7 +1434,6 @@
       }
     }
 
-    // 8. Civics & Persona
     if (!reply) {
       if (q.includes('founder') || q.includes('venu') || q.includes('annamdas') || q.includes('who is your founder') || q.includes('who founded')) {
         wiggleBot();
@@ -1441,7 +1454,6 @@
       }
     }
 
-    // 9. Scientific Calculator (+, -, *, /, %, sqrt, sin, cos)
     if (!reply) {
       if (q.includes('sqrt') || q.includes('square root')) {
         const m = q.match(/(\d+(\.\d+)?)/);
@@ -1457,7 +1469,16 @@
       }
     }
 
-    // 10. 3-Tier Matcher across 25k Dataset & 1000 Dialogues
+    if (!reply && (q.includes('bad day') || q.includes('boss') || q.includes('sad') || q.includes('mad') || q.includes('troubling') || q.includes('upset') || q.includes('stress') || q.includes('depressed') || q.includes('hate my job') || q.includes('annoying'))) {
+      wiggleBot();
+      const empatheticReplies = [
+        "Oh no! I'm so sorry your boss is giving you a hard time today. Take a deep breath—you don't have to carry that heavy stress alone. Do you want to vent about what happened?",
+        "That sounds really frustrating and unfair. I'm right here with you on your desk. Remember to breathe and take it one moment at a time!",
+        "Work stress can be so draining. You're working so hard, and you deserve respect. Want to talk about it or take a quick mental break?"
+      ];
+      reply = empatheticReplies[Math.floor(Math.random() * empatheticReplies.length)];
+    }
+
     if (!reply && friendDB.companionQnA.length > 0) {
       const cleanInput = q.replace(/[^a-z0-9 ]/g, '').trim();
       for (let i = 0; i < friendDB.companionQnA.length; i++) {
@@ -1470,7 +1491,6 @@
       }
     }
 
-    // Final Fallback
     if (!reply) {
       reply = "I hear you, my friend! You can ask me math questions, world capitals or currencies, test my vision, or have me jump and wink!";
     }
