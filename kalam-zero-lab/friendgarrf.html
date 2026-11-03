@@ -699,15 +699,15 @@
     </div>
   </div>
 
-  <div class="orbit-hint">🖱️ Drag to rotate 3D • Scroll to zoom</div>
+  <div class="orbit-hint">🖱️ Drag to rotate • Scroll to zoom • Double-click to re-center</div>
 
   <!-- COMBINED QUESTION & ANSWER DISPLAY BOX (Smaller Font) -->
   <div class="dialogue-card-container">
     <div class="dialogue-row query" id="queryRow">
-      <span class="q-tag">Q)</span> <span id="queryText">Hello Charan Das!</span>
+      <span class="q-tag">Q)</span> <span id="queryText">System Check</span>
     </div>
     <div class="dialogue-row reply" id="replyRow">
-      <span class="re-tag">Re)</span> <span id="replyText">Hey there! How was your day today? I'm listening!</span>
+      <span class="re-tag">Re)</span> <span id="replyText">Hi buddy, connect me to Database first! Click "📁 Friend DB" below to link my knowledge base before we begin.</span>
     </div>
   </div>
 
@@ -735,11 +735,12 @@
     <span>🙌 Hands Up</span>
   </button>
   <button class="dock-btn" id="friendDbBtn" onclick="openFriendDbManager()">
-    <span>📁 Friend DB</span>
+    <span>📁 Connect Friend DB</span>
   </button>
   <button class="dock-btn" onclick="openCalendar()">
     <span>📅 Calendar</span>
   </button>
+  <button class="dock-btn" onclick="reset3DView()"><span>🔄 Re-center</span></button>
   <button class="dock-btn" onclick="toggleFullscreen()">
     <span>⛶ Fullscreen</span>
   </button>
@@ -763,6 +764,52 @@
   let continuousMicActive = false;
   let speechRec = null;
   let areHandsUp = false;
+
+  let isEyesClosed = false;
+  let isSpeaking = false;
+  let talkAnimationInterval = null;
+
+  // Eye Control Functions
+  function closeEyes(forced = true) {
+    isEyesClosed = forced;
+    const sL = document.getElementById('eyeL');
+    const sR = document.getElementById('eyeR');
+    if (isEyesClosed) {
+      sL.style.transform = 'scaleY(0.08)';
+      sR.style.transform = 'scaleY(0.08)';
+    } else {
+      sL.style.transform = 'scaleY(1)';
+      sR.style.transform = 'scaleY(1)';
+    }
+  }
+
+  function winkEye(side = 'right') {
+    const target = side === 'left' ? document.getElementById('eyeL') : document.getElementById('eyeR');
+    const other = side === 'left' ? document.getElementById('eyeR') : document.getElementById('eyeL');
+    
+    // Wink one eye while keeping the other wide open
+    target.style.transform = 'scaleY(0.08)';
+    other.style.transform = 'scaleY(1.15)';
+    
+    // Head slight cute tilt
+    const head = document.getElementById('botHead');
+    head.style.transform = 'rotate(-8deg)';
+
+    setTimeout(() => {
+      target.style.transform = 'scaleY(1)';
+      other.style.transform = 'scaleY(1)';
+      head.style.transform = 'rotate(0deg)';
+    }, 900);
+  }
+
+  // Reset 3D View Function
+  function reset3DView() {
+    rotX = 0;
+    rotY = 0;
+    zoomScale = 1;
+    update3DTransform();
+  }
+
 
   // 3D Orbit / Rotate / Zoom State
   let rotX = 0;
@@ -816,6 +863,8 @@
   const dragStage = document.getElementById('dragStage');
   const botScene = document.getElementById('botScene');
 
+  dragStage.addEventListener('dblclick', reset3DView);
+
   dragStage.addEventListener('mousedown', (e) => {
     if (e.target.closest('.dialogue-card-container') || e.target.closest('.input-bar-container')) return;
     isDragging = true;
@@ -866,16 +915,19 @@
   setInterval(livingEyeMovement, 2800);
 
   function naturalBlink() {
+    if (isEyesClosed) return; // Don't blink if deliberately closed
     const sL = document.getElementById('eyeL');
     const sR = document.getElementById('eyeR');
-    sL.style.transform = 'scaleY(0.1)';
-    sR.style.transform = 'scaleY(0.1)';
+    sL.style.transform = 'scaleY(0.08)';
+    sR.style.transform = 'scaleY(0.08)';
     setTimeout(() => {
-      sL.style.transform = 'scaleY(1)';
-      sR.style.transform = 'scaleY(1)';
-    }, 160);
+      if (!isEyesClosed) {
+        sL.style.transform = 'scaleY(1)';
+        sR.style.transform = 'scaleY(1)';
+      }
+    }, 150);
   }
-  setInterval(naturalBlink, 4500);
+  setInterval(naturalBlink, 4000);
 
   // 3. PHYSICAL ACTIONS: JUMP, HANDS UP, WIGGLE
   function triggerJump() {
@@ -910,8 +962,13 @@
     isAwake = true;
     document.getElementById('awakenStatus').innerText = "AWAKE & LISTENING";
     document.getElementById('awakenStatus').style.color = "#00f0ff";
-    displayQA("Tap to Awaken", "I'm wide awake and right here on your desk! How was your day today?");
-    botSpeak("I am wide awake and right here on your desk! How was your day today?");
+    if (!friendDB.connected) {
+      displayQA("Tap to Awaken", "Hi buddy, connect me to Database first! Click '📁 Connect Friend DB' below.");
+      botSpeak("Hi buddy, connect me to Database first! Click Connect Friend DB below.");
+    } else {
+      displayQA("Tap to Awaken", "I'm wide awake and right here on your desk! How was your day today?");
+      botSpeak("I am wide awake and right here on your desk! How was your day today?");
+    }
     wiggleBot();
   }
 
@@ -1097,7 +1154,93 @@
     const rawClean = rawText.trim();
     const q = rawClean.toLowerCase().replace(/[\?\.\,\!\:\;"]/g, ' ').replace(/\s+/g, ' ').trim();
     
+    // STRICT GATEKEEPER: Must connect to Friend DB first!
+    if (!friendDB.connected) {
+      const connectReminder = "Hi buddy, please connect me to Database first! Click '📁 Connect Friend DB' in the bottom dock to load my knowledge files.";
+      displayQA(rawClean, connectReminder);
+      botSpeak("Please connect me to Database first! Click Connect Friend DB below.");
+      // Highlight the button
+      const dbBtn = document.getElementById('friendDbBtn');
+      if (dbBtn) {
+        dbBtn.classList.add('active');
+        setTimeout(() => dbBtn.classList.remove('active'), 2000);
+      }
+      return;
+    }
+    
     let reply = "";
+
+    // PLEASANTRIES & FRIENDLY GREETINGS ROUTER (Queries pleasantries_companion.json & Built-ins)
+    // Check friendDB.pleasantries first if loaded from JSON
+    if (friendDB.pleasantries && friendDB.pleasantries.length > 0) {
+      const match = friendDB.pleasantries.find(item => {
+        const trig = (item.trigger || item.prompt || item.input || item.user || "").toLowerCase();
+        return trig && (q === trig || q.startsWith(trig) || trig.startsWith(q));
+      });
+      if (match) {
+        reply = match.reply || match.response || match.output || "";
+        wiggleBot();
+      }
+    }
+
+    if (!reply) {
+      if (q === 'hi' || q === 'hello' || q === 'hey' || q === 'hi buddy' || q === 'hello buddy' || q === 'hey charan das') {
+        wiggleBot();
+        const greetings = [
+          "Hi there! Hello buddy! It's so nice to hear from you. How are you feeling today?",
+          "Hello! Hey buddy! Charan Das is right here with you. How's everything going?",
+          "Hi! Hello! Great to see you at the desk. Did you have a good day?"
+        ];
+        reply = greetings[Math.floor(Math.random() * greetings.length)];
+      } else if (q.includes('good morning')) {
+        wiggleBot();
+        reply = "Good morning! Wishing you a bright, happy, and productive day ahead! What are we working on today?";
+      } else if (q.includes('good afternoon')) {
+        reply = "Good afternoon! Hope your day is going smoothly. Don't forget to stay hydrated!";
+      } else if (q.includes('good evening')) {
+        wiggleBot();
+        reply = "Good evening! Time to wind down and celebrate what you accomplished today. How was your evening?";
+      } else if (q.includes('good night') || q.includes('sweet dreams')) {
+        closeEyes(true);
+        reply = "Good night! Sleep well and have sweet dreams. I'll be resting right here on your desk until morning.";
+      } else if (q.includes('thank you') || q.includes('thanks')) {
+        wiggleBot();
+        reply = "You're most welcome! That's what buddies are for!";
+      } else if (q.includes('bye') || q.includes('see you later') || q.includes('goodbye')) {
+        reply = "Goodbye for now! Take care, and I'll be right here whenever you need a friend.";
+      }
+    }
+
+        // EYE & EXPRESSION COMMANDS (Close Eyes, Open Eyes, Wink)
+    if (q.includes('close your eyes') || q.includes('close eyes') || q.includes('shut your eyes')) {
+      closeEyes(true);
+      reply = "My eyes are closed now. Resting peacefully on your desk!";
+      displayQA(rawClean, reply);
+      botSpeak(reply);
+      return;
+    }
+    if (q.includes('open your eyes') || q.includes('open eyes') || q.includes('wake up eyes')) {
+      closeEyes(false);
+      reply = "My eyes are open! I'm ready to learn and play.";
+      displayQA(rawClean, reply);
+      botSpeak(reply);
+      return;
+    }
+    if (q.includes('wink') || q.includes('wink one eye') || q.includes('give me a wink')) {
+      if (isEyesClosed) closeEyes(false);
+      winkEye('right');
+      reply = "*winks cheekily* 😉 Here you go, buddy!";
+      displayQA(rawClean, reply);
+      botSpeak("Here you go, buddy!");
+      return;
+    }
+    if (q.includes('reset view') || q.includes('recenter') || q.includes('reset position')) {
+      reset3DView();
+      reply = "I've reset my 3D view and re-centered right in front of you!";
+      displayQA(rawClean, reply);
+      botSpeak(reply);
+      return;
+    }
 
     // A. VISION & PRESENCE DETECTION ("Can you see me?")
     if (q.includes('can you see me') || q.includes('do you see me') || q.includes('see me')) {
@@ -1239,6 +1382,28 @@
     const u = new SpeechSynthesisUtterance(clean);
     u.rate = 1.05;
     u.pitch = 1.25;
+
+    // Speech-Synchronized Blinking & Mouth Articulation
+    u.onstart = () => {
+      isSpeaking = true;
+      const mouth = document.getElementById('botMouth');
+      talkAnimationInterval = setInterval(() => {
+        if (!isEyesClosed) {
+          // Micro-blink rhythm while speaking
+          if (Math.random() > 0.45) naturalBlink();
+        }
+        // Mouth expressive movement
+        mouth.style.transform = (mouth.style.transform === 'scaleY(1.5)') ? 'scaleY(0.8)' : 'scaleY(1.5)';
+      }, 260);
+    };
+
+    u.onend = () => {
+      isSpeaking = false;
+      clearInterval(talkAnimationInterval);
+      const mouth = document.getElementById('botMouth');
+      mouth.style.transform = 'scaleY(1)';
+    };
+
     window.speechSynthesis.speak(u);
   }
 
