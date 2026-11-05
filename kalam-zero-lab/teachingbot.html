@@ -44,7 +44,7 @@
             <img src="logo.jpeg" alt="GARRF Logo" class="w-10 h-10 object-contain rounded-lg bg-white p-0.5 shadow" onerror="this.onerror=null; this.src='https://via.placeholder.com/40?text=GARRF';">
             <div>
                 <h1 class="text-sm md:text-lg font-bold tracking-tight text-white">Gopalkrishna Advanced Rural Research Foundation</h1>
-                <p class="text-xs text-slate-400">AI Acharya &bull; Smart Shorthand Summary Engine Active</p>
+                <p class="text-xs text-slate-400">AI Acharya &bull; Smart Conclusion-Extraction Engine Active</p>
             </div>
         </div>
         <div class="flex items-center space-x-3">
@@ -160,14 +160,14 @@
             </div>
         </section>
 
-        <!-- Right Panel: AI Acharya Smart Chat & Clarification Assistant -->
+        <!-- Right Panel: AI Acharya Smart Chat & Summary Assistant -->
         <section class="w-full md:w-96 bg-slate-950 flex flex-col overflow-hidden">
             <div class="bg-slate-900 border-b border-slate-800 px-4 py-3 flex items-center justify-between">
                 <span class="text-xs font-bold text-white flex items-center space-x-2">
                     <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                     <span>AI Acharya Smart Tutor</span>
                 </span>
-                <span class="text-[10px] text-slate-400 font-mono">Summary Engine</span>
+                <span class="text-[10px] text-slate-400 font-mono">Smart Conclusion Engine</span>
             </div>
 
             <!-- Chat / Query Feed -->
@@ -454,7 +454,29 @@
             loadFileOnViewer(match.fileName, match.pageNum, currentSearchQuery);
         }
 
-        // Smart Query Engine with Shorthand Numeric Index Mapping (e.g. "Summarize 1")
+        // SMART CONCLUSION-FIRST & BULLETED SUMMARY ENGINE
+        function extractSmartSummary(pages) {
+            let fullText = pages.join("\n");
+            let conclusionIndex = fullText.toLowerCase().search(/conclusion|conclusions|summary|closing/);
+            
+            let summaryText = "";
+            let sourceLabel = "";
+
+            if (conclusionIndex !== -1) {
+                // Extract text starting from the conclusion heading
+                summaryText = fullText.substring(conclusionIndex, conclusionIndex + 1200);
+                sourceLabel = "Extracted from paper Conclusion section";
+            } else {
+                // If no conclusion heading exists, generate 5-10 bullet points from key sentences
+                let sentences = fullText.split(/(?<=[.?!])\s+/);
+                let keySentences = sentences.filter(s => s.length > 40 && s.length < 150).slice(0, 8);
+                summaryText = keySentences.map(s => `• ${s.trim()}`).join("\n");
+                sourceLabel = "Generated 5-10 key points (No explicit conclusion section found)";
+            }
+
+            return { summaryText, sourceLabel };
+        }
+
         function submitQuery() {
             const queryInput = document.getElementById('query-input');
             const rawQuery = queryInput.value.trim();
@@ -481,11 +503,10 @@
                 return;
             }
 
-            // SMART SUMMARIZATION & SHORTHAND INTENT CHECK (e.g., "Summarize 1", "Summarize file 1")
+            // SMART SUMMARIZATION INTENT CHECK
             if (qLower.includes('summarize') || qLower.includes('summary') || qLower.includes('overview')) {
                 let targetFile = null;
 
-                // Check for shorthand numbers like "1", "2", etc.
                 let matchNum = qLower.match(/\d+/);
                 if (matchNum) {
                     let fileIdx = parseInt(matchNum[0]) - 1;
@@ -494,7 +515,6 @@
                     }
                 }
 
-                // Check if user explicitly named a file or chapter
                 if (!targetFile) {
                     for (let fName of loadedFiles) {
                         let cleanFName = fName.toLowerCase().replace(/\.[^/.]+$/, "");
@@ -505,7 +525,6 @@
                     }
                 }
 
-                // IF AMBIGUOUS / UNCLEAR, DEFAULT TO FIRST FILE OR ASK CLARIFICATION
                 if (!targetFile) {
                     if (loadedFiles.length === 1) {
                         targetFile = loadedFiles[0];
@@ -527,10 +546,7 @@
                 }
 
                 let pages = fileTextPagesMap[targetFile];
-                let summarySnippet = pages && pages.length > 0 ? pages[0].substring(0, 500) + "..." : "No text available.";
-                if (pages && pages.length > 1) {
-                    summarySnippet += "\n\n" + (pages[1] ? pages[1].substring(0, 300) : "");
-                }
+                let { summaryText, sourceLabel } = extractSmartSummary(pages);
 
                 let htmlOutput = `
                     <div class="bg-slate-900 border border-amber-500/50 rounded-2xl p-4 space-y-3 shadow-xl">
@@ -538,14 +554,15 @@
                             <span class="text-xs font-bold text-amber-400">Smart Summary</span>
                             <span class="text-[10px] text-slate-400 font-mono">${targetFile}</span>
                         </div>
-                        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-slate-300 font-mono text-[11px] leading-relaxed whitespace-pre-wrap">
-                            ${summarySnippet}
+                        <p class="text-[10px] text-slate-400 italic">${sourceLabel}</p>
+                        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-slate-300 font-mono text-[11px] leading-relaxed whitespace-pre-wrap max-h-64 overflow-y-auto">
+                            ${summaryText}
                         </div>
                     </div>
                 `;
                 responseContainer.innerHTML = htmlOutput + responseContainer.innerHTML;
                 loadFileOnViewer(targetFile, 1, "");
-                speakText(`Summarizing file ${targetFile}.`);
+                speakText(`Here is the smart conclusion summary for file ${targetFile}.`);
                 queryInput.value = '';
                 return;
             }
