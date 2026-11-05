@@ -14,7 +14,7 @@
     <style>
         @keyframes float {
             0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-4px); }
+            50% { transform: translateY(-6px); }
         }
         @keyframes blink {
             0%, 90%, 100% { transform: scaleY(1); }
@@ -22,7 +22,7 @@
         }
         @keyframes talk {
             0% { d: path("M 42 62 Q 50 64 58 62"); }
-            50% { d: path("M 42 60 Q 50 68 58 60"); }
+            50% { d: path("M 42 58 Q 50 72 58 58"); }
             100% { d: path("M 42 62 Q 50 64 58 62"); }
         }
         .bot-avatar-box { animation: float 4s ease-in-out infinite; }
@@ -51,14 +51,60 @@
     <!-- Main Workspace -->
     <main class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
         
-        <!-- Left Panel: Course Materials Tree -->
-        <aside class="w-full md:w-80 bg-slate-900/90 border-r border-slate-800 p-5 flex flex-col justify-between">
+        <!-- Left Panel: Large Prominent AI Acharya Avatar & Course Materials -->
+        <aside class="w-full md:w-96 bg-slate-900/90 border-r border-slate-800 p-5 flex flex-col justify-between">
             <div class="space-y-5">
+                
+                <!-- LARGE PROMINENT AI ACHARYA ANIMATED AVATAR HEADER -->
+                <div class="bg-slate-950 p-5 rounded-2xl border border-amber-500/30 shadow-2xl flex flex-col items-center text-center space-y-3 bot-avatar-box">
+                    <div class="relative w-28 h-28 bg-gradient-to-br from-slate-800 to-slate-950 border-3 border-amber-400 rounded-full flex items-center justify-center shadow-inner overflow-hidden">
+                        <!-- BIG SHINY STEEL ROBOT WITH HEADPHONES & LAPTOP -->
+                        <svg class="w-24 h-24" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                                <linearGradient id="steel" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#ffffff"/>
+                                    <stop offset="50%" stop-color="#cbd5e1"/>
+                                    <stop offset="100%" stop-color="#64748b"/>
+                                </linearGradient>
+                                <linearGradient id="darksteel" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#334155"/>
+                                    <stop offset="100%" stop-color="#0f172a"/>
+                                </linearGradient>
+                            </defs>
+                            <!-- Headphones Band -->
+                            <path d="M 25 45 C 25 15 75 15 75 45" stroke="url(#darksteel)" stroke-width="8" stroke-linecap="round" fill="none"/>
+                            <rect x="16" y="36" width="12" height="24" rx="3" fill="url(#darksteel)"/>
+                            <rect x="72" y="36" width="12" height="24" rx="3" fill="url(#darksteel)"/>
+                            <!-- Head -->
+                            <circle cx="50" cy="45" r="22" fill="url(#steel)"/>
+                            <!-- Blinking Eyes -->
+                            <g class="bot-eyes">
+                                <ellipse cx="41" cy="42" rx="4.5" ry="6.5" fill="#0ea5e9"/>
+                                <ellipse cx="59" cy="42" rx="4.5" ry="6.5" fill="#0ea5e9"/>
+                                <circle cx="42.5" cy="40" r="1.8" fill="#ffffff"/>
+                                <circle cx="60.5" cy="40" r="1.8" fill="#ffffff"/>
+                            </g>
+                            <!-- Speaking Mouth -->
+                            <path id="bot-mouth" d="M 42 62 Q 50 64 58 62" stroke="#0ea5e9" stroke-width="3" stroke-linecap="round"/>
+                            <!-- Body & Laptop Collar -->
+                            <path d="M 32 68 C 32 65 68 65 68 68 L 75 88 C 75 90 70 92 65 92 L 35 92 C 30 92 25 90 25 88 Z" fill="url(#steel)"/>
+                            <rect x="35" y="85" width="30" height="4" rx="1" fill="#94a3b8"/>
+                        </svg>
+                        <span id="bot-status-dot" class="absolute bottom-1 right-3 w-4 h-4 bg-amber-500 rounded-full border-2 border-slate-950 animate-pulse"></span>
+                    </div>
+                    <div>
+                        <h2 class="text-base font-bold text-white tracking-wide">AI Acharya</h2>
+                        <p id="bot-status-text" class="text-xs text-amber-400 font-medium">Ready & listening...</p>
+                    </div>
+                    <button onclick="toggleContinuousListening()" id="mic-btn" class="w-full py-2 bg-slate-900 hover:bg-slate-800 text-slate-200 text-xs font-semibold rounded-xl border border-slate-700 transition flex items-center justify-center space-x-2 shadow">
+                        <span>🎙️ Toggle Voice Recognition</span>
+                    </button>
+                </div>
+
+                <!-- Material Source Setup -->
                 <div>
-                    <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-2">Your Course Materials</h2>
-                    <p class="text-xs text-slate-400 mb-3">Folder: <code class="text-amber-400">study_materials</code></p>
-                    
-                    <div class="space-y-3">
+                    <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Material Source</h2>
+                    <div class="space-y-2">
                         <input type="file" id="folder-input" multiple webkitdirectory directory class="hidden" onchange="handleFileSelection(event)">
                         <input type="file" id="file-add-input" multiple class="hidden" onchange="handleFileSelection(event)">
                         
@@ -74,54 +120,18 @@
                 </div>
 
                 <div class="flex flex-col">
-                    <div class="flex justify-between items-center mb-2">
-                        <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider">Loaded Files (<span id="file-count">0</span>)</h2>
+                    <div class="flex justify-between items-center mb-1">
+                        <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Loaded Files (<span id="file-count">0</span>)</h2>
                         <button onclick="document.getElementById('file-add-input').click()" class="text-[11px] text-amber-400 hover:underline">+ Upload More</button>
                     </div>
-                    <div id="file-list" class="bg-slate-950 border border-slate-800 rounded-xl p-3 h-48 overflow-y-auto space-y-2 text-xs text-slate-400">
-                        <p class="italic text-slate-600 text-center py-10">No files loaded yet.</p>
+                    <div id="file-list" class="bg-slate-950 border border-slate-800 rounded-xl p-3 h-32 overflow-y-auto space-y-2 text-xs text-slate-400">
+                        <p class="italic text-slate-600 text-center py-6">No files loaded yet.</p>
                     </div>
                 </div>
             </div>
 
-            <!-- Bot Avatar Bottom-Left -->
-            <div class="mt-4 pt-4 border-t border-slate-800 bg-slate-950 p-3 rounded-2xl border border-slate-700/60 flex items-center space-x-3 shadow-2xl bot-avatar-box">
-                <div class="relative w-14 h-14 bg-gradient-to-br from-slate-800 to-slate-950 border-2 border-slate-400 rounded-full flex items-center justify-center shadow-inner overflow-hidden">
-                    <svg class="w-12 h-12" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <defs>
-                            <linearGradient id="steel" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stop-color="#ffffff"/>
-                                <stop offset="50%" stop-color="#cbd5e1"/>
-                                <stop offset="100%" stop-color="#64748b"/>
-                            </linearGradient>
-                            <linearGradient id="darksteel" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stop-color="#334155"/>
-                                <stop offset="100%" stop-color="#0f172a"/>
-                            </linearGradient>
-                        </defs>
-                        <path d="M 25 45 C 25 15 75 15 75 45" stroke="url(#darksteel)" stroke-width="8" stroke-linecap="round" fill="none"/>
-                        <rect x="18" y="38" width="10" height="20" rx="3" fill="url(#darksteel)"/>
-                        <rect x="72" y="38" width="10" height="20" rx="3" fill="url(#darksteel)"/>
-                        <circle cx="50" cy="45" r="22" fill="url(#steel)"/>
-                        <g class="bot-eyes">
-                            <ellipse cx="42" cy="42" rx="4" ry="6" fill="#0ea5e9"/>
-                            <ellipse cx="58" cy="42" rx="4" ry="6" fill="#0ea5e9"/>
-                            <circle cx="43" cy="40" r="1.5" fill="#ffffff"/>
-                            <circle cx="59" cy="40" r="1.5" fill="#ffffff"/>
-                        </g>
-                        <path id="bot-mouth" d="M 42 62 Q 50 64 58 62" stroke="#475569" stroke-width="2.5" stroke-linecap="round"/>
-                        <path d="M 32 68 C 32 65 68 65 68 68 L 75 88 C 75 90 70 92 65 92 L 35 92 C 30 92 25 90 25 88 Z" fill="url(#steel)"/>
-                        <rect x="35" y="85" width="30" height="4" rx="1" fill="#94a3b8"/>
-                    </svg>
-                    <span id="bot-status-dot" class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-amber-500 rounded-full border-2 border-slate-900 animate-pulse"></span>
-                </div>
-                <div class="flex-1 min-w-0">
-                    <p class="text-xs font-bold text-white truncate">AI Acharya</p>
-                    <p id="bot-status-text" class="text-[10px] text-amber-400 truncate">Ready & listening</p>
-                </div>
-                <button onclick="toggleContinuousListening()" id="mic-btn" title="Toggle Microphone" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl border border-slate-700 transition">
-                    🎙️
-                </button>
+            <div class="text-[11px] text-slate-500 text-center pt-2 border-t border-slate-800">
+                Folder: <code class="text-amber-400">study_materials</code>
             </div>
         </aside>
 
@@ -138,16 +148,16 @@
             
             <div class="flex-1 p-6 overflow-auto flex items-center justify-center bg-slate-950/50">
                 <div id="welcome-viewer" class="text-center space-y-3 max-w-sm">
-                    <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl shadow">
+                    <div class="p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow">
                         <h3 class="text-sm font-bold text-white">No Document Selected</h3>
-                        <p class="text-xs text-slate-400 mt-1">Click any loaded file on the left sidebar or search to spotlight content here.</p>
+                        <p class="text-xs text-slate-400 mt-1">Click any loaded file on the left or search to spotlight content here.</p>
                     </div>
                 </div>
                 <canvas id="pdf-canvas" class="shadow-2xl rounded-lg max-w-full hidden border border-slate-700"></canvas>
             </div>
         </section>
 
-        <!-- Right Panel: AI Acharya Tutoring & Spotlight Chat Assistant -->
+        <!-- Right Panel: AI Acharya Spotlight Chat Assistant -->
         <section class="w-full md:w-96 bg-slate-950 flex flex-col overflow-hidden">
             <div class="bg-slate-900 border-b border-slate-800 px-4 py-3 flex items-center justify-between">
                 <span class="text-xs font-bold text-white flex items-center space-x-2">
@@ -188,16 +198,15 @@
     <!-- JavaScript Engine -->
     <script>
         let loadedFiles = [];
-        let fileTextPagesMap = {}; // Maps fileName -> array of page strings
-        let fileObjectsMap = {};   // Maps fileName -> File object
+        let fileTextPagesMap = {};
+        let fileObjectsMap = {};
         
         let currentPdfDoc = null;
         let pageNum = 1;
         let pageCount = 0;
         let currentActiveFile = "";
 
-        // Spotlight State Tracking
-        let currentSearchMatches = []; // Array of {fileName, pageNum, snippet}
+        let currentSearchMatches = [];
         let currentMatchIndex = 0;
 
         let isListening = false;
@@ -276,23 +285,20 @@
 
         function startListeningState() {
             isListening = true;
-            document.getElementById('bot-status-dot').className = "absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-slate-900 animate-ping";
+            document.getElementById('bot-status-dot').className = "absolute bottom-1 right-3 w-4 h-4 bg-emerald-500 rounded-full border-2 border-slate-950 animate-ping";
             document.getElementById('bot-status-text').textContent = "Listening...";
-            document.getElementById('mic-btn').className = "p-2 bg-emerald-600 text-white rounded-xl border border-emerald-500 transition animate-pulse";
             document.getElementById('bot-mouth').classList.add('speaking-mouth');
         }
 
         function stopListeningState() {
             isListening = false;
-            document.getElementById('bot-status-dot').className = "absolute bottom-0 right-0 w-2.5 h-2.5 bg-amber-500 rounded-full border-2 border-slate-900 animate-pulse";
+            document.getElementById('bot-status-dot').className = "absolute bottom-1 right-3 w-4 h-4 bg-amber-500 rounded-full border-2 border-slate-950 animate-pulse";
             document.getElementById('bot-status-text').textContent = "Ready & listening";
-            document.getElementById('mic-btn').className = "p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl border border-slate-700 transition";
             if (!window.speechSynthesis.speaking) {
                 document.getElementById('bot-mouth').classList.remove('speaking-mouth');
             }
         }
 
-        // Extract PDF page by page into an array
         async function extractPdfPages(file) {
             const arrayBuffer = await file.arrayBuffer();
             const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
@@ -411,7 +417,6 @@
             speakText("Thank you. Let us start.");
         }
 
-        // Jump to next matching instance when clicking "Next Match"
         async function jumpToNextMatch() {
             if (currentSearchMatches.length === 0) return;
             currentMatchIndex = (currentMatchIndex + 1) % currentSearchMatches.length;
@@ -443,7 +448,6 @@
             speakText(`Found match on page ${match.pageNum} of ${match.fileName}.`);
         }
 
-        // Smart Spotlight Query Engine
         function submitQuery() {
             const queryInput = document.getElementById('query-input');
             const rawQuery = queryInput.value.trim();
@@ -470,7 +474,6 @@
                 return;
             }
 
-            // Scan all files and pages for the query
             currentSearchMatches = [];
             for (let fileName of loadedFiles) {
                 let pages = fileTextPagesMap[fileName];
