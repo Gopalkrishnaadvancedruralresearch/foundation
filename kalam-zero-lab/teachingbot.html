@@ -44,7 +44,7 @@
             <img src="logo.jpeg" alt="GARRF Logo" class="w-10 h-10 object-contain rounded-lg bg-white p-0.5 shadow" onerror="this.onerror=null; this.src='https://via.placeholder.com/40?text=GARRF';">
             <div>
                 <h1 class="text-sm md:text-lg font-bold tracking-tight text-white">Gopalkrishna Advanced Rural Research Foundation</h1>
-                <p class="text-xs text-slate-400">AI Acharya &bull; Interactive Clarification Engine Active</p>
+                <p class="text-xs text-slate-400">AI Acharya &bull; Smart Shorthand Summary Engine Active</p>
             </div>
         </div>
         <div class="flex items-center space-x-3">
@@ -167,7 +167,7 @@
                     <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                     <span>AI Acharya Smart Tutor</span>
                 </span>
-                <span class="text-[10px] text-slate-400 font-mono">Clarification Engine</span>
+                <span class="text-[10px] text-slate-400 font-mono">Summary Engine</span>
             </div>
 
             <!-- Chat / Query Feed -->
@@ -181,7 +181,7 @@
             <!-- Query Input Bar -->
             <div class="bg-slate-900 border-t border-slate-800 p-3">
                 <div class="flex items-center space-x-2">
-                    <input type="text" id="query-input" placeholder="Ask (e.g., 'Summarize chapter 1', 'What is PZT?')..." 
+                    <input type="text" id="query-input" placeholder="Ask (e.g., 'Summarize 1', 'What is PZT?')..." 
                            class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500 placeholder-slate-500"
                            onkeypress="if(event.key === 'Enter') submitQuery()">
                     <button onclick="submitQuery()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold px-4 py-2.5 rounded-xl text-xs transition shadow">
@@ -454,7 +454,7 @@
             loadFileOnViewer(match.fileName, match.pageNum, currentSearchQuery);
         }
 
-        // Smart Query Engine with Proactive Clarification for Ambiguous Summaries
+        // Smart Query Engine with Shorthand Numeric Index Mapping (e.g. "Summarize 1")
         function submitQuery() {
             const queryInput = document.getElementById('query-input');
             const rawQuery = queryInput.value.trim();
@@ -467,7 +467,7 @@
                 let htmlOutput = `
                     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2 shadow">
                         <p class="text-xs font-bold text-amber-400">Query: "${rawQuery}"</p>
-                        <p class="text-xs text-slate-200">Hello! Ask me to summarize a chapter/article or search for any concept across all <strong>${loadedFiles.length}</strong> loaded documents.</p>
+                        <p class="text-xs text-slate-200">Hello! Ask me to summarize a file (e.g., 'Summarize 1') or search for any concept across all <strong>${loadedFiles.length}</strong> loaded documents.</p>
                     </div>
                 `;
                 responseContainer.innerHTML = htmlOutput + responseContainer.innerHTML;
@@ -481,38 +481,50 @@
                 return;
             }
 
-            // SMART SUMMARIZATION INTENT CHECK
+            // SMART SUMMARIZATION & SHORTHAND INTENT CHECK (e.g., "Summarize 1", "Summarize file 1")
             if (qLower.includes('summarize') || qLower.includes('summary') || qLower.includes('overview')) {
                 let targetFile = null;
-                
-                // Check if user explicitly named a file or chapter
-                for (let fName of loadedFiles) {
-                    let cleanFName = fName.toLowerCase().replace(/\.[^/.]+$/, "");
-                    if (qLower.includes(cleanFName) || qLower.includes('chapter 1') && fName.toLowerCase().includes('1') || qLower.includes('chapter 2') && fName.toLowerCase().includes('2')) {
-                        targetFile = fName;
-                        break;
+
+                // Check for shorthand numbers like "1", "2", etc.
+                let matchNum = qLower.match(/\d+/);
+                if (matchNum) {
+                    let fileIdx = parseInt(matchNum[0]) - 1;
+                    if (fileIdx >= 0 && fileIdx < loadedFiles.length) {
+                        targetFile = loadedFiles[fileIdx];
                     }
                 }
 
-                // IF AMBIGUOUS / UNCLEAR WHICH FILE OR CHAPTER, PROACTIVELY ASK CLARIFICATION
-                if (!targetFile && loadedFiles.length > 1 && !qLower.includes('chapter 1') && !qLower.includes('chapter 2')) {
-                    let fileNamesList = loadedFiles.join(', ');
-                    let clarificationMsg = `Do you want a summary of Chapter 1 or Chapter 2, or a specific file? You have ${loadedFiles.length} files loaded: ${fileNamesList}.`;
-                    
-                    let htmlOutput = `
-                        <div class="bg-slate-900 border border-amber-500/80 rounded-2xl p-4 space-y-2 shadow-xl">
-                            <p class="text-xs font-bold text-amber-400">AI Acharya Clarification Needed:</p>
-                            <p class="text-xs text-slate-200">${clarificationMsg}</p>
-                        </div>
-                    `;
-                    responseContainer.innerHTML = htmlOutput + responseContainer.innerHTML;
-                    speakText("Do you want a summary of chapter 1 or 2, or a specific file?");
-                    queryInput.value = '';
-                    return;
+                // Check if user explicitly named a file or chapter
+                if (!targetFile) {
+                    for (let fName of loadedFiles) {
+                        let cleanFName = fName.toLowerCase().replace(/\.[^/.]+$/, "");
+                        if (qLower.includes(cleanFName) || (qLower.includes('chapter 1') && fName.toLowerCase().includes('1')) || (qLower.includes('chapter 2') && fName.toLowerCase().includes('2'))) {
+                            targetFile = fName;
+                            break;
+                        }
+                    }
                 }
 
-                // If only 1 file is loaded or specific file matched, proceed with summary
-                if (!targetFile) targetFile = loadedFiles[0];
+                // IF AMBIGUOUS / UNCLEAR, DEFAULT TO FIRST FILE OR ASK CLARIFICATION
+                if (!targetFile) {
+                    if (loadedFiles.length === 1) {
+                        targetFile = loadedFiles[0];
+                    } else {
+                        let fileNamesList = loadedFiles.map((f, idx) => `[${idx + 1}] ${f}`).join(', ');
+                        let clarificationMsg = `Did you mean the first file (${loadedFiles[0]})? Or please specify: ${fileNamesList}`;
+                        
+                        let htmlOutput = `
+                            <div class="bg-slate-900 border border-amber-500/80 rounded-2xl p-4 space-y-2 shadow-xl">
+                                <p class="text-xs font-bold text-amber-400">AI Acharya Clarification:</p>
+                                <p class="text-xs text-slate-200">${clarificationMsg}</p>
+                            </div>
+                        `;
+                        responseContainer.innerHTML = htmlOutput + responseContainer.innerHTML;
+                        speakText(`Did you mean the first file, ${loadedFiles[0]}? Please specify.`);
+                        queryInput.value = '';
+                        return;
+                    }
+                }
 
                 let pages = fileTextPagesMap[targetFile];
                 let summarySnippet = pages && pages.length > 0 ? pages[0].substring(0, 500) + "..." : "No text available.";
@@ -533,7 +545,7 @@
                 `;
                 responseContainer.innerHTML = htmlOutput + responseContainer.innerHTML;
                 loadFileOnViewer(targetFile, 1, "");
-                speakText(`Here is a summary overview of ${targetFile}.`);
+                speakText(`Summarizing file ${targetFile}.`);
                 queryInput.value = '';
                 return;
             }
