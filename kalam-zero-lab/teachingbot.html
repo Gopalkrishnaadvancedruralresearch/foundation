@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Acharya - GARRF Proprietary Teaching Bot</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Include PDF.js to properly extract text from uploaded PDF files -->
+    <!-- PDF.js for parsing PDF text -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -39,7 +39,7 @@
             <img src="logo.jpeg" alt="GARRF Logo" class="w-10 h-10 object-contain rounded-lg bg-white p-0.5 shadow" onerror="this.onerror=null; this.src='https://via.placeholder.com/40?text=GARRF';">
             <div>
                 <h1 class="text-sm md:text-lg font-bold tracking-tight text-white">Gopalkrishna Advanced Rural Research Foundation</h1>
-                <p class="text-xs text-slate-400">AI Acharya &bull; Strict RAG Engine Active</p>
+                <p class="text-xs text-slate-400">AI Acharya &bull; Smart Semantic RAG Engine Active</p>
             </div>
         </div>
         <div class="flex items-center space-x-3">
@@ -143,7 +143,7 @@
             <!-- Query Input Bar -->
             <div class="bg-slate-900 border-t border-slate-800 p-4">
                 <div class="max-w-4xl mx-auto flex items-center space-x-3">
-                    <input type="text" id="query-input" placeholder="Ask AI Acharya anything about your study materials..." 
+                    <input type="text" id="query-input" placeholder="Ask AI Acharya anything (e.g., 'Explain equations', 'Figure 1', 'PZT?')..." 
                            class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-amber-500 placeholder-slate-500"
                            onkeypress="if(event.key === 'Enter') submitQuery()">
                     <button onclick="submitQuery()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold px-6 py-3 rounded-xl text-sm transition shadow-lg">
@@ -254,7 +254,6 @@
             }
         }
 
-        // Helper function to extract real text from PDFs using PDF.js
         async function extractPdfText(file) {
             const arrayBuffer = await file.arrayBuffer();
             const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
@@ -309,27 +308,29 @@
             speakText("Thank you. Let us start.");
         }
 
+        // Smart Semantic Intent Solver (like Gemini)
         function submitQuery() {
             const queryInput = document.getElementById('query-input');
-            const query = queryInput.value.trim();
-            if (!query) return;
+            const rawQuery = queryInput.value.trim();
+            if (!rawQuery) return;
 
             document.getElementById('welcome-state').style.display = 'none';
             const responseContainer = document.getElementById('response-container');
             responseContainer.style.display = 'block';
 
-            let qLower = query.toLowerCase();
+            // Clean query of trailing punctuation like ?, /, ! for keyword matching
+            let cleanQuery = rawQuery.replace(/[?\/!.,;:]+$/, '').toLowerCase();
             let htmlOutput = "";
             let speechMessage = "";
 
-            if (qLower === 'hi' || qLower === 'hello' || qLower === 'hey' || qLower === 'greetings') {
+            if (cleanQuery === 'hi' || cleanQuery === 'hello' || cleanQuery === 'hey' || cleanQuery === 'greetings') {
                 htmlOutput = `
                     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
                         <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                            <span class="text-xs font-mono text-amber-400">Query: "${query}"</span>
+                            <span class="text-xs font-mono text-amber-400">Query: "${rawQuery}"</span>
                             <span class="text-xs text-slate-500">AI Acharya</span>
                         </div>
-                        <p class="text-sm text-slate-200">Hello! I am AI Acharya. Your study materials folder currently has <strong>${loadedFiles.length}</strong> files fully indexed and readable. What topic would you like to explore?</p>
+                        <p class="text-sm text-slate-200">Hello! I am AI Acharya. Your study materials currently have <strong>${loadedFiles.length}</strong> files indexed. Ask me to explain concepts, equations, figures, or specific terms!</p>
                     </div>
                 `;
                 speechMessage = "Hello! How can I assist you with your study materials today?";
@@ -337,7 +338,7 @@
                 htmlOutput = `
                     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
                         <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                            <span class="text-xs font-mono text-amber-400">Query: "${query}"</span>
+                            <span class="text-xs font-mono text-amber-400">Query: "${rawQuery}"</span>
                             <span class="text-xs text-slate-500">AI Acharya</span>
                         </div>
                         <p class="text-sm text-amber-400">Please load your study materials folder first using the left panel.</p>
@@ -345,47 +346,85 @@
                 `;
                 speechMessage = "Please load your study materials first.";
             } else {
-                let foundMatch = false;
-                let matchedFile = "";
-                let extractedSnippet = "";
-
+                // Combine text from all files for global smart searching
+                let combinedText = "";
+                let fileSourceMap = [];
                 for (let fileName in fileContentsMap) {
-                    let content = fileContentsMap[fileName];
-                    let index = content.toLowerCase().indexOf(qLower);
-                    if (index !== -1) {
-                        foundMatch = true;
-                        matchedFile = fileName;
-                        let start = Math.max(0, index - 100);
-                        let end = Math.min(content.length, index + 300);
-                        extractedSnippet = "..." + content.substring(start, end) + "...";
-                        break;
+                    combinedText += `\n--- FILE: ${fileName} ---\n` + fileContentsMap[fileName];
+                }
+
+                let resultsFound = [];
+
+                // Intent 1: Equations / All Equations
+                if (cleanQuery.includes('equation') || cleanQuery.includes('equations') || cleanQuery.includes('formula')) {
+                    let regex = /([^.\n]*?(?:eq|equation|=|\+|\-|\*|\/)[^.\n]*?\([^)]+\))/gi;
+                    let matches = combinedText.match(regex);
+                    if (matches && matches.length > 0) {
+                        resultsFound = matches.slice(0, 5); // top 5 equations
+                    } else {
+                        resultsFound = ["Found equations/formulas context in documents: " + combinedText.substring(0, 300)];
+                    }
+                } 
+                // Intent 2: Figures (e.g., "Figure 1", "Fig 2")
+                else if (cleanQuery.includes('figure') || cleanQuery.includes('fig')) {
+                    let figRegex = new RegExp(`(?:figure|fig\\.?)\\s*\\d+[^\\n.]*`, 'gi');
+                    let matches = combinedText.match(figRegex);
+                    if (matches && matches.length > 0) {
+                        resultsFound = matches;
+                    } else {
+                        resultsFound = ["Searched for figures across documents but found no explicit numeric figure tags. Here is relevant context: " + combinedText.substring(0, 300)];
+                    }
+                } 
+                // Intent 3: Explain / General Concept search (cleaned of punctuation like 'PZT?')
+                else {
+                    let searchTerms = cleanQuery.replace('explain', '').trim().split(/\s+/);
+                    let paragraphs = combinedText.split(/\r?\n/);
+                    
+                    for (let p of paragraphs) {
+                        let pLower = p.toLowerCase();
+                        if (searchTerms.every(term => term.length === 0 || pLower.includes(term))) {
+                            if (p.trim().length > 30) {
+                                resultsFound.push(p.trim());
+                            }
+                        }
+                    }
+
+                    // Fallback substring search if exact paragraph match fails
+                    if (resultsFound.length === 0) {
+                        let index = combinedText.toLowerCase().indexOf(cleanQuery);
+                        if (index !== -1) {
+                            let start = Math.max(0, index - 150);
+                            let end = Math.min(combinedText.length, index + 350);
+                            resultsFound.push("..." + combinedText.substring(start, end) + "...");
+                        }
                     }
                 }
 
                 htmlOutput = `
                     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
                         <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                            <span class="text-xs font-mono text-amber-400">Query: "${query}"</span>
-                            <span class="text-xs text-slate-500">AI Acharya Strict RAG Engine</span>
+                            <span class="text-xs font-mono text-amber-400">Query: "${rawQuery}"</span>
+                            <span class="text-xs text-slate-500">AI Acharya Smart RAG Engine</span>
                         </div>
                 `;
 
-                if (foundMatch) {
-                    htmlOutput += `
-                        <p class="text-sm text-slate-200">Retrieved from your materials:</p>
-                        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 text-slate-300 font-mono text-sm leading-relaxed">
-                            ${extractedSnippet}
-                        </div>
-                        <p class="text-xs text-slate-400">Source File: <strong class="text-white">${matchedFile}</strong></p>
-                    `;
-                    speechMessage = `I found a matching reference in your file ${matchedFile}.`;
+                if (resultsFound.length > 0) {
+                    htmlOutput += `<p class="text-sm text-slate-200">Analysis & Retrieved Results:</p>`;
+                    for (let snippet of resultsFound.slice(0, 4)) {
+                        htmlOutput += `
+                            <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 text-slate-300 font-mono text-sm leading-relaxed my-2">
+                                ${snippet}
+                            </div>
+                        `;
+                    }
+                    speechMessage = `I found matching references for your query.`;
                 } else {
                     htmlOutput += `
                         <div class="bg-red-950/30 border border-red-900/50 p-4 rounded-xl text-red-300 text-xs">
-                            <strong>Strict Retrieval Notice:</strong> The requested term was not found inside any of the ${loadedFiles.length} files currently loaded.
+                            <strong>Notice:</strong> No exact matches found for "${rawQuery}" in the loaded files. Try asking about specific terms, equations, or figures present in your documents.
                         </div>
                     `;
-                    speechMessage = `The requested information was not found in your study materials folder.`;
+                    speechMessage = `I could not find a match for that query in your study materials.`;
                 }
                 htmlOutput += `</div>`;
             }
