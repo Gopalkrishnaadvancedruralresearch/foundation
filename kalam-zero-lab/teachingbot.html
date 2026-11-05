@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Acharya - GARRF Proprietary Teaching Bot</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- PDF.js for parsing PDF text -->
+    <!-- PDF.js library for rendering real PDF pages on canvas -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -39,7 +39,7 @@
             <img src="logo.jpeg" alt="GARRF Logo" class="w-10 h-10 object-contain rounded-lg bg-white p-0.5 shadow" onerror="this.onerror=null; this.src='https://via.placeholder.com/40?text=GARRF';">
             <div>
                 <h1 class="text-sm md:text-lg font-bold tracking-tight text-white">Gopalkrishna Advanced Rural Research Foundation</h1>
-                <p class="text-xs text-slate-400">AI Acharya &bull; Smart Semantic RAG Engine Active</p>
+                <p class="text-xs text-slate-400">AI Acharya &bull; Smart Semantic RAG & PDF Viewer Active</p>
             </div>
         </div>
         <div class="flex items-center space-x-3">
@@ -52,12 +52,12 @@
     <!-- Main Workspace -->
     <main class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
         
-        <!-- Left Panel -->
-        <aside class="w-full md:w-80 bg-slate-900/80 border-r border-slate-800 p-5 flex flex-col justify-between">
+        <!-- Left Panel: Folder & Materials Tree -->
+        <aside class="w-full md:w-80 bg-slate-900/90 border-r border-slate-800 p-5 flex flex-col justify-between">
             <div class="space-y-5">
                 <div>
-                    <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-2">1. Material Source Setup</h2>
-                    <p class="text-xs text-slate-400 mb-3">Connect your folder named <code class="text-amber-400">study_materials</code>.</p>
+                    <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-2">Your Course Materials</h2>
+                    <p class="text-xs text-slate-400 mb-3">Folder: <code class="text-amber-400">study_materials</code></p>
                     
                     <div class="space-y-3">
                         <input type="file" id="folder-input" multiple webkitdirectory directory class="hidden" onchange="handleFileSelection(event)">
@@ -65,7 +65,7 @@
                         
                         <div class="flex space-x-2">
                             <button onclick="document.getElementById('folder-input').click()" class="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-xs py-2.5 px-3 rounded-xl text-center transition shadow">
-                                Load `study_materials` Folder
+                                Load Folder
                             </button>
                             <button onclick="document.getElementById('file-add-input').click()" title="Add More Files" class="bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold text-sm px-3.5 py-2.5 rounded-xl border border-slate-700 transition">
                                 +
@@ -79,16 +79,16 @@
                         <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider">Loaded Files (<span id="file-count">0</span>)</h2>
                         <button onclick="document.getElementById('file-add-input').click()" class="text-[11px] text-amber-400 hover:underline">+ Upload More</button>
                     </div>
-                    <div id="file-list" class="bg-slate-950 border border-slate-800 rounded-lg p-3 h-32 overflow-y-auto space-y-2 text-xs text-slate-400">
-                        <p class="italic text-slate-600 text-center py-6">No files loaded yet.</p>
+                    <div id="file-list" class="bg-slate-950 border border-slate-800 rounded-xl p-3 h-48 overflow-y-auto space-y-2 text-xs text-slate-400">
+                        <p class="italic text-slate-600 text-center py-10">No files loaded yet.</p>
                     </div>
                 </div>
             </div>
 
-            <!-- Bot Avatar -->
-            <div class="mt-4 pt-4 border-t border-slate-800 bg-slate-950/90 p-3 rounded-2xl border border-slate-700/60 flex items-center space-x-3 shadow-2xl bot-avatar-box">
-                <div class="relative w-16 h-16 bg-gradient-to-br from-slate-800 to-slate-950 border-2 border-slate-400 rounded-full flex items-center justify-center shadow-inner overflow-hidden">
-                    <svg class="w-14 h-14" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Bot Avatar Bottom-Left -->
+            <div class="mt-4 pt-4 border-t border-slate-800 bg-slate-950 p-3 rounded-2xl border border-slate-700/60 flex items-center space-x-3 shadow-2xl bot-avatar-box">
+                <div class="relative w-14 h-14 bg-gradient-to-br from-slate-800 to-slate-950 border-2 border-slate-400 rounded-full flex items-center justify-center shadow-inner overflow-hidden">
+                    <svg class="w-12 h-12" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <defs>
                             <linearGradient id="steel" x1="0%" y1="0%" x2="100%" y2="100%">
                                 <stop offset="0%" stop-color="#ffffff"/>
@@ -114,44 +114,72 @@
                         <path d="M 32 68 C 32 65 68 65 68 68 L 75 88 C 75 90 70 92 65 92 L 35 92 C 30 92 25 90 25 88 Z" fill="url(#steel)"/>
                         <rect x="35" y="85" width="30" height="4" rx="1" fill="#94a3b8"/>
                     </svg>
-                    <span id="bot-status-dot" class="absolute bottom-0 right-0 w-3 h-3 bg-amber-500 rounded-full border-2 border-slate-900 animate-pulse"></span>
+                    <span id="bot-status-dot" class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-amber-500 rounded-full border-2 border-slate-900 animate-pulse"></span>
                 </div>
                 <div class="flex-1 min-w-0">
                     <p class="text-xs font-bold text-white truncate">AI Acharya</p>
                     <p id="bot-status-text" class="text-[10px] text-amber-400 truncate">Ready & listening</p>
                 </div>
-                <button onclick="toggleContinuousListening()" id="mic-btn" title="Toggle Continuous Microphone" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl border border-slate-700 transition">
+                <button onclick="toggleContinuousListening()" id="mic-btn" title="Toggle Microphone" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl border border-slate-700 transition">
                     🎙️
                 </button>
             </div>
         </aside>
 
-        <!-- Right Panel -->
-        <section class="flex-1 flex flex-col bg-slate-950 overflow-hidden">
-            <div class="flex-1 p-6 overflow-y-auto flex flex-col justify-between">
-                <div id="blackboard" class="max-w-4xl mx-auto w-full space-y-6">
-                    <div id="welcome-state" class="text-center py-16 space-y-4">
-                        <div class="inline-block p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-inner space-y-2">
-                            <h3 class="text-lg font-bold text-white">Hi, welcome to AI Acharya Page</h3>
-                            <p class="text-xs text-amber-400">Please load your study materials.</p>
-                        </div>
+        <!-- Center Panel: PDF Document Viewer / Blackboard -->
+        <section class="flex-1 bg-slate-900 border-r border-slate-800 flex flex-col overflow-hidden">
+            <div id="viewer-header" class="bg-slate-950 px-6 py-3 border-b border-slate-800 flex items-center justify-between">
+                <span id="current-view-title" class="text-xs font-mono text-amber-400">Document Blackboard Viewer</span>
+                <div id="pdf-pagination" class="hidden flex items-center space-x-2 text-xs text-slate-300">
+                    <button onclick="prevPage()" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 rounded">&larr; Prev</button>
+                    <span>Page <span id="page-num">1</span> of <span id="page-count">1</span></span>
+                    <button onclick="nextPage()" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 rounded">Next &rarr;</button>
+                </div>
+            </div>
+            
+            <div class="flex-1 p-6 overflow-auto flex items-center justify-center bg-slate-950/50">
+                <div id="welcome-viewer" class="text-center space-y-3 max-w-sm">
+                    <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl shadow">
+                        <h3 class="text-sm font-bold text-white">No Document Selected</h3>
+                        <p class="text-xs text-slate-400 mt-1">Click any loaded file on the left sidebar to view its pages right here on the blackboard.</p>
                     </div>
-                    <div id="response-container" class="space-y-4 hidden"></div>
+                </div>
+                <!-- Canvas for rendering PDF pages -->
+                <canvas id="pdf-canvas" class="shadow-2xl rounded-lg max-w-full hidden border border-slate-700"></canvas>
+            </div>
+        </section>
+
+        <!-- Right Panel: AI Acharya Tutoring & Chat Assistant -->
+        <section class="w-full md:w-96 bg-slate-950 flex flex-col overflow-hidden">
+            <div class="bg-slate-900 border-b border-slate-800 px-4 py-3 flex items-center justify-between">
+                <span class="text-xs font-bold text-white flex items-center space-x-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span>AI Acharya Chat</span>
+                </span>
+                <span class="text-[10px] text-slate-400 font-mono">Semantic RAG Engine</span>
+            </div>
+
+            <!-- Chat / Query Feed -->
+            <div id="response-container" class="flex-1 p-4 overflow-y-auto space-y-4">
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2 shadow">
+                    <p class="text-xs font-bold text-amber-400">AI Acharya</p>
+                    <p class="text-xs text-slate-200">Hi, welcome to AI Acharya Page. Please load your study materials.</p>
                 </div>
             </div>
 
             <!-- Query Input Bar -->
-            <div class="bg-slate-900 border-t border-slate-800 p-4">
-                <div class="max-w-4xl mx-auto flex items-center space-x-3">
-                    <input type="text" id="query-input" placeholder="Ask AI Acharya anything (e.g., 'Explain equations', 'Figure 1', 'PZT?')..." 
-                           class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-amber-500 placeholder-slate-500"
+            <div class="bg-slate-900 border-t border-slate-800 p-3">
+                <div class="flex items-center space-x-2">
+                    <input type="text" id="query-input" placeholder="Ask equations, figures, explanations..." 
+                           class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500 placeholder-slate-500"
                            onkeypress="if(event.key === 'Enter') submitQuery()">
-                    <button onclick="submitQuery()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold px-6 py-3 rounded-xl text-sm transition shadow-lg">
-                        Ask Acharya
+                    <button onclick="submitQuery()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold px-4 py-2.5 rounded-xl text-xs transition shadow">
+                        Ask
                     </button>
                 </div>
             </div>
         </section>
+
     </main>
 
     <!-- Footer -->
@@ -159,9 +187,16 @@
         &copy; 2026 Dr. Venu Gopal Madhav Annamdas, GARRF
     </footer>
 
+    <!-- JavaScript Engine -->
     <script>
         let loadedFiles = [];
         let fileContentsMap = {};
+        let fileObjectsMap = {}; // stores raw File objects for PDF rendering
+        let currentPdfDoc = null;
+        let pageNum = 1;
+        let pageCount = 0;
+        let currentActiveFile = "";
+
         let isListening = false;
         let recognition = null;
         let selectedVoice = null;
@@ -238,7 +273,7 @@
 
         function startListeningState() {
             isListening = true;
-            document.getElementById('bot-status-dot').className = "absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-900 animate-ping";
+            document.getElementById('bot-status-dot').className = "absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-slate-900 animate-ping";
             document.getElementById('bot-status-text').textContent = "Listening...";
             document.getElementById('mic-btn').className = "p-2 bg-emerald-600 text-white rounded-xl border border-emerald-500 transition animate-pulse";
             document.getElementById('bot-mouth').classList.add('speaking-mouth');
@@ -246,7 +281,7 @@
 
         function stopListeningState() {
             isListening = false;
-            document.getElementById('bot-status-dot').className = "absolute bottom-0 right-0 w-3 h-3 bg-amber-500 rounded-full border-2 border-slate-900 animate-pulse";
+            document.getElementById('bot-status-dot').className = "absolute bottom-0 right-0 w-2.5 h-2.5 bg-amber-500 rounded-full border-2 border-slate-900 animate-pulse";
             document.getElementById('bot-status-text').textContent = "Ready & listening";
             document.getElementById('mic-btn').className = "p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl border border-slate-700 transition";
             if (!window.speechSynthesis.speaking) {
@@ -269,6 +304,60 @@
             return fullText;
         }
 
+        async function renderPdfPage(file, num) {
+            const arrayBuffer = await file.arrayBuffer();
+            const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+            currentPdfDoc = await loadingTask.promise;
+            pageCount = currentPdfDoc.numPages;
+            
+            document.getElementById('page-count').textContent = pageCount;
+            document.getElementById('page-num').textContent = num;
+            document.getElementById('pdf-pagination').style.display = 'flex';
+            document.getElementById('welcome-viewer').style.display = 'none';
+
+            const canvas = document.getElementById('pdf-canvas');
+            canvas.style.display = 'block';
+            const ctx = canvas.getContext('2d');
+
+            const page = await currentPdfDoc.getPage(num);
+            const viewport = page.getViewport({ scale: 1.2 });
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+
+            await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+        }
+
+        async function loadFileOnViewer(fileName) {
+            currentActiveFile = fileName;
+            document.getElementById('current-view-title').textContent = fileName;
+            const file = fileObjectsMap[fileName];
+            if (!file) return;
+
+            if (fileName.toLowerCase().endsWith('.pdf')) {
+                pageNum = 1;
+                await renderPdfPage(file, pageNum);
+            } else {
+                document.getElementById('pdf-pagination').style.display = 'none';
+                document.getElementById('welcome-viewer').style.display = 'block';
+                document.getElementById('pdf-canvas').style.display = 'none';
+                document.getElementById('welcome-viewer').innerHTML = `<div class="p-6 bg-slate-900 border border-slate-800 rounded-xl text-left font-mono text-xs text-slate-300 max-h-[500px] overflow-y-auto whitespace-pre-wrap">${fileContentsMap[fileName]}</div>`;
+            }
+        }
+
+        async function prevPage() {
+            if (pageNum <= 1 || !currentPdfDoc) return;
+            pageNum--;
+            document.getElementById('page-num').textContent = pageNum;
+            await renderPdfPage(fileObjectsMap[currentActiveFile], pageNum);
+        }
+
+        async function nextPage() {
+            if (pageNum >= pageCount || !currentPdfDoc) return;
+            pageNum++;
+            document.getElementById('page-num').textContent = pageNum;
+            await renderPdfPage(fileObjectsMap[currentActiveFile], pageNum);
+        }
+
         async function handleFileSelection(event) {
             const files = event.target.files;
             if (files.length === 0) return;
@@ -281,6 +370,7 @@
             for (let file of files) {
                 if (!loadedFiles.includes(file.name)) {
                     loadedFiles.push(file.name);
+                    fileObjectsMap[file.name] = file;
                     try {
                         let extractedText = "";
                         if (file.type === "application/pdf" || file.name.toLowerCase().endsWith('.pdf')) {
@@ -294,8 +384,9 @@
                     }
 
                     const item = document.createElement('div');
-                    item.className = "flex items-center justify-between bg-slate-900 p-2 rounded border border-slate-800";
-                    item.innerHTML = `<span class="truncate text-slate-300">${file.name}</span> <span class="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded">Indexed</span>`;
+                    item.className = "flex items-center justify-between bg-slate-900 hover:bg-slate-800 p-2 rounded-xl border border-slate-800 cursor-pointer transition";
+                    item.onclick = () => loadFileOnViewer(file.name);
+                    item.innerHTML = `<span class="truncate text-slate-300 font-medium">${file.name}</span> <span class="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded">View</span>`;
                     fileListEl.appendChild(item);
                 }
             }
@@ -305,125 +396,87 @@
             statusEl.className = "px-3 py-1 text-xs font-semibold rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
             statusEl.textContent = `Ready (${loadedFiles.length} files)`;
 
+            // Automatically load the first file on the viewer canvas
+            if (loadedFiles.length > 0) {
+                loadFileOnViewer(loadedFiles[0]);
+            }
+
             speakText("Thank you. Let us start.");
         }
 
-        // Smart Semantic Intent Solver (like Gemini)
         function submitQuery() {
             const queryInput = document.getElementById('query-input');
             const rawQuery = queryInput.value.trim();
             if (!rawQuery) return;
 
-            document.getElementById('welcome-state').style.display = 'none';
             const responseContainer = document.getElementById('response-container');
-            responseContainer.style.display = 'block';
 
-            // Clean query of trailing punctuation like ?, /, ! for keyword matching
             let cleanQuery = rawQuery.replace(/[?\/!.,;:]+$/, '').toLowerCase();
             let htmlOutput = "";
             let speechMessage = "";
 
-            if (cleanQuery === 'hi' || cleanQuery === 'hello' || cleanQuery === 'hey' || cleanQuery === 'greetings') {
+            if (cleanQuery === 'hi' || cleanQuery === 'hello' || cleanQuery === 'hey') {
                 htmlOutput = `
-                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
-                        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                            <span class="text-xs font-mono text-amber-400">Query: "${rawQuery}"</span>
-                            <span class="text-xs text-slate-500">AI Acharya</span>
-                        </div>
-                        <p class="text-sm text-slate-200">Hello! I am AI Acharya. Your study materials currently have <strong>${loadedFiles.length}</strong> files indexed. Ask me to explain concepts, equations, figures, or specific terms!</p>
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2 shadow">
+                        <p class="text-xs font-bold text-amber-400">Query: "${rawQuery}"</p>
+                        <p class="text-xs text-slate-200">Hello! I am AI Acharya. Your study materials currently have <strong>${loadedFiles.length}</strong> files loaded. Ask me about any equation, figure, or concept!</p>
                     </div>
                 `;
                 speechMessage = "Hello! How can I assist you with your study materials today?";
             } else if (loadedFiles.length === 0) {
                 htmlOutput = `
-                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
-                        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                            <span class="text-xs font-mono text-amber-400">Query: "${rawQuery}"</span>
-                            <span class="text-xs text-slate-500">AI Acharya</span>
-                        </div>
-                        <p class="text-sm text-amber-400">Please load your study materials folder first using the left panel.</p>
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2 shadow">
+                        <p class="text-xs font-bold text-amber-400">Query: "${rawQuery}"</p>
+                        <p class="text-xs text-amber-400">Please load your study materials folder first.</p>
                     </div>
                 `;
                 speechMessage = "Please load your study materials first.";
             } else {
-                // Combine text from all files for global smart searching
                 let combinedText = "";
-                let fileSourceMap = [];
                 for (let fileName in fileContentsMap) {
                     combinedText += `\n--- FILE: ${fileName} ---\n` + fileContentsMap[fileName];
                 }
 
                 let resultsFound = [];
 
-                // Intent 1: Equations / All Equations
-                if (cleanQuery.includes('equation') || cleanQuery.includes('equations') || cleanQuery.includes('formula')) {
+                if (cleanQuery.includes('equation') || cleanQuery.includes('formula')) {
                     let regex = /([^.\n]*?(?:eq|equation|=|\+|\-|\*|\/)[^.\n]*?\([^)]+\))/gi;
                     let matches = combinedText.match(regex);
-                    if (matches && matches.length > 0) {
-                        resultsFound = matches.slice(0, 5); // top 5 equations
-                    } else {
-                        resultsFound = ["Found equations/formulas context in documents: " + combinedText.substring(0, 300)];
-                    }
-                } 
-                // Intent 2: Figures (e.g., "Figure 1", "Fig 2")
-                else if (cleanQuery.includes('figure') || cleanQuery.includes('fig')) {
+                    resultsFound = matches ? matches.slice(0, 4) : ["Found general equation context in materials."];
+                } else if (cleanQuery.includes('figure') || cleanQuery.includes('fig')) {
                     let figRegex = new RegExp(`(?:figure|fig\\.?)\\s*\\d+[^\\n.]*`, 'gi');
                     let matches = combinedText.match(figRegex);
-                    if (matches && matches.length > 0) {
-                        resultsFound = matches;
-                    } else {
-                        resultsFound = ["Searched for figures across documents but found no explicit numeric figure tags. Here is relevant context: " + combinedText.substring(0, 300)];
-                    }
-                } 
-                // Intent 3: Explain / General Concept search (cleaned of punctuation like 'PZT?')
-                else {
+                    resultsFound = matches ? matches : ["Searched for figures across documents."];
+                } else {
                     let searchTerms = cleanQuery.replace('explain', '').trim().split(/\s+/);
                     let paragraphs = combinedText.split(/\r?\n/);
-                    
                     for (let p of paragraphs) {
                         let pLower = p.toLowerCase();
                         if (searchTerms.every(term => term.length === 0 || pLower.includes(term))) {
-                            if (p.trim().length > 30) {
-                                resultsFound.push(p.trim());
-                            }
+                            if (p.trim().length > 25) resultsFound.push(p.trim());
                         }
                     }
-
-                    // Fallback substring search if exact paragraph match fails
                     if (resultsFound.length === 0) {
                         let index = combinedText.toLowerCase().indexOf(cleanQuery);
                         if (index !== -1) {
-                            let start = Math.max(0, index - 150);
-                            let end = Math.min(combinedText.length, index + 350);
-                            resultsFound.push("..." + combinedText.substring(start, end) + "...");
+                            resultsFound.push("..." + combinedText.substring(Math.max(0, index - 100), Math.min(combinedText.length, index + 300)) + "...");
                         }
                     }
                 }
 
                 htmlOutput = `
-                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
-                        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                            <span class="text-xs font-mono text-amber-400">Query: "${rawQuery}"</span>
-                            <span class="text-xs text-slate-500">AI Acharya Smart RAG Engine</span>
-                        </div>
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3 shadow">
+                        <p class="text-xs font-bold text-amber-400">Query: "${rawQuery}"</p>
                 `;
 
                 if (resultsFound.length > 0) {
-                    htmlOutput += `<p class="text-sm text-slate-200">Analysis & Retrieved Results:</p>`;
-                    for (let snippet of resultsFound.slice(0, 4)) {
-                        htmlOutput += `
-                            <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 text-slate-300 font-mono text-sm leading-relaxed my-2">
-                                ${snippet}
-                            </div>
-                        `;
+                    htmlOutput += `<p class="text-[11px] text-slate-400">Retrieved Results:</p>`;
+                    for (let snippet of resultsFound.slice(0, 3)) {
+                        htmlOutput += `<div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-slate-300 font-mono text-[11px] leading-relaxed">${snippet}</div>`;
                     }
                     speechMessage = `I found matching references for your query.`;
                 } else {
-                    htmlOutput += `
-                        <div class="bg-red-950/30 border border-red-900/50 p-4 rounded-xl text-red-300 text-xs">
-                            <strong>Notice:</strong> No exact matches found for "${rawQuery}" in the loaded files. Try asking about specific terms, equations, or figures present in your documents.
-                        </div>
-                    `;
+                    htmlOutput += `<p class="text-xs text-red-400">No exact matches found for "${rawQuery}" in your materials.</p>`;
                     speechMessage = `I could not find a match for that query in your study materials.`;
                 }
                 htmlOutput += `</div>`;
