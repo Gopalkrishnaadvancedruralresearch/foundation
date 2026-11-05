@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Acharya - GARRF Proprietary Teaching Bot</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- PDF.js library for rendering real PDF pages on canvas -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -39,7 +38,7 @@
             <img src="logo.jpeg" alt="GARRF Logo" class="w-10 h-10 object-contain rounded-lg bg-white p-0.5 shadow" onerror="this.onerror=null; this.src='https://via.placeholder.com/40?text=GARRF';">
             <div>
                 <h1 class="text-sm md:text-lg font-bold tracking-tight text-white">Gopalkrishna Advanced Rural Research Foundation</h1>
-                <p class="text-xs text-slate-400">AI Acharya &bull; Smart Semantic RAG & PDF Viewer Active</p>
+                <p class="text-xs text-slate-400">AI Acharya &bull; Spotlight Search Engine Active</p>
             </div>
         </div>
         <div class="flex items-center space-x-3">
@@ -52,7 +51,7 @@
     <!-- Main Workspace -->
     <main class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
         
-        <!-- Left Panel: Folder & Materials Tree -->
+        <!-- Left Panel: Course Materials Tree -->
         <aside class="w-full md:w-80 bg-slate-900/90 border-r border-slate-800 p-5 flex flex-col justify-between">
             <div class="space-y-5">
                 <div>
@@ -129,7 +128,7 @@
         <!-- Center Panel: PDF Document Viewer / Blackboard -->
         <section class="flex-1 bg-slate-900 border-r border-slate-800 flex flex-col overflow-hidden">
             <div id="viewer-header" class="bg-slate-950 px-6 py-3 border-b border-slate-800 flex items-center justify-between">
-                <span id="current-view-title" class="text-xs font-mono text-amber-400">Document Blackboard Viewer</span>
+                <span id="current-view-title" class="text-xs font-mono text-amber-400">Document Spotlight Viewer</span>
                 <div id="pdf-pagination" class="hidden flex items-center space-x-2 text-xs text-slate-300">
                     <button onclick="prevPage()" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 rounded">&larr; Prev</button>
                     <span>Page <span id="page-num">1</span> of <span id="page-count">1</span></span>
@@ -141,22 +140,21 @@
                 <div id="welcome-viewer" class="text-center space-y-3 max-w-sm">
                     <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl shadow">
                         <h3 class="text-sm font-bold text-white">No Document Selected</h3>
-                        <p class="text-xs text-slate-400 mt-1">Click any loaded file on the left sidebar to view its pages right here on the blackboard.</p>
+                        <p class="text-xs text-slate-400 mt-1">Click any loaded file on the left sidebar or search to spotlight content here.</p>
                     </div>
                 </div>
-                <!-- Canvas for rendering PDF pages -->
                 <canvas id="pdf-canvas" class="shadow-2xl rounded-lg max-w-full hidden border border-slate-700"></canvas>
             </div>
         </section>
 
-        <!-- Right Panel: AI Acharya Tutoring & Chat Assistant -->
+        <!-- Right Panel: AI Acharya Tutoring & Spotlight Chat Assistant -->
         <section class="w-full md:w-96 bg-slate-950 flex flex-col overflow-hidden">
             <div class="bg-slate-900 border-b border-slate-800 px-4 py-3 flex items-center justify-between">
                 <span class="text-xs font-bold text-white flex items-center space-x-2">
                     <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span>AI Acharya Chat</span>
+                    <span>AI Acharya Spotlight</span>
                 </span>
-                <span class="text-[10px] text-slate-400 font-mono">Semantic RAG Engine</span>
+                <span class="text-[10px] text-slate-400 font-mono">Precision Engine</span>
             </div>
 
             <!-- Chat / Query Feed -->
@@ -170,7 +168,7 @@
             <!-- Query Input Bar -->
             <div class="bg-slate-900 border-t border-slate-800 p-3">
                 <div class="flex items-center space-x-2">
-                    <input type="text" id="query-input" placeholder="Ask equations, figures, explanations..." 
+                    <input type="text" id="query-input" placeholder="Ask (e.g., 'What is PZT?')..." 
                            class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500 placeholder-slate-500"
                            onkeypress="if(event.key === 'Enter') submitQuery()">
                     <button onclick="submitQuery()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold px-4 py-2.5 rounded-xl text-xs transition shadow">
@@ -190,12 +188,17 @@
     <!-- JavaScript Engine -->
     <script>
         let loadedFiles = [];
-        let fileContentsMap = {};
-        let fileObjectsMap = {}; // stores raw File objects for PDF rendering
+        let fileTextPagesMap = {}; // Maps fileName -> array of page strings
+        let fileObjectsMap = {};   // Maps fileName -> File object
+        
         let currentPdfDoc = null;
         let pageNum = 1;
         let pageCount = 0;
         let currentActiveFile = "";
+
+        // Spotlight State Tracking
+        let currentSearchMatches = []; // Array of {fileName, pageNum, snippet}
+        let currentMatchIndex = 0;
 
         let isListening = false;
         let recognition = null;
@@ -289,19 +292,20 @@
             }
         }
 
-        async function extractPdfText(file) {
+        // Extract PDF page by page into an array
+        async function extractPdfPages(file) {
             const arrayBuffer = await file.arrayBuffer();
             const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
             const pdfDoc = await loadingTask.promise;
-            let fullText = "";
+            let pages = [];
 
             for (let i = 1; i <= pdfDoc.numPages; i++) {
                 const page = await pdfDoc.getPage(i);
                 const textContent = await page.getTextContent();
                 const pageText = textContent.items.map(item => item.str).join(" ");
-                fullText += `[Page ${i}] ` + pageText + "\n";
+                pages.push(pageText);
             }
-            return fullText;
+            return pages;
         }
 
         async function renderPdfPage(file, num) {
@@ -327,20 +331,21 @@
             await page.render({ canvasContext: ctx, viewport: viewport }).promise;
         }
 
-        async function loadFileOnViewer(fileName) {
+        async function loadFileOnViewer(fileName, targetPage = 1) {
             currentActiveFile = fileName;
-            document.getElementById('current-view-title').textContent = fileName;
+            pageNum = targetPage;
+            document.getElementById('current-view-title').textContent = `${fileName} (Page ${pageNum})`;
             const file = fileObjectsMap[fileName];
             if (!file) return;
 
             if (fileName.toLowerCase().endsWith('.pdf')) {
-                pageNum = 1;
                 await renderPdfPage(file, pageNum);
             } else {
                 document.getElementById('pdf-pagination').style.display = 'none';
                 document.getElementById('welcome-viewer').style.display = 'block';
                 document.getElementById('pdf-canvas').style.display = 'none';
-                document.getElementById('welcome-viewer').innerHTML = `<div class="p-6 bg-slate-900 border border-slate-800 rounded-xl text-left font-mono text-xs text-slate-300 max-h-[500px] overflow-y-auto whitespace-pre-wrap">${fileContentsMap[fileName]}</div>`;
+                let fullText = fileTextPagesMap[fileName].join("\n");
+                document.getElementById('welcome-viewer').innerHTML = `<div class="p-6 bg-slate-900 border border-slate-800 rounded-xl text-left font-mono text-xs text-slate-300 max-h-[500px] overflow-y-auto whitespace-pre-wrap">${fullText}</div>`;
             }
         }
 
@@ -348,6 +353,7 @@
             if (pageNum <= 1 || !currentPdfDoc) return;
             pageNum--;
             document.getElementById('page-num').textContent = pageNum;
+            document.getElementById('current-view-title').textContent = `${currentActiveFile} (Page ${pageNum})`;
             await renderPdfPage(fileObjectsMap[currentActiveFile], pageNum);
         }
 
@@ -355,6 +361,7 @@
             if (pageNum >= pageCount || !currentPdfDoc) return;
             pageNum++;
             document.getElementById('page-num').textContent = pageNum;
+            document.getElementById('current-view-title').textContent = `${currentActiveFile} (Page ${pageNum})`;
             await renderPdfPage(fileObjectsMap[currentActiveFile], pageNum);
         }
 
@@ -372,20 +379,21 @@
                     loadedFiles.push(file.name);
                     fileObjectsMap[file.name] = file;
                     try {
-                        let extractedText = "";
+                        let pages = [];
                         if (file.type === "application/pdf" || file.name.toLowerCase().endsWith('.pdf')) {
-                            extractedText = await extractPdfText(file);
+                            pages = await extractPdfPages(file);
                         } else {
-                            extractedText = await file.text();
+                            let text = await file.text();
+                            pages = [text];
                         }
-                        fileContentsMap[file.name] = extractedText;
+                        fileTextPagesMap[file.name] = pages;
                     } catch(e) {
-                        fileContentsMap[file.name] = "[Error parsing file text]";
+                        fileTextPagesMap[file.name] = ["[Error parsing file text]"];
                     }
 
                     const item = document.createElement('div');
                     item.className = "flex items-center justify-between bg-slate-900 hover:bg-slate-800 p-2 rounded-xl border border-slate-800 cursor-pointer transition";
-                    item.onclick = () => loadFileOnViewer(file.name);
+                    item.onclick = () => loadFileOnViewer(file.name, 1);
                     item.innerHTML = `<span class="truncate text-slate-300 font-medium">${file.name}</span> <span class="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded">View</span>`;
                     fileListEl.appendChild(item);
                 }
@@ -396,99 +404,110 @@
             statusEl.className = "px-3 py-1 text-xs font-semibold rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
             statusEl.textContent = `Ready (${loadedFiles.length} files)`;
 
-            // Automatically load the first file on the viewer canvas
             if (loadedFiles.length > 0) {
-                loadFileOnViewer(loadedFiles[0]);
+                loadFileOnViewer(loadedFiles[0], 1);
             }
 
             speakText("Thank you. Let us start.");
         }
 
+        // Jump to next matching instance when clicking "Next Match"
+        async function jumpToNextMatch() {
+            if (currentSearchMatches.length === 0) return;
+            currentMatchIndex = (currentMatchIndex + 1) % currentSearchMatches.length;
+            let match = currentSearchMatches[currentMatchIndex];
+            
+            await loadFileOnViewer(match.fileName, match.pageNum);
+            updateSpotlightCard(match);
+        }
+
+        function updateSpotlightCard(match) {
+            const responseContainer = document.getElementById('response-container');
+            let htmlOutput = `
+                <div class="bg-slate-900 border border-amber-500/40 rounded-2xl p-4 space-y-3 shadow-xl">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                        <span class="text-xs font-bold text-amber-400">Match ${currentMatchIndex + 1} of ${currentSearchMatches.length}</span>
+                        <span class="text-[10px] text-slate-400 font-mono">${match.fileName} (p. ${match.pageNum})</span>
+                    </div>
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-slate-300 font-mono text-[11px] leading-relaxed">
+                        ...${match.snippet}...
+                    </div>
+                    <div class="flex justify-end">
+                        <button onclick="jumpToNextMatch()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold px-3 py-1.5 rounded-lg text-xs transition shadow">
+                            Next Match &rarr;
+                        </button>
+                    </div>
+                </div>
+            `;
+            responseContainer.innerHTML = htmlOutput + responseContainer.innerHTML;
+            speakText(`Found match on page ${match.pageNum} of ${match.fileName}.`);
+        }
+
+        // Smart Spotlight Query Engine
         function submitQuery() {
             const queryInput = document.getElementById('query-input');
             const rawQuery = queryInput.value.trim();
             if (!rawQuery) return;
 
             const responseContainer = document.getElementById('response-container');
-
             let cleanQuery = rawQuery.replace(/[?\/!.,;:]+$/, '').toLowerCase();
-            let htmlOutput = "";
-            let speechMessage = "";
 
             if (cleanQuery === 'hi' || cleanQuery === 'hello' || cleanQuery === 'hey') {
-                htmlOutput = `
+                let htmlOutput = `
                     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2 shadow">
                         <p class="text-xs font-bold text-amber-400">Query: "${rawQuery}"</p>
-                        <p class="text-xs text-slate-200">Hello! I am AI Acharya. Your study materials currently have <strong>${loadedFiles.length}</strong> files loaded. Ask me about any equation, figure, or concept!</p>
+                        <p class="text-xs text-slate-200">Hello! Ask me about any equation, figure, or concept and I will spotlight its exact location in your materials.</p>
                     </div>
                 `;
-                speechMessage = "Hello! How can I assist you with your study materials today?";
-            } else if (loadedFiles.length === 0) {
-                htmlOutput = `
-                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2 shadow">
-                        <p class="text-xs font-bold text-amber-400">Query: "${rawQuery}"</p>
-                        <p class="text-xs text-amber-400">Please load your study materials folder first.</p>
-                    </div>
-                `;
-                speechMessage = "Please load your study materials first.";
+                responseContainer.innerHTML = htmlOutput + responseContainer.innerHTML;
+                speakText("Hello! How can I spotlight your study materials?");
+                queryInput.value = '';
+                return;
+            }
+
+            if (loadedFiles.length === 0) {
+                alert("Please load your study materials folder first!");
+                return;
+            }
+
+            // Scan all files and pages for the query
+            currentSearchMatches = [];
+            for (let fileName of loadedFiles) {
+                let pages = fileTextPagesMap[fileName];
+                for (let i = 0; i < pages.length; i++) {
+                    let pageText = pages[i];
+                    let index = pageText.toLowerCase().indexOf(cleanQuery);
+                    if (index !== -1) {
+                        let start = Math.max(0, index - 80);
+                        let end = Math.min(pageText.length, index + 250);
+                        let snippet = pageText.substring(start, end);
+                        currentSearchMatches.push({
+                            fileName: fileName,
+                            pageNum: i + 1,
+                            snippet: snippet
+                        });
+                    }
+                }
+            }
+
+            if (currentSearchMatches.length > 0) {
+                currentMatchIndex = 0;
+                let firstMatch = currentSearchMatches[0];
+                loadFileOnViewer(firstMatch.fileName, firstMatch.pageNum);
+                updateSpotlightCard(firstMatch);
             } else {
-                let combinedText = "";
-                for (let fileName in fileContentsMap) {
-                    combinedText += `\n--- FILE: ${fileName} ---\n` + fileContentsMap[fileName];
-                }
-
-                let resultsFound = [];
-
-                if (cleanQuery.includes('equation') || cleanQuery.includes('formula')) {
-                    let regex = /([^.\n]*?(?:eq|equation|=|\+|\-|\*|\/)[^.\n]*?\([^)]+\))/gi;
-                    let matches = combinedText.match(regex);
-                    resultsFound = matches ? matches.slice(0, 4) : ["Found general equation context in materials."];
-                } else if (cleanQuery.includes('figure') || cleanQuery.includes('fig')) {
-                    let figRegex = new RegExp(`(?:figure|fig\\.?)\\s*\\d+[^\\n.]*`, 'gi');
-                    let matches = combinedText.match(figRegex);
-                    resultsFound = matches ? matches : ["Searched for figures across documents."];
-                } else {
-                    let searchTerms = cleanQuery.replace('explain', '').trim().split(/\s+/);
-                    let paragraphs = combinedText.split(/\r?\n/);
-                    for (let p of paragraphs) {
-                        let pLower = p.toLowerCase();
-                        if (searchTerms.every(term => term.length === 0 || pLower.includes(term))) {
-                            if (p.trim().length > 25) resultsFound.push(p.trim());
-                        }
-                    }
-                    if (resultsFound.length === 0) {
-                        let index = combinedText.toLowerCase().indexOf(cleanQuery);
-                        if (index !== -1) {
-                            resultsFound.push("..." + combinedText.substring(Math.max(0, index - 100), Math.min(combinedText.length, index + 300)) + "...");
-                        }
-                    }
-                }
-
-                htmlOutput = `
-                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3 shadow">
+                let htmlOutput = `
+                    <div class="bg-slate-900 border border-red-900/50 rounded-2xl p-4 space-y-2 shadow">
                         <p class="text-xs font-bold text-amber-400">Query: "${rawQuery}"</p>
+                        <p class="text-xs text-red-400">No matching instance found in your loaded study materials.</p>
+                    </div>
                 `;
-
-                if (resultsFound.length > 0) {
-                    htmlOutput += `<p class="text-[11px] text-slate-400">Retrieved Results:</p>`;
-                    for (let snippet of resultsFound.slice(0, 3)) {
-                        htmlOutput += `<div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-slate-300 font-mono text-[11px] leading-relaxed">${snippet}</div>`;
-                    }
-                    speechMessage = `I found matching references for your query.`;
-                } else {
-                    htmlOutput += `<p class="text-xs text-red-400">No exact matches found for "${rawQuery}" in your materials.</p>`;
-                    speechMessage = `I could not find a match for that query in your study materials.`;
-                }
-                htmlOutput += `</div>`;
+                responseContainer.innerHTML = htmlOutput + responseContainer.innerHTML;
+                speakText("No matching instance found.");
             }
 
-            responseContainer.innerHTML = htmlOutput + responseContainer.innerHTML;
-            speakText(speechMessage);
             queryInput.value = '';
-            
-            if (window.MathJax) {
-                MathJax.typeset();
-            }
+            if (window.MathJax) MathJax.typeset();
         }
     </script>
 </body>
