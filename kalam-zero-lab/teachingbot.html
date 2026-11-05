@@ -29,30 +29,11 @@
         .bot-eyes { transform-origin: center; animation: blink 4s infinite; }
         .speaking-mouth { animation: talk 0.25s infinite ease-in-out; }
 
-        /* PDF Text Layer & Highlighting Styling */
         .pdf-container { position: relative; display: inline-block; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); border-radius: 8px; overflow: hidden; background: white; }
         .pdf-container canvas { display: block; }
-        .textLayer {
-            position: absolute;
-            left: 0;
-            top: 0;
-            right: 0;
-            bottom: 0;
-            overflow: hidden;
-            opacity: 0.85;
-            line-height: 1.0;
-        }
-        .textLayer span {
-            position: absolute;
-            white-space: pre;
-            cursor: text;
-            transform-origin: 0% 0%;
-            color: transparent;
-        }
-        .textLayer span.highlight {
-            background-color: rgba(250, 204, 21, 0.6); /* Bright yellow highlight for searched terms */
-            border-bottom: 2px solid #ca8a04;
-        }
+        .textLayer { position: absolute; left: 0; top: 0; right: 0; bottom: 0; overflow: hidden; opacity: 0.85; line-height: 1.0; }
+        .textLayer span { position: absolute; white-space: pre; cursor: text; transform-origin: 0% 0%; color: transparent; }
+        .textLayer span.highlight { background-color: rgba(250, 204, 21, 0.6); border-bottom: 2px solid #ca8a04; }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans" onload="initAcharya()">
@@ -63,7 +44,7 @@
             <img src="logo.jpeg" alt="GARRF Logo" class="w-10 h-10 object-contain rounded-lg bg-white p-0.5 shadow" onerror="this.onerror=null; this.src='https://via.placeholder.com/40?text=GARRF';">
             <div>
                 <h1 class="text-sm md:text-lg font-bold tracking-tight text-white">Gopalkrishna Advanced Rural Research Foundation</h1>
-                <p class="text-xs text-slate-400">AI Acharya &bull; Spotlight Search & Highlight Engine Active</p>
+                <p class="text-xs text-slate-400">AI Acharya &bull; Interactive Clarification Engine Active</p>
             </div>
         </div>
         <div class="flex items-center space-x-3">
@@ -165,7 +146,6 @@
                 </div>
             </div>
             
-            <!-- Top-aligned canvas viewer container -->
             <div class="flex-1 p-6 overflow-auto flex justify-center bg-slate-950/50">
                 <div id="welcome-viewer" class="text-center space-y-3 max-w-sm mt-12">
                     <div class="p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow">
@@ -180,14 +160,14 @@
             </div>
         </section>
 
-        <!-- Right Panel: AI Acharya Spotlight Chat Assistant -->
+        <!-- Right Panel: AI Acharya Smart Chat & Clarification Assistant -->
         <section class="w-full md:w-96 bg-slate-950 flex flex-col overflow-hidden">
             <div class="bg-slate-900 border-b border-slate-800 px-4 py-3 flex items-center justify-between">
                 <span class="text-xs font-bold text-white flex items-center space-x-2">
                     <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span>AI Acharya Spotlight</span>
+                    <span>AI Acharya Smart Tutor</span>
                 </span>
-                <span class="text-[10px] text-slate-400 font-mono">Global Multi-Doc Engine</span>
+                <span class="text-[10px] text-slate-400 font-mono">Clarification Engine</span>
             </div>
 
             <!-- Chat / Query Feed -->
@@ -201,7 +181,7 @@
             <!-- Query Input Bar -->
             <div class="bg-slate-900 border-t border-slate-800 p-3">
                 <div class="flex items-center space-x-2">
-                    <input type="text" id="query-input" placeholder="Ask across all loaded documents..." 
+                    <input type="text" id="query-input" placeholder="Ask (e.g., 'Summarize chapter 1', 'What is PZT?')..." 
                            class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500 placeholder-slate-500"
                            onkeypress="if(event.key === 'Enter') submitQuery()">
                     <button onclick="submitQuery()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold px-4 py-2.5 rounded-xl text-xs transition shadow">
@@ -228,7 +208,7 @@
         let pageNum = 1;
         let pageCount = 0;
         let currentActiveFile = "";
-        let currentSearchQuery = ""; // Active search query for keyword highlighting
+        let currentSearchQuery = "";
 
         let currentSearchMatches = [];
 
@@ -337,7 +317,6 @@
             return pages;
         }
 
-        // Render PDF page with interactive text layer and keyword highlighting
         async function renderPdfPage(file, num, highlightQuery = "") {
             const arrayBuffer = await file.arrayBuffer();
             const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
@@ -367,7 +346,6 @@
 
             await page.render({ canvasContext: ctx, viewport: viewport }).promise;
 
-            // Render text layer for highlighting
             const textContent = await page.getTextContent();
             pdfjsLib.renderTextLayer({
                 textContentSource: textContent,
@@ -476,20 +454,20 @@
             loadFileOnViewer(match.fileName, match.pageNum, currentSearchQuery);
         }
 
+        // Smart Query Engine with Proactive Clarification for Ambiguous Summaries
         function submitQuery() {
             const queryInput = document.getElementById('query-input');
             const rawQuery = queryInput.value.trim();
             if (!rawQuery) return;
 
             const responseContainer = document.getElementById('response-container');
-            let cleanQuery = rawQuery.replace(/[?\/!.,;:]+$/, '').toLowerCase();
-            currentSearchQuery = cleanQuery;
+            let qLower = rawQuery.toLowerCase();
 
-            if (cleanQuery === 'hi' || cleanQuery === 'hello' || cleanQuery === 'hey') {
+            if (qLower === 'hi' || qLower === 'hello' || qLower === 'hey') {
                 let htmlOutput = `
                     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2 shadow">
                         <p class="text-xs font-bold text-amber-400">Query: "${rawQuery}"</p>
-                        <p class="text-xs text-slate-200">Hello! Ask me about any equation, figure, or concept across all <strong>${loadedFiles.length}</strong> loaded documents.</p>
+                        <p class="text-xs text-slate-200">Hello! Ask me to summarize a chapter/article or search for any concept across all <strong>${loadedFiles.length}</strong> loaded documents.</p>
                     </div>
                 `;
                 responseContainer.innerHTML = htmlOutput + responseContainer.innerHTML;
@@ -503,7 +481,67 @@
                 return;
             }
 
-            // Global search across all loaded files and all pages
+            // SMART SUMMARIZATION INTENT CHECK
+            if (qLower.includes('summarize') || qLower.includes('summary') || qLower.includes('overview')) {
+                let targetFile = null;
+                
+                // Check if user explicitly named a file or chapter
+                for (let fName of loadedFiles) {
+                    let cleanFName = fName.toLowerCase().replace(/\.[^/.]+$/, "");
+                    if (qLower.includes(cleanFName) || qLower.includes('chapter 1') && fName.toLowerCase().includes('1') || qLower.includes('chapter 2') && fName.toLowerCase().includes('2')) {
+                        targetFile = fName;
+                        break;
+                    }
+                }
+
+                // IF AMBIGUOUS / UNCLEAR WHICH FILE OR CHAPTER, PROACTIVELY ASK CLARIFICATION
+                if (!targetFile && loadedFiles.length > 1 && !qLower.includes('chapter 1') && !qLower.includes('chapter 2')) {
+                    let fileNamesList = loadedFiles.join(', ');
+                    let clarificationMsg = `Do you want a summary of Chapter 1 or Chapter 2, or a specific file? You have ${loadedFiles.length} files loaded: ${fileNamesList}.`;
+                    
+                    let htmlOutput = `
+                        <div class="bg-slate-900 border border-amber-500/80 rounded-2xl p-4 space-y-2 shadow-xl">
+                            <p class="text-xs font-bold text-amber-400">AI Acharya Clarification Needed:</p>
+                            <p class="text-xs text-slate-200">${clarificationMsg}</p>
+                        </div>
+                    `;
+                    responseContainer.innerHTML = htmlOutput + responseContainer.innerHTML;
+                    speakText("Do you want a summary of chapter 1 or 2, or a specific file?");
+                    queryInput.value = '';
+                    return;
+                }
+
+                // If only 1 file is loaded or specific file matched, proceed with summary
+                if (!targetFile) targetFile = loadedFiles[0];
+
+                let pages = fileTextPagesMap[targetFile];
+                let summarySnippet = pages && pages.length > 0 ? pages[0].substring(0, 500) + "..." : "No text available.";
+                if (pages && pages.length > 1) {
+                    summarySnippet += "\n\n" + (pages[1] ? pages[1].substring(0, 300) : "");
+                }
+
+                let htmlOutput = `
+                    <div class="bg-slate-900 border border-amber-500/50 rounded-2xl p-4 space-y-3 shadow-xl">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                            <span class="text-xs font-bold text-amber-400">Smart Summary</span>
+                            <span class="text-[10px] text-slate-400 font-mono">${targetFile}</span>
+                        </div>
+                        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-slate-300 font-mono text-[11px] leading-relaxed whitespace-pre-wrap">
+                            ${summarySnippet}
+                        </div>
+                    </div>
+                `;
+                responseContainer.innerHTML = htmlOutput + responseContainer.innerHTML;
+                loadFileOnViewer(targetFile, 1, "");
+                speakText(`Here is a summary overview of ${targetFile}.`);
+                queryInput.value = '';
+                return;
+            }
+
+            // SPOTLIGHT SEARCH INTENT
+            let cleanQuery = rawQuery.replace(/[?\/!.,;:]+$/, '').toLowerCase();
+            currentSearchQuery = cleanQuery;
+
             currentSearchMatches = [];
             for (let fileName of loadedFiles) {
                 let pages = fileTextPagesMap[fileName];
@@ -525,7 +563,6 @@
             }
 
             if (currentSearchMatches.length > 0) {
-                // Automatically load first match on viewer with highlighting
                 let firstMatch = currentSearchMatches[0];
                 loadFileOnViewer(firstMatch.fileName, firstMatch.pageNum, currentSearchQuery);
 
@@ -538,11 +575,10 @@
                 let htmlOutput = `
                     <div class="bg-slate-900 border border-amber-500/40 rounded-2xl p-4 space-y-3 shadow-xl">
                         <div class="flex items-center justify-between border-b border-slate-800 pb-2">
-                            <span class="text-xs font-bold text-amber-400">Found ${currentSearchMatches.length} Match(es) across ${Object.keys(matchesByFile).length} doc(s)</span>
+                            <span class="text-xs font-bold text-amber-400">Found ${currentSearchMatches.length} Match(es)</span>
                             <span class="text-[10px] text-slate-400 font-mono">Spotlight Engine</span>
                         </div>
                         
-                        <!-- First Match Detail -->
                         <div class="space-y-1">
                             <p class="text-[11px] font-bold text-white">First Instance in <code class="text-amber-400">${firstMatch.fileName}</code> (Page ${firstMatch.pageNum}):</p>
                             <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-slate-300 font-mono text-[11px] leading-relaxed">
@@ -550,7 +586,6 @@
                             </div>
                         </div>
 
-                        <!-- All Matching Pages Grouped by Document -->
                         <div class="pt-2 border-t border-slate-800 space-y-2">
                             <p class="text-[11px] font-semibold text-slate-400">All matching pages (Click to jump & highlight):</p>
                 `;
@@ -568,11 +603,7 @@
                     htmlOutput += `</div></div>`;
                 }
 
-                htmlOutput += `
-                        </div>
-                    </div>
-                `;
-
+                htmlOutput += `</div>`;
                 responseContainer.innerHTML = htmlOutput + responseContainer.innerHTML;
                 speakText(`Found ${currentSearchMatches.length} matches. Highlighting first instance in ${firstMatch.fileName} on page ${firstMatch.pageNum}.`);
             } else {
