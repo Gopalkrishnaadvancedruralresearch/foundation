@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Acharya - GARRF Proprietary Teaching Bot</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Include PDF.js to properly extract text from uploaded PDF files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
     <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <style>
@@ -249,6 +254,22 @@
             }
         }
 
+        // Helper function to extract real text from PDFs using PDF.js
+        async function extractPdfText(file) {
+            const arrayBuffer = await file.arrayBuffer();
+            const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+            const pdfDoc = await loadingTask.promise;
+            let fullText = "";
+
+            for (let i = 1; i <= pdfDoc.numPages; i++) {
+                const page = await pdfDoc.getPage(i);
+                const textContent = await page.getTextContent();
+                const pageText = textContent.items.map(item => item.str).join(" ");
+                fullText += `[Page ${i}] ` + pageText + "\n";
+            }
+            return fullText;
+        }
+
         async function handleFileSelection(event) {
             const files = event.target.files;
             if (files.length === 0) return;
@@ -262,12 +283,15 @@
                 if (!loadedFiles.includes(file.name)) {
                     loadedFiles.push(file.name);
                     try {
-                        const text = await file.text();
-                        // Strip out raw binary PDF tags so it stays clean
-                        let cleanText = text.includes('%PDF') ? "[PDF Document Loaded: " + file.name + " - Ask specific questions about its content]" : text;
-                        fileContentsMap[file.name] = cleanText;
+                        let extractedText = "";
+                        if (file.type === "application/pdf" || file.name.toLowerCase().endsWith('.pdf')) {
+                            extractedText = await extractPdfText(file);
+                        } else {
+                            extractedText = await file.text();
+                        }
+                        fileContentsMap[file.name] = extractedText;
                     } catch(e) {
-                        fileContentsMap[file.name] = "[Binary file]";
+                        fileContentsMap[file.name] = "[Error parsing file text]";
                     }
 
                     const item = document.createElement('div');
@@ -298,7 +322,6 @@
             let htmlOutput = "";
             let speechMessage = "";
 
-            // Handle casual greetings gracefully without dumping raw file code
             if (qLower === 'hi' || qLower === 'hello' || qLower === 'hey' || qLower === 'greetings') {
                 htmlOutput = `
                     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
@@ -306,7 +329,7 @@
                             <span class="text-xs font-mono text-amber-400">Query: "${query}"</span>
                             <span class="text-xs text-slate-500">AI Acharya</span>
                         </div>
-                        <p class="text-sm text-slate-200">Hello! I am AI Acharya. Your study materials folder currently has <strong>${loadedFiles.length}</strong> files loaded. What topic or equation would you like to explore today?</p>
+                        <p class="text-sm text-slate-200">Hello! I am AI Acharya. Your study materials folder currently has <strong>${loadedFiles.length}</strong> files fully indexed and readable. What topic would you like to explore?</p>
                     </div>
                 `;
                 speechMessage = "Hello! How can I assist you with your study materials today?";
@@ -322,17 +345,19 @@
                 `;
                 speechMessage = "Please load your study materials first.";
             } else {
-                // Search files
                 let foundMatch = false;
                 let matchedFile = "";
                 let extractedSnippet = "";
 
                 for (let fileName in fileContentsMap) {
                     let content = fileContentsMap[fileName];
-                    if (content.toLowerCase().includes(qLower) || qLower.split(' ').some(word => word.length > 3 && content.toLowerCase().includes(word))) {
+                    let index = content.toLowerCase().indexOf(qLower);
+                    if (index !== -1) {
                         foundMatch = true;
                         matchedFile = fileName;
-                        extractedSnippet = content.substring(0, 400) + "...";
+                        let start = Math.max(0, index - 100);
+                        let end = Math.min(content.length, index + 300);
+                        extractedSnippet = "..." + content.substring(start, end) + "...";
                         break;
                     }
                 }
@@ -348,7 +373,7 @@
                 if (foundMatch) {
                     htmlOutput += `
                         <p class="text-sm text-slate-200">Retrieved from your materials:</p>
-                        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 text-slate-300 font-mono text-sm">
+                        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 text-slate-300 font-mono text-sm leading-relaxed">
                             ${extractedSnippet}
                         </div>
                         <p class="text-xs text-slate-400">Source File: <strong class="text-white">${matchedFile}</strong></p>
