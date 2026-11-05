@@ -38,7 +38,7 @@
             <img src="logo.jpeg" alt="GARRF Logo" class="w-10 h-10 object-contain rounded-lg bg-white p-0.5 shadow" onerror="this.onerror=null; this.src='https://via.placeholder.com/40?text=GARRF';">
             <div>
                 <h1 class="text-sm md:text-lg font-bold tracking-tight text-white">Gopalkrishna Advanced Rural Research Foundation</h1>
-                <p class="text-xs text-slate-400">AI Acharya &bull; Multi-Match Spotlight Engine Active</p>
+                <p class="text-xs text-slate-400">AI Acharya &bull; Global Multi-Doc Spotlight Engine Active</p>
             </div>
         </div>
         <div class="flex items-center space-x-3">
@@ -158,7 +158,7 @@
                     <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                     <span>AI Acharya Spotlight</span>
                 </span>
-                <span class="text-[10px] text-slate-400 font-mono">Precision Engine</span>
+                <span class="text-[10px] text-slate-400 font-mono">Global Multi-Doc Engine</span>
             </div>
 
             <!-- Chat / Query Feed -->
@@ -172,7 +172,7 @@
             <!-- Query Input Bar -->
             <div class="bg-slate-900 border-t border-slate-800 p-3">
                 <div class="flex items-center space-x-2">
-                    <input type="text" id="query-input" placeholder="Ask (e.g., 'What is PZT?')..." 
+                    <input type="text" id="query-input" placeholder="Ask across all loaded documents..." 
                            class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500 placeholder-slate-500"
                            onkeypress="if(event.key === 'Enter') submitQuery()">
                     <button onclick="submitQuery()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold px-4 py-2.5 rounded-xl text-xs transition shadow">
@@ -410,7 +410,6 @@
             speakText("Thank you. Let us start.");
         }
 
-        // Jump directly to any match when clicking its page tag
         function jumpToMatch(index) {
             let match = currentSearchMatches[index];
             if (!match) return;
@@ -429,7 +428,7 @@
                 let htmlOutput = `
                     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2 shadow">
                         <p class="text-xs font-bold text-amber-400">Query: "${rawQuery}"</p>
-                        <p class="text-xs text-slate-200">Hello! Ask me about any equation, figure, or concept and I will show all matching pages.</p>
+                        <p class="text-xs text-slate-200">Hello! Ask me about any equation, figure, or concept and I will search across all <strong>${loadedFiles.length}</strong> loaded documents.</p>
                     </div>
                 `;
                 responseContainer.innerHTML = htmlOutput + responseContainer.innerHTML;
@@ -443,9 +442,11 @@
                 return;
             }
 
+            // GLOBAL SEARCH ACROSS ALL LOADED FILES AND ALL PAGES
             currentSearchMatches = [];
             for (let fileName of loadedFiles) {
                 let pages = fileTextPagesMap[fileName];
+                if (!pages) continue;
                 for (let i = 0; i < pages.length; i++) {
                     let pageText = pages[i];
                     let index = pageText.toLowerCase().indexOf(cleanQuery);
@@ -467,50 +468,62 @@
                 let firstMatch = currentSearchMatches[0];
                 loadFileOnViewer(firstMatch.fileName, firstMatch.pageNum);
 
-                // Build HTML showing total count, first match details, and list of all other page buttons
+                // Group matches by document name for organized display
+                let matchesByFile = {};
+                currentSearchMatches.forEach((m, globalIdx) => {
+                    if (!matchesByFile[m.fileName]) matchesByFile[m.fileName] = [];
+                    matchesByFile[m.fileName].push({ ...m, globalIdx });
+                });
+
                 let htmlOutput = `
                     <div class="bg-slate-900 border border-amber-500/40 rounded-2xl p-4 space-y-3 shadow-xl">
                         <div class="flex items-center justify-between border-b border-slate-800 pb-2">
-                            <span class="text-xs font-bold text-amber-400">Found ${currentSearchMatches.length} Match(es)</span>
-                            <span class="text-[10px] text-slate-400 font-mono">${firstMatch.fileName}</span>
+                            <span class="text-xs font-bold text-amber-400">Found ${currentSearchMatches.length} Total Match(es) across ${Object.keys(matchesByFile).length} document(s)</span>
+                            <span class="text-[10px] text-slate-400 font-mono">Global RAG</span>
                         </div>
                         
                         <!-- First Match Detail -->
                         <div class="space-y-1">
-                            <p class="text-[11px] font-bold text-white">First Instance (Page ${firstMatch.pageNum}):</p>
+                            <p class="text-[11px] font-bold text-white">First Instance in <code class="text-amber-400">${firstMatch.fileName}</code> (Page ${firstMatch.pageNum}):</p>
                             <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-slate-300 font-mono text-[11px] leading-relaxed">
                                 ...${firstMatch.snippet}...
                             </div>
                         </div>
 
-                        <!-- List of all other matching pages -->
-                        <div class="pt-2 border-t border-slate-800">
-                            <p class="text-[11px] font-semibold text-slate-400 mb-1.5">All matching pages (Click to jump):</p>
-                            <div class="flex flex-wrap gap-1.5">
+                        <!-- All Matching Pages Grouped by Document -->
+                        <div class="pt-2 border-t border-slate-800 space-y-2">
+                            <p class="text-[11px] font-semibold text-slate-400">All matching pages by document (Click to jump):</p>
                 `;
 
-                currentSearchMatches.forEach((m, idx) => {
-                    let activeStyle = idx === 0 ? "bg-amber-500 text-slate-950 font-bold" : "bg-slate-800 text-amber-400 hover:bg-slate-700";
-                    htmlOutput += `<button onclick="jumpToMatch(${idx})" class="px-2 py-1 rounded text-xs transition ${activeStyle}">p. ${m.pageNum}</button>`;
-                });
+                for (let fileName in matchesByFile) {
+                    htmlOutput += `
+                        <div class="text-[11px] space-y-1">
+                            <span class="font-bold text-slate-300 truncate block">&bull; ${fileName}:</span>
+                            <div class="flex flex-wrap gap-1.5 pl-2">
+                    `;
+                    matchesByFile[fileName].forEach(m => {
+                        let activeStyle = m.globalIdx === 0 ? "bg-amber-500 text-slate-950 font-bold" : "bg-slate-800 text-amber-400 hover:bg-slate-700";
+                        htmlOutput += `<button onclick="jumpToMatch(${m.globalIdx})" class="px-2 py-1 rounded text-xs transition ${activeStyle}">p. ${m.pageNum}</button>`;
+                    });
+                    htmlOutput += `</div></div>`;
+                }
 
                 htmlOutput += `
-                            </div>
                         </div>
                     </div>
                 `;
 
                 responseContainer.innerHTML = htmlOutput + responseContainer.innerHTML;
-                speakText(`Found ${currentSearchMatches.length} matches. Showing first instance on page ${firstMatch.pageNum}.`);
+                speakText(`Found ${currentSearchMatches.length} matches across all documents. Showing first instance in ${firstMatch.fileName} on page ${firstMatch.pageNum}.`);
             } else {
                 let htmlOutput = `
                     <div class="bg-slate-900 border border-red-900/50 rounded-2xl p-4 space-y-2 shadow">
                         <p class="text-xs font-bold text-amber-400">Query: "${rawQuery}"</p>
-                        <p class="text-xs text-red-400">No matching instance found in your loaded study materials.</p>
+                        <p class="text-xs text-red-400">No matching instance found across any of the ${loadedFiles.length} loaded documents.</p>
                     </div>
                 `;
                 responseContainer.innerHTML = htmlOutput + responseContainer.innerHTML;
-                speakText("No matching instance found.");
+                speakText("No matching instance found in your study materials.");
             }
 
             queryInput.value = '';
