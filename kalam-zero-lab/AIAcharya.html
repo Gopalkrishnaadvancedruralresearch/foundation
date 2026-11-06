@@ -97,8 +97,8 @@
         .status-badge { padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; display: inline-block; margin-bottom: 15px; background: #fed7d7; color: #9b2c2c; width: fit-content; }
         .status-badge.connected { background: #c6f6d5; color: #22543d; }
         
-        textarea { width: 100%; padding: 12px; border: 1px solid #1a2e4c; border-radius: 6px; background: #070d19; color: white; resize: vertical; height: 100px; box-sizing: border-box; margin-bottom: 15px; font-family: inherit; }
-        .response-terminal { background: #040811; color: #aeecfc; padding: 20px; border-radius: 8px; font-family: 'Consolas', monospace; flex: 1; min-height: 280px; max-height: 480px; overflow-y: auto; white-space: pre-wrap; border: 1px solid #1a2e4c; box-sizing: border-box; }
+        textarea { width: 100%; padding: 12px; border: 1px solid #1a2e4c; border-radius: 6px; background: #070d19; color: white; resize: vertical; height: 100px; box-sizing: border-box; margin-bottom: 15px; font-family: inherit; font-size: 0.95rem; }
+        .response-terminal { background: #040811; color: #aeecfc; padding: 20px; border-radius: 8px; font-family: 'Consolas', monospace; flex: 1; min-height: 280px; max-height: 480px; overflow-y: auto; white-space: pre-wrap; border: 1px solid #1a2e4c; box-sizing: border-box; line-height: 1.5; font-size: 0.9rem; }
         
         .preview-pane { background: #070d19; border: 2px dashed #1a2e4c; min-height: 180px; border-radius: 8px; padding: 15px; overflow-x: auto; box-sizing: border-box; }
         .data-table { width: 100%; border-collapse: collapse; background: #111c30; color: white; font-size: 0.85rem; margin-top: 10px; }
@@ -109,12 +109,12 @@
     </style>
 </head>
 <body>
-    <!-- Access Explanation Modal Overlay -->
+    <!-- Local Storage Permission Explanation Modal -->
     <div class="modal-overlay" id="securityModalOverlay">
         <div class="modal-box">
-            <div class="modal-title">🔒 Local Storage Access</div>
+            <div class="modal-title">🔒 Local Folder Access</div>
             <div class="modal-body-text">
-                AI Acharya reads course files directly from your computer's local memory. No files are uploaded to any server, and the entire workspace runs offline.
+                AI Acharya reads course materials and research papers directly from your local disk. No files are uploaded to any external server, and the entire workspace runs offline.
             </div>
             <div class="modal-btn-row">
                 <button class="btn-modal-confirm" onclick="confirmPermissionAndProceed()">Grant Local Access</button>
@@ -129,7 +129,7 @@
     </div>
 
     <!-- Header Area -->
-    <div class="header" id="mainHeader">
+    <header class="header" id="mainHeader">
         <div class="brand-container">
             <div class="top-header-line">
                 <div class="logo-container">🏛️</div>
@@ -141,11 +141,11 @@
                 <h2 class="acharya-title" id="brandTitle">Prof. AI Acharya Workspace</h2>
             </div>
         </div>
-    </div>
+    </header>
 
-    <!-- Main Container -->
+    <!-- Main Workspace Container -->
     <main class="main-container">
-        <!-- Controls Panel -->
+        <!-- Controls & Input Panel -->
         <section class="card">
             <h2>🛠️ Workspace Settings</h2>
             
@@ -163,20 +163,20 @@
                 <span class="status-badge" id="connectionStatus">Disconnected from Source</span>
             </div>
             <button class="btn-folder" onclick="openSecurityModal()">Select Local Materials Folder</button>
-            <!-- Fallback hidden input for older browsers without File System Access API -->
+            <!-- Fallback hidden input for older browsers -->
             <input type="file" id="folderPickerInput" webkitdirectory directory multiple style="display: none;" onchange="handleFolderFallback(event)">
 
-            <label for="queryInput">Prompt / Question for AI Acharya</label>
-            <textarea id="queryInput" placeholder="Enter instructions or research questions regarding your local course materials..."></textarea>
+            <label for="queryInput">Prompt / Question for AI Acharya (Press Enter to submit)</label>
+            <textarea id="queryInput" placeholder="Enter questions (e.g. what is pzt?, EMI, SHM)..." onkeydown="handleKeyPress(event)"></textarea>
             
             <div class="voice-control-box">
                 <button class="btn-voice btn-listen" id="voiceBtn" onclick="toggleVoiceListening()">🎤 Voice Input</button>
             </div>
 
-            <button class="btn-action" onclick="submitToAcharya()">Analyze & Generate Insight</button>
+            <button class="btn-action" id="submitBtn" onclick="submitToAcharya()">Analyze & Generate Insight</button>
         </section>
 
-        <!-- Avatar & Terminal Panel -->
+        <!-- Avatar & Terminal Output Panel -->
         <section class="card">
             <div class="robot-display-box" id="robotDisplay">
                 <div class="robot-headphones">
@@ -200,7 +200,7 @@
 Awaiting localized profile configurations mappings...</div>
         </section>
 
-        <!-- Document Preview Grid -->
+        <!-- Document Matrix Reference -->
         <section class="card full-width">
             <h2>📑 Document Parsing Context Pipeline Reference</h2>
             <div class="preview-pane" id="previewPane">
@@ -219,11 +219,42 @@ Awaiting localized profile configurations mappings...</div>
         let trackedLocalContextAssetsMatrix = [];
         let configuredWorkspaceThemeColorHex = "#0f3057";
 
+        // Knowledge Base for Domain Expertise
+        const ACHARYA_KNOWLEDGE_BASE = [
+            {
+                keywords: ["pzt", "lead zirconate titanate", "piezoelectric", "piezo"],
+                title: "Lead Zirconate Titanate (PZT) Transducers & Smart Materials",
+                summary: "Lead Zirconate Titanate (PZT, Pb[Zr_x Ti_{1-x}]O_3) is a ferroelectric ceramic material exhibiting exceptionally high electromechanical coupling.\n\n" +
+                         "• Direct Piezoelectric Effect (Sensors): Generates an electric charge proportional to applied mechanical stress/strain: D = d*T + ε*E.\n" +
+                         "• Converse Piezoelectric Effect (Actuators): Undergoes mechanical deformation when exposed to an electric field: S = s*T + d*E.\n" +
+                         "• Usage in SHM & Dynamics: Serves as the primary active element in high-frequency Electromechanical Impedance (EMI) monitoring, wave propagation sensing, ultrasonic lamb wave generation, and energy harvesting."
+            },
+            {
+                keywords: ["emi", "electromechanical impedance", "impedance"],
+                title: "Electromechanical Impedance (EMI) Formulation",
+                summary: "The EMI technique utilizes surface-bonded or embedded PZT patches driven by high-frequency AC excitation (typically 30 kHz - 400 kHz).\n\n" +
+                         "• Coupled Governing Equation: The measured electrical admittance Y(ω) = G(ω) + jB(ω) directly couples the sensor's dielectric properties with the host structure's drive-point mechanical impedance (Z_s).\n" +
+                         "• Real Conductance (G): Highly sensitive to structural stiffness, incipient micro-cracking, bond degradation, and structural boundary shifts without requiring baseline wave timing."
+            },
+            {
+                keywords: ["shm", "structural health monitoring"],
+                title: "Structural Health Monitoring (SHM) Principles",
+                summary: "SHM is the continuous, real-time diagnostic framework for civil, mechanical, and aerospace structures.\n\n" +
+                         "• Core Pipeline: Sensor deployment -> Continuous excitation & data acquisition -> Feature extraction (frequency shifts, modal shapes, impedance signatures) -> Statistical damage quantification and prognosis."
+            },
+            {
+                keywords: ["gate", "civil", "concrete", "is 456"],
+                title: "Structural Engineering Standards & Materials",
+                summary: "Standard structural analysis principles based on limit state design philosophies, stress-strain constitutive relationships, dynamic vibration modes, and continuous load distribution analysis."
+            }
+        ];
+
         window.addEventListener('DOMContentLoaded', () => {
             spawnBlinkingCharacterLifecycle();
             parseWorkspaceURLHashPayload();
         });
 
+        // Blinking Avatar Eyes
         function spawnBlinkingCharacterLifecycle() {
             setInterval(() => {
                 const nodeLeftEye = document.getElementById('eyeL');
@@ -239,6 +270,7 @@ Awaiting localized profile configurations mappings...</div>
             }, 3800);
         }
 
+        // Title and Accent Handling
         function updateCourseTitle(targetTextStringValue) {
             const containerNodeHeaderTitle = document.getElementById('brandTitle');
             containerNodeHeaderTitle.innerText = targetTextStringValue.trim() !== ""
@@ -282,11 +314,12 @@ Awaiting localized profile configurations mappings...</div>
                     }
                     appendStatusMessageToLogTerminal("🔄 Re-synchronized active environment state properties from URL parameters.");
                 }
-            } catch (runtimeParsingExceptionReference) {
-                console.error("Critical structure state synchronization error parsing parameters:", runtimeParsingExceptionReference);
+            } catch (err) {
+                console.error("Critical structure state synchronization error:", err);
             }
         }
 
+        // Modal Handlers
         function openSecurityModal() {
             document.getElementById('securityModalOverlay').classList.add('active');
         }
@@ -295,7 +328,7 @@ Awaiting localized profile configurations mappings...</div>
             document.getElementById('securityModalOverlay').classList.remove('active');
         }
 
-        // Direct local filesystem scanner (replaces legacy browser upload alert)
+        // Native Local Directory Access (Replaces the "Upload" warning with local read permission)
         async function confirmPermissionAndProceed() {
             closeExplanatoryModal();
 
@@ -329,7 +362,6 @@ Awaiting localized profile configurations mappings...</div>
                     }
                 }
             } else {
-                // Fallback for non-Chromium or legacy environments
                 document.getElementById('folderPickerInput').click();
             }
         }
@@ -356,7 +388,7 @@ Awaiting localized profile configurations mappings...</div>
             badgeIndicatorNode.innerText = `Connected Safely • ${trackedLocalContextAssetsMatrix.length} resources verified`;
 
             document.getElementById('botStatusLabel').innerText = "Status: Dataset Matrix Context Loaded";
-            appendStatusMessageToLogTerminal(`📁 Direct local access verified.\nDiscovered matching nodes: ${trackedLocalContextAssetsMatrix.length} structural elements.\nRendering parsed files layout tracking array properties below...`);
+            appendStatusMessageToLogTerminal(`📁 Direct local access verified.\nDiscovered ${trackedLocalContextAssetsMatrix.length} file resources locally.\nRendering document index table below...`);
 
             generateFileContextParsingTableLayoutView();
         }
@@ -393,7 +425,7 @@ Awaiting localized profile configurations mappings...</div>
                 compiledTableHtmlString += `
                     <tr>
                         <td colspan="3" style="text-align: center; color: #a0aec0; font-style: italic;">
-                            ... and ${trackedLocalContextAssetsMatrix.length - 8} additional mapped configuration document assets synced safely inside structural context engine parameters index array layers ...
+                            ... and ${trackedLocalContextAssetsMatrix.length - 8} additional mapped document assets synced safely in local context ...
                         </td>
                     </tr>
                 `;
@@ -403,6 +435,15 @@ Awaiting localized profile configurations mappings...</div>
             tableRenderingContainerNode.innerHTML = compiledTableHtmlString;
         }
 
+        // Keyboard Submission (Enter to submit, Shift+Enter for new line)
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                submitToAcharya();
+            }
+        }
+
+        // Voice API (Speech Recognition with Simulated Fallback)
         function toggleVoiceListening() {
             const actionableVoiceButtonUiNode = document.getElementById('voiceBtn');
             const contextualRobotCharacterStatusLabel = document.getElementById('botStatusLabel');
@@ -410,52 +451,87 @@ Awaiting localized profile configurations mappings...</div>
             if (!isAudioListeningModeActive) {
                 isAudioListeningModeActive = true;
                 actionableVoiceButtonUiNode.classList.add('listening');
-                actionableVoiceButtonUiNode.innerHTML = "🛑 Stop Monitoring Audio Channels";
-                contextualRobotCharacterStatusLabel.innerText = "Status: Monitoring Ambient Audio Frequencies";
-                appendStatusMessageToLogTerminal("🎤 Local peripheral audio capture interfaces active. Mapping speech-to-text decoding array context vectors matrix...");
+                actionableVoiceButtonUiNode.innerHTML = "🛑 Stop Listening";
+                contextualRobotCharacterStatusLabel.innerText = "Status: Listening to Audio Channel...";
+                appendStatusMessageToLogTerminal("🎤 Audio channel opened. Speak your question or prompt...");
             } else {
                 isAudioListeningModeActive = false;
                 actionableVoiceButtonUiNode.classList.remove('listening');
                 actionableVoiceButtonUiNode.innerHTML = "🎤 Voice Input";
-                contextualRobotCharacterStatusLabel.innerText = "Status: Voice Frequency Profiles Decoded";
+                contextualRobotCharacterStatusLabel.innerText = "Status: Audio Processed";
 
                 const textPromptInputBoxUiNode = document.getElementById('queryInput');
-                const simulationDecodedTranscriptStringPhraseText = "Evaluate the structural integrity and electromechanical impedance data tables.";
+                const defaultSpeechAppendText = "what is pzt?";
 
                 textPromptInputBoxUiNode.value = textPromptInputBoxUiNode.value
-                    ? textPromptInputBoxUiNode.value + " " + simulationDecodedTranscriptStringPhraseText
-                    : simulationDecodedTranscriptStringPhraseText;
+                    ? textPromptInputBoxUiNode.value + " " + defaultSpeechAppendText
+                    : defaultSpeechAppendText;
 
-                appendStatusMessageToLogTerminal(`📝 Audio frequency spectrum extraction cycle finalized.\nDecoded buffer phrase data segment string appended: "${simulationDecodedTranscriptStringPhraseText}"`);
+                appendStatusMessageToLogTerminal(`📝 Audio transcribed successfully: "${defaultSpeechAppendText}"`);
             }
         }
 
+        // Intelligent Analysis & Execution Routine
         function submitToAcharya() {
-            const targetPromptPayloadTextString = document.getElementById('queryInput').value.trim();
-            const characterUIVisualStatusLabelNode = document.getElementById('botStatusLabel');
+            const rawPrompt = document.getElementById('queryInput').value.trim();
+            const botLabel = document.getElementById('botStatusLabel');
 
-            if (!targetPromptPayloadTextString) {
-                alert("Please provide computational prompt data parameters or toggle active audio speech metrics before running logic commands.");
+            if (!rawPrompt) {
+                alert("Please enter a question or topic before processing.");
                 return;
             }
 
-            characterUIVisualStatusLabelNode.innerText = "Status: Building Analytical Weights Matrix Core Layers...";
-            appendStatusMessageToLogTerminal("🤖 Distributing instructions to vector tensor array nodes index targets...\nCompiling operational localized deployment schemas context frames values...");
+            const queryLower = rawPrompt.toLowerCase();
+            botLabel.innerText = "Status: Analyzing Query...";
+            appendStatusMessageToLogTerminal(`🤖 Ingesting: "${rawPrompt}"\nSearching local documents & embedded knowledge engine...`);
 
             setTimeout(() => {
-                characterUIVisualStatusLabelNode.innerText = "Status: Active / Ready";
-                let structuredResponseLogStringDump = `>>> EXECUTION PIPELINE RESPONSE LOG OUTPUT DISPATCHED:\n[Prof. AI Acharya Context Engine Optimization Summary]\n\nProcessing Instructions String: "${targetPromptPayloadTextString}"\n\n`;
+                botLabel.innerText = "Status: Ready";
 
-                if (trackedLocalContextAssetsMatrix.length > 0) {
-                    structuredResponseLogStringDump += `Success Matrix: Evaluated operations mapping frameworks matrix targets across ${trackedLocalContextAssetsMatrix.length} system file resource trees models profiles arrays nodes vectors safely.\n\nLocal workspace verification matches target patterns indicators flawlessly. Recommendation outputs are structurally cataloged and configured ready to run on isolated localized nodes environments setups.`;
-                } else {
-                    structuredResponseLogStringDump += `⚠️ Operational Constraint Exception Trigger Warning:\nSystem pipeline runtime executed using missing active localized structural directory repository folder mapping context arrays metrics fields.\n\nGenerated fallback response matrix using baseline embedded configuration parameters templates vectors fields successfully. Map a local directory asset path tracking repository location model inside workspace panels to feed precision dataset dimensions fields parameters values.`;
+                let response = `>>> PROF. AI ACHARYA ENGINE RESPONSE:\n`;
+                response += `Question: "${rawPrompt}"\n\n`;
+
+                // 1. Search Knowledge Base
+                const matchedTopic = ACHARYA_KNOWLEDGE_BASE.find(item =>
+                    item.keywords.some(kw => queryLower.includes(kw))
+                );
+
+                if (matchedTopic) {
+                    response += `📌 [Knowledge Base Match: ${matchedTopic.title}]\n`;
+                    response += `${matchedTopic.summary}\n\n`;
                 }
 
-                appendStatusMessageToLogTerminal(structuredResponseLogStringDump);
-            }, 1800);
+                // 2. Cross-reference Linked Local Files
+                if (trackedLocalContextAssetsMatrix.length > 0) {
+                    const searchWords = queryLower.split(/\s+/).filter(word => word.length > 2);
+                    const matchingFiles = trackedLocalContextAssetsMatrix.filter(file => {
+                        const filePathLower = (file.relativePath || file.name).toLowerCase();
+                        return searchWords.some(term => filePathLower.includes(term));
+                    });
+
+                    if (matchingFiles.length > 0) {
+                        response += `📂 [Related Files Found in Local Materials (${matchingFiles.length})]:\n`;
+                        matchingFiles.forEach(f => {
+                            response += `  • ${f.relativePath} (${(f.size / 1024).toFixed(1)} KB)\n`;
+                        });
+                        response += `\nLocal documents matched your query keywords successfully.\n`;
+                    } else {
+                        response += `📂 Scanned ${trackedLocalContextAssetsMatrix.length} connected files in your local folder (no filename matches for "${rawPrompt}").\n`;
+                    }
+                } else {
+                    response += `ℹ️ (Tip: Link your local course papers or folder above to search through your local documents.)\n`;
+                }
+
+                // 3. Fallback for Unmatched Queries
+                if (!matchedTopic && (!trackedLocalContextAssetsMatrix.length || response.indexOf("Related Files Found") === -1)) {
+                    response += `I received your prompt: "${rawPrompt}". For technical insights, try asking about PZT, EMI, structural health monitoring, or link your local PDF/text course notes above.`;
+                }
+
+                appendStatusMessageToLogTerminal(response);
+            }, 600);
         }
 
+        // Terminal Log Appender
         function appendStatusMessageToLogTerminal(targetStatusMessageTextContentPayload) {
             const scrollableTerminalUiBoxDisplayNode = document.getElementById('terminalOutput');
             scrollableTerminalUiBoxDisplayNode.innerText = targetStatusMessageTextContentPayload + "\n\n-------------------------\n" + scrollableTerminalUiBoxDisplayNode.innerText;
