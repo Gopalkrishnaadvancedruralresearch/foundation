@@ -67,6 +67,7 @@
         .robot-face { width: 85px; height: 65px; background: #1a202c; border-radius: 20px; display: flex; align-items: center; justify-content: space-around; padding: 0 10px; box-sizing: border-box; }
         .robot-eye { width: 18px; height: 18px; background: #00e5ff; border-radius: 50%; box-shadow: 0 0 12px #00e5ff; transition: all 0.2s; }
         .robot-eye.blinking { height: 3px; margin-top: 8px; }
+        .robot-eye.speaking { background: #ecc94b; box-shadow: 0 0 16px #ecc94b; }
         .robot-body { width: 90px; height: 80px; background: #cbd5e0; border-radius: 20px 20px 10px 10px; margin-top: 12px; position: relative; box-shadow: 0 6px 0 #a0aec0; display: flex; justify-content: center; }
         .robot-chest-plate { width: 50px; height: 40px; background: #1a365d; border-radius: 8px; margin-top: 15px; border: 2px solid #e2e8f0; }
         .bot-status-text { margin-top: 15px; font-weight: bold; color: white; font-size: 1.05rem; text-shadow: 0 2px 4px rgba(0,0,0,0.5); font-family: sans-serif; text-align: center; }
@@ -85,19 +86,22 @@
         .color-picker-container { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; background: #070d19; padding: 12px 15px; border-radius: 8px; border: 1px solid #1a2e4c; box-sizing: border-box; width: 100%; }
         input[type="color"] { border: none; width: 50px; height: 40px; border-radius: 6px; cursor: pointer; background: none; padding: 0; }
         
-        .voice-control-box { display: flex; gap: 10px; margin-bottom: 15px; }
-        .btn-voice { flex: 1; padding: 14px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; color: white; font-size: 1rem; }
+        .voice-controls-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+        .btn-voice { padding: 12px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; color: white; font-size: 0.95rem; }
         .btn-listen { background: var(--voice); }
         .btn-listen.listening { background: #9b2c2c; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
         
+        .btn-tts-toggle { background: #2f855a; transition: background 0.2s; }
+        .btn-tts-toggle.muted { background: #718096; }
+
         .btn-folder { background: #ed8936; color: white; border: none; padding: 14px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1rem; margin-bottom: 15px; width: 100%; text-align: center; }
-        .btn-action { background: var(--secondary); color: white; border: none; padding: 14px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 10px; font-size: 1rem; transition: background-color 0.2s ease; }
+        .btn-action { background: var(--secondary); color: white; border: none; padding: 14px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 10px; font-size: 1rem; transition: background-color 0.2s ease; width: 100%; }
         .btn-action:hover { background: #235a94; }
         .status-badge { padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; display: inline-block; margin-bottom: 15px; background: #fed7d7; color: #9b2c2c; width: fit-content; }
         .status-badge.connected { background: #c6f6d5; color: #22543d; }
         
-        textarea { width: 100%; padding: 12px; border: 1px solid #1a2e4c; border-radius: 6px; background: #070d19; color: white; resize: vertical; height: 100px; box-sizing: border-box; margin-bottom: 15px; font-family: inherit; font-size: 0.95rem; }
+        textarea { width: 100%; padding: 12px; border: 1px solid #1a2e4c; border-radius: 6px; background: #070d19; color: white; resize: vertical; height: 90px; box-sizing: border-box; margin-bottom: 12px; font-family: inherit; font-size: 0.95rem; }
         .response-terminal { background: #040811; color: #aeecfc; padding: 20px; border-radius: 8px; font-family: 'Consolas', monospace; flex: 1; min-height: 280px; max-height: 480px; overflow-y: auto; white-space: pre-wrap; border: 1px solid #1a2e4c; box-sizing: border-box; line-height: 1.5; font-size: 0.9rem; }
         
         .preview-pane { background: #070d19; border: 2px dashed #1a2e4c; min-height: 180px; border-radius: 8px; padding: 15px; overflow-x: auto; box-sizing: border-box; }
@@ -109,12 +113,11 @@
     </style>
 </head>
 <body>
-    <!-- Local Storage Permission Explanation Modal -->
     <div class="modal-overlay" id="securityModalOverlay">
         <div class="modal-box">
             <div class="modal-title">🔒 Local Folder Access</div>
             <div class="modal-body-text">
-                AI Acharya reads course materials and research papers directly from your local disk. No files are uploaded to any external server, and the entire workspace runs offline.
+                Prof. AI Acharya reads course materials and research papers directly from your local disk. No files are uploaded to any server, and the entire workspace runs offline.
             </div>
             <div class="modal-btn-row">
                 <button class="btn-modal-confirm" onclick="confirmPermissionAndProceed()">Grant Local Access</button>
@@ -123,12 +126,10 @@
         </div>
     </div>
 
-    <!-- Alert Banner -->
     <div class="bookmark-alert">
         💡 <strong>Multi-Course Setup:</strong> Enter the course code to update the banner name, pick a color, and hit <strong>Bookmark (Ctrl+D)</strong> to lock in this course workspace!
     </div>
 
-    <!-- Header Area -->
     <header class="header" id="mainHeader">
         <div class="brand-container">
             <div class="top-header-line">
@@ -143,14 +144,13 @@
         </div>
     </header>
 
-    <!-- Main Workspace Container -->
     <main class="main-container">
-        <!-- Controls & Input Panel -->
+        <!-- Settings & Interaction Panel -->
         <section class="card">
             <h2>🛠️ Workspace Settings</h2>
             
             <label for="courseCodeInput">Course Title / Code Identifier</label>
-            <input type="text" id="courseCodeInput" placeholder="e.g. CE601: Structural Dynamics" oninput="updateCourseTitle(this.value)">
+            <input type="text" id="courseCodeInput" placeholder="e.g. CE601: Structural Health Monitoring" oninput="updateCourseTitle(this.value)">
 
             <label>🎨 Studio Accent Color</label>
             <div class="color-picker-container">
@@ -163,20 +163,21 @@
                 <span class="status-badge" id="connectionStatus">Disconnected from Source</span>
             </div>
             <button class="btn-folder" onclick="openSecurityModal()">Select Local Materials Folder</button>
-            <!-- Fallback hidden input for older browsers -->
             <input type="file" id="folderPickerInput" webkitdirectory directory multiple style="display: none;" onchange="handleFolderFallback(event)">
 
-            <label for="queryInput">Prompt / Question for AI Acharya (Press Enter to submit)</label>
-            <textarea id="queryInput" placeholder="Enter questions (e.g. what is pzt?, EMI, SHM)..." onkeydown="handleKeyPress(event)"></textarea>
+            <label for="queryInput">Prompt / Question for AI Acharya</label>
+            <textarea id="queryInput" placeholder="Ask questions (e.g. what is pzt?, explain EMI, SHM)..." onkeydown="handleKeyPress(event)"></textarea>
             
-            <div class="voice-control-box">
-                <button class="btn-voice btn-listen" id="voiceBtn" onclick="toggleVoiceListening()">🎤 Voice Input</button>
+            <!-- Voice Input & Output Controls -->
+            <div class="voice-controls-row">
+                <button class="btn-voice btn-listen" id="voiceInputBtn" onclick="toggleSpeechRecognition()">🎤 Voice Input</button>
+                <button class="btn-voice btn-tts-toggle" id="voiceOutputBtn" onclick="toggleVoiceOutput()">🔊 Voice: ON</button>
             </div>
 
             <button class="btn-action" id="submitBtn" onclick="submitToAcharya()">Analyze & Generate Insight</button>
         </section>
 
-        <!-- Avatar & Terminal Output Panel -->
+        <!-- Avatar & Live Output Panel -->
         <section class="card">
             <div class="robot-display-box" id="robotDisplay">
                 <div class="robot-headphones">
@@ -209,52 +210,224 @@ Awaiting localized profile configurations mappings...</div>
         </section>
     </main>
 
-    <!-- Footer -->
     <footer class="footer">
         © 2026 Gopalkrishna Advanced Rural Research Foundation (GARRF). Supporting offline-first AI educational architectures globally.
     </footer>
 
     <script>
         let isAudioListeningModeActive = false;
+        let isVoiceOutputEnabled = true; // Voice ON by default
         let trackedLocalContextAssetsMatrix = [];
         let configuredWorkspaceThemeColorHex = "#0f3057";
+        let speechRecognition = null;
+        let indianMaleVoice = null;
 
-        // Knowledge Base for Domain Expertise
+        // Knowledge Base for Prof. AI Acharya
         const ACHARYA_KNOWLEDGE_BASE = [
             {
                 keywords: ["pzt", "lead zirconate titanate", "piezoelectric", "piezo"],
-                title: "Lead Zirconate Titanate (PZT) Transducers & Smart Materials",
-                summary: "Lead Zirconate Titanate (PZT, Pb[Zr_x Ti_{1-x}]O_3) is a ferroelectric ceramic material exhibiting exceptionally high electromechanical coupling.\n\n" +
-                         "• Direct Piezoelectric Effect (Sensors): Generates an electric charge proportional to applied mechanical stress/strain: D = d*T + ε*E.\n" +
-                         "• Converse Piezoelectric Effect (Actuators): Undergoes mechanical deformation when exposed to an electric field: S = s*T + d*E.\n" +
-                         "• Usage in SHM & Dynamics: Serves as the primary active element in high-frequency Electromechanical Impedance (EMI) monitoring, wave propagation sensing, ultrasonic lamb wave generation, and energy harvesting."
+                title: "Lead Zirconate Titanate (PZT) Smart Materials",
+                spokenIntro: "PZT stands for Lead Zirconate Titanate. It is a ceramic smart material with strong piezoelectric properties used as sensors and actuators in structural monitoring.",
+                fullDetail: "Lead Zirconate Titanate (PZT, Pb[Zr_x Ti_{1-x}]O_3) is a ferroelectric ceramic material exhibiting exceptionally high electromechanical coupling.\n\n" +
+                            "• Direct Piezoelectric Effect (Sensors): Generates an electric charge proportional to applied mechanical stress or strain: D = d*T + ε*E.\n" +
+                            "• Converse Piezoelectric Effect (Actuators): Undergoes mechanical deformation when an electric field is applied: S = s*T + d*E.\n" +
+                            "• Applications in SHM: Serves as the primary active transducer in high-frequency Electromechanical Impedance (EMI) methods, wave propagation, acoustic emission sensing, and dynamic vibration testing."
             },
             {
                 keywords: ["emi", "electromechanical impedance", "impedance"],
-                title: "Electromechanical Impedance (EMI) Formulation",
-                summary: "The EMI technique utilizes surface-bonded or embedded PZT patches driven by high-frequency AC excitation (typically 30 kHz - 400 kHz).\n\n" +
-                         "• Coupled Governing Equation: The measured electrical admittance Y(ω) = G(ω) + jB(ω) directly couples the sensor's dielectric properties with the host structure's drive-point mechanical impedance (Z_s).\n" +
-                         "• Real Conductance (G): Highly sensitive to structural stiffness, incipient micro-cracking, bond degradation, and structural boundary shifts without requiring baseline wave timing."
+                title: "Electromechanical Impedance (EMI) Technique",
+                spokenIntro: "Electromechanical Impedance uses bonded PZT transducers excited at high frequencies to detect structural damage through shifts in electrical admittance.",
+                fullDetail: "The EMI technique utilizes surface-bonded or embedded PZT patches driven by high-frequency alternating voltage (typically 30 kHz - 400 kHz).\n\n" +
+                            "• Coupled Governing Admittance: The measured electrical admittance Y(ω) = G(ω) + jB(ω) directly reflects the host structure's mechanical drive-point impedance (Z_s).\n" +
+                            "• Conductance Signature (G): Real conductance peaks reflect the mechanical resonance of the host structure. Incipient damage, micro-cracks, and boundary loosening produce signature shifts in conductance peaks."
             },
             {
                 keywords: ["shm", "structural health monitoring"],
-                title: "Structural Health Monitoring (SHM) Principles",
-                summary: "SHM is the continuous, real-time diagnostic framework for civil, mechanical, and aerospace structures.\n\n" +
-                         "• Core Pipeline: Sensor deployment -> Continuous excitation & data acquisition -> Feature extraction (frequency shifts, modal shapes, impedance signatures) -> Statistical damage quantification and prognosis."
-            },
-            {
-                keywords: ["gate", "civil", "concrete", "is 456"],
-                title: "Structural Engineering Standards & Materials",
-                summary: "Standard structural analysis principles based on limit state design philosophies, stress-strain constitutive relationships, dynamic vibration modes, and continuous load distribution analysis."
+                title: "Structural Health Monitoring (SHM)",
+                spokenIntro: "Structural Health Monitoring is the automated real-time process of continuously monitoring the integrity and safety of structures.",
+                fullDetail: "SHM is the continuous diagnostic framework for civil, mechanical, and aerospace structures.\n\n" +
+                            "• Core Stages: Operational evaluation, data acquisition via sensors, feature extraction (conductance, strain, mode shapes), and statistical discrimination for damage identification and remaining life prognosis."
             }
         ];
 
         window.addEventListener('DOMContentLoaded', () => {
             spawnBlinkingCharacterLifecycle();
             parseWorkspaceURLHashPayload();
+            initIndianMaleVoice();
+            initSpeechRecognition();
         });
 
-        // Blinking Avatar Eyes
+        // Load and prioritize Indian Male Voice
+        function initIndianMaleVoice() {
+            function pickVoice() {
+                const voices = window.speechSynthesis.getVoices();
+                if (!voices || voices.length === 0) return;
+
+                // Priority 1: Indian English Male voices (e.g., Rishi, Prabhat, Ravi, Microsoft Mohan/Neerja, en-IN)
+                indianMaleVoice = voices.find(v => 
+                    (v.lang === 'en-IN' || v.lang === 'hi-IN') && 
+                    (v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('rishi') || v.name.toLowerCase().includes('prabhat') || v.name.toLowerCase().includes('mohan'))
+                );
+
+                // Priority 2: Any English (India) voice
+                if (!indianMaleVoice) {
+                    indianMaleVoice = voices.find(v => v.lang === 'en-IN' || v.lang === 'hi-IN');
+                }
+
+                // Priority 3: Natural/Male English voices as fallback
+                if (!indianMaleVoice) {
+                    indianMaleVoice = voices.find(v => 
+                        v.lang.startsWith('en') && (v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('natural'))
+                    );
+                }
+
+                if (!indianMaleVoice) {
+                    indianMaleVoice = voices[0];
+                }
+            }
+
+            pickVoice();
+            if (speechSynthesis.onvoiceschanged !== undefined) {
+                speechSynthesis.onvoiceschanged = pickVoice;
+            }
+        }
+
+        // Realistic Indian Male Voice Synthesis
+        function speakResponse(textToSpeak, onEndCallback = null) {
+            if (!isVoiceOutputEnabled || !('speechSynthesis' in window)) {
+                if (onEndCallback) onEndCallback();
+                return;
+            }
+
+            window.speechSynthesis.cancel(); // Stop prior speech
+
+            const utterance = new SpeechSynthesisUtterance(textToSpeak);
+            if (indianMaleVoice) {
+                utterance.voice = indianMaleVoice;
+            }
+            
+            // Warm, clear pedagogical cadence
+            utterance.rate = 0.96;
+            utterance.pitch = 0.94;
+
+            const eyeL = document.getElementById('eyeL');
+            const eyeR = document.getElementById('eyeR');
+
+            utterance.onstart = () => {
+                if (eyeL && eyeR) {
+                    eyeL.classList.add('speaking');
+                    eyeR.classList.add('speaking');
+                }
+                document.getElementById('botStatusLabel').innerText = "Status: Speaking Response...";
+            };
+
+            utterance.onend = () => {
+                if (eyeL && eyeR) {
+                    eyeL.classList.remove('speaking');
+                    eyeR.classList.remove('speaking');
+                }
+                document.getElementById('botStatusLabel').innerText = "Status: Ready";
+                if (onEndCallback) onEndCallback();
+            };
+
+            utterance.onerror = () => {
+                if (eyeL && eyeR) {
+                    eyeL.classList.remove('speaking');
+                    eyeR.classList.remove('speaking');
+                }
+                document.getElementById('botStatusLabel').innerText = "Status: Ready";
+                if (onEndCallback) onEndCallback();
+            };
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // Toggle Voice Output (Mute / Unmute)
+        function toggleVoiceOutput() {
+            const btn = document.getElementById('voiceOutputBtn');
+            if (isVoiceOutputEnabled) {
+                isVoiceOutputEnabled = false;
+                window.speechSynthesis.cancel();
+                btn.classList.add('muted');
+                btn.innerHTML = "🔇 Voice: MUTED";
+                appendStatusMessageToLogTerminal("🔇 Voice output muted. Responses will appear in text only.");
+            } else {
+                isVoiceOutputEnabled = true;
+                btn.classList.remove('muted');
+                btn.innerHTML = "🔊 Voice: ON";
+                appendStatusMessageToLogTerminal("🔊 Voice output enabled. Prof. AI Acharya will respond with voice and text.");
+                speakResponse("Voice output is now active. I am ready to answer your questions.");
+            }
+        }
+
+        // Real-time Web Speech Recognition API
+        function initSpeechRecognition() {
+            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRec) {
+                console.warn("SpeechRecognition not supported in this browser.");
+                return;
+            }
+
+            speechRecognition = new SpeechRec();
+            speechRecognition.continuous = false;
+            speechRecognition.interimResults = false;
+            speechRecognition.lang = 'en-IN'; // Set to Indian English for accurate transcription
+
+            speechRecognition.onstart = () => {
+                isAudioListeningModeActive = true;
+                const btn = document.getElementById('voiceInputBtn');
+                btn.classList.add('listening');
+                btn.innerHTML = "🛑 Listening...";
+                document.getElementById('botStatusLabel').innerText = "Status: Listening to your voice...";
+                appendStatusMessageToLogTerminal("🎤 Mic active. Please speak your question now...");
+            };
+
+            speechRecognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                document.getElementById('queryInput').value = transcript;
+                appendStatusMessageToLogTerminal(`🎙️ Transcribed: "${transcript}"`);
+                // Automatically submit transcribed voice question
+                submitToAcharya();
+            };
+
+            speechRecognition.onerror = (event) => {
+                console.error("Speech recognition error:", event.error);
+                appendStatusMessageToLogTerminal(`⚠️ Audio input notice: ${event.error}`);
+                stopListeningUI();
+            };
+
+            speechRecognition.onend = () => {
+                stopListeningUI();
+            };
+        }
+
+        function toggleSpeechRecognition() {
+            if (!speechRecognition) {
+                alert("Speech recognition is not supported in this browser. Please use Chrome or Edge.");
+                return;
+            }
+
+            if (!isAudioListeningModeActive) {
+                try {
+                    speechRecognition.start();
+                } catch(e) {
+                    speechRecognition.stop();
+                }
+            } else {
+                speechRecognition.stop();
+                stopListeningUI();
+            }
+        }
+
+        function stopListeningUI() {
+            isAudioListeningModeActive = false;
+            const btn = document.getElementById('voiceInputBtn');
+            btn.classList.remove('listening');
+            btn.innerHTML = "🎤 Voice Input";
+            document.getElementById('botStatusLabel').innerText = "Status: Ready";
+        }
+
+        // Avatar Blinking Cycle
         function spawnBlinkingCharacterLifecycle() {
             setInterval(() => {
                 const nodeLeftEye = document.getElementById('eyeL');
@@ -270,7 +443,7 @@ Awaiting localized profile configurations mappings...</div>
             }, 3800);
         }
 
-        // Title and Accent Handling
+        // Title and Theme Color Persistence
         function updateCourseTitle(targetTextStringValue) {
             const containerNodeHeaderTitle = document.getElementById('brandTitle');
             containerNodeHeaderTitle.innerText = targetTextStringValue.trim() !== ""
@@ -319,7 +492,7 @@ Awaiting localized profile configurations mappings...</div>
             }
         }
 
-        // Modal Handlers
+        // Folder Connection Handlers
         function openSecurityModal() {
             document.getElementById('securityModalOverlay').classList.add('active');
         }
@@ -328,7 +501,6 @@ Awaiting localized profile configurations mappings...</div>
             document.getElementById('securityModalOverlay').classList.remove('active');
         }
 
-        // Native Local Directory Access (Replaces the "Upload" warning with local read permission)
         async function confirmPermissionAndProceed() {
             closeExplanatoryModal();
 
@@ -391,6 +563,7 @@ Awaiting localized profile configurations mappings...</div>
             appendStatusMessageToLogTerminal(`📁 Direct local access verified.\nDiscovered ${trackedLocalContextAssetsMatrix.length} file resources locally.\nRendering document index table below...`);
 
             generateFileContextParsingTableLayoutView();
+            speakResponse(`Local materials folder connected successfully. I have indexed ${trackedLocalContextAssetsMatrix.length} documents.`);
         }
 
         function generateFileContextParsingTableLayoutView() {
@@ -435,7 +608,7 @@ Awaiting localized profile configurations mappings...</div>
             tableRenderingContainerNode.innerHTML = compiledTableHtmlString;
         }
 
-        // Keyboard Submission (Enter to submit, Shift+Enter for new line)
+        // Enter key submission
         function handleKeyPress(event) {
             if (event.key === 'Enter' && !event.shiftKey) {
                 event.preventDefault();
@@ -443,62 +616,49 @@ Awaiting localized profile configurations mappings...</div>
             }
         }
 
-        // Voice API (Speech Recognition with Simulated Fallback)
-        function toggleVoiceListening() {
-            const actionableVoiceButtonUiNode = document.getElementById('voiceBtn');
-            const contextualRobotCharacterStatusLabel = document.getElementById('botStatusLabel');
-
-            if (!isAudioListeningModeActive) {
-                isAudioListeningModeActive = true;
-                actionableVoiceButtonUiNode.classList.add('listening');
-                actionableVoiceButtonUiNode.innerHTML = "🛑 Stop Listening";
-                contextualRobotCharacterStatusLabel.innerText = "Status: Listening to Audio Channel...";
-                appendStatusMessageToLogTerminal("🎤 Audio channel opened. Speak your question or prompt...");
-            } else {
-                isAudioListeningModeActive = false;
-                actionableVoiceButtonUiNode.classList.remove('listening');
-                actionableVoiceButtonUiNode.innerHTML = "🎤 Voice Input";
-                contextualRobotCharacterStatusLabel.innerText = "Status: Audio Processed";
-
-                const textPromptInputBoxUiNode = document.getElementById('queryInput');
-                const defaultSpeechAppendText = "what is pzt?";
-
-                textPromptInputBoxUiNode.value = textPromptInputBoxUiNode.value
-                    ? textPromptInputBoxUiNode.value + " " + defaultSpeechAppendText
-                    : defaultSpeechAppendText;
-
-                appendStatusMessageToLogTerminal(`📝 Audio transcribed successfully: "${defaultSpeechAppendText}"`);
-            }
-        }
-
-        // Intelligent Analysis & Execution Routine
+        // Intelligent Analysis & Dual Voice/Text Execution
         function submitToAcharya() {
             const rawPrompt = document.getElementById('queryInput').value.trim();
             const botLabel = document.getElementById('botStatusLabel');
 
             if (!rawPrompt) {
-                alert("Please enter a question or topic before processing.");
+                alert("Please enter or speak a question before processing.");
                 return;
             }
 
             const queryLower = rawPrompt.toLowerCase();
             botLabel.innerText = "Status: Analyzing Query...";
-            appendStatusMessageToLogTerminal(`🤖 Ingesting: "${rawPrompt}"\nSearching local documents & embedded knowledge engine...`);
+            appendStatusMessageToLogTerminal(`🤖 Ingesting: "${rawPrompt}"\nSearching local documents & domain knowledge engine...`);
 
             setTimeout(() => {
                 botLabel.innerText = "Status: Ready";
 
-                let response = `>>> PROF. AI ACHARYA ENGINE RESPONSE:\n`;
-                response += `Question: "${rawPrompt}"\n\n`;
+                let textResponse = `>>> PROF. AI ACHARYA ENGINE RESPONSE:\n`;
+                textResponse += `Question: "${rawPrompt}"\n\n`;
 
-                // 1. Search Knowledge Base
+                let voiceTextToSpeak = "";
+
+                // Check Special Voice Triggers (e.g., "read it for me")
+                if (queryLower.includes("read it") || queryLower.includes("read for me") || queryLower.includes("read full")) {
+                    voiceTextToSpeak = "Certainly, I am reading the full details for you now. " + (window.lastDetailedResponse || "Please submit a topic like PZT or EMI first.");
+                    textResponse += `📖 [Full Audio Readout Initiated]\n${window.lastDetailedResponse || "No prior details to read."}`;
+                    appendStatusMessageToLogTerminal(textResponse);
+                    speakResponse(voiceTextToSpeak);
+                    return;
+                }
+
+                // 1. Search Domain Knowledge Base
                 const matchedTopic = ACHARYA_KNOWLEDGE_BASE.find(item =>
                     item.keywords.some(kw => queryLower.includes(kw))
                 );
 
                 if (matchedTopic) {
-                    response += `📌 [Knowledge Base Match: ${matchedTopic.title}]\n`;
-                    response += `${matchedTopic.summary}\n\n`;
+                    textResponse += `📌 [Knowledge Base Match: ${matchedTopic.title}]\n`;
+                    textResponse += `${matchedTopic.fullDetail}\n\n`;
+                    window.lastDetailedResponse = matchedTopic.fullDetail;
+
+                    // Large answer policy: speak concise summary & offer to read full
+                    voiceTextToSpeak = `${matchedTopic.spokenIntro}. Here is the complete technical result on your screen, you can read it. If you want, I can read it for you.`;
                 }
 
                 // 2. Cross-reference Linked Local Files
@@ -510,25 +670,33 @@ Awaiting localized profile configurations mappings...</div>
                     });
 
                     if (matchingFiles.length > 0) {
-                        response += `📂 [Related Files Found in Local Materials (${matchingFiles.length})]:\n`;
+                        textResponse += `📂 [Related Files Found in Local Materials (${matchingFiles.length})]:\n`;
                         matchingFiles.forEach(f => {
-                            response += `  • ${f.relativePath} (${(f.size / 1024).toFixed(1)} KB)\n`;
+                            textResponse += `  • ${f.relativePath} (${(f.size / 1024).toFixed(1)} KB)\n`;
                         });
-                        response += `\nLocal documents matched your query keywords successfully.\n`;
-                    } else {
-                        response += `📂 Scanned ${trackedLocalContextAssetsMatrix.length} connected files in your local folder (no filename matches for "${rawPrompt}").\n`;
+                        textResponse += `\nLocal documents matched your query keywords successfully.\n`;
+
+                        if (!matchedTopic) {
+                            voiceTextToSpeak = `I found ${matchingFiles.length} relevant files in your local workspace. Here is the result on your screen, you can read it. If you want, I can read it for you.`;
+                        }
+                    } else if (!matchedTopic) {
+                        voiceTextToSpeak = `I searched through your local files, but found no direct matches for ${rawPrompt}. Here is the terminal log, you can read it.`;
                     }
-                } else {
-                    response += `ℹ️ (Tip: Link your local course papers or folder above to search through your local documents.)\n`;
                 }
 
                 // 3. Fallback for Unmatched Queries
-                if (!matchedTopic && (!trackedLocalContextAssetsMatrix.length || response.indexOf("Related Files Found") === -1)) {
-                    response += `I received your prompt: "${rawPrompt}". For technical insights, try asking about PZT, EMI, structural health monitoring, or link your local PDF/text course notes above.`;
+                if (!matchedTopic && (!trackedLocalContextAssetsMatrix.length || textResponse.indexOf("Related Files Found") === -1)) {
+                    const fallbackMsg = `I have received your question: "${rawPrompt}". For specialized insights, you can ask about PZT, Electromechanical Impedance, or Structural Health Monitoring.`;
+                    textResponse += fallbackMsg;
+                    voiceTextToSpeak = `I received your question. Here is the result, you can read it. For specialized insights, feel free to ask about PZT, EMI, or your connected course papers.`;
                 }
 
-                appendStatusMessageToLogTerminal(response);
-            }, 600);
+                // Output to Live Terminal
+                appendStatusMessageToLogTerminal(textResponse);
+
+                // Output via Indian Male Voice
+                speakResponse(voiceTextToSpeak);
+            }, 500);
         }
 
         // Terminal Log Appender
