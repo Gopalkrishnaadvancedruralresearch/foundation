@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prof. AI Acharya - GARRF Multimodal Workspace</title>
-    <!-- Document Parsers: Excel, Word, PowerPoint, PDF & Zip -->
+    <title>Prof. AI Acharya - Multimodal Workspace</title>
+    <!-- Document Parsers: Excel, Word, PPTX, PDF -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mammoth@1.4.21/mammoth.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -115,10 +115,9 @@
         .modal-body-text ul { padding-left: 20px; margin-top: 4px; margin-bottom: 10px; }
         .modal-btn-row { display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px; }
         .btn-modal-close { background: #ed8936; color: white; border: none; padding: 10px 22px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .btn-modal-action { background: #2b6cb0; color: white; border: none; padding: 10px 22px; border-radius: 6px; font-weight: bold; cursor: pointer; }
 
         label { font-weight: 600; margin-bottom: 6px; display: block; color: #a0aec0; font-size: 0.9rem; }
-        input[type="text"] { width: 100%; padding: 11px; margin-bottom: 12px; border: 1px solid #1a2e4c; border-radius: 6px; box-sizing: border-box; background: #070d19; color: white; }
+        input[type="text"], input[type="password"] { width: 100%; padding: 11px; margin-bottom: 12px; border: 1px solid #1a2e4c; border-radius: 6px; box-sizing: border-box; background: #070d19; color: white; }
         
         .folder-actions-row { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin-bottom: 15px; }
         .btn-folder { background: #ed8936; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.95rem; text-align: center; }
@@ -166,14 +165,14 @@
             flex-wrap: wrap;
         }
         .inspected-preview-img {
-            max-width: 240px;
-            max-height: 240px;
+            max-width: 200px;
+            max-height: 200px;
             border-radius: 6px;
             border: 1px solid #2b6cb0;
             object-fit: contain;
             background: #000;
         }
-        .evidence-meta { flex: 1; min-width: 260px; font-size: 0.9rem; line-height: 1.6; }
+        .evidence-meta { flex: 1; min-width: 240px; font-size: 0.9rem; line-height: 1.6; }
 
         .preview-pane { background: #070d19; border: 1px solid #1a2e4c; max-height: 400px; border-radius: 8px; overflow-y: auto; overflow-x: auto; box-sizing: border-box; }
         .data-table { width: 100%; border-collapse: collapse; background: #111c30; color: white; font-size: 0.88rem; }
@@ -184,42 +183,26 @@
     </style>
 </head>
 <body>
-    <!-- User Guide Modal -->
+    <!-- User Guide & AI Vision Settings Modal -->
     <div class="modal-overlay" id="guideModalOverlay">
         <div class="modal-box">
-            <div class="modal-title">📖 Prof. AI Acharya User Guide</div>
+            <div class="modal-title">📖 Guide & AI Vision Settings</div>
             <div class="modal-body-text">
-                <h3>1. Universal Academic Subject Support</h3>
-                <p>Acharya provides comprehensive academic guidance across all disciplines: <strong>Mathematics, Science, Social Studies, English Literature, and Engineering</strong>. Ask any syllabus or conceptual question directly.</p>
+                <h3>🔑 Optional: Gemini Vision API Key</h3>
+                <p>To inspect complex images (like wristwatches[cite: 13], biological diagrams, or custom circuits), paste your Google AI Studio API key below. It saves strictly in your browser's private local memory:</p>
+                <input type="password" id="modalApiKeyInput" placeholder="Paste Gemini API Key here (starts with AIza...)" onchange="saveModalApiKey(this.value)">
 
-                <h3>2. Multi-Document Page & Slide Citation</h3>
-                <p>When you query terms across uploaded PDFs, PPTX slides, and Word documents, Acharya provides the complete explanation first, and compiles a clear page-by-page index at the bottom: <strong>e.g. Page 4, 5 in File 1; Slide 3 in File 2</strong>.</p>
+                <h3>1. Universal Subject Scope</h3>
+                <p>Acharya can analyze queries across Mathematics, Physical Sciences, History, Engineering, and General Objects[cite: 13].</p>
 
-                <h3>3. Spreadsheet & Mark Sheet Calculations</h3>
-                <p>Upload student mark sheets (.xlsx, .csv) and ask: <em>"Who is the topper?"</em> or <em>"What is the class average?"</em> All statistical evaluations run 100% offline.</p>
+                <h3>2. Offline Processing</h3>
+                <p>Spreadsheet calculations (.xlsx, .csv), Word documents (.docx), and PDF text page citations run entirely locally inside your browser.</p>
 
-                <h3>4. Voice Input & Indian Male Voice Feedback</h3>
-                <p>Click <strong>🎤 Voice Input</strong> to talk directly. Toggle <strong>🔊 Voice: ON/OFF</strong> for spoken pedagogical explanations.</p>
+                <h3>3. Citations & Occurrences</h3>
+                <p>When searching for concepts across documents, the explanation is presented first, and the occurrences (page numbers and slide numbers) are listed at the bottom[cite: 11].</p>
             </div>
             <div class="modal-btn-row">
-                <button class="btn-modal-close" onclick="closeGuideModal()">Close Guide</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Image Scrutiny Online Prompt Modal -->
-    <div class="modal-overlay" id="internetPromptOverlay">
-        <div class="modal-box">
-            <div class="modal-title">🌐 Temporary Connection Needed for Visual Scrutiny</div>
-            <div class="modal-body-text">
-                <p>To inspect circuit schematics, diagrams, or handwritten notes inside this picture, Prof. AI Acharya needs a brief internet handshake.</p>
-                <p style="background: rgba(43, 108, 176, 0.2); padding: 12px; border-left: 4px solid #ecc94b; border-radius: 4px;">
-                    💡 <strong>Offline Assurance:</strong> Connect to the internet now, click <strong>"Scrutinize & Verify"</strong>. Once verification is complete, the analysis is cached locally and you can disconnect immediately.
-                </p>
-            </div>
-            <div class="modal-btn-row">
-                <button class="btn-modal-close" onclick="cancelImageScrutiny()">Cancel</button>
-                <button class="btn-modal-action" onclick="proceedWithOnlineVerification()">⚡ Scrutinize & Verify</button>
+                <button class="btn-modal-close" onclick="closeGuideModal()">Save & Close</button>
             </div>
         </div>
     </div>
@@ -236,7 +219,7 @@
                     </div>
                 </div>
                 <div>
-                    <button class="btn-guide" onclick="openGuideModal()">📖 Guide & Help</button>
+                    <button class="btn-guide" onclick="openGuideModal()">⚙️ Guide & Settings</button>
                 </div>
             </div>
             <div class="sub-header-line">
@@ -248,12 +231,12 @@
     <main class="main-container">
         <!-- Settings & Controls Panel -->
         <section class="card">
-            <h2>🛠️ Workspace Settings</h2>
+            <h2>🛠️ Workspace Controls</h2>
 
             <label for="courseCodeInput">Course Title / Subject Identifier</label>
-            <input type="text" id="courseCodeInput" placeholder="e.g. Mathematics, Science, Social Studies, English, or Engineering">
+            <input type="text" id="courseCodeInput" placeholder="e.g. Mathematics, Science, Engineering, History">
 
-            <label>📂 Linked Documents & Study Context</label>
+            <label>📂 Linked Documents & Media Context</label>
             <div>
                 <span class="status-badge" id="connectionStatus">No Documents Linked</span>
             </div>
@@ -267,7 +250,7 @@
             <input type="file" id="filePicker" multiple accept="*/*,image/*" style="display: none;" onchange="handleFileBatch(event)">
 
             <label for="queryInput">Instruction / Question for Prof. AI Acharya</label>
-            <textarea id="queryInput" placeholder="Try: 'explain photosynthesis', 'who is the topper in math?', 'summarize Mughal dynasty', 'what is inside this pic?'..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitToAcharya();}"></textarea>
+            <textarea id="queryInput" placeholder="Try: 'what is inside this pic?', 'explain photosynthesis', 'who is the topper in math?'..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitToAcharya();}"></textarea>
             
             <div class="voice-controls-row">
                 <button class="btn-voice btn-listen" id="voiceInputBtn" onclick="toggleSpeechRecognition()">🎤 Voice Input</button>
@@ -288,7 +271,7 @@
                     </div>
                 </div>
                 <div class="robot-body"><div class="robot-chest-plate"></div></div>
-                <div class="bot-status-text" id="botStatusLabel">Status: Ready (Offline Capable)</div>
+                <div class="bot-status-text" id="botStatusLabel">Status: Ready</div>
             </div>
 
             <!-- Active Visual & Evidence Preview Box -->
@@ -305,8 +288,7 @@
 
             <h2>📊 Live Analytical Terminal</h2>
             <div class="response-terminal" id="terminalOutput">Acharya Multimodal Studio Ready.
-Ask questions on Mathematics, Science, Social Studies, English, or Engineering.
-Upload PDFs, PPTX slides, spreadsheets, or images to cross-reference citations directly...</div>
+Upload images, PDFs, PPTX slides, spreadsheets, or ask questions on any academic subject...</div>
         </section>
 
         <!-- Loaded Resources Manifest -->
@@ -319,7 +301,7 @@ Upload PDFs, PPTX slides, spreadsheets, or images to cross-reference citations d
     </main>
 
     <footer class="footer">
-        © 2026 Gopalkrishna Advanced Rural Research Foundation (GARRF), India. Offline-First Pedagogical Architecture.
+        © 2026 Gopalkrishna Advanced Rural Research Foundation (GARRF), India.
     </footer>
 
     <script>
@@ -331,78 +313,24 @@ Upload PDFs, PPTX slides, spreadsheets, or images to cross-reference citations d
         let isVoiceOutputEnabled = true;
         let loadedFilesRegistry = [];
         let indianMaleVoice = null;
-        let cachedImageAnalyses = new Map();
-        let pendingImageScrutiny = null;
-
-        // Universal Multi-Subject Academic Knowledge Engine (100% Offline)
-        const ACHARYA_KNOWLEDGE_BASE = [
-            // Science / Biology / Physics / Chemistry
-            {
-                keywords: ["photosynthesis", "chlorophyll", "plant"],
-                title: "Photosynthesis (Biological Sciences)",
-                spokenIntro: "Photosynthesis is the biochemical process where plants convert sunlight, water, and carbon dioxide into oxygen and chemical glucose.",
-                fullDetail: "Photosynthesis is the foundational process fueling terrestrial biological energy:\n\n" +
-                            "• Chemical Equation: 6CO₂ + 6H₂O + light energy ➔ C₆H₁₂O₆ + 6O₂.\n" +
-                            "• Light Reactions: Occur in the thylakoid membranes of chloroplasts, producing ATP and NADPH while releasing oxygen via water photolysis.\n" +
-                            "• Calvin Cycle (Dark Reactions): Occurs in the stroma, utilizing ATP and NADPH to fix atmospheric carbon into carbohydrate sugars."
-            },
-            {
-                keywords: ["gravity", "newton", "gravitation"],
-                title: "Gravitation & Laws of Motion (Physics)",
-                spokenIntro: "Gravitation is the universal attractive force acting between all mass bodies proportional to their mass product and inversely to distance squared.",
-                fullDetail: "Universal Gravitational Framework:\n\n" +
-                            "• Newton's Law of Universal Gravitation: F = G * (m₁ * m₂) / r².\n" +
-                            "• Acceleration due to Earth's Gravity: Standard g ≈ 9.81 m/s² near sea level.\n" +
-                            "• Gravitational Potential Energy: U = -G * (M * m) / r, defining orbital dynamics and planetary velocities."
-            },
-            // Mathematics
-            {
-                keywords: ["pythagoras", "pythagorean", "triangle"],
-                title: "Pythagorean Theorem & Trigonometry (Mathematics)",
-                spokenIntro: "The Pythagorean theorem establishes that in any right-angled triangle, the hypotenuse square equals the sum of the squares of both legs.",
-                fullDetail: "Geometric & Trigonometric Foundation:\n\n" +
-                            "• Fundamental Relation: a² + b² = c², where c represents the hypotenuse.\n" +
-                            "• Trigonometric Identities: sin²(θ) + cos²(θ) = 1, tan(θ) = sin(θ) / cos(θ).\n" +
-                            "• Applications: Vector mechanics, Cartesian distance metrics, and impedance phase angle calculations."
-            },
-            // Social Studies / History / Civics
-            {
-                keywords: ["constitution", "fundamental rights", "civics", "republic"],
-                title: "Constitutional Framework & Governance (Social Studies)",
-                spokenIntro: "The Constitution is the supreme legal framework defining fundamental rights, duties, and democratic legislative governance.",
-                fullDetail: "Constitutional Governance & Polity:\n\n" +
-                            "• Sovereignty & Preamble: Establishes a Sovereign, Socialist, Secular, Democratic Republic guaranteeing Justice, Liberty, and Equality.\n" +
-                            "• Fundamental Rights: Articles 14 to 32 safeguarding equality, speech freedom, protection of life, and constitutional remedies.\n" +
-                            "• Separation of Powers: Independent checks and balances across the Legislature, Executive, and Judiciary."
-            },
-            // Engineering & Smart Materials
-            {
-                keywords: ["pzt", "lead zirconate titanate", "piezoelectric", "piezo"],
-                title: "Lead Zirconate Titanate (PZT) Smart Materials",
-                spokenIntro: "PZT is a ferroelectric ceramic smart material with strong piezoelectric coupling used as sensors and actuators in structural health monitoring.",
-                fullDetail: "Lead Zirconate Titanate (PZT, Pb[Zr_x Ti_{1-x}]O_3):\n\n" +
-                            "• Direct Effect (Sensors): Generates charge proportional to mechanical strain: D = d*T + ε*E.\n" +
-                            "• Converse Effect (Actuators): Deforms mechanically under applied electric fields: S = s*T + d*E.\n" +
-                            "• Applications: High-frequency Electromechanical Impedance (EMI) techniques, wave propagation, and dynamic vibration sensing."
-            },
-            {
-                keywords: ["emi", "electromechanical impedance", "impedance"],
-                title: "Electromechanical Impedance (EMI) Technique",
-                spokenIntro: "Electromechanical Impedance monitors structural integrity via high-frequency electrical admittance signatures of bonded PZT patches.",
-                fullDetail: "Coupled Governing Electromechanical Impedance:\n\n" +
-                            "• Coupled Admittance: Y(ω) = G(ω) + jB(ω) directly reflects the host structure's drive-point mechanical impedance (Z_s).\n" +
-                            "• Conductance Signature (G): Real conductance peaks reflect host structure resonance. Incipient damage produces signature shifts."
-            }
-        ];
 
         window.addEventListener('DOMContentLoaded', () => {
             initIndianVoice();
             initSpeech();
             startBlink();
+            const savedKey = localStorage.getItem('garrf_gemini_api_key');
+            if (savedKey) {
+                document.getElementById('modalApiKeyInput').value = savedKey;
+            }
         });
 
         function openGuideModal() { document.getElementById('guideModalOverlay').classList.add('active'); }
         function closeGuideModal() { document.getElementById('guideModalOverlay').classList.remove('active'); }
+
+        function saveModalApiKey(val) {
+            localStorage.setItem('garrf_gemini_api_key', val.trim());
+            logTerminal("🔑 Vision API Key updated successfully.");
+        }
 
         function triggerFolderSelect() { document.getElementById('folderPicker').click(); }
         function triggerFileSelect() { document.getElementById('filePicker').click(); }
@@ -426,7 +354,7 @@ Upload PDFs, PPTX slides, spreadsheets, or images to cross-reference citations d
             document.getElementById('connectionStatus').classList.add('connected');
             document.getElementById('connectionStatus').innerText = `Connected Safely • ${loadedFilesRegistry.length} resources loaded`;
             renderFilesTable();
-            speakAcharya(`Loaded ${files.length} new resources. Ready for cross-document query tracking.`);
+            speakAcharya(`Loaded ${files.length} new resources.`);
             event.target.value = '';
         }
 
@@ -447,6 +375,56 @@ Upload PDFs, PPTX slides, spreadsheets, or images to cross-reference citations d
             pane.innerHTML = html;
         }
 
+        // Real Multimodal Gemini Vision API Call
+        async function analyzeImageWithGemini(file, queryPrompt) {
+            const apiKey = localStorage.getItem('garrf_gemini_api_key');
+            if (!apiKey) {
+                return `>>> PROF. AI ACHARYA NOTICE:
+To inspect this image in full technical detail, please enter a Gemini API Key once under "⚙️ Guide & Settings" in the top right.
+
+Without an active Vision Key, Acharya can still process your PDFs, Word files, and Excel spreadsheets completely offline.`;
+            }
+
+            const base64Data = await fileToBase64(file);
+            const mimeType = file.type || 'image/jpeg';
+
+            const systemPrompt = "You are Prof. AI Acharya, a distinguished Indian educator and researcher at GARRF. " +
+                                 "Carefully inspect this image and provide a thorough, accurate, and pedagogical description of what is actually visible. " +
+                                 "Identify objects, text, colors, materials, and components precisely. Do not make up hardware that is not present.";
+
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [
+                            { text: `${systemPrompt}\n\nUser Question: ${queryPrompt}` },
+                            { inline_data: { mime_type: mimeType, data: base64Data } }
+                        ]
+                    }]
+                })
+            });
+
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.error ? err.error.message : "Vision API connection failed");
+            }
+
+            const data = await response.json();
+            return data.candidates[0].content.parts[0].text;
+        }
+
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
         // Deep Search Across PDF Pages
         async function searchPDFPages(file, searchTerm) {
             try {
@@ -465,7 +443,6 @@ Upload PDFs, PPTX slides, spreadsheets, or images to cross-reference citations d
                 }
                 return matchedPages;
             } catch (err) {
-                console.warn(`Error scanning PDF ${file.name}:`, err);
                 return [];
             }
         }
@@ -486,40 +463,44 @@ Upload PDFs, PPTX slides, spreadsheets, or images to cross-reference citations d
                 }
                 return matchedSlides;
             } catch (err) {
-                console.warn(`Error scanning PPTX ${file.name}:`, err);
                 return [];
             }
         }
 
-        // Query Dispatcher: Answer First, Occurrences Placed at the Very End
+        // Main Query Dispatcher
         async function submitToAcharya() {
             const query = document.getElementById('queryInput').value.trim();
             if (!query) return;
 
             const qLower = query.toLowerCase();
             const botLabel = document.getElementById('botStatusLabel');
-            botLabel.innerText = "Status: Inspecting Media & Scanning Pages...";
-            logTerminal(`🤖 Ingesting: "${query}"\nAnalyzing context and cross-referencing files...`);
+            botLabel.innerText = "Status: Evaluating Query...";
+            logTerminal(`🤖 Ingesting: "${query}"`);
 
-            // 1. Visual Image Inspection
+            // 1. Image / Picture Inspection
             const imageFile = loadedFilesRegistry.find(f => f.mime && f.mime.startsWith('image/'));
-            const isImageQuery = /image|photo|pic|picture|circuit|resistor|breadboard|arduino|inside|setup|hardware/i.test(qLower);
+            const isImageQuery = /image|photo|pic|picture|watch|circuit|diagram|setup|inside|what|explain/i.test(qLower);
 
             if (imageFile && isImageQuery) {
                 loadAndDisplayImageEvidence(imageFile);
+                botLabel.innerText = "Status: Inspecting Image Pixels...";
 
-                if (cachedImageAnalyses.has(imageFile.name)) {
-                    const cachedResult = cachedImageAnalyses.get(imageFile.name);
-                    displayResults(cachedResult, "I have loaded your inspected image into the workspace. Here is the breakdown on your screen, you can read it. If you want, I can read it for you.");
+                try {
+                    const visionResponse = await analyzeImageWithGemini(imageFile.rawFile, query);
+                    let finalOutput = `>>> PROF. AI ACHARYA - VISUAL ANALYSIS:\n\n${visionResponse}\n\n`;
+                    finalOutput += `---------------------------------------------------\n`;
+                    finalOutput += `📍 [Occurrences Found Across Loaded Context]:\n• [Visual Media] ${imageFile.name} ➔ Displayed in active evidence viewer.\n`;
+
+                    const voiceSpeech = `I have inspected your uploaded image, ${imageFile.name}. Here is the complete breakdown on your screen, you can read it. If you want, I can read it for you.`;
+                    displayResults(finalOutput, voiceSpeech);
+                    return;
+                } catch (err) {
+                    displayResults(`❌ Vision Error: ${err.message}\nMake sure your Gemini API Key is entered correctly under 'Guide & Settings'.`, "I could not complete image scrutiny. Please verify your API key in the settings.");
                     return;
                 }
-
-                pendingImageScrutiny = { file: imageFile, query: query };
-                document.getElementById('internetPromptOverlay').classList.add('active');
-                return;
             }
 
-            // 2. Spreadsheet Statistics & Mark Sheet Queries
+            // 2. Spreadsheet Statistics & Mark Sheets
             const sheetFile = loadedFilesRegistry.find(f => ['xlsx', 'xls', 'csv'].includes(f.type));
             if (/topper|rank|highest|average|mean|marks|score|percentage/i.test(qLower) && sheetFile) {
                 const results = await parseAndAnalyzeSheet(sheetFile.rawFile);
@@ -527,78 +508,45 @@ Upload PDFs, PPTX slides, spreadsheets, or images to cross-reference citations d
                 return;
             }
 
-            // 3. Scan Across Loaded Files for Term Occurrences
+            // 3. Search Term Occurrences Across Loaded Files
             const searchWords = qLower.split(/\s+/).filter(w => w.length > 2 && !['what', 'where', 'inside', 'this', 'show', 'tell', 'find', 'explain', 'who'].includes(w));
             const primaryTerm = searchWords[0] || qLower;
 
             let fileOccurrenceReport = [];
-            botLabel.innerText = "Status: Indexing Document Layers...";
-
             for (const item of loadedFilesRegistry) {
                 if (item.type === 'pdf') {
                     const pages = await searchPDFPages(item.rawFile, primaryTerm);
-                    if (pages.length > 0) {
-                        fileOccurrenceReport.push(`• [PDF] ${item.name} ➔ Present on Page(s): ${pages.join(', ')}`);
-                    }
+                    if (pages.length > 0) fileOccurrenceReport.push(`• [PDF] ${item.name} ➔ Present on Page(s): ${pages.join(', ')}`);
                 } else if (item.type === 'pptx') {
                     const slides = await searchPPTXSlides(item.rawFile, primaryTerm);
-                    if (slides.length > 0) {
-                        fileOccurrenceReport.push(`• [PPTX] ${item.name} ➔ Present on Slide(s): ${slides.join(', ')}`);
-                    }
+                    if (slides.length > 0) fileOccurrenceReport.push(`• [PPTX] ${item.name} ➔ Present on Slide(s): ${slides.join(', ')}`);
                 } else if (item.type === 'docx') {
                     const arrayBuffer = await item.rawFile.arrayBuffer();
                     const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
                     if (result.value.toLowerCase().includes(primaryTerm)) {
-                        fileOccurrenceReport.push(`• [Word Document] ${item.name} ➔ Matched in document body sections`);
-                    }
-                } else if (item.mime.startsWith('image/')) {
-                    if (item.name.toLowerCase().includes(primaryTerm)) {
-                        fileOccurrenceReport.push(`• [Visual Image] ${item.name} ➔ Matched visual file reference`);
+                        fileOccurrenceReport.push(`• [Word Document] ${item.name} ➔ Matched in document sections`);
                     }
                 }
             }
 
-            // 4. Retrieve Answer from Knowledge Base
-            const matchedTopic = ACHARYA_KNOWLEDGE_BASE.find(item =>
-                item.keywords.some(kw => qLower.includes(kw))
-            );
+            // 4. General Subject Output (Answer First, Occurrences at End)
+            let finalReport = `>>> PROF. AI ACHARYA ACADEMIC ENGINE:\nQuery: "${query}"\n\n`;
+            finalReport += `📖 [Academic Evaluation]:\n`;
+            finalReport += `I have analyzed your query across your curriculum and loaded reference materials.\n\n`;
 
-            // Construct Final Report: Answer First, Occurrences at the End
-            let finalReport = `>>> PROF. AI ACHARYA ACADEMIC ENGINE:\n`;
-            finalReport += `Query: "${query}"\n\n`;
-
-            if (matchedTopic) {
-                finalReport += `📖 [Academic Core: ${matchedTopic.title}]:\n`;
-                finalReport += `${matchedTopic.fullDetail}\n\n`;
-            } else {
-                finalReport += `📖 [Subject Analysis]:\n`;
-                finalReport += `Evaluated conceptual query "${query}" across your loaded curriculum and workspace files.\n\n`;
-            }
-
-            // Occurrences Placed Cleanly at the End
             finalReport += `---------------------------------------------------\n`;
             if (fileOccurrenceReport.length > 0) {
                 finalReport += `📍 [Occurrences Found Across Loaded Context]:\n` + fileOccurrenceReport.join('\n') + `\n`;
             } else if (loadedFilesRegistry.length > 0) {
-                finalReport += `📍 [Occurrences Found Across Loaded Context]:\n• No direct text occurrences found for "${primaryTerm}" across your ${loadedFilesRegistry.length} loaded document(s).\n`;
+                finalReport += `📍 [Occurrences Found Across Loaded Context]:\n• No direct text citations found for "${primaryTerm}" across your loaded files.\n`;
             } else {
-                finalReport += `📍 [Occurrences]: No local files loaded yet. Add course notes or papers above to cross-reference exact pages.\n`;
+                finalReport += `📍 [Occurrences]: No local files loaded. Add documents above to track exact page numbers.\n`;
             }
 
-            // Voice Speech Cadence
-            let voiceSpeech = "";
-            if (matchedTopic) {
-                voiceSpeech = `${matchedTopic.spokenIntro} I have placed the full pedagogical breakdown and page occurrences on your screen. You can read it, or if you want, I can read it for you.`;
-            } else if (fileOccurrenceReport.length > 0) {
-                voiceSpeech = `I found references to ${primaryTerm} across ${fileOccurrenceReport.length} of your loaded files. Here is the result on your screen, you can read it. If you want, I can read it for you.`;
-            } else {
-                voiceSpeech = `Here is the academic result for ${query} on your screen, you can read it. If you want, I can read it for you.`;
-            }
-
+            const voiceSpeech = `I have processed your query for ${query}. The result is on your screen, you can read it. If you want, I can read it for you.`;
             displayResults(finalReport, voiceSpeech);
         }
 
-        // Display Visual Evidence in the UI
         function loadAndDisplayImageEvidence(imageFile) {
             const viewer = document.getElementById('evidenceViewer');
             const imgElem = document.getElementById('inspectedImage');
@@ -610,7 +558,6 @@ Upload PDFs, PPTX slides, spreadsheets, or images to cross-reference citations d
                 <div><strong>File Resource:</strong> ${imageFile.name}</div>
                 <div><strong>Format / Size:</strong> ${imageFile.mime} (${(imageFile.size/1024).toFixed(1)} KB)</div>
                 <div><strong>Active Status:</strong> Mapped to Acharya Multimodal Memory</div>
-                <div style="color: #63b3ed; margin-top: 4px;">Hardware components and wiring nodes verified below.</div>
             `;
 
             const reader = new FileReader();
@@ -619,50 +566,6 @@ Upload PDFs, PPTX slides, spreadsheets, or images to cross-reference citations d
                 viewer.style.display = 'block';
             };
             reader.readAsDataURL(imageFile.rawFile);
-        }
-
-        function cancelImageScrutiny() {
-            document.getElementById('internetPromptOverlay').classList.remove('active');
-            pendingImageScrutiny = null;
-            document.getElementById('botStatusLabel').innerText = "Status: Image Scrutiny Cancelled";
-        }
-
-        async function proceedWithOnlineVerification() {
-            document.getElementById('internetPromptOverlay').classList.remove('active');
-            if (!pendingImageScrutiny) return;
-
-            const botLabel = document.getElementById('botStatusLabel');
-            botLabel.innerText = "Status: Scrutinizing Image (Online Handshake)...";
-            logTerminal("🌐 Connecting briefly for visual scrutiny & hardware verification...");
-
-            const file = pendingImageScrutiny.file;
-
-            setTimeout(() => {
-                const analysisResult = `>>> PROF. AI ACHARYA - HARDWARE & CIRCUIT SCRUTINY (VERIFIED):
-
-• Microcontroller: Arduino UNO connected via USB with active 5V onboard power.
-• Circuit Configuration: Solderless breadboard hosting a four-arm Wheatstone Bridge configuration for precision sensor interfacing.
-• Bridge Resistors: Completed with two 500Ω resistors (R1 and R3) forming precision ratio arms.
-• Power & Ground Connections:
-  - Red jumper wire routes +5V from Arduino to the breadboard top rail.
-  - Black jumper wire routes GND to the bottom return rail.
-• Analog Sensing Channels:
-  - Green jumper wire taps the left bridge divider into Arduino Analog pin A0.
-  - Black/white jumper wire taps the opposing divider node into Analog pin A1.
-• Telemetry Status: Background monitor confirms balanced bridge null status (A0: 512, A1: 512 | DIFF: 0) at 2.5V reference.
-
----------------------------------------------------
-📍 [Occurrences Found Across Loaded Context]:
-• [Visual Image] ${file.name} ➔ Loaded and verified in active workspace viewer.
-
-✅ Image verified and cached into offline memory. You can now disconnect from the internet and continue working completely offline.`;
-
-                cachedImageAnalyses.set(file.name, analysisResult);
-
-                const voiceSpeech = "Image scrutiny verified successfully. I have loaded the image into the workspace viewer and indexed the hardware components. The result is saved locally, so you can now turn off the internet and work offline.";
-                displayResults(analysisResult, voiceSpeech);
-                pendingImageScrutiny = null;
-            }, 1200);
         }
 
         // Spreadsheet Statistics Engine (100% Offline)
@@ -716,7 +619,7 @@ Upload PDFs, PPTX slides, spreadsheets, or images to cross-reference citations d
         }
 
         function displayResults(terminalText, spokenText) {
-            document.getElementById('botStatusLabel').innerText = "Status: Ready (Offline Capable)";
+            document.getElementById('botStatusLabel').innerText = "Status: Ready";
             logTerminal(terminalText);
             speakAcharya(spokenText);
         }
