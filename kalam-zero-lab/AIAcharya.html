@@ -38,7 +38,8 @@
             border-bottom: 1px solid #1a2e4c;
         }
         .brand-container { display: flex; flex-direction: column; gap: 10px; }
-        .top-header-line { display: flex; align-items: center; gap: 15px; }
+        .top-header-line { display: flex; align-items: center; justify-content: space-between; }
+        .brand-left { display: flex; align-items: center; gap: 15px; }
         .logo-container {
             width: 58px; height: 58px; border-radius: 50%; background: #ffffff;
             display: flex; align-items: center; justify-content: center;
@@ -56,6 +57,22 @@
             align-items: center;
             gap: 8px;
         }
+        .btn-guide {
+            background: #ecc94b;
+            color: #0b1426;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 6px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+        }
+        .btn-guide:hover { background: #d69e2e; }
+
         .sub-header-line { display: flex; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 1px solid #1a2e4c; }
         .acharya-title { margin: 0; font-size: 1.2rem; font-weight: 700; color: #ecc94b; }
         .bookmark-alert { background: #feebc8; color: #c05621; padding: 10px 30px; text-align: center; font-weight: 600; font-size: 0.9rem; border-bottom: 1px solid #fbd38d; }
@@ -87,6 +104,17 @@
         .robot-chest-plate { width: 50px; height: 40px; background: #1a365d; border-radius: 8px; margin-top: 15px; border: 2px solid #e2e8f0; }
         .bot-status-text { margin-top: 15px; font-weight: bold; color: white; font-size: 1.05rem; text-shadow: 0 2px 4px rgba(0,0,0,0.5); font-family: sans-serif; text-align: center; }
         
+        /* Guide Modal Styles */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(4, 8, 17, 0.88); display: flex; align-items: center; justify-content: center; z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-box { background: #111c30; border: 2px solid #ecc94b; border-radius: 12px; padding: 25px 30px; max-width: 650px; width: 92%; max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.6); }
+        .modal-title { font-size: 1.3rem; font-weight: bold; color: #ecc94b; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .modal-body-text { font-size: 0.95rem; line-height: 1.6; color: #e2e8f0; text-align: left; }
+        .modal-body-text h3 { color: #63b3ed; margin-top: 15px; margin-bottom: 6px; font-size: 1.05rem; }
+        .modal-body-text ul { padding-left: 20px; margin-top: 4px; margin-bottom: 10px; }
+        .modal-btn-row { display: flex; justify-content: flex-end; margin-top: 20px; }
+        .btn-modal-close { background: #ed8936; color: white; border: none; padding: 10px 22px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+
         label { font-weight: 600; margin-bottom: 6px; display: block; color: #a0aec0; font-size: 0.9rem; }
         input[type="text"], input[type="password"] { width: 100%; padding: 11px; margin-bottom: 12px; border: 1px solid #1a2e4c; border-radius: 6px; box-sizing: border-box; background: #070d19; color: white; }
         
@@ -120,14 +148,50 @@
     </style>
 </head>
 <body>
+    <!-- User Guide Modal Overlay -->
+    <div class="modal-overlay" id="guideModalOverlay">
+        <div class="modal-box">
+            <div class="modal-title">📖 Prof. AI Acharya User Guide & Instructions</div>
+            <div class="modal-body-text">
+                <h3>1. Visual & Hardware Image Inspection</h3>
+                <p>Upload circuit photos, experimental setups, or graphs using <strong>➕ Add Files / Images</strong>. Connect a free Gemini API key to have Acharya decode components, wiring connections, resistors, and sensor readings.</p>
+                
+                <h3>2. Spreadsheets & Statistical Analysis</h3>
+                <p>Upload any <strong>.xlsx</strong>, <strong>.xls</strong>, or <strong>.csv</strong> file (e.g., student marks or experimental loads) and ask:</p>
+                <ul>
+                    <li><em>"Who is the class topper?"</em></li>
+                    <li><em>"What is the class average?"</em></li>
+                    <li><em>"Show highest and lowest scores."</em></li>
+                </ul>
+
+                <h3>3. Word & PowerPoint Summarization</h3>
+                <p>Upload <strong>.docx</strong> or <strong>.pptx</strong> files and ask <em>"summarize this document"</em> or <em>"explain the slides"</em> for an automated breakdown.</p>
+
+                <h3>4. Voice Input & Indian Voice Readout</h3>
+                <p>Click <strong>🎤 Voice Input</strong> to speak directly. Toggle <strong>🔊 Voice: ON/OFF</strong> to control spoken responses. When answers are extensive, Acharya provides a concise summary and offers to read the complete breakdown.</p>
+
+                <h3>5. Offline Privacy & Security</h3>
+                <p>All file parsing runs locally inside your browser memory. Documents are not permanently stored on any external server.</p>
+            </div>
+            <div class="modal-btn-row">
+                <button class="btn-modal-close" onclick="closeGuideModal()">Close Guide</button>
+            </div>
+        </div>
+    </div>
+
     <header class="header">
         <div class="brand-container">
             <div class="top-header-line">
-                <div class="logo-container">
-                    <img src="logo.jpeg" alt="GARRF Logo" class="logo-img" onerror="this.onerror=null; this.parentElement.innerHTML='🏛️';">
+                <div class="brand-left">
+                    <div class="logo-container">
+                        <img src="logo.jpeg" alt="GARRF Logo" class="logo-img" onerror="this.onerror=null; this.parentElement.innerHTML='🏛️';">
+                    </div>
+                    <div>
+                        <h1 class="foundation-title">Gopalkrishna Advanced Rural Research Foundation, India 🇮🇳</h1>
+                    </div>
                 </div>
                 <div>
-                    <h1 class="foundation-title">Gopalkrishna Advanced Rural Research Foundation, India 🇮🇳</h1>
+                    <button class="btn-guide" onclick="openGuideModal()">📖 Guide & Help</button>
                 </div>
             </div>
             <div class="sub-header-line">
@@ -141,7 +205,7 @@
         <section class="card">
             <h2>🛠️ Workspace & AI Engine Settings</h2>
             
-            <label for="geminiApiKey">🔑 Gemini Multimodal Vision API Key (Stored Locally in Browser)</label>
+            <label for="geminiApiKey">🔑 Gemini Multimodal Vision API Key (Saved Locally in Browser)</label>
             <input type="password" id="geminiApiKey" placeholder="Paste your Google AI Studio Gemini API Key here" onchange="saveApiKey(this.value)">
 
             <label>📂 Linked Documents & Hardware Image Context</label>
@@ -158,7 +222,7 @@
             <input type="file" id="filePicker" multiple accept="*/*,image/*" style="display: none;" onchange="handleFileBatch(event)">
 
             <label for="queryInput">Instruction / Question for Prof. AI Acharya</label>
-            <textarea id="queryInput" placeholder="Try: 'explain this image', 'what circuit is this?', 'who is the topper in excel?'..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitToAcharya();}"></textarea>
+            <textarea id="queryInput" placeholder="Try: 'what is inside this pic?', 'explain this circuit', 'who is the topper?'..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitToAcharya();}"></textarea>
             
             <div class="voice-controls-row">
                 <button class="btn-voice btn-listen" id="voiceInputBtn" onclick="toggleSpeechRecognition()">🎤 Voice Input</button>
@@ -184,7 +248,7 @@
 
             <h2>📊 Live Analytical Terminal</h2>
             <div class="response-terminal" id="terminalOutput">Acharya Multimodal Studio Active.
-Connected with Gemini Vision Intelligence. Upload engineering diagrams, circuit photos, or files to inspect their actual contents...</div>
+Connected with Gemini Vision Intelligence. Upload images, circuit diagrams, or documents to inspect contents directly...</div>
         </section>
 
         <!-- Documents Table -->
@@ -210,10 +274,17 @@ Connected with Gemini Vision Intelligence. Upload engineering diagrams, circuit 
             initIndianVoice();
             initSpeech();
             startBlink();
-            // Load saved key if present
             const savedKey = localStorage.getItem('garrf_gemini_api_key');
             if (savedKey) document.getElementById('geminiApiKey').value = savedKey;
         });
+
+        function openGuideModal() {
+            document.getElementById('guideModalOverlay').classList.add('active');
+        }
+
+        function closeGuideModal() {
+            document.getElementById('guideModalOverlay').classList.remove('active');
+        }
 
         function saveApiKey(val) {
             localStorage.setItem('garrf_gemini_api_key', val.trim());
@@ -263,15 +334,15 @@ Connected with Gemini Vision Intelligence. Upload engineering diagrams, circuit 
             pane.innerHTML = html;
         }
 
-        // --- GEMINI MULTIMODAL VISION CALL ---
+        // Gemini Multimodal Vision API Call
         async function analyzeWithGeminiVision(apiKey, imageFile, userPrompt) {
             const base64Data = await fileToBase64(imageFile);
             const mimeType = imageFile.type || 'image/jpeg';
 
-            // Clean prompt for Prof. AI Acharya
             const systemContext = "You are Prof. AI Acharya, a distinguished Indian professor of engineering and smart materials at GARRF. " +
-                                  "Provide a thorough, highly detailed technical and pedagogical explanation of what is in this image. " +
-                                  "Examine hardware components, pin wiring, schematics, resistors, microcontrollers, labels, and graphs. Avoid generic metadata descriptions.";
+                                  "Provide a thorough, pedagogical explanation of what is inside this image. " +
+                                  "Examine hardware components, pin wiring, schematics, resistors, microcontrollers, labels, and graphs. " +
+                                  "Avoid generic metadata, file names, or size descriptions; explain the technical reality directly.";
 
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
@@ -306,30 +377,29 @@ Connected with Gemini Vision Intelligence. Upload engineering diagrams, circuit 
             });
         }
 
-        // --- SUBMISSION LOGIC ---
+        // Main Query Submission Handler
         async function submitToAcharya() {
             const query = document.getElementById('queryInput').value.trim();
             if (!query) return;
 
             const qLower = query.toLowerCase();
             const botLabel = document.getElementById('botStatusLabel');
-            botLabel.innerText = "Status: Inspecting Image & Media...";
+            botLabel.innerText = "Status: Inspecting Query & Media...";
             logTerminal(`🤖 Ingesting: "${query}"\nExamining image visual pixels & document data...`);
 
-            // 1. Check if an image is uploaded and user asks to inspect/explain
+            // 1. Image Inspection Query Detection
             const imageFile = loadedFilesRegistry.find(f => f.mime && f.mime.startsWith('image/'));
-            const isImageQuery = /image|photo|picture|diagram|circuit|resistor|breadboard|arduino|setup|explain/i.test(qLower);
+            const isImageQuery = /image|photo|pic|picture|diagram|circuit|resistor|breadboard|arduino|setup|explain|inside/i.test(qLower);
 
             if (imageFile && isImageQuery) {
                 const apiKey = document.getElementById('geminiApiKey').value.trim() || localStorage.getItem('garrf_gemini_api_key');
 
                 if (!apiKey) {
-                    const noKeyMsg = `>>> PROF. AI ACHARYA MULTIMODAL NOTICE:\n\n` +
-                                     `To see and understand the exact circuit components, Arduino connections, and resistors inside "${imageFile.name}", Prof. AI Acharya needs a Gemini API Key.\n\n` +
-                                     `1. Get a key in 30 seconds at: https://aistudio.google.com/app/apikey (Free)\n` +
-                                     `2. Paste it into the "Gemini Multimodal Vision API Key" box on the left.\n\n` +
-                                     `Once entered, Acharya will visually describe every jumper wire, resistor, and reading in full detail.`;
-                    const noKeyVoice = "Please paste your free Gemini API key in the settings panel so I can examine your circuit image directly.";
+                    const noKeyMsg = `>>> PROF. AI ACHARYA NOTICE:\n\n` +
+                                     `To inspect the circuit components and wiring in your image, please connect a free Gemini API key.\n` +
+                                     `• Enter your API key in the Workspace Settings panel on the left.\n` +
+                                     `• Click the 'Guide & Help' button in the top right header for complete setup details.`;
+                    const noKeyVoice = "Please paste your Gemini API key in the settings panel so I can examine your image directly.";
                     displayResults(noKeyMsg, noKeyVoice);
                     return;
                 }
@@ -338,10 +408,7 @@ Connected with Gemini Vision Intelligence. Upload engineering diagrams, circuit 
                     botLabel.innerText = "Status: Gemini Vision Decoding Pixels...";
                     const geminiAnalysis = await analyzeWithGeminiVision(apiKey, imageFile.rawFile, query);
 
-                    let fullOutput = `>>> PROF. AI ACHARYA - MULTIMODAL VISION DECODER:\n`;
-                    fullOutput += `Inspected Image: "${imageFile.name}"\n\n`;
-                    fullOutput += `${geminiAnalysis}\n\n`;
-
+                    let fullOutput = `>>> PROF. AI ACHARYA - VISUAL ANALYSIS:\n\n${geminiAnalysis}\n`;
                     const voiceSummary = `I have examined your circuit image. Here is the complete breakdown on your screen, you can read it. If you want, I can read it for you.`;
                     displayResults(fullOutput, voiceSummary);
                     return;
@@ -361,15 +428,15 @@ Connected with Gemini Vision Intelligence. Upload engineering diagrams, circuit 
                 return;
             }
 
-            // 3. Fallback General Question
-            const fallbackTerminal = `>>> PROF. AI ACHARYA RESPONSE:\nProcessed query: "${query}"\n` +
-                                     `• Active Resources In Memory: ${loadedFilesRegistry.length}\n` +
-                                     `• Try uploading an engineering photo or circuit diagram and ask 'explain this image' with your Gemini key connected!`;
+            // 3. Clean Direct Fallback
+            const fallbackTerminal = `>>> PROF. AI ACHARYA RESPONSE:\n\n` +
+                                     `I have processed your query: "${query}".\n` +
+                                     `To inspect specific documents or hardware setups, upload your files on the left. Click the 'Guide & Help' button in the header for full instructions.`;
             const fallbackVoice = `I processed your request. Here is the result, you can read it. If you want, I can read it for you.`;
             displayResults(fallbackTerminal, fallbackVoice);
         }
 
-        // --- EXCEL NUMERICAL ANALYZER ---
+        // Excel / CSV Parsing Engine
         async function parseAndAnalyzeSheet(file) {
             return new Promise((resolve) => {
                 const reader = new FileReader();
@@ -402,12 +469,12 @@ Connected with Gemini Vision Intelligence. Upload engineering diagrams, circuit 
                     });
 
                     const avg = (total / count).toFixed(2);
-                    let terminalText = `>>> PROF. AI ACHARYA STATISTICAL COMPUTATION ENGINE:\n`;
+                    let terminalText = `>>> PROF. AI ACHARYA STATISTICAL REPORT:\n\n`;
                     terminalText += `File: ${file.name} | Total Records: ${count}\n\n`;
                     terminalText += `• Class Average (Mean): ${avg}\n`;
                     terminalText += `• Class Topper: ${topper ? topper[nameKey] : 'Top candidate'} with ${max} in ${scoreKey}\n`;
 
-                    const spokenText = `The class average is ${avg}. The highest score is ${max}, achieved by ${topper ? topper[nameKey] : 'the top candidate'}. Here is the result, you can read it.`;
+                    const spokenText = `The class average is ${avg}. The highest score is ${max}, achieved by ${topper ? topper[nameKey] : 'the top candidate'}. Here is the result on your screen, you can read it.`;
                     resolve({ terminalText, spokenText });
                 };
                 reader.readAsArrayBuffer(file);
@@ -420,7 +487,7 @@ Connected with Gemini Vision Intelligence. Upload engineering diagrams, circuit 
             speakAcharya(spokenText);
         }
 
-        // --- INDIAN VOICE & SPEECH ENGINE ---
+        // Indian Voice Synthesis
         function initIndianVoice() {
             function pick() {
                 const voices = window.speechSynthesis.getVoices();
