@@ -109,21 +109,21 @@
     </style>
 </head>
 <body>
-    <!-- Security Check Modal Overlay -->
+    <!-- Access Explanation Modal Overlay -->
     <div class="modal-overlay" id="securityModalOverlay">
         <div class="modal-box">
-            <div class="modal-title">🔒 Secure Folder Connection Prompt</div>
+            <div class="modal-title">🔒 Local Storage Access</div>
             <div class="modal-body-text">
-                In order to train AI Acharya, give permission to access your local material via folder. It is absolutely safe as once you link the training/course material, you can bookmark this page and work offline.
+                AI Acharya reads course files directly from your computer's local memory. No files are uploaded to any server, and the entire workspace runs offline.
             </div>
             <div class="modal-btn-row">
-                <button class="btn-modal-confirm" onclick="confirmPermissionAndProceed()">Grant & Continue</button>
+                <button class="btn-modal-confirm" onclick="confirmPermissionAndProceed()">Grant Local Access</button>
                 <button class="btn-modal-cancel" onclick="closeExplanatoryModal()">Cancel</button>
             </div>
         </div>
     </div>
 
-    <!-- System Banner Alert Notification -->
+    <!-- Alert Banner -->
     <div class="bookmark-alert">
         💡 <strong>Multi-Course Setup:</strong> Enter the course code to update the banner name, pick a color, and hit <strong>Bookmark (Ctrl+D)</strong> to lock in this course workspace!
     </div>
@@ -143,9 +143,9 @@
         </div>
     </div>
 
-    <!-- Main Content Grid -->
+    <!-- Main Container -->
     <main class="main-container">
-        <!-- Configuration & Controls Panel -->
+        <!-- Controls Panel -->
         <section class="card">
             <h2>🛠️ Workspace Settings</h2>
             
@@ -163,7 +163,8 @@
                 <span class="status-badge" id="connectionStatus">Disconnected from Source</span>
             </div>
             <button class="btn-folder" onclick="openSecurityModal()">Select Local Materials Folder</button>
-            <input type="file" id="folderPickerInput" webkitdirectory directory multiple style="display: none;" onchange="handleFolderSelection(event)">
+            <!-- Fallback hidden input for older browsers without File System Access API -->
+            <input type="file" id="folderPickerInput" webkitdirectory directory multiple style="display: none;" onchange="handleFolderFallback(event)">
 
             <label for="queryInput">Prompt / Question for AI Acharya</label>
             <textarea id="queryInput" placeholder="Enter instructions or research questions regarding your local course materials..."></textarea>
@@ -199,7 +200,7 @@
 Awaiting localized profile configurations mappings...</div>
         </section>
 
-        <!-- Pipeline Document Parsing Grid -->
+        <!-- Document Preview Grid -->
         <section class="card full-width">
             <h2>📑 Document Parsing Context Pipeline Reference</h2>
             <div class="preview-pane" id="previewPane">
@@ -279,7 +280,7 @@ Awaiting localized profile configurations mappings...</div>
                         document.getElementById('themeColorPicker').value = hydratedStateConfigPayload.color;
                         changeThemeColor(hydratedStateConfigPayload.color);
                     }
-                    appendStatusMessageToLogTerminal("🔄 Re-synchronized active environment state properties from encoded parameters matrix state anchor.");
+                    appendStatusMessageToLogTerminal("🔄 Re-synchronized active environment state properties from URL parameters.");
                 }
             } catch (runtimeParsingExceptionReference) {
                 console.error("Critical structure state synchronization error parsing parameters:", runtimeParsingExceptionReference);
@@ -294,23 +295,68 @@ Awaiting localized profile configurations mappings...</div>
             document.getElementById('securityModalOverlay').classList.remove('active');
         }
 
-        function confirmPermissionAndProceed() {
+        // Direct local filesystem scanner (replaces legacy browser upload alert)
+        async function confirmPermissionAndProceed() {
             closeExplanatoryModal();
-            document.getElementById('folderPickerInput').click();
+
+            if ('showDirectoryPicker' in window) {
+                try {
+                    const dirHandle = await window.showDirectoryPicker({ mode: 'read' });
+                    trackedLocalContextAssetsMatrix = [];
+
+                    async function scanDirectory(handle, currentPath = '') {
+                        for await (const entry of handle.values()) {
+                            if (entry.kind === 'file') {
+                                const file = await entry.getFile();
+                                trackedLocalContextAssetsMatrix.push({
+                                    name: file.name,
+                                    relativePath: currentPath ? `${currentPath}/${file.name}` : file.name,
+                                    type: file.type || 'application/octet-stream',
+                                    size: file.size
+                                });
+                            } else if (entry.kind === 'directory') {
+                                await scanDirectory(entry, currentPath ? `${currentPath}/${entry.name}` : entry.name);
+                            }
+                        }
+                    }
+
+                    await scanDirectory(dirHandle);
+                    updateUIAfterSelection();
+                } catch (err) {
+                    if (err.name !== 'AbortError') {
+                        console.error("Local directory scan failed:", err);
+                        appendStatusMessageToLogTerminal("❌ Error accessing local folder: " + err.message);
+                    }
+                }
+            } else {
+                // Fallback for non-Chromium or legacy environments
+                document.getElementById('folderPickerInput').click();
+            }
         }
 
-        function handleFolderSelection(event) {
+        function handleFolderFallback(event) {
             const files = event.target.files;
             if (!files || files.length === 0) return;
 
-            trackedLocalContextAssetsMatrix = Array.from(files);
+            trackedLocalContextAssetsMatrix = Array.from(files).map(file => ({
+                name: file.name,
+                relativePath: file.webkitRelativePath || file.name,
+                type: file.type || 'application/octet-stream',
+                size: file.size
+            }));
+
+            updateUIAfterSelection();
+        }
+
+        function updateUIAfterSelection() {
+            if (trackedLocalContextAssetsMatrix.length === 0) return;
 
             const badgeIndicatorNode = document.getElementById('connectionStatus');
             badgeIndicatorNode.classList.add('connected');
             badgeIndicatorNode.innerText = `Connected Safely • ${trackedLocalContextAssetsMatrix.length} resources verified`;
 
             document.getElementById('botStatusLabel').innerText = "Status: Dataset Matrix Context Loaded";
-            appendStatusMessageToLogTerminal(`📁 Direct sandbox access verified.\nDiscovered matching nodes: ${trackedLocalContextAssetsMatrix.length} structural elements.\nRendering parsed files layout tracking array properties below...`);
+            appendStatusMessageToLogTerminal(`📁 Direct local access verified.\nDiscovered matching nodes: ${trackedLocalContextAssetsMatrix.length} structural elements.\nRendering parsed files layout tracking array properties below...`);
 
             generateFileContextParsingTableLayoutView();
         }
@@ -336,8 +382,8 @@ Awaiting localized profile configurations mappings...</div>
                 const normalizedMetricWeightString = (file.size / 1024).toFixed(1) + " KB";
                 compiledTableHtmlString += `
                     <tr>
-                        <td>${file.webkitRelativePath || file.name}</td>
-                        <td>${file.type || 'application/octet-stream'}</td>
+                        <td>${file.relativePath}</td>
+                        <td>${file.type}</td>
                         <td>${normalizedMetricWeightString}</td>
                     </tr>
                 `;
@@ -374,7 +420,7 @@ Awaiting localized profile configurations mappings...</div>
                 contextualRobotCharacterStatusLabel.innerText = "Status: Voice Frequency Profiles Decoded";
 
                 const textPromptInputBoxUiNode = document.getElementById('queryInput');
-                const simulationDecodedTranscriptStringPhraseText = "Evaluate the agronomic performance reports inside the data tables.";
+                const simulationDecodedTranscriptStringPhraseText = "Evaluate the structural integrity and electromechanical impedance data tables.";
 
                 textPromptInputBoxUiNode.value = textPromptInputBoxUiNode.value
                     ? textPromptInputBoxUiNode.value + " " + simulationDecodedTranscriptStringPhraseText
