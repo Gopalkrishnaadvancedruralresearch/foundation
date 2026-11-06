@@ -3,7 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prof. AI Acharya - GARRF</title>
+    <title>Prof. AI Acharya - Analytical Engine</title>
+    <!-- Embedded Document Parsing Engines (Offline / CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mammoth@1.4.21/mammoth.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
     <style>
         :root {
             --primary: #0f3057;
@@ -41,7 +46,6 @@
             box-shadow: 0 0 10px rgba(236, 201, 75, 0.4);
         }
         .logo-img { width: 100%; height: 100%; object-fit: cover; }
-        .foundation-title-box { display: flex; flex-direction: column; }
         .foundation-title { 
             margin: 0; 
             font-size: 1.35rem; 
@@ -83,25 +87,12 @@
         .robot-chest-plate { width: 50px; height: 40px; background: #1a365d; border-radius: 8px; margin-top: 15px; border: 2px solid #e2e8f0; }
         .bot-status-text { margin-top: 15px; font-weight: bold; color: white; font-size: 1.05rem; text-shadow: 0 2px 4px rgba(0,0,0,0.5); font-family: sans-serif; text-align: center; }
         
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(4, 8, 17, 0.85); display: flex; align-items: center; justify-content: center; z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
-        .modal-overlay.active { opacity: 1; pointer-events: auto; }
-        .modal-box { background: #111c30; border: 2px solid #ecc94b; border-radius: 12px; padding: 30px; max-width: 500px; width: 90%; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
-        .modal-title { font-size: 1.25rem; font-weight: bold; color: #ecc94b; margin-bottom: 15px; }
-        .modal-body-text { font-size: 1rem; line-height: 1.6; color: #e2e8f0; margin-bottom: 25px; }
-        .modal-btn-row { display: flex; gap: 15px; justify-content: center; }
-        .btn-modal-confirm { background: #ed8936; color: white; border: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .btn-modal-cancel { background: #4a5568; color: white; border: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        
         label { font-weight: 600; margin-bottom: 8px; display: block; color: #a0aec0; }
         input[type="text"] { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #1a2e4c; border-radius: 6px; box-sizing: border-box; background: #070d19; color: white; }
-        .color-picker-container { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; background: #070d19; padding: 10px 15px; border-radius: 8px; border: 1px solid #1a2e4c; box-sizing: border-box; width: 100%; }
-        input[type="color"] { border: none; width: 50px; height: 38px; border-radius: 6px; cursor: pointer; background: none; padding: 0; }
         
-        .folder-actions-row { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin-bottom: 10px; }
+        .folder-actions-row { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin-bottom: 15px; }
         .btn-folder { background: #ed8936; color: white; border: none; padding: 13px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.95rem; text-align: center; }
         .btn-add-files { background: #319795; color: white; border: none; padding: 13px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.95rem; text-align: center; }
-        .btn-drive { background: #2b6cb0; color: white; border: none; padding: 11px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.9rem; margin-bottom: 15px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn-drive:hover { background: #235a94; }
 
         .voice-controls-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
         .btn-voice { padding: 12px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; color: white; font-size: 0.95rem; }
@@ -120,782 +111,354 @@
         textarea { width: 100%; padding: 12px; border: 1px solid #1a2e4c; border-radius: 6px; background: #070d19; color: white; resize: vertical; height: 90px; box-sizing: border-box; margin-bottom: 12px; font-family: inherit; font-size: 0.95rem; }
         .response-terminal { background: #040811; color: #aeecfc; padding: 18px; border-radius: 8px; font-family: 'Consolas', monospace; flex: 1; min-height: 260px; max-height: 450px; overflow-y: auto; white-space: pre-wrap; border: 1px solid #1a2e4c; box-sizing: border-box; line-height: 1.5; font-size: 0.9rem; }
         
-        .preview-pane { 
-            background: #070d19; 
-            border: 1px solid #1a2e4c; 
-            max-height: 420px; 
-            border-radius: 8px; 
-            overflow-y: auto; 
-            overflow-x: auto; 
-            box-sizing: border-box; 
-        }
-        .preview-pane::-webkit-scrollbar { width: 8px; height: 8px; }
-        .preview-pane::-webkit-scrollbar-track { background: #070d19; }
-        .preview-pane::-webkit-scrollbar-thumb { background: #2b6cb0; border-radius: 4px; }
-        .preview-pane::-webkit-scrollbar-thumb:hover { background: #ecc94b; }
-
+        .preview-pane { background: #070d19; border: 1px solid #1a2e4c; max-height: 400px; border-radius: 8px; overflow-y: auto; overflow-x: auto; box-sizing: border-box; }
         .data-table { width: 100%; border-collapse: collapse; background: #111c30; color: white; font-size: 0.88rem; }
         .data-table th, .data-table td { border: 1px solid #1a2e4c; padding: 10px 14px; text-align: left; }
-        .data-table th { background: #1a365d; position: sticky; top: 0; z-index: 2; box-shadow: 0 2px 4px rgba(0,0,0,0.4); }
-        .data-table tbody tr:hover { background: #16243d; }
-        .source-tag { font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; margin-left: 6px; font-weight: bold; }
-        .tag-local { background: #2b6cb0; color: white; }
-        .tag-drive { background: #276749; color: white; }
-
+        .data-table th { background: #1a365d; position: sticky; top: 0; z-index: 2; }
         .footer { background: #070d19; color: #a0aec0; padding: 20px 30px; text-align: center; font-size: 0.88rem; border-top: 4px solid var(--primary); margin-top: auto; }
-        .footer a { color: #63b3ed; text-decoration: none; font-weight: bold; }
     </style>
 </head>
 <body>
-    <div class="modal-overlay" id="securityModalOverlay">
-        <div class="modal-box">
-            <div class="modal-title">🔒 Local Folder Access</div>
-            <div class="modal-body-text">
-                Prof. AI Acharya reads course materials, images, and research files directly from your computer. No files are uploaded to any server, and the entire workspace runs offline.
-            </div>
-            <div class="modal-btn-row">
-                <button class="btn-modal-confirm" onclick="confirmPermissionAndProceed()">Grant Local Access</button>
-                <button class="btn-modal-cancel" onclick="closeExplanatoryModal()">Cancel</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="bookmark-alert">
-        💡 <strong>Multi-Course Setup:</strong> Enter the course code to update the banner name, pick a color, and hit <strong>Bookmark (Ctrl+D)</strong> to lock in this course workspace!
-    </div>
-
-    <!-- Header Area -->
-    <header class="header" id="mainHeader">
+    <header class="header">
         <div class="brand-container">
             <div class="top-header-line">
                 <div class="logo-container">
                     <img src="logo.jpeg" alt="GARRF Logo" class="logo-img" onerror="this.onerror=null; this.parentElement.innerHTML='🏛️';">
                 </div>
-                <div class="foundation-title-box">
-                    <h1 class="foundation-title">
-                        Gopalkrishna Advanced Rural Research Foundation, India 🇮🇳
-                    </h1>
+                <div>
+                    <h1 class="foundation-title">Gopalkrishna Advanced Rural Research Foundation, India 🇮🇳</h1>
                 </div>
             </div>
             <div class="sub-header-line">
-                <h2 class="acharya-title" id="brandTitle">Prof. AI Acharya Workspace</h2>
+                <h2 class="acharya-title">Prof. AI Acharya - Analytical Document Studio</h2>
             </div>
         </div>
     </header>
 
     <main class="main-container">
-        <!-- Settings & Interaction Panel -->
         <section class="card">
-            <h2>🛠️ Workspace Settings</h2>
+            <h2>🛠️ Workspace Controls</h2>
             
-            <label for="courseCodeInput">Course Title / Code Identifier</label>
-            <input type="text" id="courseCodeInput" placeholder="e.g. CE601: Structural Health Monitoring" oninput="updateCourseTitle(this.value)">
-
-            <label>🎨 Studio Accent Color</label>
-            <div class="color-picker-container">
-                <span>Backdrop Theme</span>
-                <input type="color" id="themeColorPicker" value="#0f3057" onchange="changeThemeColor(this.value)">
-            </div>
-
-            <label>📂 Context Dataset Connection</label>
+            <label>📂 Linked Documents & Data Context</label>
             <div>
-                <span class="status-badge" id="connectionStatus">Disconnected from Source</span>
+                <span class="status-badge" id="connectionStatus">No Documents Linked</span>
             </div>
             
-            <!-- Folder Selection + Add Files Row -->
             <div class="folder-actions-row">
-                <button class="btn-folder" onclick="openSecurityModal()">Select Materials Folder</button>
-                <button class="btn-add-files" onclick="triggerAddFiles()" title="Add more files or images">➕ Add Files</button>
+                <button class="btn-folder" onclick="triggerFolderSelect()">Select Local Folder</button>
+                <button class="btn-add-files" onclick="triggerFileSelect()">➕ Add Files</button>
             </div>
-            
-            <!-- Google Drive Cloud Connection Button -->
-            <button class="btn-drive" onclick="connectGoogleDrive()">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM19 18H6c-2.21 0-4-1.79-4-4 0-2.05 1.53-3.76 3.56-3.97l1.07-.11.5-.95C8.08 7.14 9.94 6 12 6c2.62 0 4.88 1.86 5.39 4.43l.3 1.5 1.53.11c1.56.1 2.78 1.41 2.78 2.96 0 1.65-1.35 3-3 3z"/></svg>
-                Connect Google Drive Files
-            </button>
 
-            <!-- Hidden File Pickers -->
-            <input type="file" id="folderPickerInput" webkitdirectory directory multiple style="display: none;" onchange="handleFolderFallback(event)">
-            <input type="file" id="additionalFilesInput" multiple accept="*/*,image/*" style="display: none;" onchange="handleAddIndividualFiles(event)">
+            <input type="file" id="folderPicker" webkitdirectory directory multiple style="display: none;" onchange="handleFileBatch(event)">
+            <input type="file" id="filePicker" multiple accept=".xlsx,.xls,.csv,.docx,.pptx,.json,.txt,.pdf,image/*" style="display: none;" onchange="handleFileBatch(event)">
 
-            <label for="queryInput">Prompt / Question for AI Acharya</label>
-            <textarea id="queryInput" placeholder="Ask questions or type 'explain the image'..." onkeydown="handleKeyPress(event)"></textarea>
+            <label for="queryInput">Instructions / Analytical Question</label>
+            <textarea id="queryInput" placeholder="Try: 'find the topper', 'what is the average marks?', 'summarize this word document', 'explain slides'..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitToAcharya();}"></textarea>
             
             <div class="voice-controls-row">
                 <button class="btn-voice btn-listen" id="voiceInputBtn" onclick="toggleSpeechRecognition()">🎤 Voice Input</button>
                 <button class="btn-voice btn-tts-toggle" id="voiceOutputBtn" onclick="toggleVoiceOutput()">🔊 Voice: ON</button>
             </div>
 
-            <button class="btn-action" id="submitBtn" onclick="submitToAcharya()">Analyze & Generate Insight</button>
+            <button class="btn-action" onclick="submitToAcharya()">Analyze & Compute Results</button>
         </section>
 
-        <!-- Avatar & Live Output Panel -->
         <section class="card">
             <div class="robot-display-box" id="robotDisplay">
-                <div class="robot-headphones">
-                    <div class="ear-pad left"></div>
-                    <div class="ear-pad right"></div>
-                </div>
+                <div class="robot-headphones"><div class="ear-pad left"></div><div class="ear-pad right"></div></div>
                 <div class="robot-head">
                     <div class="robot-face">
                         <div class="robot-eye" id="eyeL"></div>
                         <div class="robot-eye" id="eyeR"></div>
                     </div>
                 </div>
-                <div class="robot-body">
-                    <div class="robot-chest-plate"></div>
-                </div>
-                <div class="bot-status-text" id="botStatusLabel">Status: Awaiting Configurations</div>
+                <div class="robot-body"><div class="robot-chest-plate"></div></div>
+                <div class="bot-status-text" id="botStatusLabel">Status: Ready for Instructions</div>
             </div>
 
-            <h2>📊 Live Execution Terminal</h2>
-            <div class="response-terminal" id="terminalOutput">Workspace systems mapping layer completed lifecycle startup sequence.
-Awaiting localized profile configurations mappings...</div>
+            <h2>📊 Live Analytical Terminal</h2>
+            <div class="response-terminal" id="terminalOutput">Acharya Analytical Engine Ready.
+Upload Excel, CSV, DOCX, PPTX, or JSON files to run automated statistical computations, rankings, and deep summarizations...</div>
         </section>
 
-        <!-- Full Document Pipeline View with Vertical Scroll -->
         <section class="card full-width">
-            <h2>📑 Document Parsing Context Pipeline Reference</h2>
+            <h2>📑 Loaded Documents & Spreadsheets Manifest</h2>
             <div class="preview-pane" id="previewPane">
-                <p style="color: #718096; margin: 15px;">No folder framework linked yet. Grant workspace folder permissions to parse contents.</p>
+                <p style="color: #718096; margin: 15px;">No files loaded yet. Click 'Select Local Folder' or '➕ Add Files'.</p>
             </div>
         </section>
     </main>
 
     <footer class="footer">
-        © 2026 Gopalkrishna Advanced Rural Research Foundation (GARRF), India. Supporting offline-first AI educational architectures globally.
+        © 2026 Gopalkrishna Advanced Rural Research Foundation (GARRF), India. Offline-First Analytical Educational Architecture.
     </footer>
 
     <script>
-        let isAudioListeningModeActive = false;
+        let isAudioListening = false;
         let isVoiceOutputEnabled = true;
-        let trackedLocalContextAssetsMatrix = [];
-        let configuredWorkspaceThemeColorHex = "#0f3057";
-        let speechRecognition = null;
+        let loadedFilesRegistry = [];
         let indianMaleVoice = null;
 
-        // Knowledge Base for Prof. AI Acharya
-        const ACHARYA_KNOWLEDGE_BASE = [
-            {
-                keywords: ["pzt", "lead zirconate titanate", "piezoelectric", "piezo"],
-                title: "Lead Zirconate Titanate (PZT) Smart Materials",
-                spokenIntro: "PZT stands for Lead Zirconate Titanate. It is a ceramic smart material with strong piezoelectric properties used as sensors and actuators in structural monitoring.",
-                fullDetail: "Lead Zirconate Titanate (PZT, Pb[Zr_x Ti_{1-x}]O_3) is a ferroelectric ceramic material exhibiting exceptionally high electromechanical coupling.\n\n" +
-                            "• Direct Piezoelectric Effect (Sensors): Generates an electric charge proportional to applied mechanical stress or strain: D = d*T + ε*E.\n" +
-                            "• Converse Piezoelectric Effect (Actuators): Undergoes mechanical deformation when an electric field is applied: S = s*T + d*E.\n" +
-                            "• Applications in SHM: Serves as the primary active transducer in high-frequency Electromechanical Impedance (EMI) methods, wave propagation, acoustic emission sensing, and dynamic vibration testing."
-            },
-            {
-                keywords: ["emi", "electromechanical impedance", "impedance"],
-                title: "Electromechanical Impedance (EMI) Technique",
-                spokenIntro: "Electromechanical Impedance uses bonded PZT transducers excited at high frequencies to detect structural damage through shifts in electrical admittance.",
-                fullDetail: "The EMI technique utilizes surface-bonded or embedded PZT patches driven by high-frequency alternating voltage (typically 30 kHz - 400 kHz).\n\n" +
-                            "• Coupled Governing Admittance: The measured electrical admittance Y(ω) = G(ω) + jB(ω) directly reflects the host structure's mechanical drive-point impedance (Z_s).\n" +
-                            "• Conductance Signature (G): Real conductance peaks reflect the mechanical resonance of the host structure. Incipient damage, micro-cracks, and boundary loosening produce signature shifts in conductance peaks."
-            },
-            {
-                keywords: ["shm", "structural health monitoring"],
-                title: "Structural Health Monitoring (SHM)",
-                spokenIntro: "Structural Health Monitoring is the automated real-time process of continuously monitoring the integrity and safety of structures.",
-                fullDetail: "SHM is the continuous diagnostic framework for civil, mechanical, and aerospace structures.\n\n" +
-                            "• Core Stages: Operational evaluation, data acquisition via sensors, feature extraction (conductance, strain, mode shapes), and statistical discrimination for damage identification and remaining life prognosis."
-            }
-        ];
-
         window.addEventListener('DOMContentLoaded', () => {
-            spawnBlinkingCharacterLifecycle();
-            parseWorkspaceURLHashPayload();
-            initIndianMaleVoice();
-            initSpeechRecognition();
+            initIndianVoice();
+            initSpeech();
+            startBlink();
         });
 
-        function initIndianMaleVoice() {
-            function pickVoice() {
-                const voices = window.speechSynthesis.getVoices();
-                if (!voices || voices.length === 0) return;
+        function triggerFolderSelect() { document.getElementById('folderPicker').click(); }
+        function triggerFileSelect() { document.getElementById('filePicker').click(); }
 
-                indianMaleVoice = voices.find(v => 
-                    (v.lang === 'en-IN' || v.lang === 'hi-IN') && 
-                    (v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('rishi') || v.name.toLowerCase().includes('prabhat') || v.name.toLowerCase().includes('mohan'))
-                );
+        function handleFileBatch(event) {
+            const files = Array.from(event.target.files);
+            if (!files.length) return;
 
-                if (!indianMaleVoice) {
-                    indianMaleVoice = voices.find(v => v.lang === 'en-IN' || v.lang === 'hi-IN');
+            files.forEach(f => {
+                if (!loadedFilesRegistry.some(item => item.name === f.name && item.size === f.size)) {
+                    loadedFilesRegistry.push({
+                        name: f.name,
+                        type: f.name.split('.').pop().toLowerCase(),
+                        size: f.size,
+                        rawFile: f
+                    });
                 }
+            });
 
-                if (!indianMaleVoice) {
-                    indianMaleVoice = voices.find(v => 
-                        v.lang.startsWith('en') && (v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('natural'))
-                    );
-                }
-
-                if (!indianMaleVoice) {
-                    indianMaleVoice = voices[0];
-                }
-            }
-
-            pickVoice();
-            if (speechSynthesis.onvoiceschanged !== undefined) {
-                speechSynthesis.onvoiceschanged = pickVoice;
-            }
+            document.getElementById('connectionStatus').classList.add('connected');
+            document.getElementById('connectionStatus').innerText = `Connected Safely • ${loadedFilesRegistry.length} files loaded`;
+            renderFilesTable();
+            speakAcharya(`Loaded ${files.length} new files. Total workspace context is ${loadedFilesRegistry.length} documents.`);
+            event.target.value = '';
         }
 
-        function speakResponse(textToSpeak, onEndCallback = null) {
-            if (!isVoiceOutputEnabled || !('speechSynthesis' in window)) {
-                if (onEndCallback) onEndCallback();
+        function renderFilesTable() {
+            const pane = document.getElementById('previewPane');
+            let html = `<table class="data-table"><thead><tr><th>#</th><th>Filename</th><th>Type</th><th>Size</th></tr></thead><tbody>`;
+            loadedFilesRegistry.forEach((f, i) => {
+                html += `<tr><td>${i+1}</td><td><b>${f.name}</b></td><td>${f.type.toUpperCase()}</td><td>${(f.size/1024).toFixed(1)} KB</td></tr>`;
+            });
+            html += `</tbody></table>`;
+            pane.innerHTML = html;
+        }
+
+        // --- SUBMISSION & DEEP PARSING ENGINE ---
+        async function submitToAcharya() {
+            const query = document.getElementById('queryInput').value.trim();
+            if (!query) return;
+
+            const qLower = query.toLowerCase();
+            const botLabel = document.getElementById('botStatusLabel');
+            botLabel.innerText = "Status: Executing Numerical / Text Analysis...";
+            logTerminal(`🤖 Ingesting Instruction: "${query}"\nParsing document binaries in memory...`);
+
+            // 1. Check for Excel / CSV Math Queries (Averaging, Topper, Ranking, Sums)
+            const isMathQuery = /topper|rank|highest|lowest|average|mean|total|sum|marks|score/i.test(qLower);
+            const sheetFile = loadedFilesRegistry.find(f => ['xlsx', 'xls', 'csv'].includes(f.type));
+
+            if (isMathQuery && sheetFile) {
+                const results = await parseAndAnalyzeSheet(sheetFile.rawFile, qLower);
+                displayResults(results.terminalText, results.spokenText);
                 return;
             }
 
-            window.speechSynthesis.cancel();
-
-            const utterance = new SpeechSynthesisUtterance(textToSpeak);
-            if (indianMaleVoice) {
-                utterance.voice = indianMaleVoice;
+            // 2. Check for Word Document (.docx) Summarization
+            const docxFile = loadedFilesRegistry.find(f => f.type === 'docx');
+            if (/summarize|read|explain|inside/i.test(qLower) && docxFile) {
+                const results = await parseDocx(docxFile.rawFile);
+                displayResults(results.terminalText, results.spokenText);
+                return;
             }
+
+            // 3. Check for PowerPoint (.pptx) Slide Parsing
+            const pptxFile = loadedFilesRegistry.find(f => f.type === 'pptx');
+            if (/ppt|slide|powerpoint|presentation/i.test(qLower) && pptxFile) {
+                const results = await parsePptx(pptxFile.rawFile);
+                displayResults(results.terminalText, results.spokenText);
+                return;
+            }
+
+            // 4. Default Fallback
+            const fallbackTerminal = `>>> PROF. AI ACHARYA ENGINE RESPONSE:\nProcessed query: "${query}"\n` +
+                                     `• Active Files In Memory: ${loadedFilesRegistry.length}\n` +
+                                     `• Supported Computations: Class topper, averages, sums, Word doc extraction, PPT slide summaries.\n` +
+                                     `• Try uploading an Excel sheet of student marks and ask: "Who is the topper?" or "What is the average?"`;
+            const fallbackVoice = `I processed your request. Here is the analytical result, you can read it. If you want, I can read it for you.`;
+            displayResults(fallbackTerminal, fallbackVoice);
+        }
+
+        // --- EXCEL & CSV NUMERICAL ENGINE ---
+        async function parseAndAnalyzeSheet(file, query) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const json = XLSX.utils.sheet_to_json(sheet);
+
+                    if (!json.length) {
+                        resolve({ terminalText: "Error: The spreadsheet appears empty.", spokenText: "The spreadsheet is empty." });
+                        return;
+                    }
+
+                    // Discover Name column and Numeric/Marks column dynamically
+                    const sample = json[0];
+                    const keys = Object.keys(sample);
+                    const nameKey = keys.find(k => /name|student|candidate|id/i.test(k)) || keys[0];
+                    const scoreKey = keys.find(k => /marks|score|total|grade|points|result/i.test(k)) || 
+                                     keys.find(k => typeof sample[k] === 'number') || keys[1];
+
+                    let total = 0, count = 0, max = -Infinity, min = Infinity;
+                    let topper = null;
+
+                    json.forEach(row => {
+                        const val = parseFloat(row[scoreKey]);
+                        if (!isNaN(val)) {
+                            total += val;
+                            count++;
+                            if (val > max) { max = val; topper = row; }
+                            if (val < min) { min = val; }
+                        }
+                    });
+
+                    const avg = (total / count).toFixed(2);
+                    let terminalText = `>>> PROF. AI ACHARYA STATISTICAL COMPUTATION ENGINE:\n`;
+                    terminalText += `File Evaluated: ${file.name} (${count} student/data entries)\n`;
+                    terminalText += `Metric Analyzed: [${scoreKey}]\n\n`;
+                    terminalText += `📊 STATISTICAL SUMMARY:\n`;
+                    terminalText += `• Class Average (Mean): ${avg}\n`;
+                    terminalText += `• Highest Score: ${max} (${topper ? topper[nameKey] : 'N/A'})\n`;
+                    terminalText += `• Lowest Score: ${min}\n`;
+                    terminalText += `• Total Evaluated Sum: ${total}\n\n`;
+                    terminalText += `🏆 TOP RANKING STUDENT:\n`;
+                    terminalText += `Candidate: ${topper ? topper[nameKey] : 'N/A'}\nScore: ${max} in ${scoreKey}\n`;
+
+                    const spokenText = `Evaluation complete. The class average is ${avg}. The highest score is ${max}, achieved by ${topper ? topper[nameKey] : 'the top candidate'}. Here is the complete breakdown on your screen, you can read it.`;
+                    resolve({ terminalText, spokenText });
+                };
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        // --- WORD (.DOCX) TEXT EXTRACTOR ---
+        async function parseDocx(file) {
+            const arrayBuffer = await file.arrayBuffer();
+            const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+            const text = result.value.trim();
+            const wordCount = text.split(/\s+/).length;
+            const snippet = text.slice(0, 500) + "...";
+
+            let terminalText = `>>> PROF. AI ACHARYA WORD DOCUMENT PROCESSOR:\n`;
+            terminalText += `File: ${file.name} | Word Count: ~${wordCount} words\n\n`;
+            terminalText += `📑 EXTRACTED CONTENT PREVIEW:\n${snippet}\n\n`;
+            terminalText += `Summary: Document successfully ingested into local memory. Ready for specific keyword references.`;
+
+            const spokenText = `I have parsed the Word document ${file.name}. It contains approximately ${wordCount} words. Here is the summary on your screen, you can read it.`;
+            return { terminalText, spokenText };
+        }
+
+        // --- POWERPOINT (.PPTX) SLIDE PARSER ---
+        async function parsePptx(file) {
+            const zip = await JSZip.loadAsync(file);
+            const slideFiles = Object.keys(zip.files).filter(name => name.startsWith("ppt/slides/slide") && name.endsWith(".xml"));
             
-            utterance.rate = 0.96;
-            utterance.pitch = 0.94;
+            let extractedSlidesText = [];
+            for (let i = 0; i < Math.min(slideFiles.length, 5); i++) {
+                const xmlText = await zip.files[slideFiles[i]].async("text");
+                const cleanText = xmlText.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+                extractedSlidesText.push(`Slide ${i+1}: ${cleanText.slice(0, 150)}...`);
+            }
+
+            let terminalText = `>>> PROF. AI ACHARYA PRESENTATION ENGINE:\n`;
+            terminalText += `Presentation: ${file.name} | Total Slides Discovered: ${slideFiles.length}\n\n`;
+            terminalText += `🖥️ SLIDE CONTENT BREAKDOWN:\n` + extractedSlidesText.join('\n\n') + `\n\n`;
+
+            const spokenText = `I have parsed your PowerPoint presentation. It contains ${slideFiles.length} slides. Here is the slide breakdown on your screen, you can read it.`;
+            return { terminalText, spokenText };
+        }
+
+        function displayResults(terminalText, spokenText) {
+            document.getElementById('botStatusLabel').innerText = "Status: Ready";
+            logTerminal(terminalText);
+            speakAcharya(spokenText);
+        }
+
+        // --- INDIAN VOICE & SPEECH ENGINE ---
+        function initIndianVoice() {
+            function pick() {
+                const voices = window.speechSynthesis.getVoices();
+                indianMaleVoice = voices.find(v => 
+                    (v.lang === 'en-IN' || v.lang === 'hi-IN') && 
+                    (v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('rishi') || v.name.toLowerCase().includes('prabhat') || v.name.toLowerCase().includes('mohan'))
+                ) || voices.find(v => v.lang === 'en-IN') || voices[0];
+            }
+            pick();
+            if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = pick;
+        }
+
+        function speakAcharya(text) {
+            if (!isVoiceOutputEnabled || !('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+            const utt = new SpeechSynthesisUtterance(text);
+            if (indianMaleVoice) utt.voice = indianMaleVoice;
+            utt.rate = 0.96;
+            utt.pitch = 0.94;
 
             const eyeL = document.getElementById('eyeL');
             const eyeR = document.getElementById('eyeR');
+            utt.onstart = () => { if (eyeL && eyeR) { eyeL.classList.add('speaking'); eyeR.classList.add('speaking'); } };
+            utt.onend = () => { if (eyeL && eyeR) { eyeL.classList.remove('speaking'); eyeR.classList.remove('speaking'); } };
+            utt.onerror = () => { if (eyeL && eyeR) { eyeL.classList.remove('speaking'); eyeR.classList.remove('speaking'); } };
 
-            utterance.onstart = () => {
-                if (eyeL && eyeR) {
-                    eyeL.classList.add('speaking');
-                    eyeR.classList.add('speaking');
-                }
-                document.getElementById('botStatusLabel').innerText = "Status: Speaking Response...";
-            };
-
-            utterance.onend = () => {
-                if (eyeL && eyeR) {
-                    eyeL.classList.remove('speaking');
-                    eyeR.classList.remove('speaking');
-                }
-                document.getElementById('botStatusLabel').innerText = "Status: Ready";
-                if (onEndCallback) onEndCallback();
-            };
-
-            utterance.onerror = () => {
-                if (eyeL && eyeR) {
-                    eyeL.classList.remove('speaking');
-                    eyeR.classList.remove('speaking');
-                }
-                document.getElementById('botStatusLabel').innerText = "Status: Ready";
-                if (onEndCallback) onEndCallback();
-            };
-
-            window.speechSynthesis.speak(utterance);
+            window.speechSynthesis.speak(utt);
         }
 
         function toggleVoiceOutput() {
             const btn = document.getElementById('voiceOutputBtn');
-            if (isVoiceOutputEnabled) {
-                isVoiceOutputEnabled = false;
+            isVoiceOutputEnabled = !isVoiceOutputEnabled;
+            if (!isVoiceOutputEnabled) {
                 window.speechSynthesis.cancel();
                 btn.classList.add('muted');
                 btn.innerHTML = "🔇 Voice: MUTED";
-                appendStatusMessageToLogTerminal("🔇 Voice output muted. Responses will appear in text only.");
             } else {
-                isVoiceOutputEnabled = true;
                 btn.classList.remove('muted');
                 btn.innerHTML = "🔊 Voice: ON";
-                appendStatusMessageToLogTerminal("🔊 Voice output enabled. Prof. AI Acharya will respond with voice and text.");
-                speakResponse("Voice output is now active. I am ready to answer your questions.");
+                speakAcharya("Voice output enabled.");
             }
         }
 
-        function initSpeechRecognition() {
+        function initSpeech() {
             const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRec) return;
-
-            speechRecognition = new SpeechRec();
-            speechRecognition.continuous = false;
-            speechRecognition.interimResults = false;
-            speechRecognition.lang = 'en-IN';
-
-            speechRecognition.onstart = () => {
-                isAudioListeningModeActive = true;
-                const btn = document.getElementById('voiceInputBtn');
-                btn.classList.add('listening');
-                btn.innerHTML = "🛑 Listening...";
-                document.getElementById('botStatusLabel').innerText = "Status: Listening to your voice...";
-                appendStatusMessageToLogTerminal("🎤 Mic active. Please speak your question now...");
-            };
-
-            speechRecognition.onresult = (event) => {
-                const transcript = event.results[0][0].transcript;
-                document.getElementById('queryInput').value = transcript;
-                appendStatusMessageToLogTerminal(`🎙️ Transcribed: "${transcript}"`);
+            const rec = new SpeechRec();
+            rec.lang = 'en-IN';
+            rec.onstart = () => { document.getElementById('voiceInputBtn').classList.add('listening'); };
+            rec.onresult = (e) => {
+                document.getElementById('queryInput').value = e.results[0][0].transcript;
                 submitToAcharya();
             };
-
-            speechRecognition.onerror = (event) => {
-                console.error("Speech recognition error:", event.error);
-                appendStatusMessageToLogTerminal(`⚠️ Audio input notice: ${event.error}`);
-                stopListeningUI();
-            };
-
-            speechRecognition.onend = () => {
-                stopListeningUI();
-            };
+            rec.onend = () => { document.getElementById('voiceInputBtn').classList.remove('listening'); };
+            window.recInstance = rec;
         }
 
         function toggleSpeechRecognition() {
-            if (!speechRecognition) {
-                alert("Speech recognition is not supported in this browser. Please use Chrome or Edge.");
-                return;
-            }
-
-            if (!isAudioListeningModeActive) {
-                try {
-                    speechRecognition.start();
-                } catch(e) {
-                    speechRecognition.stop();
-                }
-            } else {
-                speechRecognition.stop();
-                stopListeningUI();
+            if (window.recInstance) {
+                try { window.recInstance.start(); } catch(e) { window.recInstance.stop(); }
             }
         }
 
-        function stopListeningUI() {
-            isAudioListeningModeActive = false;
-            const btn = document.getElementById('voiceInputBtn');
-            btn.classList.remove('listening');
-            btn.innerHTML = "🎤 Voice Input";
-            document.getElementById('botStatusLabel').innerText = "Status: Ready";
-        }
-
-        function spawnBlinkingCharacterLifecycle() {
+        function startBlink() {
             setInterval(() => {
-                const nodeLeftEye = document.getElementById('eyeL');
-                const nodeRightEye = document.getElementById('eyeR');
-                if (nodeLeftEye && nodeRightEye) {
-                    nodeLeftEye.classList.add('blinking');
-                    nodeRightEye.classList.add('blinking');
-                    setTimeout(() => {
-                        nodeLeftEye.classList.remove('blinking');
-                        nodeRightEye.classList.remove('blinking');
-                    }, 250);
+                const el = document.getElementById('eyeL'), er = document.getElementById('eyeR');
+                if (el && er) {
+                    el.classList.add('blinking'); er.classList.add('blinking');
+                    setTimeout(() => { el.classList.remove('blinking'); er.classList.remove('blinking'); }, 250);
                 }
             }, 3800);
         }
 
-        function updateCourseTitle(targetTextStringValue) {
-            const containerNodeHeaderTitle = document.getElementById('brandTitle');
-            containerNodeHeaderTitle.innerText = targetTextStringValue.trim() !== ""
-                ? `Prof. AI Acharya: ${targetTextStringValue}`
-                : "Prof. AI Acharya Workspace";
-            serializeStateToURLMatrix();
-        }
-
-        function changeThemeColor(targetHexColorStringCode) {
-            configuredWorkspaceThemeColorHex = targetHexColorStringCode;
-            document.documentElement.style.setProperty('--course-theme', targetHexColorStringCode);
-            document.getElementById('robotDisplay').style.backgroundColor = targetHexColorStringCode;
-            serializeStateToURLMatrix();
-        }
-
-        function serializeStateToURLMatrix() {
-            const runtimeCourseContextTitle = document.getElementById('courseCodeInput').value;
-            const serializablePayloadObjectState = {
-                title: runtimeCourseContextTitle,
-                color: configuredWorkspaceThemeColorHex
-            };
-            const jsonStringBytesRepresentation = JSON.stringify(serializablePayloadObjectState);
-            const safelyBase64EncodedHashMatrixPayload = btoa(unescape(encodeURIComponent(jsonStringBytesRepresentation)));
-            window.location.hash = `workspace=${safelyBase64EncodedHashMatrixPayload}`;
-        }
-
-        function parseWorkspaceURLHashPayload() {
-            try {
-                if (window.location.hash.startsWith('#workspace=')) {
-                    const cleanHashStringEncodedToken = window.location.hash.replace('#workspace=', '');
-                    const extractedJsonStringDataMatrix = decodeURIComponent(escape(atob(cleanHashStringEncodedToken)));
-                    const hydratedStateConfigPayload = JSON.parse(extractedJsonStringDataMatrix);
-
-                    if (hydratedStateConfigPayload.title) {
-                        document.getElementById('courseCodeInput').value = hydratedStateConfigPayload.title;
-                        updateCourseTitle(hydratedStateConfigPayload.title);
-                    }
-                    if (hydratedStateConfigPayload.color) {
-                        document.getElementById('themeColorPicker').value = hydratedStateConfigPayload.color;
-                        changeThemeColor(hydratedStateConfigPayload.color);
-                    }
-                    appendStatusMessageToLogTerminal("🔄 Re-synchronized active environment state properties from URL parameters.");
-                }
-            } catch (err) {
-                console.error("Critical structure state synchronization error:", err);
-            }
-        }
-
-        function openSecurityModal() {
-            document.getElementById('securityModalOverlay').classList.add('active');
-        }
-
-        function closeExplanatoryModal() {
-            document.getElementById('securityModalOverlay').classList.remove('active');
-        }
-
-        // Folder & File Management
-        async function confirmPermissionAndProceed() {
-            closeExplanatoryModal();
-
-            if ('showDirectoryPicker' in window) {
-                try {
-                    const dirHandle = await window.showDirectoryPicker({ mode: 'read' });
-                    trackedLocalContextAssetsMatrix = [];
-
-                    async function scanDirectory(handle, currentPath = '') {
-                        for await (const entry of handle.values()) {
-                            if (entry.kind === 'file') {
-                                const file = await entry.getFile();
-                                trackedLocalContextAssetsMatrix.push({
-                                    name: file.name,
-                                    relativePath: currentPath ? `${currentPath}/${file.name}` : file.name,
-                                    type: file.type || determineMimeType(file.name),
-                                    size: file.size,
-                                    fileObj: file,
-                                    source: 'Local'
-                                });
-                            } else if (entry.kind === 'directory') {
-                                await scanDirectory(entry, currentPath ? `${currentPath}/${entry.name}` : entry.name);
-                            }
-                        }
-                    }
-
-                    await scanDirectory(dirHandle);
-                    updateUIAfterSelection();
-                } catch (err) {
-                    if (err.name !== 'AbortError') {
-                        console.error("Local directory scan failed:", err);
-                        appendStatusMessageToLogTerminal("❌ Error accessing local folder: " + err.message);
-                    }
-                }
-            } else {
-                document.getElementById('folderPickerInput').click();
-            }
-        }
-
-        function handleFolderFallback(event) {
-            const files = event.target.files;
-            if (!files || files.length === 0) return;
-
-            trackedLocalContextAssetsMatrix = Array.from(files).map(file => ({
-                name: file.name,
-                relativePath: file.webkitRelativePath || file.name,
-                type: file.type || determineMimeType(file.name),
-                size: file.size,
-                fileObj: file,
-                source: 'Local'
-            }));
-
-            updateUIAfterSelection();
-        }
-
-        function triggerAddFiles() {
-            document.getElementById('additionalFilesInput').click();
-        }
-
-        function handleAddIndividualFiles(event) {
-            const newFiles = event.target.files;
-            if (!newFiles || newFiles.length === 0) return;
-
-            let addedCount = 0;
-            Array.from(newFiles).forEach(file => {
-                const relPath = file.name;
-                const exists = trackedLocalContextAssetsMatrix.some(item => item.relativePath === relPath && item.size === file.size);
-                if (!exists) {
-                    trackedLocalContextAssetsMatrix.push({
-                        name: file.name,
-                        relativePath: relPath,
-                        type: file.type || determineMimeType(file.name),
-                        size: file.size,
-                        fileObj: file,
-                        source: 'Local'
-                    });
-                    addedCount++;
-                }
-            });
-
-            appendStatusMessageToLogTerminal(`➕ Added ${addedCount} additional resource(s) to the active dataset.`);
-            updateUIAfterSelection();
-            speakResponse(`Added ${addedCount} resource to the dataset.`);
-            event.target.value = '';
-        }
-
-        function determineMimeType(filename) {
-            const ext = filename.split('.').pop().toLowerCase();
-            if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(ext)) return 'image/' + (ext === 'jpg' ? 'jpeg' : ext);
-            if (ext === 'pdf') return 'application/pdf';
-            if (['txt', 'csv', 'md'].includes(ext)) return 'text/plain';
-            return 'application/octet-stream';
-        }
-
-        function connectGoogleDrive() {
-            appendStatusMessageToLogTerminal("☁️ Connecting to Google Drive...");
-            const drivePrompt = confirm("Connect Google Drive: Link cloud files or research datasets?");
-            if (!drivePrompt) return;
-
-            const simulatedDriveFiles = [
-                { name: "SHM_Experimental_Setup.png", relativePath: "Google Drive/Images/SHM_Experimental_Setup.png", type: "image/png", size: 684000, source: 'Drive' },
-                { name: "PZT_Frequency_Admittance_Graph.png", relativePath: "Google Drive/Data/PZT_Frequency_Admittance_Graph.png", type: "image/png", size: 450000, source: 'Drive' }
-            ];
-
-            let addedDriveCount = 0;
-            simulatedDriveFiles.forEach(file => {
-                const exists = trackedLocalContextAssetsMatrix.some(item => item.relativePath === file.relativePath);
-                if (!exists) {
-                    trackedLocalContextAssetsMatrix.push(file);
-                    addedDriveCount++;
-                }
-            });
-
-            updateUIAfterSelection();
-            appendStatusMessageToLogTerminal(`☁️ Google Drive: ${addedDriveCount} image/document file(s) synchronized.`);
-            speakResponse(`Google Drive connected. Synchronized ${addedDriveCount} cloud files.`);
-        }
-
-        function updateUIAfterSelection() {
-            if (trackedLocalContextAssetsMatrix.length === 0) return;
-
-            const badgeIndicatorNode = document.getElementById('connectionStatus');
-            badgeIndicatorNode.classList.add('connected');
-            badgeIndicatorNode.innerText = `Connected Safely • ${trackedLocalContextAssetsMatrix.length} resources verified`;
-
-            document.getElementById('botStatusLabel').innerText = "Status: Dataset Matrix Context Loaded";
-            generateFileContextParsingTableLayoutView();
-        }
-
-        function generateFileContextParsingTableLayoutView() {
-            const tableRenderingContainerNode = document.getElementById('previewPane');
-            if (trackedLocalContextAssetsMatrix.length === 0) return;
-
-            let compiledTableHtmlString = `
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 50px;">#</th>
-                            <th>Identified Item Rel Path</th>
-                            <th style="width: 100px;">Source</th>
-                            <th style="width: 180px;">Payload Type</th>
-                            <th style="width: 130px;">Weight Size</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-
-            trackedLocalContextAssetsMatrix.forEach((file, index) => {
-                const normalizedMetricWeightString = (file.size / 1024).toFixed(1) + " KB";
-                const sourceBadge = file.source === 'Drive' 
-                    ? `<span class="source-tag tag-drive">Drive</span>` 
-                    : `<span class="source-tag tag-local">Local</span>`;
-
-                compiledTableHtmlString += `
-                    <tr>
-                        <td>${index + 1}</td>
-                        <td style="font-weight: 500;">${file.relativePath}</td>
-                        <td>${sourceBadge}</td>
-                        <td style="color: #cbd5e0;">${file.type}</td>
-                        <td>${normalizedMetricWeightString}</td>
-                    </tr>
-                `;
-            });
-
-            compiledTableHtmlString += `</tbody></table>`;
-            tableRenderingContainerNode.innerHTML = compiledTableHtmlString;
-        }
-
-        function handleKeyPress(event) {
-            if (event.key === 'Enter' && !event.shiftKey) {
-                event.preventDefault();
-                submitToAcharya();
-            }
-        }
-
-        // --- CLIENT-SIDE IMAGE INSPECTION ENGINE ---
-        async function analyzeConnectedImage(fileRecord) {
-            return new Promise((resolve) => {
-                if (!fileRecord.fileObj) {
-                    // For Drive/simulated files without a local fileObj blob
-                    resolve({
-                        name: fileRecord.name,
-                        format: fileRecord.type,
-                        width: "1280 (Estimated)",
-                        height: "720 (Estimated)",
-                        aspectRatio: "16:9 Landscape",
-                        dominantTone: "Technical Schematic / Blueprint Blue",
-                        features: "Cloud-linked research visual dataset"
-                    });
-                    return;
-                }
-
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
-                        canvas.width = img.width;
-                        canvas.height = img.height;
-                        ctx.drawImage(img, 0, 0);
-
-                        // Sample center and quadrant pixels to determine tone, contrast, and structure
-                        const sampleData = ctx.getImageData(0, 0, Math.min(img.width, 200), Math.min(img.height, 200)).data;
-                        let r = 0, g = 0, b = 0, count = 0;
-                        for (let i = 0; i < sampleData.length; i += 16) {
-                            r += sampleData[i];
-                            g += sampleData[i + 1];
-                            b += sampleData[i + 2];
-                            count++;
-                        }
-                        const avgR = Math.round(r / count);
-                        const avgG = Math.round(g / count);
-                        const avgB = Math.round(b / count);
-
-                        let toneDesc = "Balanced Spectrum";
-                        if (avgB > avgR && avgB > avgG) toneDesc = "Predominantly Blue Spectrum (Engineering Blue / Structural Plot / CAD)";
-                        else if (avgR > 180 && avgG > 180 && avgB > 180) toneDesc = "Light Background (Document Scan / Whiteboard / Academic Plot)";
-                        else if (avgR < 60 && avgG < 60 && avgB < 60) toneDesc = "Dark Background (Spectrogram / Micrograph / Dark-theme Plot)";
-
-                        const aspect = (img.width / img.height).toFixed(2);
-                        const orientation = aspect > 1.2 ? "Landscape Orientation" : (aspect < 0.8 ? "Portrait Orientation" : "Square Composition");
-
-                        resolve({
-                            name: fileRecord.name,
-                            format: fileRecord.type,
-                            width: img.width,
-                            height: img.height,
-                            aspectRatio: `${orientation} (${img.width}x${img.height}px, ratio ${aspect})`,
-                            dominantTone: `RGB(${avgR}, ${avgG}, ${avgB}) - ${toneDesc}`,
-                            fileSize: (fileRecord.size / 1024).toFixed(1) + " KB"
-                        });
-                    };
-                    img.src = e.target.result;
-                };
-                reader.readAsDataURL(fileRecord.fileObj);
-            });
-        }
-
-        // --- SUBMISSION & INTELLIGENT ROUTING ---
-        async function submitToAcharya() {
-            const rawPrompt = document.getElementById('queryInput').value.trim();
-            const botLabel = document.getElementById('botStatusLabel');
-
-            if (!rawPrompt) {
-                alert("Please enter or speak a question before processing.");
-                return;
-            }
-
-            const queryLower = rawPrompt.toLowerCase();
-            botLabel.innerText = "Status: Inspecting Query & Media...";
-            appendStatusMessageToLogTerminal(`🤖 Ingesting: "${rawPrompt}"\nSearching local memory, images, & knowledge base...`);
-
-            // 1. Check if the user is asking to explain an image, or asking about uploaded visual media
-            const isImageQuery = queryLower.includes("image") || queryLower.includes("photo") || 
-                                 queryLower.includes("picture") || queryLower.includes("diagram") || 
-                                 queryLower.includes("graph") || queryLower.includes("plot");
-
-            // Look for connected image files
-            const imageFiles = trackedLocalContextAssetsMatrix.filter(f => 
-                f.type.startsWith('image/') || 
-                ['.png', '.jpg', '.jpeg', '.bmp', '.webp', '.svg'].some(ext => f.name.toLowerCase().endsWith(ext))
-            );
-
-            if (isImageQuery && imageFiles.length > 0) {
-                // Perform direct visual analysis on the image
-                const targetImage = imageFiles[0];
-                const analysis = await analyzeConnectedImage(targetImage);
-
-                botLabel.innerText = "Status: Ready";
-
-                let textResponse = `>>> PROF. AI ACHARYA - COMPUTER VISION & MEDIA DECODER:\n`;
-                textResponse += `Inspected File: "${analysis.name}" (${analysis.fileSize || "Uploaded Image"})\n\n`;
-                textResponse += `📸 [Visual Structure & Content Analysis]:\n`;
-                textResponse += `• Image Dimensions: ${analysis.width} x ${analysis.height} pixels\n`;
-                textResponse += `• Spatial Composition: ${analysis.aspectRatio}\n`;
-                textResponse += `• Color Palette & Tonal Signature: ${analysis.dominantTone}\n`;
-                textResponse += `• Media Mime Format: ${analysis.format}\n\n`;
-                textResponse += `🔍 [Pedagogical Interpretation]:\n`;
-                textResponse += `The uploaded visual "${analysis.name}" is loaded in local browser memory. Its dimensional geometry and color signature indicate a visual figure, data capture, or graphical plot linked to your workspace.\n\n`;
-                textResponse += `If this image represents a laboratory diagram, impedance conductance curve, or experimental sensor setup, you can ask specific questions about the curves or components depicted.`;
-
-                window.lastDetailedResponse = textResponse;
-                const voiceSpeech = `I have inspected your uploaded image, ${analysis.name}. It has a resolution of ${analysis.width} by ${analysis.height} pixels with a ${analysis.aspectRatio.split('(')[0].trim()}. Here is the full breakdown on your screen, you can read it. If you want, I can read it for you.`;
-
-                appendStatusMessageToLogTerminal(textResponse);
-                speakResponse(voiceSpeech);
-                return;
-            }
-
-            // 2. Read Out Prior Answer if Requested
-            if (queryLower.includes("read it") || queryLower.includes("read for me") || queryLower.includes("read full")) {
-                const voiceTextToSpeak = "Certainly, I am reading the full details for you now. " + (window.lastDetailedResponse || "Please submit a topic like PZT, EMI, or upload an image first.");
-                let textResponse = `>>> PROF. AI ACHARYA AUDIO STREAM:\n📖 [Full Audio Readout Initiated]\n${window.lastDetailedResponse || "No prior details to read."}`;
-                appendStatusMessageToLogTerminal(textResponse);
-                speakResponse(voiceTextToSpeak);
-                return;
-            }
-
-            // 3. Search Domain Knowledge Base
-            const matchedTopic = ACHARYA_KNOWLEDGE_BASE.find(item =>
-                item.keywords.some(kw => queryLower.includes(kw))
-            );
-
-            if (matchedTopic) {
-                let textResponse = `>>> PROF. AI ACHARYA ENGINE RESPONSE:\nQuestion: "${rawPrompt}"\n\n`;
-                textResponse += `📌 [Knowledge Base Match: ${matchedTopic.title}]\n`;
-                textResponse += `${matchedTopic.fullDetail}\n\n`;
-                window.lastDetailedResponse = matchedTopic.fullDetail;
-
-                const voiceTextToSpeak = `${matchedTopic.spokenIntro}. Here is the result, you can read it. If you want, I can read it for you.`;
-                appendStatusMessageToLogTerminal(textResponse);
-                speakResponse(voiceTextToSpeak);
-                return;
-            }
-
-            // 4. Search Local Files (PDFs, docs, notes)
-            if (trackedLocalContextAssetsMatrix.length > 0) {
-                const searchWords = queryLower.split(/\s+/).filter(word => word.length > 2);
-                const matchingFiles = trackedLocalContextAssetsMatrix.filter(file => {
-                    const filePathLower = (file.relativePath || file.name).toLowerCase();
-                    return searchWords.some(term => filePathLower.includes(term));
-                });
-
-                if (matchingFiles.length > 0) {
-                    let textResponse = `>>> PROF. AI ACHARYA ENGINE RESPONSE:\nQuestion: "${rawPrompt}"\n\n`;
-                    textResponse += `📂 [Related Files Found in Context (${matchingFiles.length})]:\n`;
-                    matchingFiles.forEach(f => {
-                        textResponse += `  • [${f.source}] ${f.relativePath} (${(f.size / 1024).toFixed(1)} KB)\n`;
-                    });
-                    textResponse += `\nLocal documents matched your query keywords successfully.\n`;
-
-                    window.lastDetailedResponse = textResponse;
-                    const voiceTextToSpeak = `I found ${matchingFiles.length} relevant files in your workspace. Here is the result, you can read it. If you want, I can read it for you.`;
-                    appendStatusMessageToLogTerminal(textResponse);
-                    speakResponse(voiceTextToSpeak);
-                    return;
-                }
-            }
-
-            // 5. Intelligent Contextual Fallback (Without Mentioning PZT Irrelevantly)
-            let fallbackMsg = `>>> PROF. AI ACHARYA RESPONSE:\nQuestion: "${rawPrompt}"\n\n`;
-            fallbackMsg += `I have ingested your prompt. No directly indexed topic or file keyword matched "${rawPrompt}".\n`;
-            fallbackMsg += `• Total connected files in workspace: ${trackedLocalContextAssetsMatrix.length}\n`;
-            fallbackMsg += `• If you have uploaded an image or chart, type 'explain the image' or 'inspect visual'.\n`;
-            fallbackMsg += `• For technical topics, you can ask domain questions or link lecture notes directly.`;
-
-            window.lastDetailedResponse = fallbackMsg;
-            const fallbackVoice = `I have received your question: ${rawPrompt}. Here is the result on your screen, you can read it. If you want, I can read it for you.`;
-
-            appendStatusMessageToLogTerminal(fallbackMsg);
-            speakResponse(fallbackVoice);
-        }
-
-        function appendStatusMessageToLogTerminal(targetStatusMessageTextContentPayload) {
-            const scrollableTerminalUiBoxDisplayNode = document.getElementById('terminalOutput');
-            scrollableTerminalUiBoxDisplayNode.innerText = targetStatusMessageTextContentPayload + "\n\n-------------------------\n" + scrollableTerminalUiBoxDisplayNode.innerText;
+        function logTerminal(msg) {
+            const term = document.getElementById('terminalOutput');
+            term.innerText = msg + "\n\n-------------------------\n" + term.innerText;
         }
     </script>
 </body>
