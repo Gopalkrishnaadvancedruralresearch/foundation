@@ -346,22 +346,14 @@
     <!-- FACULTY ARCHITECTURE & TEACHING GUIDE MODAL -->
     <div class="modal-overlay" id="guideModalOverlay">
         <div class="modal-box">
-            <div class="modal-title">📖 Faculty Guide: Teaching Mode & Command Syntax</div>
+            <div class="modal-title">📖 Faculty Guide: Teaching Mode & Database Linking Rules</div>
             <div class="modal-body-text">
                 <div style="background: rgba(236, 201, 75, 0.15); border-left: 4px solid #ecc94b; padding: 12px; border-radius: 4px; margin-bottom: 14px;">
-                    🎓 <strong>How to Use Interactive Teaching Mode ("Teach Me"):</strong><br>
-                    When you want Acharya to act as a professor and lecture on a chapter, document, or section, type commands such as:
-                    <ul style="margin: 6px 0 0 20px; padding:0;">
-                        <li><code>teach me chapter 1</code></li>
-                        <li><code>teach me this pdf</code></li>
-                        <li><code>explain chapter 3</code></li>
-                        <li><code>lesson on [topic]</code></li>
-                    </ul>
-                    Acharya will prompt you to choose your desired teaching format (Concept Summary, Step-by-Step Derivations, or Blackboard Breakdown).
+                    ⚠️ <strong>Strict Rule: No Data, No Reply!</strong><br>
+                    Prof. AI Acharya operates entirely offline in browser memory. <strong>If no documents or database files are loaded</strong>, any attempt to query, teach, or run tools will be halted with a prompt to link your folder or upload files.
                 </div>
-
-                <h3 style="color:#63b3ed; margin-top:14px; margin-bottom:6px;">🗣️ Natural Indian Voice Settings</h3>
-                <p style="font-size:0.88rem; color:#e2e8f0;">Acharya automatically detects natural Indian English (`en-IN`) voice synthesizers in your browser. For the best warm, professorial tone, ensure your operating system (Windows/macOS) has enhanced or neural voice packs enabled.</p>
+                <h3 style="color:#63b3ed; margin-top:14px; margin-bottom:6px;">🎓 How to Initiate Interactive Teaching Mode</h3>
+                <p style="font-size:0.88rem; color:#e2e8f0;">Once your files are uploaded, type queries such as <code>teach me chapter 1</code>, <code>explain this pdf</code>, or <code>lesson on PZT</code> to start blackboard explanations.</p>
             </div>
             <div class="modal-btn-row">
                 <button class="btn-modal-close" onclick="closeGuideModal()">Close Guide</button>
@@ -573,7 +565,7 @@
             <div class="robot-display-box" id="robotDisplay">
                 <div class="bot-branding-center">
                     <span class="bot-brand-garrf">GARRF</span>
-                    <span class="bot-brand-subtitle">AI Acharya</span>
+                    <span class="bot-brand-subtitle">AI Acharya (OKF Blackboard Engine)</span>
                 </div>
 
                 <div class="robot-headphones">
@@ -608,7 +600,7 @@
 
             <h2>📊 Live Blackboard & Analytical Terminal</h2>
             <div class="terminal-container">
-                <div class="response-terminal" id="terminalOutput">Acharya OKF Blackboard Active. Type 'teach me chapter 1' or 'teach me this pdf' to begin interactive teacher explanations.</div>
+                <div class="response-terminal" id="terminalOutput">Acharya OKF Blackboard Active. ⚠️ No database or files loaded yet. Please click 'Select Local Folder' or 'Upload Any File' to begin.</div>
                 
                 <div class="clarification-bar" id="clarificationBox">
                     <div class="clarification-title" id="clarificationTitle">🤔 Clarification Required:</div>
@@ -797,24 +789,44 @@
         function closeGuideModal() { document.getElementById('guideModalOverlay').classList.remove('active'); }
 
         function openCitationModal() {
+            if (okfKnowledgeNodes.length === 0) {
+                alert("⚠️ No database or files loaded yet!\nPlease click 'Select Local Folder' or 'Upload Any File' to link your database before generating citations.");
+                logTerminal("⚠️ Action Blocked: No database linked or files uploaded.");
+                return;
+            }
             populateModalDropdowns();
             document.getElementById('citationModalOverlay').classList.add('active');
         }
         function closeCitationModal() { document.getElementById('citationModalOverlay').classList.remove('active'); }
 
         function openCompareModal() {
+            if (okfKnowledgeNodes.length === 0) {
+                alert("⚠️ No database or files loaded yet!\nPlease click 'Select Local Folder' or 'Upload Any File' to link your database before comparing papers.");
+                logTerminal("⚠️ Action Blocked: No database linked or files uploaded.");
+                return;
+            }
             populateModalDropdowns();
             document.getElementById('compareModalOverlay').classList.add('active');
         }
         function closeCompareModal() { document.getElementById('compareModalOverlay').classList.remove('active'); }
 
         function openEquationModal() {
+            if (okfKnowledgeNodes.length === 0) {
+                alert("⚠️ No database or files loaded yet!\nPlease click 'Select Local Folder' or 'Upload Any File' to link your database before extracting equations.");
+                logTerminal("⚠️ Action Blocked: No database linked or files uploaded.");
+                return;
+            }
             populateModalDropdowns();
             document.getElementById('equationModalOverlay').classList.add('active');
         }
         function closeEquationModal() { document.getElementById('equationModalOverlay').classList.remove('active'); }
 
         function openSqlModal() {
+            if (Object.keys(spreadsheetTables).length === 0) {
+                alert("⚠️ No spreadsheet/SQL tables loaded yet!\nPlease upload an Excel or CSV file before running SQL queries.");
+                logTerminal("⚠️ Action Blocked: No spreadsheet tables loaded.");
+                return;
+            }
             populateSqlDropdowns();
             document.getElementById('sqlModalOverlay').classList.add('active');
         }
@@ -1517,11 +1529,27 @@
         }
 
         // =========================================================================
-        // MAIN QUERY DISPATCHER (STRICT DATA CHECK & BLACKBOARD TEACHING)
+        // MAIN QUERY DISPATCHER (STRICT NO-DATA GUARD)
         // =========================================================================
         async function submitToAcharya() {
             const query = document.getElementById('queryInput').value.trim();
             if (!query) return;
+
+            // STRICT ZERO-DATA CHECK: If no files/nodes are loaded, halt and prompt user to add files
+            if (okfKnowledgeNodes.length === 0 && Object.keys(spreadsheetTables).length === 0) {
+                const warningMsg = `>>> PROF. AI ACHARYA DATABASE GUARD:\n\n` +
+                                   `⚠️ NO DATA LOADED YET!\n` +
+                                   `You asked: "${query}"\n\n` +
+                                   `👉 Please link your database or folder by clicking:\n` +
+                                   `• "Select Local Folder (Ctrl+A)" or\n` +
+                                   `• "➕ Upload Any File (Word, PDF, PPT, Images...)"\n\n` +
+                                   `Acharya cannot answer document queries without linked files.`;
+                
+                logTerminal(warningMsg);
+                speakAcharya("No database or files are loaded. Please link your folder or upload files before asking questions.");
+                alert("⚠️ No database or files loaded yet!\nPlease click 'Select Local Folder' or 'Upload Any File' to link your database.");
+                return;
+            }
 
             // 1. FRESH RESET ON EVERY QUERY: Clear old temporary visual and math states
             hideClarificationDialog();
@@ -1535,16 +1563,7 @@
             if (botLabel) botLabel.innerText = "Status: Inspecting Query...";
             logTerminal(`🤖 Ingesting: "${query}"`);
 
-            // 2. STRICT DATA CHECK GUARDRAIL: If NO files/nodes/tables are loaded, prompt user to add data immediately!
-            if (okfKnowledgeNodes.length === 0 && Object.keys(spreadsheetTables).length === 0) {
-                const noDataMsg = `>>> PROF. AI ACHARYA (NO DATA LOADED):\n\n` +
-                                  `⚠️ Notice: No documents, spreadsheets, or folders are currently linked to your workspace.\n\n` +
-                                  `👉 Please click "Select Local Folder" or "➕ Upload Any File" on the left panel to load your database or files before querying!`;
-                displayResults(noDataMsg, "Please link your database or upload files before asking questions.");
-                return;
-            }
-
-            // 3. Remarks Intent
+            // 2. Remarks Intent
             const isRemarkIntent = /\b(remind me|write this down|record this|note this|save note|keep a note|remark)\b/i.test(query);
             if (isRemarkIntent) {
                 logProfessorRemark(query, "Voice / Query Auto-Capture");
@@ -1554,14 +1573,14 @@
                 return;
             }
 
-            // 4. Geopolitical / Geographic Intent
+            // 3. Geopolitical / Geographic Intent
             const geoResult = evaluateGeographicQuery(qLower);
             if (geoResult.handled) {
                 displayResults(geoResult.text, geoResult.voice);
                 return;
             }
 
-            // 5. "TEACH ME" / BLACKBOARD EXPLANATION MODE INTERCEPTOR
+            // 4. "TEACH ME" / BLACKBOARD EXPLANATION MODE INTERCEPTOR
             const isTeachIntent = /\b(teach me|explain chapter|explain pdf|explain document|walk me through|lesson)\b/i.test(qLower);
 
             if (isTeachIntent) {
@@ -1588,7 +1607,7 @@
                 return;
             }
 
-            // 6. EXPLICIT VISUAL INTENT INTERCEPTOR (IMAGE / PICTURE / FIGURE)
+            // 5. EXPLICIT VISUAL INTENT INTERCEPTOR (IMAGE / PICTURE / FIGURE)
             const isVisualIntent = /\b(picture|image|photo|scan|handwritten|figure|fig)\b/i.test(qLower);
 
             if (isVisualIntent) {
@@ -1630,7 +1649,7 @@
                 return;
             }
 
-            // 7. Spreadsheet SQL & Plotting Intent
+            // 6. Spreadsheet SQL & Plotting Intent
             const tableKeys = Object.keys(spreadsheetTables);
             const isSpreadsheetExplicit = tableKeys.length > 0 && (
                 qLower.startsWith("select ") ||
@@ -1668,7 +1687,7 @@
                 }
             }
 
-            // 8. OKF Structured Knowledge Traversal (CONTENT PRIORITIZED OVER TITLES)
+            // 7. OKF Structured Knowledge Traversal (CONTENT PRIORITIZED OVER TITLES)
             const searchTerms = extractSearchKeyTerms(query);
             let rankedNodes = [];
 
@@ -1701,7 +1720,7 @@
                 rankedNodes.sort((a, b) => b.score - a.score);
             }
 
-            // 9. Synthesize Output from OKF Nodes
+            // 8. Synthesize Output from OKF Nodes
             let finalReport = `>>> PROF. AI ACHARYA OKF KNOWLEDGE NETWORK TRAVERSAL:\nQuery: "${query}"\n\n`;
 
             if (rankedNodes.length > 0) {
@@ -1723,7 +1742,7 @@
                                `💡 Notice for Faculty: Prof. AI Acharya operates entirely in offline browser memory. Please load your supplementary files (PDF, Excel, CSV) via the folder or file picker.\n\n`;
             }
 
-            // 10. Citations
+            // 9. Citations
             finalReport += `---------------------------------------------------\n`;
             finalReport += `📍 [OKF Node Provenance & Occurrence Index]:\n`;
 
@@ -1988,4 +2007,189 @@ LaTeX Formula rendered in typography pane. Proportional Canvas Viewer updated to
             const botLabel = document.getElementById('botStatusLabel');
             if (botLabel) botLabel.innerText = "Status: Ready";
             logTerminal(terminalText);
-            speak
+            speakAcharya(spokenText);
+        }
+
+        function initIndianVoice() {
+            function pick() {
+                const voices = window.speechSynthesis.getVoices();
+                indianMaleVoice = voices.find(v => 
+                    (v.lang === 'en-IN' || v.lang === 'hi-IN') && 
+                    (v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('rishi') || v.name.toLowerCase().includes('prabhat') || v.name.toLowerCase().includes('mohan'))
+                ) || voices.find(v => v.lang === 'en-IN') || voices[0];
+            }
+            pick();
+            if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = pick;
+        }
+
+        function speakAcharya(text) {
+            if (!isVoiceOutputEnabled || !('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+            const utt = new SpeechSynthesisUtterance(text);
+            if (indianMaleVoice) utt.voice = indianMaleVoice;
+            utt.rate = 0.96;
+            utt.pitch = 0.94;
+
+            const eyeL = document.getElementById('eyeL');
+            const eyeR = document.getElementById('eyeR');
+            const mouth = document.getElementById('botMouth');
+
+            utt.onstart = () => { 
+                if (eyeL && eyeR) { eyeL.classList.add('speaking'); eyeR.classList.add('speaking'); }
+                if (mouth) { mouth.classList.add('speaking'); }
+            };
+            utt.onend = () => { 
+                if (eyeL && eyeR) { eyeL.classList.remove('speaking'); eyeR.classList.remove('speaking'); }
+                if (mouth) { mouth.classList.remove('speaking'); }
+            };
+            utt.onerror = () => { 
+                if (eyeL && eyeR) { eyeL.classList.remove('speaking'); eyeR.classList.remove('speaking'); }
+                if (mouth) { mouth.classList.remove('speaking'); }
+            };
+
+            window.speechSynthesis.speak(utt);
+        }
+
+        function toggleVoiceOutput() {
+            const btn = document.getElementById('voiceOutputBtn');
+            isVoiceOutputEnabled = !isVoiceOutputEnabled;
+            if (!isVoiceOutputEnabled) {
+                window.speechSynthesis.cancel();
+                btn.classList.add('muted');
+                btn.innerHTML = "🔇 Voice: MUTED";
+            } else {
+                btn.classList.remove('muted');
+                btn.innerHTML = "🔊 Voice: ON";
+                speakAcharya("Voice output enabled.");
+            }
+        }
+
+        function initSpeech() {
+            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRec) return;
+            const rec = new SpeechRec();
+            rec.lang = 'en-IN';
+            
+            const earL = document.getElementById('earPadLeft');
+            const earR = document.getElementById('earPadRight');
+
+            rec.onstart = () => { 
+                document.getElementById('voiceInputBtn').classList.add('listening'); 
+                if (earL && earR) {
+                    earL.classList.add('listening-left');
+                    earR.classList.add('listening-right');
+                }
+            };
+            rec.onresult = (e) => {
+                document.getElementById('queryInput').value = e.results[0][0].transcript;
+                submitToAcharya();
+            };
+            rec.onend = () => { 
+                document.getElementById('voiceInputBtn').classList.remove('listening'); 
+                if (earL && earR) {
+                    earL.classList.remove('listening-left');
+                    earR.classList.remove('listening-right');
+                }
+            };
+            window.recInstance = rec;
+        }
+
+        function toggleSpeechRecognition() {
+            if (window.recInstance) {
+                try { window.recInstance.start(); } catch(e) { window.recInstance.stop(); }
+            }
+        }
+
+        function startBlink() {
+            setInterval(() => {
+                const el = document.getElementById('eyeL'), er = document.getElementById('eyeR');
+                if (el && er) {
+                    el.classList.add('blinking'); er.classList.add('blinking');
+                    setTimeout(() => { el.classList.remove('blinking'); er.classList.remove('blinking'); }, 250);
+                }
+            }, 3800);
+        }
+
+        function logTerminal(msg) {
+            const term = document.getElementById('terminalOutput');
+            if (term) term.innerText = msg + "\n\n-------------------------\n" + term.innerText;
+        }
+
+        function updateCourseExtension(courseName) {
+            const trimmed = courseName.trim();
+            const headerTitleElem = document.getElementById('brandTitle');
+            if (trimmed !== "") {
+                const fullCourseTitle = `Prof. AI Acharya (${trimmed})`;
+                headerTitleElem.innerText = fullCourseTitle;
+                document.title = fullCourseTitle;
+            } else {
+                headerTitleElem.innerText = "Prof. AI Acharya Workspace";
+                document.title = "Prof. AI Acharya Workspace";
+            }
+            saveStateToURLHash();
+        }
+
+        function applyPresetTheme(hexColor, swatchElem) {
+            currentActiveThemeColor = hexColor;
+            document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+            if (swatchElem) swatchElem.classList.add('active');
+            document.getElementById('themeColorPicker').value = hexColor;
+            applyThemeColorToUI(hexColor);
+            saveStateToURLHash();
+        }
+
+        function applyCustomTheme(hexColor) {
+            currentActiveThemeColor = hexColor;
+            document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+            applyThemeColorToUI(hexColor);
+            saveStateToURLHash();
+        }
+
+        function applyThemeColorToUI(hexColor) {
+            document.documentElement.style.setProperty('--course-theme', hexColor);
+            document.getElementById('robotDisplay').style.backgroundColor = hexColor;
+        }
+
+        function saveStateToURLHash() {
+            const courseVal = document.getElementById('courseCodeInput').value;
+            const payload = { course: courseVal, theme: currentActiveThemeColor };
+            const jsonString = JSON.stringify(payload);
+            const safeBase64 = btoa(unescape(encodeURIComponent(jsonString)));
+            window.location.hash = `studio=${safeBase64}`;
+        }
+
+        function loadStateFromURLHash() {
+            try {
+                if (window.location.hash.startsWith('#studio=')) {
+                    const cleanHash = window.location.hash.replace('#studio=', '');
+                    const jsonStr = decodeURIComponent(escape(atob(cleanHash)));
+                    const state = JSON.parse(jsonStr);
+                    if (state.course) {
+                        document.getElementById('courseCodeInput').value = state.course;
+                        updateCourseExtension(state.course);
+                    }
+                    if (state.theme) {
+                        currentActiveThemeColor = state.theme;
+                        document.getElementById('themeColorPicker').value = state.theme;
+                        applyThemeColorToUI(state.theme);
+                    }
+                }
+            } catch (err) {
+                console.warn("Could not parse studio state:", err);
+            }
+        }
+
+        function triggerBookmarkTip() {
+            alert(`📌 Press Ctrl + D (or Cmd + D) to bookmark!\n\nTips for faculty:\n1. Change color for each course bookmark.\n2. Bookmark as "AI Acharya (Course name or number)" so you can run multiple course studios in your browser.`);
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initIndianVoice();
+            initSpeech();
+            startBlink();
+            loadStateFromURLHash();
+            updateRemarksFileNamePreview();
+        });
+    </script>
+</body>
+</html>
