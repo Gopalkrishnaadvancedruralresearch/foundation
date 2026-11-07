@@ -1517,7 +1517,7 @@
         }
 
         // =========================================================================
-        // MAIN QUERY DISPATCHER (TEACH ME MODE & BLACKBOARD EXPLANATION)
+        // MAIN QUERY DISPATCHER (STRICT DATA CHECK & BLACKBOARD TEACHING)
         // =========================================================================
         async function submitToAcharya() {
             const query = document.getElementById('queryInput').value.trim();
@@ -1535,7 +1535,16 @@
             if (botLabel) botLabel.innerText = "Status: Inspecting Query...";
             logTerminal(`🤖 Ingesting: "${query}"`);
 
-            // 2. Remarks Intent
+            // 2. STRICT DATA CHECK GUARDRAIL: If NO files/nodes/tables are loaded, prompt user to add data immediately!
+            if (okfKnowledgeNodes.length === 0 && Object.keys(spreadsheetTables).length === 0) {
+                const noDataMsg = `>>> PROF. AI ACHARYA (NO DATA LOADED):\n\n` +
+                                  `⚠️ Notice: No documents, spreadsheets, or folders are currently linked to your workspace.\n\n` +
+                                  `👉 Please click "Select Local Folder" or "➕ Upload Any File" on the left panel to load your database or files before querying!`;
+                displayResults(noDataMsg, "Please link your database or upload files before asking questions.");
+                return;
+            }
+
+            // 3. Remarks Intent
             const isRemarkIntent = /\b(remind me|write this down|record this|note this|save note|keep a note|remark)\b/i.test(query);
             if (isRemarkIntent) {
                 logProfessorRemark(query, "Voice / Query Auto-Capture");
@@ -1545,14 +1554,14 @@
                 return;
             }
 
-            // 3. Geopolitical / Geographic Intent
+            // 4. Geopolitical / Geographic Intent
             const geoResult = evaluateGeographicQuery(qLower);
             if (geoResult.handled) {
                 displayResults(geoResult.text, geoResult.voice);
                 return;
             }
 
-            // 4. "TEACH ME" / BLACKBOARD EXPLANATION MODE INTERCEPTOR
+            // 5. "TEACH ME" / BLACKBOARD EXPLANATION MODE INTERCEPTOR
             const isTeachIntent = /\b(teach me|explain chapter|explain pdf|explain document|walk me through|lesson)\b/i.test(qLower);
 
             if (isTeachIntent) {
@@ -1579,7 +1588,7 @@
                 return;
             }
 
-            // 5. EXPLICIT VISUAL INTENT INTERCEPTOR (IMAGE / PICTURE / FIGURE)
+            // 6. EXPLICIT VISUAL INTENT INTERCEPTOR (IMAGE / PICTURE / FIGURE)
             const isVisualIntent = /\b(picture|image|photo|scan|handwritten|figure|fig)\b/i.test(qLower);
 
             if (isVisualIntent) {
@@ -1621,7 +1630,7 @@
                 return;
             }
 
-            // 6. Spreadsheet SQL & Plotting Intent
+            // 7. Spreadsheet SQL & Plotting Intent
             const tableKeys = Object.keys(spreadsheetTables);
             const isSpreadsheetExplicit = tableKeys.length > 0 && (
                 qLower.startsWith("select ") ||
@@ -1659,7 +1668,7 @@
                 }
             }
 
-            // 7. OKF Structured Knowledge Traversal (CONTENT PRIORITIZED OVER TITLES)
+            // 8. OKF Structured Knowledge Traversal (CONTENT PRIORITIZED OVER TITLES)
             const searchTerms = extractSearchKeyTerms(query);
             let rankedNodes = [];
 
@@ -1692,7 +1701,7 @@
                 rankedNodes.sort((a, b) => b.score - a.score);
             }
 
-            // 8. Synthesize Output from OKF Nodes
+            // 9. Synthesize Output from OKF Nodes
             let finalReport = `>>> PROF. AI ACHARYA OKF KNOWLEDGE NETWORK TRAVERSAL:\nQuery: "${query}"\n\n`;
 
             if (rankedNodes.length > 0) {
@@ -1714,7 +1723,7 @@
                                `💡 Notice for Faculty: Prof. AI Acharya operates entirely in offline browser memory. Please load your supplementary files (PDF, Excel, CSV) via the folder or file picker.\n\n`;
             }
 
-            // 9. Citations
+            // 10. Citations
             finalReport += `---------------------------------------------------\n`;
             finalReport += `📍 [OKF Node Provenance & Occurrence Index]:\n`;
 
@@ -1979,189 +1988,4 @@ LaTeX Formula rendered in typography pane. Proportional Canvas Viewer updated to
             const botLabel = document.getElementById('botStatusLabel');
             if (botLabel) botLabel.innerText = "Status: Ready";
             logTerminal(terminalText);
-            speakAcharya(spokenText);
-        }
-
-        function initIndianVoice() {
-            function pick() {
-                const voices = window.speechSynthesis.getVoices();
-                indianMaleVoice = voices.find(v => 
-                    (v.lang === 'en-IN' || v.lang === 'hi-IN') && 
-                    (v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('rishi') || v.name.toLowerCase().includes('prabhat') || v.name.toLowerCase().includes('mohan'))
-                ) || voices.find(v => v.lang === 'en-IN') || voices[0];
-            }
-            pick();
-            if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = pick;
-        }
-
-        function speakAcharya(text) {
-            if (!isVoiceOutputEnabled || !('speechSynthesis' in window)) return;
-            window.speechSynthesis.cancel();
-            const utt = new SpeechSynthesisUtterance(text);
-            if (indianMaleVoice) utt.voice = indianMaleVoice;
-            utt.rate = 0.96;
-            utt.pitch = 0.94;
-
-            const eyeL = document.getElementById('eyeL');
-            const eyeR = document.getElementById('eyeR');
-            const mouth = document.getElementById('botMouth');
-
-            utt.onstart = () => { 
-                if (eyeL && eyeR) { eyeL.classList.add('speaking'); eyeR.classList.add('speaking'); }
-                if (mouth) { mouth.classList.add('speaking'); }
-            };
-            utt.onend = () => { 
-                if (eyeL && eyeR) { eyeL.classList.remove('speaking'); eyeR.classList.remove('speaking'); }
-                if (mouth) { mouth.classList.remove('speaking'); }
-            };
-            utt.onerror = () => { 
-                if (eyeL && eyeR) { eyeL.classList.remove('speaking'); eyeR.classList.remove('speaking'); }
-                if (mouth) { mouth.classList.remove('speaking'); }
-            };
-
-            window.speechSynthesis.speak(utt);
-        }
-
-        function toggleVoiceOutput() {
-            const btn = document.getElementById('voiceOutputBtn');
-            isVoiceOutputEnabled = !isVoiceOutputEnabled;
-            if (!isVoiceOutputEnabled) {
-                window.speechSynthesis.cancel();
-                btn.classList.add('muted');
-                btn.innerHTML = "🔇 Voice: MUTED";
-            } else {
-                btn.classList.remove('muted');
-                btn.innerHTML = "🔊 Voice: ON";
-                speakAcharya("Voice output enabled.");
-            }
-        }
-
-        function initSpeech() {
-            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRec) return;
-            const rec = new SpeechRec();
-            rec.lang = 'en-IN';
-            
-            const earL = document.getElementById('earPadLeft');
-            const earR = document.getElementById('earPadRight');
-
-            rec.onstart = () => { 
-                document.getElementById('voiceInputBtn').classList.add('listening'); 
-                if (earL && earR) {
-                    earL.classList.add('listening-left');
-                    earR.classList.add('listening-right');
-                }
-            };
-            rec.onresult = (e) => {
-                document.getElementById('queryInput').value = e.results[0][0].transcript;
-                submitToAcharya();
-            };
-            rec.onend = () => { 
-                document.getElementById('voiceInputBtn').classList.remove('listening'); 
-                if (earL && earR) {
-                    earL.classList.remove('listening-left');
-                    earR.classList.remove('listening-right');
-                }
-            };
-            window.recInstance = rec;
-        }
-
-        function toggleSpeechRecognition() {
-            if (window.recInstance) {
-                try { window.recInstance.start(); } catch(e) { window.recInstance.stop(); }
-            }
-        }
-
-        function startBlink() {
-            setInterval(() => {
-                const el = document.getElementById('eyeL'), er = document.getElementById('eyeR');
-                if (el && er) {
-                    el.classList.add('blinking'); er.classList.add('blinking');
-                    setTimeout(() => { el.classList.remove('blinking'); er.classList.remove('blinking'); }, 250);
-                }
-            }, 3800);
-        }
-
-        function logTerminal(msg) {
-            const term = document.getElementById('terminalOutput');
-            if (term) term.innerText = msg + "\n\n-------------------------\n" + term.innerText;
-        }
-
-        function updateCourseExtension(courseName) {
-            const trimmed = courseName.trim();
-            const headerTitleElem = document.getElementById('brandTitle');
-            if (trimmed !== "") {
-                const fullCourseTitle = `Prof. AI Acharya (${trimmed})`;
-                headerTitleElem.innerText = fullCourseTitle;
-                document.title = fullCourseTitle;
-            } else {
-                headerTitleElem.innerText = "Prof. AI Acharya Workspace";
-                document.title = "Prof. AI Acharya Workspace";
-            }
-            saveStateToURLHash();
-        }
-
-        function applyPresetTheme(hexColor, swatchElem) {
-            currentActiveThemeColor = hexColor;
-            document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
-            if (swatchElem) swatchElem.classList.add('active');
-            document.getElementById('themeColorPicker').value = hexColor;
-            applyThemeColorToUI(hexColor);
-            saveStateToURLHash();
-        }
-
-        function applyCustomTheme(hexColor) {
-            currentActiveThemeColor = hexColor;
-            document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
-            applyThemeColorToUI(hexColor);
-            saveStateToURLHash();
-        }
-
-        function applyThemeColorToUI(hexColor) {
-            document.documentElement.style.setProperty('--course-theme', hexColor);
-            document.getElementById('robotDisplay').style.backgroundColor = hexColor;
-        }
-
-        function saveStateToURLHash() {
-            const courseVal = document.getElementById('courseCodeInput').value;
-            const payload = { course: courseVal, theme: currentActiveThemeColor };
-            const jsonString = JSON.stringify(payload);
-            const safeBase64 = btoa(unescape(encodeURIComponent(jsonString)));
-            window.location.hash = `studio=${safeBase64}`;
-        }
-
-        function loadStateFromURLHash() {
-            try {
-                if (window.location.hash.startsWith('#studio=')) {
-                    const cleanHash = window.location.hash.replace('#studio=', '');
-                    const jsonStr = decodeURIComponent(escape(atob(cleanHash)));
-                    const state = JSON.parse(jsonStr);
-                    if (state.course) {
-                        document.getElementById('courseCodeInput').value = state.course;
-                        updateCourseExtension(state.course);
-                    }
-                    if (state.theme) {
-                        currentActiveThemeColor = state.theme;
-                        document.getElementById('themeColorPicker').value = state.theme;
-                        applyThemeColorToUI(state.theme);
-                    }
-                }
-            } catch (err) {
-                console.warn("Could not parse studio state:", err);
-            }
-        }
-
-        function triggerBookmarkTip() {
-            alert(`📌 Press Ctrl + D (or Cmd + D) to bookmark!\n\nTips for faculty:\n1. Change color for each course bookmark.\n2. Bookmark as "AI Acharya (Course name or number)" so you can run multiple course studios in your browser.`);
-        }
-
-        window.addEventListener('DOMContentLoaded', () => {
-            initIndianVoice();
-            initSpeech();
-            startBlink();
-            loadStateFromURLHash();
-            updateRemarksFileNamePreview();
-        });
-    </script>
-</body>
-</html>
+            speak
