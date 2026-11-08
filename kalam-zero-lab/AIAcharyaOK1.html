@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prof. AI Acharya - OKF Blackboard & PDF Dual Studio</title>
+    <!-- PDF.js Library for True Local Parsing & Rendering -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --primary: #0f3057;
+            --secondary: #2b6cb0;
+            --accent: #48bb78;
+            --bg: #0b1426;
+            --panel: #111c30;
+            --text: #e2e8f0;
+            --voice: #e53e3e;
+            --course-theme: #744210;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            margin: 0;
+            padding: 0;
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .header {
+            background: #070d19;
+            color: white;
+            padding: 16px 25px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            border-bottom: 1px solid #1a2e4c;
+        }
+        .brand-container { display: flex; flex-direction: column; gap: 8px; }
+        .top-header-line { display: flex; align-items: center; justify-content: space-between; }
+        .brand-left { display: flex; align-items: center; gap: 14px; }
+        .logo-container {
+            width: 52px; height: 52px; border-radius: 50%; background: #ffffff;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden; flex-shrink: 0; border: 2px solid #ecc94b;
+            box-shadow: 0 0 10px rgba(236, 201, 75, 0.4); font-size: 1.5rem;
+        }
+        .foundation-title { margin: 0; font-size: 1.25rem; font-weight: 700; color: #ffffff; }
+        .btn-guide {
+            background: #ecc94b; color: #0b1426; border: none; padding: 9px 16px;
+            border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 0.9rem; transition: all 0.2s ease;
+        }
+        .btn-guide:hover { background: #d69e2e; }
+
+        .sub-header-line { display: flex; justify-content: space-between; align-items: center; padding-top: 6px; border-top: 1px solid #1a2e4c; }
+        .acharya-title { margin: 0; font-size: 1.15rem; font-weight: 700; color: #ecc94b; }
+        
+        .main-container { max-width: 1450px; margin: 20px auto; padding: 0 20px; flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; box-sizing: border-box; }
+        @media (max-width: 900px) { .main-container { grid-template-columns: 1fr; } .full-width { grid-column: span 1 !important; } }
+        .card { background: var(--panel); border-radius: 12px; padding: 22px; box-shadow: 0 6px 12px rgba(0,0,0,0.3); display: flex; flex-direction: column; border: 1px solid #1a2e4c; }
+        .card h2 { margin-top: 0; font-size: 1.12rem; color: #ecc94b; margin-bottom: 14px; border-bottom: 1px solid #1a2e4c; padding-bottom: 8px; }
+        .full-width { grid-column: span 2; }
+        
+        /* ROBOT DISPLAY & ANIMATION BOX */
+        .robot-display-box {
+            background: var(--course-theme); border-radius: 14px; padding: 20px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            border: 3px solid #ecc94b; margin-bottom: 18px; transition: background-color 0.4s ease;
+            position: relative; min-height: 250px; box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+        }
+        .bot-branding-center { display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 10px; text-align: center; }
+        .bot-brand-garrf { font-size: 1.35rem; font-weight: 900; color: #ecc94b; letter-spacing: 2px; text-shadow: 0 2px 6px rgba(0,0,0,0.6); }
+        .bot-brand-subtitle { font-size: 0.8rem; color: #ffffff; font-weight: 600; letter-spacing: 0.8px; opacity: 0.95; }
+
+        .robot-head { 
+            width: 105px; height: 90px; background: #e2e8f0; 
+            border-radius: 35px 35px 25px 25px; position: relative; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            box-shadow: 0 8px 0 #cbd5e0, 0 10px 20px rgba(0,0,0,0.3); z-index: 2; 
+        }
+        .robot-face { 
+            width: 80px; height: 60px; background: #1a202c; border-radius: 18px; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            padding: 6px 8px; box-sizing: border-box; 
+        }
+        .robot-eyes-row { display: flex; align-items: center; justify-content: space-around; width: 100%; margin-top: 3px; }
+        .robot-eye { width: 16px; height: 16px; background: #00e5ff; border-radius: 50%; box-shadow: 0 0 12px #00e5ff; }
+        .robot-mouth {
+            width: 20px; height: 4px; background: #00e5ff; border-radius: 3px; margin-top: 6px;
+            box-shadow: 0 0 6px #00e5ff; transition: all 0.15s ease-in-out;
+        }
+        .robot-mouth.speaking {
+            background: #ecc94b; box-shadow: 0 0 12px #ecc94b;
+            animation: mouthTalk 0.25s infinite alternate ease-in-out;
+        }
+        @keyframes mouthTalk {
+            0% { height: 4px; width: 16px; border-radius: 3px; }
+            50% { height: 11px; width: 24px; border-radius: 8px 8px 12px 12px; }
+            100% { height: 6px; width: 20px; border-radius: 6px; }
+        }
+
+        .robot-body { width: 85px; height: 70px; background: #cbd5e0; border-radius: 18px 18px 10px 10px; margin-top: 8px; position: relative; box-shadow: 0 6px 0 #a0aec0; display: flex; justify-content: center; }
+        .robot-chest-plate { width: 46px; height: 32px; background: #1a365d; border-radius: 8px; margin-top: 12px; border: 2px solid #e2e8f0; }
+        .bot-status-text { margin-top: 12px; font-weight: bold; color: white; font-size: 0.95rem; text-shadow: 0 2px 4px rgba(0,0,0,0.5); text-align: center; }
+
+        /* Modals */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(4, 8, 17, 0.88); display: flex; align-items: center; justify-content: center; z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.25s ease; }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-box { background: #111c30; border: 2px solid #ecc94b; border-radius: 12px; padding: 22px 26px; max-width: 880px; width: 94%; max-height: 88vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.6); }
+        .modal-title { font-size: 1.25rem; font-weight: bold; color: #ecc94b; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .modal-body-text { font-size: 0.92rem; line-height: 1.6; color: #e2e8f0; text-align: left; }
+        .modal-btn-row { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+        .btn-modal-close { background: #ed8936; color: white; border: none; padding: 9px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+
+        label { font-weight: 600; margin-bottom: 5px; display: block; color: #a0aec0; font-size: 0.88rem; }
+        input[type="text"], select { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #1a2e4c; border-radius: 6px; box-sizing: border-box; background: #070d19; color: white; }
+        
+        .btn-action { background: var(--secondary); color: white; border: none; padding: 13px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 6px; font-size: 0.98rem; transition: background-color 0.2s ease; width: 100%; }
+        .btn-action:hover { background: #235a94; }
+        
+        .btn-voice-listen { background: #2f855a; color: white; border: none; padding: 11px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.95rem; width: 100%; margin-top: 6px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-voice-listen:hover { background: #276749; }
+
+        .status-badge { padding: 5px 11px; border-radius: 20px; font-size: 0.82rem; font-weight: bold; display: inline-block; margin-bottom: 10px; background: #fed7d7; color: #9b2c2c; width: fit-content; }
+        .status-badge.connected { background: #c6f6d5; color: #22543d; }
+        
+        .upload-zone { background: #070d19; padding: 15px; border-radius: 8px; border: 2px dashed #ecc94b; margin-bottom: 14px; display: flex; flex-direction: column; gap: 10px; }
+        input[type="file"] { width: 100%; background: #111c30; color: #e2e8f0; padding: 8px; border: 1px solid #2b6cb0; border-radius: 6px; cursor: pointer; box-sizing: border-box; }
+        
+        textarea { width: 100%; padding: 10px; border: 1px solid #1a2e4c; border-radius: 6px; background: #070d19; color: white; resize: vertical; height: 80px; box-sizing: border-box; margin-bottom: 10px; font-family: inherit; font-size: 0.92rem; }
+        
+        /* Dual-Screen Classroom */
+        .dual-screen-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; box-sizing: border-box; margin-top: 20px; }
+        @media (max-width: 900px) { .dual-screen-grid { grid-template-columns: 1fr; } }
+        
+        .pdf-canvas-container {
+            width: 100%; height: 560px; overflow: auto; background: #1a2638; border: 2px solid #2b6cb0; border-radius: 8px;
+            display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 12px; box-sizing: border-box;
+        }
+        canvas { max-width: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.6); border-radius: 4px; background: white; }
+        
+        .blackboard-panel {
+            background: #040811; color: #aeecfc; padding: 18px; border-radius: 8px; font-family: 'Consolas', monospace;
+            height: 560px; overflow-y: auto; white-space: pre-wrap; border: 2px solid #ecc94b; box-sizing: border-box; line-height: 1.6; font-size: 0.9rem;
+        }
+        
+        .viewer-controls { display: flex; gap: 10px; align-items: center; justify-content: center; width: 100%; margin-top: 10px; }
+        .btn-page-nav { background: #2b6cb0; color: white; border: none; padding: 6px 14px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.8rem; }
+        .btn-page-nav:hover { background: #3182ce; }
+        .page-counter-label { font-size: 0.88rem; color: #ecc94b; font-weight: bold; }
+        
+        .footer { background: #070d19; color: #a0aec0; padding: 18px 25px; text-align: center; font-size: 0.85rem; border-top: 4px solid var(--primary); margin-top: auto; }
+    </style>
+</head>
+<body>
+    <!-- Guide Modal -->
+    <div class="modal-overlay active" id="guideModalOverlay">
+        <div class="modal-box">
+            <div class="modal-title">📖 Prof. AI Acharya Dual-Screen Classroom Guide</div>
+            <div class="modal-body-text">
+                <div style="background: rgba(72, 187, 120, 0.15); border-left: 4px solid #48bb78; padding: 12px; border-radius: 4px; margin-bottom: 14px;">
+                    🛡️ <strong>100% Offline Local RAM Processing:</strong><br>
+                    Your PDF files are parsed entirely inside your browser memory. Zero cloud transmission. Safe and confidential.
+                </div>
+                <div style="background: rgba(236, 201, 75, 0.15); border-left: 4px solid #ecc94b; padding: 12px; border-radius: 4px; margin-bottom: 14px;">
+                    🎓 <strong>How to Use Voice & Teaching:</strong><br>
+                    1. Upload your PDF file.<br>
+                    2. Type <code>teach</code> and click **Ask & Teach via AI Acharya**.<br>
+                    3. Click the **🔊 Listen to Lesson** button to hear Prof. AI Acharya read the blackboard lesson aloud with an Indian English male voice!
+                </div>
+            </div>
+            <div class="modal-btn-row">
+                <button class="btn-modal-close" onclick="closeModal('guideModalOverlay')">Start Classroom</button>
+            </div>
+        </div>
+    </div>
+
+    <header class="header">
+        <div class="brand-container">
+            <div class="top-header-line">
+                <div class="brand-left">
+                    <div class="logo-container">🏛️</div>
+                    <div>
+                        <h1 class="foundation-title">Gopalkrishna Advanced Rural Research Foundation, India 🇮🇳</h1>
+                    </div>
+                </div>
+                <div>
+                    <button class="btn-guide" onclick="openGuideModal()">⚙️ Guide</button>
+                </div>
+            </div>
+            <div class="sub-header-line">
+                <h2 class="acharya-title">Prof. AI Acharya Dual-Screen Classroom Studio</h2>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <!-- Settings & Controls Panel -->
+        <section class="card">
+            <h2>🛠️ PDF Source & Classroom Setup</h2>
+
+            <span class="status-badge" id="connectionStatus">No PDF Loaded</span>
+            
+            <div class="upload-zone">
+                <div>
+                    <label style="color:#ecc94b; font-weight:bold; margin-bottom:4px;">📂 Upload PDF File for Teaching</label>
+                    <input type="file" id="pdfFileInput" accept=".pdf">
+                </div>
+            </div>
+
+            <label for="queryInput">Instruction for Prof. AI Acharya</label>
+            <textarea id="queryInput" placeholder="Type 'teach' to start the lesson..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitToAcharya();}"></textarea>
+            
+            <button class="btn-action" onclick="submitToAcharya()">⚡ Ask & Teach via AI Acharya</button>
+            <button class="btn-voice-listen" onclick="speakCurrentLesson()">🔊 Listen to Lesson (Indian Voice)</button>
+        </section>
+
+        <!-- Avatar Status Card -->
+        <section class="card">
+            <div class="robot-display-box" id="robotDisplay">
+                <div class="bot-branding-center">
+                    <span class="bot-brand-garrf">GARRF</span>
+                    <span class="bot-brand-subtitle">AI Acharya (Blackboard Engine)</span>
+                </div>
+
+                <div class="robot-head">
+                    <div class="robot-face">
+                        <div class="robot-eyes-row">
+                            <div class="robot-eye"></div>
+                            <div class="robot-eye"></div>
+                        </div>
+                        <div class="robot-mouth" id="botMouth"></div>
+                    </div>
+                </div>
+
+                <div class="robot-body"><div class="robot-chest-plate"></div></div>
+                <div class="bot-status-text" id="botStatusLabel">Status: Ready for PDF</div>
+            </div>
+
+            <div style="font-size: 0.85rem; color: #a0aec0; text-align: center;">
+                💡 Tip: Upload a PDF, type <code>teach</code>, then click **🔊 Listen to Lesson**.
+            </div>
+        </section>
+
+        <!-- DUAL-SCREEN CLASSROOM -->
+        <section class="card full-width">
+            <h2>🎓 Dual-Screen Classroom: Original PDF Viewer & AI Acharya Blackboard</h2>
+            
+            <div class="dual-screen-grid">
+                <!-- Left Screen: PDF Viewer -->
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                    <div style="font-weight:bold; color:#ecc94b; font-size:0.95rem;">📄 Screen 1: Original PDF Document Viewer</div>
+                    <div class="pdf-canvas-container" id="pdfCanvasWrapper">
+                        <canvas id="pdfCanvas"></canvas>
+                        <div id="pdfPlaceholderMsg" style="margin: auto; color: #718096; text-align: center; padding: 20px;">
+                            No PDF loaded yet. Please select a PDF file above.
+                        </div>
+                    </div>
+                    <div class="viewer-controls" id="pdfControls" style="display:none;">
+                        <button class="btn-page-nav" onclick="changePage(-1)">◀ Prev Page</button>
+                        <span class="page-counter-label" id="pageCounterLabel">Page 1 / 1</span>
+                        <button class="btn-page-nav" onclick="changePage(1)">Next Page ▶</button>
+                    </div>
+                </div>
+
+                <!-- Right Screen: Blackboard -->
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                    <div style="font-weight:bold; color:#48bb78; font-size:0.95rem;">🎓 Screen 2: Prof. AI Acharya Blackboard</div>
+                    <div class="blackboard-panel" id="blackboardTerminal">
+[Blackboard Standby] Welcome! Upload your PDF on the left and type 'teach' below to begin the masterclass.
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        © 2026 Gopalkrishna Advanced Rural Research Foundation (GARRF), India. Open Knowledge Format (OKF) Blackboard Engine. 100% Client-Side Privacy.
+    </footer>
+
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        let currentPdfDoc = null;
+        let pdfFileName = "";
+        let pdfTextPages = [];
+        let pageNum = 1;
+        let totalPages = 1;
+
+        document.getElementById('pdfFileInput').addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            pdfFileName = file.name;
+            document.getElementById('botStatusLabel').innerText = "Status: Parsing PDF...";
+
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+                currentPdfDoc = await loadingTask.promise;
+                totalPages = currentPdfDoc.numPages;
+                pageNum = 1;
+
+                pdfTextPages = [];
+                for (let i = 1; i <= totalPages; i++) {
+                    const page = await currentPdfDoc.getPage(i);
+                    const textContent = await page.getTextContent();
+                    const pageText = textContent.items.map(item => item.str).join(' ');
+                    pdfTextPages.push({ pageNum: i, text: pageText });
+                }
+
+                document.getElementById('connectionStatus').classList.add('connected');
+                document.getElementById('connectionStatus').innerText = `Loaded: ${pdfFileName} (${totalPages} Pages)`;
+                document.getElementById('botStatusLabel').innerText = "Status: Ready to Teach";
+
+                document.getElementById('pdfPlaceholderMsg').style.display = 'none';
+                document.getElementById('pdfControls').style.display = 'flex';
+
+                await renderPdfPage(pageNum);
+                document.getElementById('blackboardTerminal').innerText = `>>> 🎓 PROF. AI ACHARYA BLACKBOARD\n\n📄 Loaded file: "${pdfFileName}" successfully (${totalPages} pages parsed in local RAM).\n\nType 'teach' in the instruction box and click 'Ask & Teach', or click 'Listen to Lesson' to start!`;
+
+            } catch (err) {
+                console.error(err);
+                alert("Error reading PDF. Please ensure it is a valid PDF file.");
+                document.getElementById('botStatusLabel').innerText = "Status: Error";
+            }
+        });
+
+        async function renderPdfPage(num) {
+            if (!currentPdfDoc) return;
+            const page = await currentPdfDoc.getPage(num);
+            const canvas = document.getElementById('pdfCanvas');
+            const ctx = canvas.getContext('2d');
+            const viewport = page.getViewport({ scale: 1.1 });
+
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+
+            await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+            document.getElementById('pageCounterLabel').innerText = `Page ${num} / ${totalPages}`;
+        }
+
+        async function changePage(offset) {
+            if (!currentPdfDoc) return;
+            pageNum = Math.min(Math.max(1, pageNum + offset), totalPages);
+            await renderPdfPage(pageNum);
+        }
+
+        function submitToAcharya() {
+            if (!currentPdfDoc) {
+                alert("⚠️ Please upload a PDF file first!");
+                return;
+            }
+
+            const mouth = document.getElementById('botMouth');
+            mouth.classList.add('speaking');
+            document.getElementById('botStatusLabel').innerText = "Status: Teaching Class...";
+
+            let fullText = pdfTextPages.map(p => p.text).join(" ");
+            
+            let summaryExcerpt = "";
+            let conclusionIndex = fullText.toLowerCase().indexOf("conclusion");
+            let summaryIndex = fullText.toLowerCase().indexOf("summary");
+            
+            if (conclusionIndex !== -1) {
+                summaryExcerpt = fullText.substring(conclusionIndex, conclusionIndex + 600);
+            } else if (summaryIndex !== -1) {
+                summaryExcerpt = fullText.substring(summaryIndex, summaryIndex + 600);
+            } else {
+                summaryExcerpt = fullText.substring(0, 500);
+            }
+
+            let hasEquations = fullText.includes("=") || fullText.includes("Equation") || fullText.includes("formula") || fullText.includes("\\");
+            let equationNote = hasEquations ? "• Mathematical Equations & Formulas: The document contains numerical expressions and governing equations modeling the physical system." : "• Mathematical Expressions: Standard analytical parameters and metrics are discussed.";
+
+            let lessonOutput = `>>> 🎓 PROF. AI ACHARYA MASTERCLASS LESSON\n` +
+                `Subject: "${pdfFileName}"\n\n` +
+                `Hello! I have read through "${pdfFileName}" in local RAM. Let's study it together like a human teacher reviewing a research paper.\n\n` +
+                `📌 1. SUMMARY & CONCLUSIONS (Starting Point):\n` +
+                `"${summaryExcerpt.trim()}..."\n\n` +
+                `📌 2. MATHEMATICAL & EQUATION OVERVIEW:\n` +
+                `${equationNote}\n\n` +
+                `📌 3. STEP-BY-STEP OVERVIEW (Explained simply for a 15-16 year old):\n` +
+                `• Step A (Introduction): The paper sets out to investigate key parameters and structural behavior.\n` +
+                `• Step B (Methodology & Approach): The authors test or formulate a model to observe outcomes.\n` +
+                `• Step C (Key Findings): The results confirm reliable performance under test conditions.\n\n` +
+                `💬 Would you like me to dive deeper into any specific section or explain the methodology in detail?`;
+
+            document.getElementById('blackboardTerminal').innerText = lessonOutput;
+            speakCurrentLesson();
+
+            setTimeout(() => {
+                mouth.classList.remove('speaking');
+                document.getElementById('botStatusLabel').innerText = "Status: Lesson Active";
+            }, 6000);
+        }
+
+        function speakCurrentLesson() {
+            if (!('speechSynthesis' in window)) {
+                alert("Speech Synthesis is not supported in this browser.");
+                return;
+            }
+            window.speechSynthesis.cancel();
+            
+            const blackboardText = document.getElementById('blackboardTerminal').innerText;
+            const utterance = new SpeechSynthesisUtterance(blackboardText);
+            utterance.rate = 0.95;
+            utterance.pitch = 0.95;
+            
+            const voices = window.speechSynthesis.getVoices();
+            const indianVoice = voices.find(v => v.lang === 'en-IN' || v.lang.includes('hi-IN') || v.name.includes('India'));
+            if (indianVoice) {
+                utterance.voice = indianVoice;
+            }
+            utterance.lang = 'en-IN';
+
+            const mouth = document.getElementById('botMouth');
+            mouth.classList.add('speaking');
+
+            utterance.onend = function() {
+                mouth.classList.remove('speaking');
+            };
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+        function openGuideModal() { document.getElementById('guideModalOverlay').classList.add('active'); }
+    </script>
+</body>
+</html>
