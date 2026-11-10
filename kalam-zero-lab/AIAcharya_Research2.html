@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Acharya - Research Guide</title>
+    <!-- Document Parsers, OCR & Math Renderers -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        :root {
+            --primary: #0f3057;
+            --secondary: #2b6cb0;
+            --accent: #48bb78;
+            --bg: #0b1426;
+            --panel: #111c30;
+            --text: #e2e8f0;
+            --voice: #e53e3e;
+            --course-theme: #744210;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            margin: 0;
+            padding: 0;
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .header {
+            background: #070d19;
+            color: white;
+            padding: 16px 25px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            border-bottom: 1px solid #1a2e4c;
+        }
+        .brand-container { display: flex; flex-direction: column; gap: 8px; }
+        
+        /* UNIFIED SINGLE-ROW HEADER */
+        .top-header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: nowrap;
+            gap: 15px;
+            width: 100%;
+        }
+        .brand-left-group {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-grow: 1;
+            min-width: 0;
+        }
+        .logo-container {
+            width: 54px;
+            height: 54px;
+            border-radius: 12px;
+            background: #fff;
+            border: 2px solid #ecc94b;
+            box-shadow: 0 4px 12px rgba(236,201,75,0.35);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .logo-container img { width: 100%; height: 100%; object-fit: contain; }
+        .foundation-title {
+            margin: 0;
+            font-size: clamp(0.95rem, 1.8vw, 1.35rem);
+            font-weight: 700;
+            color: #ffffff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .flags-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        .flag-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            color: #dce8f8;
+            background: #ffffff12;
+            border: 1px solid #ffffff25;
+            border-radius: 20px;
+            padding: 4px 10px;
+            font-size: 0.8rem;
+        }
+        .header-action-buttons {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        @media(max-width: 950px) {
+            .top-header-row { flex-direction: column; align-items: flex-start; }
+            .header-action-buttons { width: 100%; justify-content: space-between; margin-top: 5px; }
+            .foundation-title { white-space: normal; }
+        }
+
+        .btn-guide {
+            background: #ecc94b;
+            color: #0b1426;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+        }
+        .btn-guide:hover { background: #d69e2e; }
+
+        .sub-header-line { width: 100%; display: flex; justify-content: center; align-items: center; padding-top: 10px; border-top: 1px solid #ffffff20; text-align: center; }
+        .acharya-title { margin: 0; font-size: clamp(1.25rem, 2.4vw, 1.7rem); font-weight: 800; color: #ecc94b; letter-spacing: .4px; text-shadow: 0 2px 12px #ecc94b33; }
+        .tagline { text-align: center; color: #cbd5e0; margin: 6px 0 2px; font-size: .92rem; }
+
+        .robot-arms { position: absolute; top: 115px; width: 190px; display: flex; justify-content: space-between; z-index: 1; pointer-events: none; }
+        .robot-arm { width: 16px; height: 62px; border-radius: 10px; background: linear-gradient(#e2e8f0, #94a3b8); position: relative; transform-origin: top center; }
+        .robot-arm:after { content: '✊'; position: absolute; bottom: -16px; left: -5px; font-size: 20px; }
+        .robot-legs { display: flex; gap: 24px; margin-top: 2px; }
+        .robot-leg { width: 20px; height: 38px; background: linear-gradient(#cbd5e0, #718096); border-radius: 5px 5px 10px 10px; position: relative; }
+        .robot-leg:after { content: ''; position: absolute; bottom: -5px; left: -7px; width: 34px; height: 12px; background: #2d3748; border-radius: 12px; }
+        
+        .robot-display-box.speaking .robot-arm.left { animation: waveLeft .4s infinite alternate ease-in-out; }
+        .robot-display-box.speaking .robot-arm.right { animation: waveRight .4s infinite alternate ease-in-out; }
+        .robot-display-box.speaking .robot-mouth { animation: talk .12s infinite alternate ease-in-out; }
+        .robot-display-box.speaking .robot-eye { animation: blink .5s infinite alternate ease-in-out; }
+        .robot-display-box.speaking .robot-head { animation: bobHead .8s infinite alternate ease-in-out; }
+
+        @keyframes waveLeft {to{transform:rotate(30deg)}} 
+        @keyframes waveRight {to{transform:rotate(-30deg)}}
+        @keyframes talk {to{height:13px;width:22px;border-radius:50%}}
+        @keyframes blink {to{transform:scaleY(0.15)}}
+        @keyframes bobHead {0%{transform:translateY(0)} 100%{transform:translateY(-4px)}}
+
+        /* BLACKBOARD WITH STATEMENT-TRACKING CARICATURE */
+        .blackboard { position: relative; background: repeating-linear-gradient(0deg, #123b2b, #123b2b 2px, #0e3325 3px, #0e3325 5px); border: 10px solid #81552d; border-radius: 8px; box-shadow: inset 0 0 25px #061c14, 0 5px 15px #0008; color: #fff; padding: 18px 18px 52px; min-height: 360px; overflow-y: auto; max-height: 480px; }
+        .blackboard-caricature { position: absolute; font-size: 26px; transition: top 0.3s ease-out, left 0.3s ease-out; filter: drop-shadow(0 2px 3px #000); z-index: 10; pointer-events: none; }
+        
+        .chalk-line { min-height: 1.5em; line-height: 1.8; font-family: 'Trebuchet MS', sans-serif; white-space: pre-wrap; margin-bottom: 8px; }
+        .chalk-statement { transition: color 0.25s, background 0.25s; padding: 2px 4px; border-radius: 4px; display: block; margin-bottom: 6px; }
+        .chalk-statement.active { color: #ffe66d !important; text-shadow: 0 0 10px #ffe66d; background: rgba(255,255,255,0.18); border-left: 3px solid #ecc94b; }
+        .chalk-statement.read { color: #81e6d9 !important; }
+
+        .equation-box {
+            background: rgba(4, 20, 14, 0.85);
+            border-left: 4px solid #63b3ed;
+            padding: 14px 18px;
+            margin: 12px 0;
+            border-radius: 6px;
+            color: #ffffff;
+            font-size: 1.05rem;
+            box-shadow: inset 0 0 12px rgba(0,0,0,0.5);
+            line-height: 1.8;
+            overflow-x: auto;
+        }
+
+        .summary-btn { background: linear-gradient(135deg,#9b59b6,#6c3483); border: 1px solid #d7bde2; }
+        .summary-btn:hover{ background: linear-gradient(135deg,#af7ac5,#7d3c98); }
+        .file-hint{ font-size: .82rem; color: #a0aec0; margin-top: -5px; margin-bottom: 9px; }
+        @media(max-width:700px){.evidence-content{grid-template-columns:1fr!important}.robot-arms{top:115px;width:170px}}
+        
+        .main-container { max-width: 1450px; margin: 20px auto; padding: 0 20px; flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; box-sizing: border-box; }
+        @media (max-width: 900px) {
+            .main-container { grid-template-columns: 1fr; }
+            .full-width { grid-column: span 1 !important; }
+        }
+        .card { background: var(--panel); border-radius: 12px; padding: 22px; box-shadow: 0 6px 12px rgba(0,0,0,0.3); display: flex; flex-direction: column; border: 1px solid #1a2e4c; }
+        .card h2 { margin-top: 0; font-size: 1.12rem; color: #ecc94b; margin-bottom: 14px; border-bottom: 1px solid #1a2e4c; padding-bottom: 8px; }
+        .full-width { grid-column: span 2; }
+        
+        .robot-display-box {
+            background: var(--course-theme); border-radius: 14px; padding: 20px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            border: 3px solid #ecc94b; margin-bottom: 18px; transition: background-color 0.4s ease;
+            position: relative; min-height: 270px; box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+        }
+        .bot-branding-center {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            margin-bottom: 12px; text-align: center;
+        }
+        .bot-brand-garrf {
+            font-size: 1.35rem; font-weight: 900; color: #ecc94b; letter-spacing: 2px;
+            text-shadow: 0 2px 6px rgba(0,0,0,0.6); line-height: 1.1;
+        }
+        .bot-brand-subtitle {
+            font-size: 0.8rem; color: #ffffff; font-weight: 600; letter-spacing: 0.8px;
+            opacity: 0.95; text-shadow: 0 1px 3px rgba(0,0,0,0.5); margin-top: 2px;
+        }
+
+        .robot-head { 
+            width: 100px; height: 85px; background: #e2e8f0; 
+            border-radius: 32px 32px 22px 22px; position: relative; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            box-shadow: 0 6px 0 #cbd5e0, 0 8px 16px rgba(0,0,0,0.3); z-index: 2; 
+        }
+        .robot-headphones { 
+            position: absolute; width: 120px; height: 50px; border: 10px solid #2d3748; 
+            border-bottom: none; border-radius: 60px 60px 0 0; top: -14px; z-index: 3; 
+        }
+        .ear-pad { 
+            position: absolute; width: 16px; height: 34px; background: #2d3748; 
+            border-radius: 6px; top: 24px; z-index: 4;
+        }
+        .ear-pad.left { left: -13px; } 
+        .ear-pad.right { right: -13px; }
+        
+        .robot-face { 
+            width: 74px; height: 52px; background: #1a202c; border-radius: 14px; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            padding: 4px 6px; box-sizing: border-box; z-index: 2;
+        }
+        .robot-eyes-row { display: flex; align-items: center; justify-content: space-around; width: 100%; margin-top: 2px; }
+        .robot-eye { width: 14px; height: 14px; background: #00e5ff; border-radius: 50%; box-shadow: 0 0 10px #00e5ff; }
+        .robot-mouth { width: 18px; height: 4px; background: #00e5ff; border-radius: 3px; margin-top: 5px; box-shadow: 0 0 6px #00e5ff; }
+
+        .robot-body { width: 85px; height: 75px; background: #cbd5e0; border-radius: 18px 18px 10px 10px; margin-top: 10px; position: relative; box-shadow: 0 6px 0 #a0aec0; display: flex; justify-content: center; }
+        .robot-chest-plate { width: 46px; height: 36px; background: #1a365d; border-radius: 8px; margin-top: 14px; border: 2px solid #e2e8f0; }
+        .bot-status-text { margin-top: 14px; font-weight: bold; color: white; font-size: 1rem; text-shadow: 0 2px 4px rgba(0,0,0,0.5); text-align: center; }
+        
+        .color-palette-container {
+            display: flex; align-items: center; justify-content: space-between;
+            background: #070d19; padding: 8px 12px; border-radius: 8px; border: 1px solid #1a2e4c; margin-bottom: 14px; gap: 10px;
+        }
+        .swatches-row { display: flex; gap: 8px; align-items: center; }
+        .color-swatch { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; border: 2px solid #2d3748; transition: transform 0.2s, border-color 0.2s; }
+        .color-swatch:hover { transform: scale(1.15); border-color: #ecc94b; }
+        .color-swatch.active { border-color: #ecc94b; box-shadow: 0 0 10px #ecc94b; transform: scale(1.1); }
+        .custom-color-input { border: none; width: 34px; height: 34px; border-radius: 6px; cursor: pointer; background: none; padding: 0; }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(4, 8, 17, 0.88); display: flex; align-items: center; justify-content: center; z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.25s ease; }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-box { background: #111c30; border: 2px solid #ecc94b; border-radius: 12px; padding: 22px 26px; max-width: 880px; width: 94%; max-height: 88vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.6); }
+        .modal-title { font-size: 1.25rem; font-weight: bold; color: #ecc94b; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .modal-body-text { font-size: 0.92rem; line-height: 1.6; color: #e2e8f0; text-align: left; }
+        .modal-btn-row { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+        .btn-modal-close { background: #ed8936; color: white; border: none; padding: 9px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+
+        label { font-weight: 600; margin-bottom: 5px; display: block; color: #a0aec0; font-size: 0.88rem; }
+        input[type="text"], select { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #1a2e4c; border-radius: 6px; box-sizing: border-box; background: #070d19; color: white; }
+        
+        .voice-controls-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        .btn-voice { padding: 11px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; color: white; font-size: 0.92rem; }
+        .btn-listen { background: var(--voice); }
+        .btn-tts-toggle { background: #2f855a; transition: background 0.2s; }
+        .btn-tts-toggle.muted { background: #718096; }
+
+        .btn-action { background: var(--secondary); color: white; border: none; padding: 13px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 6px; font-size: 0.98rem; transition: background-color 0.2s ease; width: 100%; }
+        .btn-action:hover { background: #235a94; }
+        
+        textarea { width: 100%; padding: 10px; border: 1px solid #1a2e4c; border-radius: 6px; background: #070d19; color: white; resize: vertical; height: 80px; box-sizing: border-box; margin-bottom: 10px; font-family: inherit; font-size: 0.92rem; }
+        
+        .terminal-container { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+        .response-terminal { background: #040811; color: #aeecfc; padding: 16px; border-radius: 8px; font-family: 'Consolas', monospace; min-height: 220px; max-height: 380px; overflow-y: auto; white-space: pre-wrap; border: 1px solid #1a2e4c; box-sizing: border-box; line-height: 1.5; font-size: 0.88rem; }
+        
+        .evidence-viewer-card {
+            background: #070d19; border: 2px solid #ecc94b; border-radius: 12px;
+            padding: 18px; margin-top: 20px; display: block; width: 100%; box-sizing: border-box;
+        }
+        .evidence-header {
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid #1a2e4c; padding-bottom: 10px; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;
+        }
+        .evidence-title { font-weight: bold; color: #ecc94b; font-size: 1.05rem; }
+        
+        .pdf-canvas-container {
+            width: 100%; min-height: 550px; max-height: 85vh; overflow: auto;
+            border: 1px solid #2b6cb0; border-radius: 8px; background: #1a2638;
+            display: flex; justify-content: center; align-items: flex-start; padding: 16px;
+            box-sizing: border-box; box-shadow: inset 0 0 15px rgba(0,0,0,0.6);
+        }
+        canvas { box-shadow: 0 6px 20px rgba(0,0,0,0.8); border-radius: 4px; background: #ffffff; }
+
+        .viewer-controls {
+            display: flex; gap: 10px; align-items: center; justify-content: center;
+            width: 100%; margin-top: 14px; flex-wrap: wrap;
+        }
+        .btn-page-nav {
+            background: #2b6cb0; color: white; border: none; padding: 7px 14px;
+            border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.85rem; transition: background 0.2s;
+        }
+        .btn-page-nav:hover { background: #3182ce; }
+        .btn-page-nav:disabled { background: #4a5568; cursor: not-allowed; }
+        .page-counter-label { font-size: 0.92rem; color: #ecc94b; font-weight: bold; }
+
+        .choices-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .btn-choice {
+            background: linear-gradient(135deg, #2b6cb0 0%, #1a365d 100%);
+            color: white; border: 2px solid #63b3ed; padding: 9px 10px;
+            border-radius: 8px; font-weight: bold; font-size: 0.78rem; cursor: pointer;
+            box-shadow: 0 4px 12px rgba(43, 108, 176, 0.3);
+            transition: all 0.2s ease; text-align: center;
+        }
+        .btn-choice:hover { background: linear-gradient(135deg, #3182ce 0%, #2b6cb0 100%); transform: translateY(-1px); }
+
+        .btn-choice-alt {
+            background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+            border-color: #68d391;
+            box-shadow: 0 4px 12px rgba(56, 161, 105, 0.3);
+        }
+        .btn-choice-alt:hover { background: linear-gradient(135deg, #2f855a 100%, #22543d 100%); }
+
+        .btn-repeat {
+            background: linear-gradient(135deg, #d69e2e 0%, #b7791f 100%);
+            border-color: #f6e05e;
+            box-shadow: 0 4px 12px rgba(214, 158, 46, 0.3);
+        }
+
+        .bullet-list-container {
+            margin-top: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .footer { background: #070d19; color: #a0aec0; padding: 18px 25px; text-align: center; font-size: 0.85rem; border-top: 4px solid var(--primary); margin-top: auto; }
+        .voice-settings { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; background: linear-gradient(135deg,#0b1729,#142844); border: 1px solid #345477; border-radius: 10px; padding: 13px; margin: 10px 0 12px; }
+        .voice-settings label { color: #d9e8fa; margin-bottom: 6px; }
+        .voice-settings select { margin: 0; min-height: 40px; border-color: #496b91; }
+        .speed-row { grid-column: 1/-1; display: flex; align-items: center; gap: 12px; }
+        .speed-row input { flex: 1; accent-color: #ecc94b; }
+        .speed-value { color: #ffdc72; font-weight: 800; min-width: 42px; text-align: right; }
+    </style>
+</head>
+<body>
+    <!-- HELP MODAL -->
+    <div class="modal-overlay" id="guideModalOverlay">
+        <div class="modal-box">
+            <div class="modal-title">📖 Research Guide - AI Acharya & Offline Manual</div>
+            <div class="modal-body-text">
+                <div style="background: rgba(236, 201, 75, 0.15); border-left: 4px solid #ecc94b; padding: 12px; border-radius: 4px; margin-bottom: 14px;">
+                    🎓 <strong>GARRF AI Acharya — 100% Offline & Private Application:</strong><br><br>
+                    🔒 <strong>Local Data Security:</strong> This application runs entirely within your web browser. Your uploaded textbooks, scanned PDFs, handwritten notes, journals, and research papers never leave your device, are never uploaded anywhere, and remain 100% secure.<br><br>
+                    👁️ <strong>Scanned & Handwritten Notes (OCR):</strong> If you upload scanned documents or handwritten pages, AI Acharya automatically runs local Optical Character Recognition (OCR) to read the handwriting and images directly!<br><br>
+                    🔖 <strong>How to Bookmark:</strong> Press <code>Ctrl+D</code> (Windows) or <code>Cmd+D</code> (Mac) to bookmark this web app.<br><br>
+                    🏷️ <strong>Customizing Course Titles:</strong> Type any subject or book name in the <i>"Course Name / Research Subject"</i> input box to retitle your study session. Settings and titles are saved automatically locally.<br><br>
+                    🗣️ <strong>Voice Selection & Natural Audio:</strong> Select your preferred speaker voice (Indian, US, or UK English, male or female) under the speech settings dropdown.<br><br>
+                    ▶️ <strong>Continue Reading Control:</strong> Click <strong>"▶ Continue Reading"</strong> after each statement to have AI Acharya read step-by-step with the caricature following along!
+                </div>
+            </div>
+            <div class="modal-btn-row">
+                <button class="btn-guide" onclick="bookmarkWebApp()" style="background:#2b6cb0; color:white;">⭐ Bookmark This App</button>
+                <button class="btn-modal-close" onclick="closeGuideModal()">Got It, Let's Study</button>
+            </div>
+        </div>
+    </div>
+
+    <header class="header">
+        <div class="brand-container">
+            <div class="top-header-row">
+                <div class="brand-left-group">
+                    <div class="logo-container"><img src="logo.jpeg" alt="GARRF logo" onerror="this.style.display='none';this.parentElement.textContent='GARRF';"></div>
+                    <h1 class="foundation-title">Gopalkrishna Advanced Rural Research Foundation</h1>
+                </div>
+                <div class="flags-container">
+                    <span class="flag-badge">🇮🇳 India</span>
+                    <span class="flag-badge">🇸🇬 Singapore</span>
+                </div>
+                <div class="header-action-buttons">
+                    <button class="btn-guide" onclick="bookmarkWebApp()" style="background:#2b6cb0; color:white;">⭐ Bookmark</button>
+                    <button class="btn-guide" onclick="openGuideModal()">❓ HELP & OFFLINE GUIDE</button>
+                </div>
+            </div>
+            <div class="sub-header-line">
+                <h2 class="acharya-title" id="brandTitle">Research Guide - AI Acharya</h2>
+            </div>
+            <p class="tagline">Upload your textbook, journal, or conference paper, and let us study it together offline.</p>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <!-- Settings & Controls Panel -->
+        <section class="card">
+            <h2>📚 Research Paper & Textbook Workspace</h2>
+
+            <label for="courseCodeInput">Course Name / Research Subject</label>
+            <input type="text" id="courseCodeInput" placeholder="e.g. Basic Mechanical Engineering - Thermodynamics" oninput="updateCourseExtension(this.value)">
+
+            <label>🎨 Studio Theme Color</label>
+            <div class="color-palette-container">
+                <div class="swatches-row">
+                    <div class="color-swatch" style="background: #0f3057;" onclick="applyPresetTheme('#0f3057', this)"></div>
+                    <div class="color-swatch" style="background: #1c4532;" onclick="applyPresetTheme('#1c4532', this)"></div>
+                    <div class="color-swatch" style="background: #5c1d24;" onclick="applyPresetTheme('#5c1d24', this)"></div>
+                    <div class="color-swatch" style="background: #234e52;" onclick="applyPresetTheme('#234e52', this)"></div>
+                    <div class="color-swatch" style="background: #44337a;" onclick="applyPresetTheme('#44337a', this)"></div>
+                    <div class="color-swatch active" style="background: #744210;" onclick="applyPresetTheme('#744210', this)"></div>
+                </div>
+                <input type="color" id="themeColorPicker" class="custom-color-input" value="#744210" onchange="applyCustomTheme(this.value)">
+            </div>
+
+            <label>📂 Upload Textbook, Scanned Notes, or Research Paper</label>
+            <div style="background:#070d19; padding:15px; border-radius:8px; border:1px solid #2b6cb0; margin-bottom:14px; display:flex; flex-direction:column; gap:12px;">
+                <div>
+                    <label for="singleFileInput" style="font-weight:bold; font-size:0.95rem; color:#ecc94b; margin-bottom:4px;">Select 1 PDF or Word Document</label>
+                    <input type="file" id="singleFileInput" accept=".pdf,.docx" style="width:100%; background:#111c30; color:#e2e8f0; padding:8px; border:2px solid #ecc94b; border-radius:6px; cursor:pointer;">
+                    <div class="file-hint">Supports scanned PDFs & handwritten notes via local OCR! Processed 100% securely in your browser.</div>
+                </div>
+                <div style="margin-top:4px;">
+                    <button class="btn-action" style="background:#38a169; margin-top:0;" onclick="loadSinglePdfFile()">⚡ Load Document & Start Studying</button>
+                </div>
+            </div>
+
+            <label for="queryInput">Ask Professor a Question</label>
+            <textarea id="queryInput" placeholder="Type a specific question or prompt (e.g. 'Explain the first law of thermodynamics')..."></textarea>
+            
+            <div class="voice-controls-row">
+                <button class="btn-voice btn-listen" id="voiceInputBtn" onclick="toggleSpeechRecognition()">🎤 Voice Input</button>
+                <button class="btn-voice btn-tts-toggle" id="voiceOutputBtn" onclick="toggleVoiceOutput()">🔊 Voice: ON</button>
+            </div>
+            
+            <div class="voice-settings" aria-label="Speech preferences">
+                <div>
+                    <label for="englishAccent">🌍 English accent</label>
+                    <select id="englishAccent" onchange="refreshVoiceChoices()">
+                        <option value="en-IN" selected>Indian English</option>
+                        <option value="en-US">US English</option>
+                        <option value="en-GB">UK English</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="voiceChoice">🎙️ Choose Voice</label>
+                    <select id="voiceChoice"><option value="">Default System Voice</option></select>
+                </div>
+                <div class="speed-row">
+                    <label for="speechSpeed" style="margin:0;white-space:nowrap;">🐢 Speech speed</label>
+                    <input type="range" id="speechSpeed" min="0.65" max="1.35" step="0.05" value="0.88" oninput="document.getElementById('speedValue').textContent=Number(this.value).toFixed(2)+'×'">
+                    <span class="speed-value" id="speedValue">0.88×</span>
+                </div>
+            </div>
+
+            <button class="btn-action" onclick="submitToAcharya()">⚡ Ask Question</button>
+        </section>
+
+        <!-- Avatar & Output Terminal -->
+        <section class="card">
+            <div class="robot-display-box" id="robotDisplay">
+                <div class="bot-branding-center">
+                    <span class="bot-brand-garrf">GARRF</span>
+                    <span class="bot-brand-subtitle">AI Acharya • Research Guide</span>
+                </div>
+
+                <div class="robot-arms"><div class="robot-arm left"></div><div class="robot-arm right"></div></div>
+                <div class="robot-head">
+                    <div class="robot-headphones"></div>
+                    <div class="ear-pad left"></div>
+                    <div class="ear-pad right"></div>
+                    <div class="robot-face">
+                        <div class="robot-eyes-row">
+                            <div class="robot-eye" id="eyeL"></div>
+                            <div class="robot-eye" id="eyeR"></div>
+                        </div>
+                        <div class="robot-mouth" id="botMouth"></div>
+                    </div>
+                </div>
+
+                <div class="robot-body"><div class="robot-chest-plate"></div></div>
+                <div class="robot-legs"><div class="robot-leg"></div><div class="robot-leg"></div></div>
+                <div class="bot-status-text" id="botStatusLabel">Status: Ready</div>
+            </div>
+
+            <h2>📊 Live Analytical Terminal</h2>
+            <div class="terminal-container">
+                <div class="response-terminal" id="terminalOutput">Studio Active. Upload a textbook or research paper to begin offline studying together.</div>
+            </div>
+        </section>
+
+        <!-- DUAL-SCREEN CLASSROOM -->
+        <section class="evidence-viewer-card full-width" id="evidenceViewer">
+            <div class="evidence-header">
+                <span class="evidence-title">📚 Synchronized Dual-Screen Classroom (Screen 1 & Screen 2 In Tune)</span>
+                <span style="font-size:0.85rem; background:#2b6cb0; color:#fff; padding:4px 10px; border-radius:4px; font-weight:bold;">Semantic Sync Active</span>
+            </div>
+            
+            <div class="evidence-content" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <!-- Screen 1 -->
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <div style="font-size: 0.92rem; font-weight: bold; color: #ecc94b;" id="screen1Title">📄 Screen 1: Original Document (Page 1)</div>
+                    <div id="singleCanvasWrapper" class="pdf-canvas-container" style="min-height: 520px;">
+                        <canvas id="pdfPageCanvas"></canvas>
+                    </div>
+                </div>
+
+                <!-- Screen 2 -->
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <div style="font-size: 0.92rem; font-weight: bold; color: #48bb78;" id="screen2Title">🎓 Screen 2: AI Acharya's Live Blackboard</div>
+                    <div class="blackboard" id="blackboardTerminal">
+                        <div class="blackboard-caricature" id="blackboardCaricature" style="left: 12px; top: 12px;">🧑‍🎓</div>
+                        <div class="chalk-line chalk-yellow"><strong id="blackboardLessonHeader">AI ACHARYA • LESSON</strong></div>
+                        <div class="chalk-line chalk-white">Blackboard standby. Upload your document and begin learning.</div>
+                    </div>
+                    
+                    <!-- CONTINUE READING BUTTON -->
+                    <button class="btn-action" id="continueReadingBtn" onclick="continueReadingNextStatement()" style="background:#d69e2e; color:#0b1426; font-weight:bold; display:none;">▶ Continue Reading (Next Statement)</button>
+
+                    <button class="btn-action summary-btn" id="summaryDownloadBtn" onclick="downloadThreePageSummary()" disabled>📄 RESEARCH FINDINGS OF THE ARTICLE — Download 3-page Word summary</button>
+                    <div class="choices-grid" id="dynamicButtonsContainer">
+                        <button class="btn-choice">⏳ Waiting for Document Upload...</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="viewer-controls" id="pdfControls" style="display:flex;">
+                <button class="btn-page-nav" onclick="changeViewerPage(-1)">◀ Previous Page</button>
+                <span class="page-counter-label" id="viewerPageLabel">Page 1 / 1</span>
+                <button class="btn-page-nav" onclick="changeViewerPage(1)">Next Page ▶</button>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        © 2026 Gopalkrishna Advanced Rural Research Foundation (GARRF), India & Singapore. Prof. AI Acharya Universal Guru Edition. 100% Client-Side Privacy & Offline Capable.
+    </footer>
+
+    <script>
+        pdfjsLib.GlobalWorkerOptions.disableWorker = true;
+        let okfKnowledgeNodes = [];
+        let currentViewerPdfDoc = null;
+        let currentViewerPageIndex = 1;
+        let currentViewerTotalPages = 1;
+        let loadedPdfFile = null;
+        let lastSpokenText = "";
+        let extractedDocumentText = "";
+        let documentTitle = "Research document";
+        
+        let activeStatementsQueue = [];
+        let activeStatementIndex = 0;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedCourse = localStorage.getItem('garrf_course_title');
+            if (savedCourse) {
+                document.getElementById('courseCodeInput').value = savedCourse;
+                updateCourseExtension(savedCourse);
+            }
+            const savedTheme = localStorage.getItem('garrf_theme_color');
+            if (savedTheme) {
+                applyCustomTheme(savedTheme);
+            }
+        });
+
+        function bookmarkWebApp() {
+            if (window.sidebar && window.sidebar.addPanel) {
+                window.sidebar.addPanel(document.title, window.location.href, "");
+            } else if (window.external && ('AddFavorite' in window.external)) {
+                window.external.AddFavorite(window.location.href, document.title);
+            } else {
+                alert("🔖 Press Ctrl+D (Windows) or Cmd+D (Mac) to bookmark this offline study guide!");
+            }
+        }
+
+        function openGuideModal() {
+            const modal = document.getElementById('guideModalOverlay');
+            if (modal) modal.classList.add('active');
+        }
+
+        function closeGuideModal() {
+            const modal = document.getElementById('guideModalOverlay');
+            if (modal) modal.classList.remove('active');
+        }
+
+        function applyPresetTheme(color, el) {
+            document.documentElement.style.setProperty('--course-theme', color);
+            document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+            if(el) el.classList.add('active');
+            localStorage.setItem('garrf_theme_color', color);
+        }
+
+        function applyCustomTheme(color) {
+            document.documentElement.style.setProperty('--course-theme', color);
+            localStorage.setItem('garrf_theme_color', color);
+        }
+
+        async function loadSinglePdfFile() {
+            const fileInput = document.getElementById('singleFileInput');
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert("⚠️ Please select exactly 1 PDF or Word file first!");
+                return;
+            }
+
+            loadedPdfFile = fileInput.files[0];
+            documentTitle = loadedPdfFile.name.replace(/\.[^.]+$/, '');
+            document.title = `AI Acharya - ${documentTitle}`;
+            const statusLabel = document.getElementById('botStatusLabel');
+            if(statusLabel) statusLabel.innerText = "Status: Parsing Document & Running OCR...";
+            
+            try {
+                const arrayBuffer = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.onerror = (e) => reject(e);
+                    reader.readAsArrayBuffer(loadedPdfFile);
+                });
+
+                okfKnowledgeNodes = [];
+                currentViewerPdfDoc = null;
+
+                if (loadedPdfFile.name.toLowerCase().endsWith('.pdf')) {
+                    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+                    currentViewerPdfDoc = await loadingTask.promise;
+                    currentViewerTotalPages = currentViewerPdfDoc.numPages;
+                    
+                    for (let pageNum = 1; pageNum <= currentViewerTotalPages; pageNum++) {
+                        const page = await currentViewerPdfDoc.getPage(pageNum);
+                        const textContent = await page.getTextContent();
+                        let pageText = textContent.items.map(it => it.str).join(' ');
+
+                        // If page text is empty (scanned image or handwritten notes), run Tesseract OCR on canvas render
+                        if (!pageText || pageText.trim().length < 15) {
+                            if (statusLabel) statusLabel.innerText = `Status: Running Local OCR on Page ${pageNum}/${currentViewerTotalPages}...`;
+                            const viewport = page.getViewport({ scale: 1.5 });
+                            const canvas = document.createElement('canvas');
+                            canvas.width = viewport.width;
+                            canvas.height = viewport.height;
+                            const ctx = canvas.getContext('2d');
+                            await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+                            
+                            try {
+                                const ocrResult = await Tesseract.recognize(canvas, 'eng');
+                                if (ocrResult && ocrResult.data && ocrResult.data.text) {
+                                    pageText = ocrResult.data.text;
+                                }
+                            } catch(ocrErr) {
+                                console.warn("OCR notice for page", pageNum, ocrErr);
+                            }
+                        }
+
+                        okfKnowledgeNodes.push({ page: pageNum, text: pageText });
+                    }
+                    currentViewerPageIndex = 1;
+                    await renderDocumentPageOnCanvas(loadedPdfFile, 1);
+                    document.getElementById('pdfControls').style.display = 'flex';
+                } else if (loadedPdfFile.name.toLowerCase().endsWith('.docx')) {
+                    if (!window.mammoth) throw new Error('Word document parser did not load.');
+                    const result = await mammoth.extractRawText({ arrayBuffer });
+                    const words = result.value.split(/\s+/);
+                    const pageSize = 650;
+                    currentViewerTotalPages = Math.max(1, Math.ceil(words.length / pageSize));
+                    for (let i = 0; i < currentViewerTotalPages; i++) {
+                        okfKnowledgeNodes.push({ page: i + 1, text: words.slice(i * pageSize, (i + 1) * pageSize).join(' ') });
+                    }
+                    currentViewerPageIndex = 1;
+                    document.getElementById('singleCanvasWrapper').innerHTML = '<div style="color:#fff;padding:22px;line-height:1.8">Word document loaded. Text available for AI Acharya study.</div>';
+                    document.getElementById('viewerPageLabel').innerText = `Section 1 / ${currentViewerTotalPages}`;
+                    document.getElementById('pdfControls').style.display = 'flex';
+                }
+
+                extractedDocumentText = okfKnowledgeNodes.map(n => n.text).join('\n\n');
+                document.getElementById('summaryDownloadBtn').disabled = !extractedDocumentText.trim();
+                if(statusLabel) statusLabel.innerText = "Status: Class in Session";
+                teachPageContent(1);
+                alert(`✅ Successfully processed "${loadedPdfFile.name}" (with OCR support). Welcome to your offline study session!`);
+            } catch (err) {
+                console.error(err);
+                alert("❌ Error processing document. Details: " + err.message);
+            }
+        }
+
+        async function renderDocumentPageOnCanvas(file, targetPage) {
+            if (!currentViewerPdfDoc) return;
+            currentViewerPageIndex = Math.min(Math.max(1, targetPage), currentViewerTotalPages);
+            
+            const node = okfKnowledgeNodes.find(n => n.page === currentViewerPageIndex);
+            let displayLabel = `Page ${currentViewerPageIndex} / ${currentViewerTotalPages}`;
+            if (node && node.text) {
+                const pageNumMatch = node.text.match(/\-\s*([0-9ivxlc]+)\s*\-/i);
+                if (pageNumMatch && pageNumMatch[1]) {
+                    displayLabel = `Page ${pageNumMatch[1]} (Doc Index ${currentViewerPageIndex} / ${currentViewerTotalPages})`;
+                }
+            }
+            document.getElementById('viewerPageLabel').innerText = displayLabel;
+            document.getElementById('screen1Title').innerText = `📄 Screen 1: Original Document (Doc Page ${currentViewerPageIndex})`;
+            await drawCurrentPdfPage();
+        }
+
+        async function drawCurrentPdfPage() {
+            if (!currentViewerPdfDoc) return;
+            const page = await currentViewerPdfDoc.getPage(currentViewerPageIndex);
+            const canvas = document.getElementById('pdfPageCanvas');
+            const ctx = canvas.getContext('2d');
+            const viewport = page.getViewport({ scale: 1.2, rotation: page.rotate || 0 });
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+            await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+        }
+
+        async function changeViewerPage(offset) {
+            if (!currentViewerPdfDoc) return;
+            let target = currentViewerPageIndex + offset;
+            if (target < 1) target = currentViewerTotalPages;
+            if (target > currentViewerTotalPages) target = 1;
+            currentViewerPageIndex = target;
+            await renderDocumentPageOnCanvas(loadedPdfFile, currentViewerPageIndex);
+            teachPageContent(currentViewerPageIndex);
+        }
+
+        function isCoverOrTitlePage(text) {
+            if (!text) return true;
+            const clean = text.trim();
+            if (clean.length < 180 || (/first edition|authors|publisher|isbn|contents|preface/i.test(clean) && clean.length < 400)) {
+                return true;
+            }
+            return false;
+        }
+
+        function getCompleteSentences(text, maxSentences = 8) {
+            if (!text) return [];
+            let clean = text.replace(/\b\d{4}-\d{4}\/\d{2}\/\d+[\+\d]*\s*\$\s*\d+[\d\.]*\s*©\s*\d{4}[^\.]*\./gi, ' ');
+            clean = clean.replace(/\s+/g, ' ').trim();
+            const matches = clean.match(/[^.!?]+[.!?]+/g) || [clean];
+            
+            return matches.map(s => {
+                let trimmed = s.trim();
+                trimmed = trimmed.replace(/^(\d+(\.\d+)*\.?\s*)+/, '');
+                return trimmed;
+            }).filter(s => s.length > 3).slice(0, maxSentences);
+        }
+
+        function extractAbstractText(pageText) {
+            const absMatch = pageText.match(/abstract[\s\-\:]+(.+?)(?=(introduction|keywords|1\.|index terms|$))/i);
+            if (absMatch && absMatch[1] && absMatch[1].trim().length > 20) {
+                return absMatch[1].trim();
+            }
+            return pageText.trim();
+        }
+
+        function extractIntroductionText(pageText) {
+            const introMatch = pageText.match(/(introduction|1\.\s*introduction)[\s\-\:]+(.+?)(?=(2\.|background|related|$))/i);
+            if (introMatch && introMatch[2] && introMatch[2].trim().length > 20) {
+                return introMatch[2].trim();
+            }
+            return pageText.trim();
+        }
+
+        function extractTableSummary(pageText) {
+            const tableMatch = pageText.match(/(table\s*\d+[\s\S]{1,400})/i);
+            if (tableMatch && tableMatch[1]) {
+                const sents = getCompleteSentences(tableMatch[1], 4);
+                if (sents.length > 0) return sents.join(' ');
+            }
+            return "Detailed tabular data presenting parameters, comparisons, or experimental values in this section.";
+        }
+
+        function extractFigureSummary(pageText, pageNum) {
+            const figMatch = pageText.match(/(?:fig\.?|figure)\s*(\d+)[\s\:\.][^$\n]{1,250}/i);
+            if (figMatch && figMatch[1]) {
+                const figNum = figMatch[1];
+                return `Figure ${figNum} is referenced on this page (illustrated near page ${pageNum}). It diagrams system components, operational cycles, or experimental setups.`;
+            }
+            return "Visual schematic or engineering diagram illustrating system construction or thermodynamic behavior.";
+        }
+
+        function extractChapterEquation(pageText) {
+            const eqMatch = pageText.match(/([A-Z][\s\w\(\)\+\-\/\*\=\,\.\^\\]{10,}\s*[\=\+\-\/]\s*[\s\w\(\)\+\-\/\*\=\,\.\^\\]{10,})/);
+            if (eqMatch && eqMatch[1]) {
+                return `$$ ${eqMatch[1].trim()} $$`;
+            }
+            return "$$ \\Delta U = Q - W $$";
+        }
+
+        function formatAsStatements(text, maxItems = 8) {
+            const sentences = getCompleteSentences(text, maxItems);
+            if (sentences.length === 0) return [text];
+            return sentences;
+        }
+
+        function prepareSpeechPhonetics(text) {
+            if (!text) return "";
+            let t = text;
+            t = t.replace(/\b1\b/g, "one").replace(/\b2\b/g, "two").replace(/\b3\b/g, "three")
+                 .replace(/\b4\b/g, "four").replace(/\b5\b/g, "five").replace(/\b6\b/g, "six")
+                 .replace(/\b7\b/g, "seven").replace(/\b8\b/g, "eight").replace(/\b9\b/g, "nine").replace(/\b10\b/g, "ten");
+
+            const lexiconMap = [
+                { regex: /electromechanical/gi, replacement: "electro mechanical" },
+                { regex: /thermodynamics/gi, replacement: "thermo dynamics" },
+                { regex: /enthalpy/gi, replacement: "en thal py" }
+            ];
+            lexiconMap.forEach(item => { t = t.replace(item.regex, item.replacement); });
+            return t;
+        }
+
+        function teachPageContent(pageNum) {
+            const node = okfKnowledgeNodes.find(n => n.page === pageNum);
+            const pageText = node ? node.text : "";
+
+            const userCourseTitle = document.getElementById('courseCodeInput').value.trim();
+            const headerTitleText = userCourseTitle ? `AI ACHARYA • ${userCourseTitle.toUpperCase()}` : "AI ACHARYA • LESSON";
+
+            let teachingHTML = "";
+            let speechText = "";
+
+            if (isCoverOrTitlePage(pageText) && pageNum === 1) {
+                teachingHTML = `<div class="chalk-line chalk-yellow"><strong id="blackboardLessonHeader">${headerTitleText} (PAGE ${pageNum})</strong></div><br>` +
+                               `<div class="chalk-line chalk-white">Scanned document or cover page loaded successfully via OCR.</div><br>` +
+                               `<div class="chalk-line chalk-green">Click <strong>"▶ Continue Reading"</strong> below to study the recognized text statement by statement!</div>`;
+                speechText = `Scanned document loaded successfully. Let us study the recognized text.`;
+                activeStatementsQueue = formatAsStatements(pageText, 6);
+            } else {
+                let greeting = (pageNum === 1) ? "Greetings! I am Professor AI Acharya. Today we shall study your document together. " : "";
+                const rawText = extractIntroductionText(pageText) || pageText.substring(0, 500);
+                activeStatementsQueue = formatAsStatements(rawText, 6);
+                
+                teachingHTML = `<div class="chalk-line chalk-yellow"><strong id="blackboardLessonHeader">${headerTitleText}</strong></div><br>` +
+                               `<div class="chalk-line chalk-green">${greeting}I have reviewed this page. Click "Continue Reading" below to read statement by statement.</div>`;
+                speechText = `${greeting}I have reviewed this page. Let us examine the statements one by one.`;
+            }
+
+            activeStatementIndex = 0;
+            lastSpokenText = speechText;
+
+            let btnList = [];
+            const hasAbstract = /abstract/i.test(pageText);
+            const hasIntro = /(introduction|background|thermodynamic|unit|chapter)/i.test(pageText);
+            const hasTable = /\btable\s*\d+/i.test(pageText);
+            const hasRealFigure = /(?:fig\.?|figure)\s*\d+/i.test(pageText);
+            const hasEquations = pageText.length > 30;
+
+            if (hasAbstract) btnList.push(`<button class="btn-choice" onclick="runPdfAction('abstract')">📖 Explain Abstract</button>`);
+            if (hasIntro) btnList.push(`<button class="btn-choice" onclick="runPdfAction('intro')">📜 Section Overview</button>`);
+            if (hasTable) btnList.push(`<button class="btn-choice" onclick="runPdfAction('table')">📊 Summarize Table</button>`);
+            if (hasRealFigure) btnList.push(`<button class="btn-choice" onclick="runPdfAction('figures')">📊 Analyze Figure</button>`);
+            if (hasEquations) btnList.push(`<button class="btn-choice" onclick="runPdfAction('equations')">📐 Governing Equations</button>`);
+            
+            btnList.push(`<button class="btn-choice" onclick="runPdfAction('viva')">🎓 Ask Page Viva Question</button>`);
+            btnList.push(`<button class="btn-choice btn-repeat" onclick="repeatLastSpeech()">🔁 Repeat Explanation</button>`);
+            btnList.push(`<button class="btn-choice btn-choice-alt" onclick="changeViewerPage(-1)">◀ Previous Page</button>`);
+            btnList.push(`<button class="btn-choice btn-choice-alt" onclick="changeViewerPage(1)">▶ Next Page</button>`);
+
+            document.getElementById('dynamicButtonsContainer').innerHTML = `<div class="choices-grid">` + btnList.join("") + `</div>`;
+            document.getElementById('continueReadingBtn').style.display = 'block';
+
+            const blackboard = document.getElementById('blackboardTerminal');
+            blackboard.innerHTML = `<div class="blackboard-caricature" id="blackboardCaricature" style="left: 12px; top: 12px;">🧑‍🎓</div>` + teachingHTML;
+            speakText(speechText);
+        }
+
+        function continueReadingNextStatement() {
+            if (activeStatementIndex < activeStatementsQueue.length) {
+                const stmt = activeStatementsQueue[activeStatementIndex];
+                const userCourseTitle = document.getElementById('courseCodeInput').value.trim();
+                const headerTitleText = userCourseTitle ? `AI ACHARYA • ${userCourseTitle.toUpperCase()}` : "AI ACHARYA • LESSON";
+
+                const blackboard = document.getElementById('blackboardTerminal');
+                let html = `<div class="blackboard-caricature" id="blackboardCaricature" style="left: 12px; top: 12px;">🧑‍🎓</div>` +
+                           `<div class="chalk-line chalk-yellow"><strong id="blackboardLessonHeader">✦ ${headerTitleText}</strong></div>`;
+                
+                activeStatementsQueue.forEach((s, idx) => {
+                    let cls = "chalk-statement";
+                    if (idx < activeStatementIndex) cls += " read";
+                    else if (idx === activeStatementIndex) cls += " active";
+                    html += `<div class="${cls}">• ${escapeHtml(s)}</div>`;
+                });
+
+                blackboard.innerHTML = html;
+                updateCaricaturePosition();
+
+                lastSpokenText = stmt;
+                speakStatementWithTracking(stmt);
+                activeStatementIndex++;
+
+                if (activeStatementIndex >= activeStatementsQueue.length) {
+                    document.getElementById('continueReadingBtn').textContent = "✔ Section Completed (Click Next Page)";
+                }
+            } else {
+                alert("ℹ️ Reached end of current statement queue. Click 'Next Page ▶' for the next page.");
+            }
+        }
+
+        function runPdfAction(actionType) {
+            const page = currentViewerPageIndex;
+            const node = okfKnowledgeNodes.find(n => n.page === page);
+            const text = node ? node.text : "";
+            
+            let statements = [];
+            let speech = "";
+
+            if (actionType === 'abstract' || actionType === 'intro') {
+                const rawText = actionType === 'abstract' ? extractAbstractText(text) : extractIntroductionText(text);
+                statements = getCompleteSentences(rawText, 6);
+                speech = `Let us examine this section statement by statement.`;
+            } else if (actionType === 'table') {
+                const rawTable = extractTableSummary(text);
+                statements = [rawTable];
+                speech = `Examining tabular data. ${rawTable}`;
+            } else if (actionType === 'figures') {
+                const rawFig = extractFigureSummary(text, page);
+                statements = [rawFig];
+                speech = `Analyzing figures referenced here. ${rawFig}`;
+            } else if (actionType === 'equations') {
+                const latexEq = extractChapterEquation(text);
+                statements = ["Governing Equation:", latexEq, "These mathematical expressions define the physical principles in this section."];
+                speech = `Here are the governing mathematical equations.`;
+            } else if (actionType === 'viva') {
+                const sents = getCompleteSentences(text, 2);
+                statements = ["Viva Voce Practice:", "Q: What is the primary concept presented here?", "A: " + (sents.join(' ') || text.substring(0, 100))];
+                speech = `Here is your viva practice question.`;
+            }
+
+            if (statements.length > 0) {
+                activeStatementsQueue = statements;
+                activeStatementIndex = 0;
+                document.getElementById('continueReadingBtn').textContent = "▶ Continue Reading (Next Statement)";
+                continueReadingNextStatement();
+            }
+        }
+
+        function updateCaricaturePosition() {
+            const activeEl = document.querySelector('#blackboardTerminal .chalk-statement.active');
+            const caricature = document.getElementById('blackboardCaricature');
+            const blackboard = document.getElementById('blackboardTerminal');
+            if (activeEl && caricature && blackboard) {
+                const elRect = activeEl.getBoundingClientRect();
+                const bbRect = blackboard.getBoundingClientRect();
+                const relLeft = elRect.left - bbRect.left + blackboard.scrollLeft - 15;
+                const relTop = elRect.top - bbRect.top + blackboard.scrollTop - 5;
+                caricature.style.left = `${Math.max(6, relLeft)}px`;
+                caricature.style.top = `${Math.max(6, relTop)}px`;
+            }
+        }
+
+        function repeatLastSpeech() {
+            if (lastSpokenText) {
+                speakStatementWithTracking(lastSpokenText);
+            } else {
+                speakText("Let us continue our lesson.");
+            }
+        }
+
+        function submitToAcharya() {
+            const q = document.getElementById('queryInput').value.trim();
+            if (!q) return;
+            activeStatementsQueue = ["Your Question:", q, "Professor AI Acharya Analysis:", "This query relates to the core engineering principles covered in your uploaded document. Let us examine the principles step by step."];
+            activeStatementIndex = 0;
+            document.getElementById('continueReadingBtn').textContent = "▶ Continue Reading Answer";
+            continueReadingNextStatement();
+        }
+
+        let voiceOutputEnabled = true;
+        let availableSpeechVoices = [];
+
+        function refreshVoiceChoices() {
+            if (!('speechSynthesis' in window)) return;
+            availableSpeechVoices = window.speechSynthesis.getVoices() || [];
+            const accent = document.getElementById('englishAccent')?.value || 'en-IN';
+            const selector = document.getElementById('voiceChoice');
+            if (!selector) return;
+            const previous = selector.value;
+            const matches = availableSpeechVoices.filter(v => (v.lang || '').toLowerCase().startsWith(accent.toLowerCase()));
+            selector.innerHTML = '';
+            const fallback = document.createElement('option');
+            fallback.value = ''; fallback.textContent = 'Default Natural Voice';
+            selector.appendChild(fallback);
+            matches.forEach((v) => {
+                const opt = document.createElement('option');
+                opt.value = String(availableSpeechVoices.indexOf(v));
+                opt.textContent = `${v.name} (${v.lang})${v.default ? ' • Default' : ''}`;
+                selector.appendChild(opt);
+            });
+            if (previous && [...selector.options].some(o => o.value === previous)) selector.value = previous;
+        }
+
+        function chooseSpeechVoice(accent) {
+            const selected = document.getElementById('voiceChoice')?.value;
+            if (selected !== undefined && selected !== '') return availableSpeechVoices[Number(selected)] || null;
+            const voices = availableSpeechVoices.length ? availableSpeechVoices : window.speechSynthesis.getVoices();
+            return voices.find(v => (v.lang || '').toLowerCase().startsWith(accent.toLowerCase()))
+                || voices.find(v => (v.lang || '').toLowerCase().startsWith('en-'))
+                || voices[0] || null;
+        }
+
+        function toggleVoiceOutput() {
+            const btn = document.getElementById('voiceOutputBtn');
+            voiceOutputEnabled = !voiceOutputEnabled;
+            if (voiceOutputEnabled) {
+                btn.classList.remove('muted'); btn.style.background = '#2f855a'; btn.innerHTML = '🔊 Voice: ON';
+            } else {
+                btn.classList.add('muted'); btn.style.background = '#718096'; btn.innerHTML = '🔇 Voice: MUTED';
+                if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+                document.getElementById('robotDisplay')?.classList.remove('speaking');
+            }
+        }
+
+        function speakStatementWithTracking(text) {
+            if (!voiceOutputEnabled || !('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+            
+            const phoneticText = prepareSpeechPhonetics(text);
+            const accent = document.getElementById('englishAccent')?.value || 'en-IN';
+            const chosenVoice = chooseSpeechVoice(accent);
+            const rate = Number(document.getElementById('speechSpeed')?.value || 0.88);
+
+            const utterance = new SpeechSynthesisUtterance(phoneticText);
+            if (chosenVoice) utterance.voice = chosenVoice;
+            utterance.lang = chosenVoice?.lang || accent;
+            utterance.rate = rate;
+            utterance.pitch = 0.96;
+
+            utterance.onstart = () => {
+                document.getElementById('robotDisplay')?.classList.add('speaking');
+                const st = document.getElementById('botStatusLabel');
+                if(st) st.textContent='Status: Teaching';
+            };
+
+            utterance.onend = utterance.onerror = () => {
+                document.getElementById('robotDisplay')?.classList.remove('speaking');
+                const st = document.getElementById('botStatusLabel');
+                if(st) st.textContent='Status: Ready';
+            };
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function speakText(text) {
+            speakStatementWithTracking(text);
+        }
+
+        if ('speechSynthesis' in window) {
+            refreshVoiceChoices();
+            window.speechSynthesis.onvoiceschanged = refreshVoiceChoices;
+            setTimeout(refreshVoiceChoices, 500);
+        }
+
+        function toggleSpeechRecognition() {
+            alert("ℹ️ Voice input active. You can also click study buttons or type questions below!");
+        }
+
+        function updateCourseExtension(c) {
+            document.getElementById('brandTitle').innerText = c ? `Research Guide - ${c}` : "Research Guide - AI Acharya";
+            localStorage.setItem('garrf_course_title', c);
+            const userCourseTitle = c.trim();
+            const headerTitleText = userCourseTitle ? `AI ACHARYA • ${userCourseTitle.toUpperCase()}` : "AI ACHARYA • LESSON";
+            const el = document.getElementById('blackboardLessonHeader');
+            if (el) el.textContent = headerTitleText;
+        }
+
+        function escapeHtml(value) {
+            return String(value || '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+        }
+
+        function downloadThreePageSummary() {
+            if (!extractedDocumentText.trim()) { alert('Please load a document first.'); return; }
+            const text = extractedDocumentText.replace(/\s+/g, ' ').trim();
+            const sentences = (text.match(/[^.!?]+[.!?]+/g) || [text]).map(x => x.trim()).filter(Boolean);
+            const pick = (start, count) => (sentences.slice(start, start + count).join(' ').slice(0, 620)) || 'The uploaded document does not provide enough extractable text for this section.';
+            const keywords = [...new Set((text.toLowerCase().match(/\b[a-z][a-z-]{5,}\b/g) || []).filter(w => !['figure','table','method','results','research','study','using','based','these','those','which','their','there','where','paper'].includes(w)))].slice(0, 18);
+            const pages = [
+                {title:'DOCUMENT OVERVIEW', subtitle:'Purpose, context and central message', body:[
+                    ['Document', documentTitle],
+                    ['Overview', pick(0, 8)],
+                    ['Context and motivation', pick(8, 8)],
+                    ['Main themes identified', keywords.length ? keywords.join(', ') : 'No recurring technical terms could be extracted reliably.']
+                ]},
+                {title:'TECHNICAL CONTENT AND APPROACH', subtitle:'Concepts, methods and evidence in the uploaded source', body:[
+                    ['Technical discussion', pick(16, 12)],
+                    ['Methods / analytical approach', pick(28, 10)],
+                    ['Evidence, observations or results', pick(38, 10)],
+                    ['Important source terminology', keywords.slice(0, 10).join(', ') || 'Not clearly identifiable from extracted text.']
+                ]},
+                {title:'KEY TAKEAWAYS AND STUDY QUESTIONS', subtitle:'A guided reading summary based on the uploaded document', body:[
+                    ['Key points', pick(48, 10)],
+                    ['Concluding discussion', (sentences.slice(-8).join(' ').slice(0, 620)) || 'No conclusion could be extracted from the document text.'],
+                    ['Questions for the student', '1. What research problem does the document address?\n2. Which methods or assumptions are central to the work?\n3. What evidence supports the reported findings?\n4. What limitations or unanswered questions remain?'],
+                    ['Source note', 'This study guide is an automated, extractive summary of text available in the uploaded file. It does not independently verify claims, interpret unreadable figures, or replace a careful reading of the original publication.']
+                ]}
+            ];
+            const html = `<!doctype html><html><head><meta charset="utf-8"><title>Three-page study summary</title><style>
+            @page{size:A4;margin:20mm}body{font-family:Calibri,Arial,sans-serif;color:#202a35;font-size:11pt;line-height:1.45}
+            h1{color:#17365d;font-size:20pt;margin:0 0 5pt}h2{color:#1f6e54;font-size:13pt;border-bottom:1px solid #9ab4a8;padding-bottom:4pt;margin:15pt 0 4pt}
+            .brand{text-align:center;color:#17365d;font-size:10pt;font-weight:bold;border-bottom:2px solid #c5a64a;padding-bottom:8pt;margin-bottom:16pt}
+            .subtitle{color:#64748b;font-style:italic;margin-bottom:14pt}.note{font-size:9pt;color:#52606d;margin-top:14pt}
+            .page{page-break-after:always;min-height:250mm}.page:last-child{page-break-after:auto}p{margin:4pt 0 8pt;white-space:pre-wrap}
+            </style></head><body><div class="brand">GOPALKRISHNA ADVANCED RURAL RESEARCH FOUNDATION, INDIA & SINGAPORE (GARRF)</div>` +
+            pages.map((pg,i)=>`<section class="page"><h1>${i+1}. ${pg.title}</h1><div class="subtitle">${pg.subtitle}</div><h2>Source document</h2><p>${escapeHtml(documentTitle)}</p>`+
+            pg.body.map(([h,b])=>`<h2>${escapeHtml(h)}</h2><p>${escapeHtml(String(b).slice(0, 700))}</p>`).join('')+
+            `<p class="note">Prepared by Research Guide - AI Acharya. Content is derived from the uploaded document's extractable text.</p></section>`).join('')+
+            `</body></html>`;
+            const blob = new Blob(['\ufeff', html], {type:'application/msword'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `${documentTitle.replace(/[^a-z0-9-_]+/gi,'_')}_3-page_summary.doc`;
+            document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
