@@ -4,12 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Acharya - Research Guide</title>
-    <!-- Document Parsers, OCR & Math Renderers -->
+    <!-- Document Parsers & Math Renderers -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
@@ -731,21 +730,18 @@
             return `Visual schematic or diagram illustrating system components and boundary conditions on this page.`;
         }
 
-        // FULLY DYNAMIC & ROBUST EQUATION EXTRACTOR (Handles (1), 1, 1.1, (i), matrices/arrays cleanly)
+        // UNIVERSAL DYNAMIC EQUATION EXTRACTOR (Isolates pure math from introductory prose & formats arrays/matrices)
         function extractAllPageEquations(pageText, pageNum) {
             let equations = [];
-            // Split page text into candidate equation chunks based on parenthetical tags like (1), (1a), (10), (i)
             const matches = [...pageText.matchAll(/([^.\n;]+?)\s*(?:\(([0-9]+[a-z]?|[ivxlcm]+\.?[0-9]*)\)|\[([0-9]+)\])/gi)];
-            
             let seenSet = new Set();
 
             matches.forEach(m => {
                 let rawExpr = m[1].trim();
                 let eqTag = m[2] || m[3];
 
-                // Clean up any leading sentence prose (e.g. "Considering directions X and Z, the relationship can be written as")
                 let cleanMath = rawExpr;
-                const splitPhrases = ["written as", "given by", "derived from", "expressed as", "reduced to", "as follows", "can be"];
+                const splitPhrases = ["written as", "given by", "derived from", "expressed as", "reduced to", "as follows", "can be", "defined as"];
                 for (let phrase of splitPhrases) {
                     let idx = cleanMath.toLowerCase().indexOf(phrase);
                     if (idx !== -1) {
@@ -753,7 +749,7 @@
                     }
                 }
 
-                // Format multi-line / matrices with alignment environments if brackets/matrices are present
+                // Format arrays/matrices cleanly
                 if (cleanMath.includes('[') || cleanMath.includes(']')) {
                     cleanMath = cleanMath.replace(/\[/g, '\\begin{bmatrix}').replace(/\]/g, '\\end{bmatrix}').replace(/\//g, ' / ');
                 }
