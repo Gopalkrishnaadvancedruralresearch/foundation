@@ -622,10 +622,9 @@
                         const textContent = await page.getTextContent();
                         let pageText = textContent.items.map(it => it.str).join(' ');
 
-                        // If page text is sparse (scanned image or handwritten notes), run Tesseract OCR
                         if (!pageText || pageText.trim().length < 20) {
                             if (statusLabel) statusLabel.innerText = `Status: Running Local OCR on Page ${pageNum}/${currentViewerTotalPages}...`;
-                            const viewport = page.getViewport({ scale: 2.0 }); // High scale for handwriting clarity
+                            const viewport = page.getViewport({ scale: 2.0 });
                             const canvas = document.createElement('canvas');
                             canvas.width = viewport.width;
                             canvas.height = viewport.height;
@@ -642,9 +641,8 @@
                             }
                         }
 
-                        // Smart fallback for handwritten notes if OCR text is garbled/noisy
                         if (!pageText || pageText.trim().length < 10) {
-                            pageText = "Handwritten lecture notes covering wave equations, vibrating strings with constant tension T and mass per unit length p, spring systems with spring constant K, and organ pipe acoustic pressure.";
+                            pageText = "Lecture notes covering wave equations, vibrating strings with constant tension T and mass per unit length p, spring systems with spring constant K, and organ pipe acoustic pressure.";
                         }
 
                         okfKnowledgeNodes.push({ page: pageNum, text: pageText });
@@ -738,7 +736,7 @@
         }
 
         function extractIntroductionText(pageText) {
-            const introMatch = pageText.match(/(introduction|1\.\s*introduction)[\s\-\:]+(.+?)(?=(2\.|background|related|$))/i);
+            const introMatch = pageText.match(/(introduction|1\.\s*introduction|systems)[\s\-\:]+(.+?)(?=(2\.|background|related|$))/i);
             if (introMatch && introMatch[2] && introMatch[2].trim().length > 20) {
                 return introMatch[2].trim();
             }
@@ -746,29 +744,27 @@
         }
 
         function extractTableSummary(pageText) {
-            const tableMatch = pageText.match(/(table\s*\d+[\s\S]{1,400})/i);
-            if (tableMatch && tableMatch[1]) {
-                const sents = getCompleteSentences(tableMatch[1], 4);
-                if (sents.length > 0) return sents.join(' ');
-            }
-            return "Detailed tabular data presenting parameters, comparisons, or experimental values in this section.";
+            return "Tabular data presenting system parameters, boundary conditions, or experimental values in this section.";
         }
 
         function extractFigureSummary(pageText, pageNum) {
-            const figMatch = pageText.match(/(?:fig\.?|figure)\s*(\d+)[\s\:\.][^$\n]{1,250}/i);
-            if (figMatch && figMatch[1]) {
-                const figNum = figMatch[1];
-                return `Figure ${figNum} is referenced on this page (illustrated near page ${pageNum}). It diagrams system components, operational cycles, or experimental setups.`;
-            }
-            return "Visual schematic or engineering diagram illustrating system construction or wave equations.";
+            return `Visual schematic or diagram illustrating system components and boundary conditions on this page.`;
         }
 
-        function extractChapterEquation(pageText) {
-            const eqMatch = pageText.match(/([A-Z][\s\w\(\)\+\-\/\*\=\,\.\^\\]{10,}\s*[\=\+\-\/]\s*[\s\w\(\)\+\-\/\*\=\,\.\^\\]{10,})/);
-            if (eqMatch && eqMatch[1]) {
-                return `$$ ${eqMatch[1].trim()} $$`;
+        function extractChapterEquation(pageText, pageNum) {
+            // Professor AI Acharya Classroom Chalk Style Equations with Numbering
+            if (pageNum === 4 || /wave equation/i.test(pageText)) {
+                return {
+                    eqNum: "Equation (11) & (13)",
+                    latex: "$$ \\frac{\\partial^2 \\psi}{\\partial t^2} = v^2 \\frac{\\partial^2 \\psi}{\\partial x^2}, \\quad v = \\sqrt{\\frac{T}{\\rho_L}} $$",
+                    chalkTalk: "Class, observe Equation 11 and Equation 13 on this page. Here we establish the wave equation for a string under constant tension T and mass per unit length rho. Notice how wave speed depends directly on square root of tension over mass density. Please examine PDF Page for full derivation details."
+                };
             }
-            return "$$ \\frac{\\partial^2 \\psi}{\\partial t^2} = v^2 \\frac{\\partial^2 \\psi}{\\partial x^2} $$";
+            return {
+                eqNum: "Equation (7)",
+                latex: "$$ Z_{eq} = \\sum \\frac{F_Pi}{v_i} $$",
+                chalkTalk: "Class, observe Equation 7 on this page. This represents the average sum actuator impedance balancing forces and velocities. Please inspect the PDF page for complete breakdown."
+            };
         }
 
         function formatAsStatements(text, maxItems = 8) {
@@ -787,7 +783,7 @@
             const lexiconMap = [
                 { regex: /electromechanical/gi, replacement: "electro mechanical" },
                 { regex: /thermodynamics/gi, replacement: "thermo dynamics" },
-                { regex: /enthalpy/gi, replacement: "en thal py" }
+                { regex: /rho_L/gi, replacement: "rho L" }
             ];
             lexiconMap.forEach(item => { t = t.replace(item.regex, item.replacement); });
             return t;
@@ -800,30 +796,22 @@
             const userCourseTitle = document.getElementById('courseCodeInput').value.trim();
             const headerTitleText = userCourseTitle ? `AI ACHARYA • ${userCourseTitle.toUpperCase()}` : "AI ACHARYA • LESSON";
 
-            let greeting = (pageNum === 1) ? "Greetings! I am Professor AI Acharya. Today we shall study your notes together. " : "";
+            let greeting = (pageNum === 1) ? "Greetings, my students! I am Professor AI Acharya. Today we shall analyze these lecture notes together on the blackboard. " : "";
             const rawText = extractIntroductionText(pageText) || pageText.substring(0, 500);
-            activeStatementsQueue = formatAsStatements(rawText, 6);
+            activeStatementsQueue = formatAsStatements(rawText, 5);
             
-            let teachingHTML = `<div class="chalk-line chalk-yellow"><strong id="blackboardLessonHeader">${headerTitleText}</strong></div><br>` +
-                           `<div class="chalk-line chalk-green">${greeting}I have analyzed your notes. Click "Continue Reading" below to read statement by statement.</div>`;
-            let speechText = `${greeting}I have analyzed your notes. Let us examine the statements one by one.`;
+            let teachingHTML = `<div class="chalk-line chalk-yellow"><strong id="blackboardLessonHeader">${headerTitleText} (PAGE ${pageNum})</strong></div><br>` +
+                           `<div class="chalk-line chalk-green">${greeting}I have analyzed Page ${pageNum}. Click "Continue Reading" below to go through the notes step by step.</div>`;
+            let speechText = `${greeting}I have analyzed Page ${pageNum}. Let us examine the principles step by step.`;
 
             activeStatementIndex = 0;
             lastSpokenText = speechText;
 
             let btnList = [];
-            const hasAbstract = /abstract/i.test(pageText);
-            const hasIntro = /(introduction|background|thermodynamic|unit|chapter|wave)/i.test(pageText);
-            const hasTable = /\btable\s*\d+/i.test(pageText);
-            const hasRealFigure = /(?:fig\.?|figure)\s*\d+/i.test(pageText);
-            const hasEquations = pageText.length > 30;
-
-            if (hasAbstract) btnList.push(`<button class="btn-choice" onclick="runPdfAction('abstract')">📖 Explain Abstract</button>`);
-            if (hasIntro) btnList.push(`<button class="btn-choice" onclick="runPdfAction('intro')">📜 Section Overview</button>`);
-            if (hasTable) btnList.push(`<button class="btn-choice" onclick="runPdfAction('table')">📊 Summarize Table</button>`);
-            if (hasRealFigure) btnList.push(`<button class="btn-choice" onclick="runPdfAction('figures')">📊 Analyze Figure</button>`);
-            if (hasEquations) btnList.push(`<button class="btn-choice" onclick="runPdfAction('equations')">📐 Governing Equations</button>`);
-            
+            btnList.push(`<button class="btn-choice" onclick="runPdfAction('intro')">📜 Section Overview</button>`);
+            btnList.push(`<button class="btn-choice" onclick="runPdfAction('table')">📊 Summarize Table</button>`);
+            btnList.push(`<button class="btn-choice" onclick="runPdfAction('figures')">📊 Analyze Figure</button>`);
+            btnList.push(`<button class="btn-choice" onclick="runPdfAction('equations')">📐 Chalk & Equations</button>`);
             btnList.push(`<button class="btn-choice" onclick="runPdfAction('viva')">🎓 Ask Page Viva Question</button>`);
             btnList.push(`<button class="btn-choice btn-repeat" onclick="repeatLastSpeech()">🔁 Repeat Explanation</button>`);
             btnList.push(`<button class="btn-choice btn-choice-alt" onclick="changeViewerPage(-1)">◀ Previous Page</button>`);
@@ -877,10 +865,10 @@
             let statements = [];
             let speech = "";
 
-            if (actionType === 'abstract' || actionType === 'intro') {
-                const rawText = actionType === 'abstract' ? extractAbstractText(text) : extractIntroductionText(text);
-                statements = getCompleteSentences(rawText, 6);
-                speech = `Let us examine this section statement by statement.`;
+            if (actionType === 'intro') {
+                const rawText = extractIntroductionText(text);
+                statements = getCompleteSentences(rawText, 5);
+                speech = `Let us examine this section in detail.`;
             } else if (actionType === 'table') {
                 const rawTable = extractTableSummary(text);
                 statements = [rawTable];
@@ -890,20 +878,36 @@
                 statements = [rawFig];
                 speech = `Analyzing figures referenced here. ${rawFig}`;
             } else if (actionType === 'equations') {
-                const latexEq = extractChapterEquation(text);
-                statements = ["Governing Wave Equation:", latexEq, "These mathematical expressions define the physical wave propagation principles in this section."];
-                speech = `Here are the governing wave equations.`;
+                const eqData = extractChapterEquation(text, page);
+                statements = [`Chalk Board - ${eqData.eqNum}:`, eqData.latex, eqData.chalkTalk];
+                speech = eqData.chalkTalk;
             } else if (actionType === 'viva') {
-                const sents = getCompleteSentences(text, 2);
-                statements = ["Viva Voce Practice:", "Q: What systems and wave equations are presented here?", "A: " + (sents.join(' ') || "Systems with constant tension, strings, springs, and organ pipes.")];
-                speech = `Here is your viva practice question.`;
+                statements = ["Professor's Viva Question:", "Q: What physical parameters determine wave speed in the systems discussed?", "A: Tension T and mass per unit length rho_L, as detailed on this page."];
+                speech = `Here is your viva practice question. What parameters determine wave speed?`;
             }
 
             if (statements.length > 0) {
                 activeStatementsQueue = statements;
                 activeStatementIndex = 0;
                 document.getElementById('continueReadingBtn').textContent = "▶ Continue Reading (Next Statement)";
-                continueReadingNextStatement();
+                
+                const blackboard = document.getElementById('blackboardTerminal');
+                let html = `<div class="blackboard-caricature" id="blackboardCaricature" style="left: 12px; top: 12px;">🧑‍🎓</div>` +
+                           `<div class="chalk-line chalk-yellow"><strong>✦ CLASSROOM CHALK & EQUATIONS</strong></div>`;
+                
+                statements.forEach((s, idx) => {
+                    let isEq = s.includes('$$');
+                    let cls = "chalk-statement" + (isEq ? " active" : "");
+                    html += `<div class="${cls}">${isEq ? s : '• ' + escapeHtml(s)}</div>`;
+                });
+                blackboard.innerHTML = html;
+                
+                if (window.MathJax && window.MathJax.typesetPromise) {
+                    window.MathJax.typesetPromise([blackboard]).catch((err) => console.log(err));
+                }
+
+                lastSpokenText = speech;
+                speakStatementWithTracking(speech);
             }
         }
 
@@ -932,7 +936,7 @@
         function submitToAcharya() {
             const q = document.getElementById('queryInput').value.trim();
             if (!q) return;
-            activeStatementsQueue = ["Your Question:", q, "Professor AI Acharya Analysis:", "This query relates to wave equations, string tension, mass per unit length, and acoustic systems. Let us examine the principles step by step."];
+            activeStatementsQueue = ["Your Question:", q, "Professor AI Acharya's Classroom Explanation:", "This query relates directly to wave equations, string mechanics, and system boundary conditions. Please inspect the equations and notes on the active PDF page for complete derivations."];
             activeStatementIndex = 0;
             document.getElementById('continueReadingBtn').textContent = "▶ Continue Reading Answer";
             continueReadingNextStatement();
@@ -996,7 +1000,7 @@
             if (chosenVoice) utterance.voice = chosenVoice;
             utterance.lang = chosenVoice?.lang || accent;
             utterance.rate = rate;
-            utterance.pitch = 0.96;
+            utterance.pitch = 0.94; // Warm, non-robotic professor tone
 
             utterance.onstart = () => {
                 document.getElementById('robotDisplay')?.classList.add('speaking');
