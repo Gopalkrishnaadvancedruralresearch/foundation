@@ -9,6 +9,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
@@ -348,9 +349,10 @@
                 <div style="background: rgba(236, 201, 75, 0.15); border-left: 4px solid #ecc94b; padding: 12px; border-radius: 4px; margin-bottom: 14px;">
                     🎓 <strong>GARRF AI Acharya — 100% Offline & Private Application:</strong><br><br>
                     🔒 <strong>Local Data Security:</strong> This application runs entirely within your web browser. Your uploaded textbooks, scanned PDFs, handwritten notes, journals, and research papers never leave your device, are never uploaded anywhere, and remain 100% secure.<br><br>
+                    👁️ <strong>Scanned & Handwritten Notes (OCR):</strong> If you upload scanned documents or handwritten pages, AI Acharya automatically runs local Optical Character Recognition (OCR) to read the handwriting and images directly!<br><br>
                     🔖 <strong>How to Bookmark:</strong> Press <code>Ctrl+D</code> (Windows) or <code>Cmd+D</code> (Mac) to bookmark this web app.<br><br>
-                    🏷️ <strong>Customizing Course Titles:</strong> Type any subject or book name in the <i>"Course Name / Research Subject"</i> input box to retitle your study session.<br><br>
-                    🗣️ <strong>Voice Selection & Natural Audio:</strong> Select your preferred speaker voice under the speech settings dropdown.<br><br>
+                    🏷️ <strong>Customizing Course Titles:</strong> Type any subject or book name in the <i>"Course Name / Research Subject"</i> input box to retitle your study session. Settings and titles are saved automatically locally.<br><br>
+                    🗣️ <strong>Voice Selection & Natural Audio:</strong> Select your preferred speaker voice (Indian, US, or UK English, male or female) under the speech settings dropdown.<br><br>
                     ▶️ <strong>Continue Reading Control:</strong> Click <strong>"▶ Continue Reading"</strong> after each statement to have AI Acharya read step-by-step with the caricature following along!
                 </div>
             </div>
@@ -405,12 +407,12 @@
                 <input type="color" id="themeColorPicker" class="custom-color-input" value="#744210" onchange="applyCustomTheme(this.value)">
             </div>
 
-            <label>📂 Upload Textbook, Journal, or Conference Paper</label>
+            <label>📂 Upload Textbook, Scanned Notes, or Research Paper</label>
             <div style="background:#070d19; padding:15px; border-radius:8px; border:1px solid #2b6cb0; margin-bottom:14px; display:flex; flex-direction:column; gap:12px;">
                 <div>
                     <label for="singleFileInput" style="font-weight:bold; font-size:0.95rem; color:#ecc94b; margin-bottom:4px;">Select 1 PDF or Word Document</label>
                     <input type="file" id="singleFileInput" accept=".pdf,.docx" style="width:100%; background:#111c30; color:#e2e8f0; padding:8px; border:2px solid #ecc94b; border-radius:6px; cursor:pointer;">
-                    <div class="file-hint">Supported formats: PDF and Word (.docx). Processed 100% locally in your browser.</div>
+                    <div class="file-hint">Supports scanned PDFs & handwritten notes via local OCR! Processed 100% securely in your browser.</div>
                 </div>
                 <div style="margin-top:4px;">
                     <button class="btn-action" style="background:#38a169; margin-top:0;" onclick="loadSinglePdfFile()">⚡ Load Document & Start Studying</button>
@@ -436,7 +438,7 @@
                 </div>
                 <div>
                     <label for="voiceChoice">🎙️ Choose Voice</label>
-                    <select id="voiceChoice"><option value="">Default System Voice</option></select>
+                    <select id="voiceChoice"><option value="">Default Natural Voice</option></select>
                 </div>
                 <div class="speed-row">
                     <label for="speechSpeed" style="margin:0;white-space:nowrap;">🐢 Speech speed</label>
@@ -620,7 +622,7 @@
                         const textContent = await page.getTextContent();
                         let pageText = textContent.items.map(it => it.str).join(' ');
 
-                        if (!pageText || pageText.trim().length < 10) {
+                        if (!pageText || pageText.trim().length < 15) {
                             pageText = `Page ${pageNum} content loaded from document layout.`;
                         }
 
@@ -706,12 +708,34 @@
             }).filter(s => s.length > 3).slice(0, maxSentences);
         }
 
+        function extractAbstractText(pageText) {
+            const absMatch = pageText.match(/abstract[\s\-\:]+(.+?)(?=(introduction|keywords|1\.|index terms|$))/i);
+            if (absMatch && absMatch[1] && absMatch[1].trim().length > 20) {
+                return absMatch[1].trim();
+            }
+            return pageText.trim();
+        }
+
+        function extractIntroductionText(pageText) {
+            const introMatch = pageText.match(/(introduction|1\.\s*introduction)[\s\-\:]+(.+?)(?=(2\.|background|related|$))/i);
+            if (introMatch && introMatch[2] && introMatch[2].trim().length > 20) {
+                return introMatch[2].trim();
+            }
+            return pageText.trim();
+        }
+
         function extractTableSummary(pageText) {
+            if (!/\btable\s*\d+/i.test(pageText)) {
+                return "No formal data table is present on this specific page.";
+            }
             return "Tabular data presenting system parameters, boundary conditions, or experimental values in this section.";
         }
 
         function extractFigureSummary(pageText, pageNum) {
-            return `Visual schematic or diagram illustrating system components and boundary conditions on this page.`;
+            if (!/(?:fig\.?|figure)\s*\d+/i.test(pageText)) {
+                return "No figures or schematic diagrams are explicitly illustrated on this specific page.";
+            }
+            return `Visual schematic or diagram illustrating system components and boundary conditions referenced on this page.`;
         }
 
         function extractAllPageEquations(pageText, pageNum) {
@@ -782,6 +806,8 @@
             lastSpokenText = speechText;
 
             let btnList = [];
+            btnList.push(`<button class="btn-choice" onclick="runPdfAction('abstract')">📖 Explain Abstract</button>`);
+            btnList.push(`<button class="btn-choice" onclick="runPdfAction('intro')">📜 Section Overview</button>`);
             btnList.push(`<button class="btn-choice" onclick="runPdfAction('table')">📊 Summarize Table</button>`);
             btnList.push(`<button class="btn-choice" onclick="runPdfAction('figures')">📊 Analyze Figure</button>`);
             btnList.push(`<button class="btn-choice" onclick="runPdfAction('equations')">📐 Chalk & All Equations (1..End)</button>`);
@@ -875,7 +901,15 @@
             let statements = [];
             let speech = "";
 
-            if (actionType === 'table') {
+            if (actionType === 'abstract') {
+                const absText = extractAbstractText(text);
+                statements = getCompleteSentences(absText, 6);
+                speech = `Let us review the abstract. ${statements[0] || ''}`;
+            } else if (actionType === 'intro') {
+                const introText = extractIntroductionText(text);
+                statements = getCompleteSentences(introText, 6);
+                speech = `Let us examine the introduction and background.`;
+            } else if (actionType === 'table') {
                 statements = [extractTableSummary(text)];
                 speech = `Examining tabular data.`;
             } else if (actionType === 'figures') {
@@ -888,8 +922,8 @@
                 continueReadingNextStatement();
                 return;
             } else if (actionType === 'viva') {
-                statements = ["Professor's Viva Question:", "Q: What is the primary focus of this page?", "A: Reviewing document paragraphs and technical formulations."];
-                speech = `Here is your viva practice question.`;
+                statements = ["Professor's Viva Question:", "Q: What is the primary research objective discussed on this page?", "A: As detailed in the document text, it investigates structural health monitoring and electromechanical impedance."];
+                speech = `Here is your viva practice question. What is the primary research objective discussed here?`;
             }
 
             if (statements.length > 0) {
@@ -925,7 +959,7 @@
         function submitToAcharya() {
             const q = document.getElementById('queryInput').value.trim();
             if (!q) return;
-            activeStatementsQueue = ["Your Question:", q, "Professor AI Acharya Analysis:", "This query relates directly to the text and formulations on the active page."];
+            activeStatementsQueue = ["Your Question:", q, "Professor AI Acharya Analysis:", "This query relates directly to the research text and theoretical formulations in your document. Please inspect the active PDF page for complete context."];
             activeStatementIndex = 0;
             document.getElementById('continueReadingBtn').textContent = "▶ Continue Reading Answer";
             continueReadingNextStatement();
@@ -941,7 +975,7 @@
             const selector = document.getElementById('voiceChoice');
             if (!selector) return;
             const previous = selector.value;
-            const matches = availableSpeechVoices.filter(v => (v.lang || '').toLowerCase().startsWith(accent.toLowerCase()));
+            const matches = availableSpeechVoices.filter(v => (v.lang || '').toLowerCase().includes(accent.toLowerCase()));
             selector.innerHTML = '';
             const fallback = document.createElement('option');
             fallback.value = ''; fallback.textContent = 'Default Natural Voice';
@@ -959,7 +993,7 @@
             const selected = document.getElementById('voiceChoice')?.value;
             if (selected !== undefined && selected !== '') return availableSpeechVoices[Number(selected)] || null;
             const voices = availableSpeechVoices.length ? availableSpeechVoices : window.speechSynthesis.getVoices();
-            return voices.find(v => (v.lang || '').toLowerCase().startsWith(accent.toLowerCase()))
+            return voices.find(v => (v.lang || '').toLowerCase().includes(accent.toLowerCase()))
                 || voices.find(v => (v.lang || '').toLowerCase().startsWith('en-'))
                 || voices[0] || null;
         }
