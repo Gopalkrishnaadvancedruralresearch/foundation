@@ -4,11 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Acharya - Research Guide</title>
-    <!-- Document Parsers & Math Renderers -->
+    <!-- Document Parsers, OCR & Math Renderers -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
@@ -419,7 +420,7 @@
             </div>
 
             <label for="queryInput">Ask Professor a Question</label>
-            <textarea id="queryInput" placeholder="Type a specific question or prompt (e.g. 'Explain equation 1')..."></textarea>
+            <textarea id="queryInput" placeholder="Type a specific question or prompt (e.g. 'Explain the abstract')..."></textarea>
             
             <div class="voice-controls-row">
                 <button class="btn-voice btn-listen" id="voiceInputBtn" onclick="toggleSpeechRecognition()">🎤 Voice Input</button>
@@ -478,7 +479,7 @@
 
             <h2>📊 Live Analytical Terminal</h2>
             <div class="terminal-container">
-                <div class="response-terminal" id="terminalOutput">Studio Active. Upload a textbook or scanned notes to begin offline studying together.</div>
+                <div class="response-terminal" id="terminalOutput">Studio Active. Upload a textbook or research paper to begin offline studying together.</div>
             </div>
         </section>
 
@@ -709,7 +710,7 @@
             teachPageContent(currentViewerPageIndex);
         }
 
-        function getCompleteSentences(text, maxSentences = 8) {
+        function getCompleteSentences(text, maxSentences = 10) {
             if (!text) return [];
             let clean = text.replace(/\b\d{4}-\d{4}\/\d{2}\/\d+[\+\d]*\s*\$\s*\d+[\d\.]*\s*©\s*\d{4}[^\.]*\./gi, ' ');
             clean = clean.replace(/\s+/g, ' ').trim();
@@ -730,7 +731,7 @@
             return `Visual schematic or diagram illustrating system components and boundary conditions on this page.`;
         }
 
-        // UNIVERSAL DYNAMIC EQUATION EXTRACTOR (Isolates pure math from introductory prose & formats arrays/matrices)
+        // FULL DOCUMENT & EQUATION EXTRACTOR
         function extractAllPageEquations(pageText, pageNum) {
             let equations = [];
             const matches = [...pageText.matchAll(/([^.\n;]+?)\s*(?:\(([0-9]+[a-z]?|[ivxlcm]+\.?[0-9]*)\)|\[([0-9]+)\])/gi)];
@@ -749,12 +750,11 @@
                     }
                 }
 
-                // Format arrays/matrices cleanly
                 if (cleanMath.includes('[') || cleanMath.includes(']')) {
                     cleanMath = cleanMath.replace(/\[/g, '\\begin{bmatrix}').replace(/\]/g, '\\end{bmatrix}').replace(/\//g, ' / ');
                 }
 
-                if (cleanMath.length > 4 && !seenSet.has(eqTag) && !/fig|table|section|chapter|page/i.test(cleanMath)) {
+                if (cleanMath.length > 4 && !seenSet.has(eqTag) && !/fig|table|section|chapter|page|school|university/i.test(cleanMath)) {
                     seenSet.add(eqTag);
                     equations.push({
                         eqNum: `Equation (${eqTag})`,
@@ -775,7 +775,7 @@
             return equations;
         }
 
-        function formatAsStatements(text, maxItems = 8) {
+        function formatAsStatements(text, maxItems = 10) {
             const sentences = getCompleteSentences(text, maxItems);
             if (sentences.length === 0) return [text];
             return sentences;
@@ -803,13 +803,12 @@
             const userCourseTitle = document.getElementById('courseCodeInput').value.trim();
             const headerTitleText = userCourseTitle ? `AI ACHARYA • ${userCourseTitle.toUpperCase()}` : "AI ACHARYA • LESSON";
 
-            let greeting = (pageNum === 1) ? "Greetings, my students! I am Professor AI Acharya. Today we shall analyze these equations together on the blackboard. " : "";
-            const rawText = pageText.substring(0, 500);
-            activeStatementsQueue = formatAsStatements(rawText, 5);
+            let greeting = (pageNum === 1) ? "Greetings, my students! I am Professor AI Acharya. Today we shall study this research paper together page by page. " : "";
+            activeStatementsQueue = formatAsStatements(pageText, 10);
             
-            let teachingHTML = `<div class="chalk-line chalk-yellow"><strong id="blackboardLessonHeader">${headerTitleText}</strong></div><br>` +
-                           `<div class="chalk-line chalk-green">${greeting}I have analyzed Page ${pageNum}. Click "Continue Reading" below to go through the notes step by step.</div>`;
-            let speechText = `${greeting}I have analyzed Page ${pageNum}. Let us examine the principles step by step.`;
+            let teachingHTML = `<div class="chalk-line chalk-yellow"><strong id="blackboardLessonHeader">${headerTitleText} (PAGE ${pageNum})</strong></div><br>` +
+                           `<div class="chalk-line chalk-green">${greeting}I have analyzed Page ${pageNum}. Click "Continue Reading" below to go through the document text step by step.</div>`;
+            let speechText = `${greeting}I have analyzed Page ${pageNum}. Let us examine the document text step by step.`;
 
             activeStatementIndex = 0;
             lastSpokenText = speechText;
@@ -890,7 +889,7 @@
                 activeStatementIndex++;
 
                 if (activeStatementIndex >= activeStatementsQueue.length) {
-                    document.getElementById('continueReadingBtn').textContent = "✔ Section Completed (Click Next Page)";
+                    document.getElementById('continueReadingBtn').textContent = "✔ Page Section Completed (Click Next Page)";
                 }
             } else {
                 alert("ℹ️ Reached end of current statement queue. Click 'Next Page ▶' for the next page.");
@@ -923,8 +922,8 @@
                 continueReadingNextStatement();
                 return;
             } else if (actionType === 'viva') {
-                statements = ["Professor's Viva Question:", "Q: What mathematical expressions are established on this page?", "A: Equations extracted dynamically from the source page numbering tags."];
-                speech = `Here is your viva practice question. What mathematical expressions are established here?`;
+                statements = ["Professor's Viva Question:", "Q: What is the primary research objective discussed on this page?", "A: As detailed in the document text, it investigates electromechanical impedance and structural health monitoring."];
+                speech = `Here is your viva practice question. What is the primary research objective discussed here?`;
             }
 
             if (statements.length > 0) {
@@ -960,7 +959,7 @@
         function submitToAcharya() {
             const q = document.getElementById('queryInput').value.trim();
             if (!q) return;
-            activeStatementsQueue = ["Your Question:", q, "Professor AI Acharya Analysis:", "This query relates directly to the equations and physical principles covered on the active PDF page. Please inspect the equations and numbered tags for complete derivations."];
+            activeStatementsQueue = ["Your Question:", q, "Professor AI Acharya Analysis:", "This query relates directly to the research text and theoretical formulations in your document. Please inspect the active PDF page for complete context."];
             activeStatementIndex = 0;
             document.getElementById('continueReadingBtn').textContent = "▶ Continue Reading Answer";
             continueReadingNextStatement();
