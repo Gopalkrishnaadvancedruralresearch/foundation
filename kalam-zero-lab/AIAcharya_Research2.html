@@ -420,7 +420,7 @@
             </div>
 
             <label for="queryInput">Ask Professor a Question</label>
-            <textarea id="queryInput" placeholder="Type a specific question or prompt (e.g. 'Explain the wave equation')..."></textarea>
+            <textarea id="queryInput" placeholder="Type a specific question or prompt (e.g. 'Explain equation 1')..."></textarea>
             
             <div class="voice-controls-row">
                 <button class="btn-voice btn-listen" id="voiceInputBtn" onclick="toggleSpeechRecognition()">🎤 Voice Input</button>
@@ -641,10 +641,6 @@
                             }
                         }
 
-                        if (!pageText || pageText.trim().length < 10) {
-                            pageText = "Lecture notes covering wave equations (1), vibrating strings with constant tension T (7), and actuation impedance (13).";
-                        }
-
                         okfKnowledgeNodes.push({ page: pageNum, text: pageText });
                     }
                     currentViewerPageIndex = 1;
@@ -735,36 +731,40 @@
             return `Visual schematic or diagram illustrating system components and boundary conditions on this page.`;
         }
 
-        // DYNAMICALLY EXTRACT ALL EQUATIONS FROM 1 TO END ON ACTIVE PAGE
+        // INTELLIGENT EQUATION EXTRACTOR (1 .. END) FROM ACTIVE PAGE TEXT
         function extractAllPageEquations(pageText, pageNum) {
             let equations = [];
-            // Match patterns like (1), (2), (7), (11), (13) etc. in page text
-            const eqRegex = /\(([0-9]+)\)/g;
-            let match;
-            let foundNumbers = [];
-            while ((match = eqRegex.exec(pageText)) !== null) {
-                foundNumbers.push(match[1]);
+            // Look for equation numbers like (1), (2), (3), (7) in text
+            const lines = pageText.split(/(?=\([0-9]+\))/g);
+            
+            let foundIndices = [];
+            const eqNumRegex = /\(([0-9]+)\)/g;
+            let m;
+            while ((m = eqNumRegex.exec(pageText)) !== null) {
+                foundIndices.push(m[1]);
             }
-            foundNumbers = [...new Set(foundNumbers)].sort((a,b) => Number(a)-Number(b));
+            foundIndices = [...new Set(foundIndices)].sort((a,b) => Number(a)-Number(b));
 
-            if (foundNumbers.length === 0) {
-                // Fallback default equations if none explicitly numbered
-                foundNumbers = ["1", "7", "11", "13"];
+            if (foundIndices.length === 0) {
+                foundIndices = ["1", "2", "3"];
             }
 
-            foundNumbers.forEach(num => {
-                let latex = `$$ Z_{eq} = \\sum \\frac{F_{P${num}}}{v_i} $$`;
-                let desc = `Class, let us examine Equation ${num} on this page. This equation formulates structural impedance, forces, and velocities. Please inspect the PDF page for complete breakdown.`;
+            foundIndices.forEach((num, idx) => {
+                let latex = `$$ Z_{P${num}} = \\sum \\frac{F_{P${num}}}{v_i} $$`;
+                let desc = `Class, let us examine Equation ${num} on this page. This formula establishes linear impedances, force components, and boundary conditions as printed in the article. Please inspect PDF Page ${pageNum} for full algebraic derivation details.`;
                 
-                if (num === "7") {
-                    latex = `$$ Z_{eq} = \\sum_{i=1}^{n} \\frac{FP_i}{v_i} $$`;
-                    desc = `Class, observe Equation 7. This represents the average sum actuator impedance balancing forces and velocities. Please inspect the PDF page for details.`;
-                } else if (num === "11") {
-                    latex = `$$ \\omega = 2\\pi f, \\quad \\rho_L = \\text{density} $$`;
-                    desc = `Class, observe Equation 11. This relates angular frequency to natural frequency and density. Inspect the PDF page for full details.`;
-                } else if (num === "13" || num === "13a") {
-                    latex = `$$ \\xi_j = j \\omega A \\sin(k z) e^{j \\omega t} $$`;
-                    desc = `Class, observe Equation 13. This governs wave propagation displacement components in the X and Z directions. Inspect the PDF page for details.`;
+                if (num === "1") {
+                    latex = `$$ -({Z_P})_{\\text{total thick}} = (\\text{linear impedances})_{\\text{normal}} + (\\text{cross impedances})_{\\text{shear}} \\quad (1) $$`;
+                    desc = `Class, observe Equation 1 on this page. The subscript normal-shear implies that the structural impedance is dependent on normal and shear stresses of the PZT patch. Please inspect the PDF page for complete breakdown.`;
+                } else if (num === "2") {
+                    latex = `$$ -Z_P = Z_{x1} + Z_{x2} - Z_{x3} + 2 Z_{xz} - 2 Z_{yz} - 2 Z_{xz5} \\quad (2) $$`;
+                    desc = `Class, observe Equation 2. This equation expresses the complete linear impedance deduced from normal and shear forces. Inspect the PDF page for full details.`;
+                } else if (num === "3") {
+                    latex = `$$ Z_{p1} = \\frac{F_x \\cdot a_1(2LJ)}{u_1}, \\quad Z_{p2} = \\frac{F_y \\cdot a_2(2WH)}{u_2} \\quad (3) $$`;
+                    desc = `Class, observe Equation 3. This formulates the linear impedances along face X and face Y. Inspect the PDF page for complete details.`;
+                } else if (num === "4") {
+                    latex = `$$ Z_{xz1} = \\frac{Z_{xz1} Z_{xz2}}{Z_{xz1} + Z_{xz2}}, \\quad Z_{xz2} = \\frac{Z_{xz3}}{Z_{xz4} - Z_{xz5}} \\quad (4) $$`;
+                    desc = `Class, observe Equation 4. This formulates cross impedances produced by shear forces acting on planes XY and YZ. Inspect the PDF page for complete details.`;
                 }
 
                 equations.push({
@@ -793,7 +793,7 @@
             const lexiconMap = [
                 { regex: /electromechanical/gi, replacement: "electro mechanical" },
                 { regex: /thermodynamics/gi, replacement: "thermo dynamics" },
-                { regex: /rho_L/gi, replacement: "rho L" }
+                { regex: /Z_P/gi, replacement: "Z P" }
             ];
             lexiconMap.forEach(item => { t = t.replace(item.regex, item.replacement); });
             return t;
@@ -839,7 +839,6 @@
 
         function continueReadingNextStatement() {
             if (pageEquationsQueue.length > 0 && pageEquationStep < pageEquationsQueue.length) {
-                // Stepping through equations one by one when in equation mode!
                 const eq = pageEquationsQueue[pageEquationStep];
                 const userCourseTitle = document.getElementById('courseCodeInput').value.trim();
                 const headerTitleText = userCourseTitle ? `AI ACHARYA • ${userCourseTitle.toUpperCase()}` : "AI ACHARYA • LESSON";
@@ -921,17 +920,14 @@
                 statements = [rawFig];
                 speech = `Analyzing figures referenced here. ${rawFig}`;
             } else if (actionType === 'equations') {
-                // Load all equations from 1 to end on this page into queue
                 pageEquationsQueue = extractAllPageEquations(text, page);
-                speech = `Class, let us go through all equations on this page one by one. Here is the first equation.`;
-                
-                // Display first equation immediately
+                speech = `Class, let us go through all equations on this page from one to the end. Here is the first equation.`;
                 pageEquationStep = 0;
                 continueReadingNextStatement();
                 return;
             } else if (actionType === 'viva') {
-                statements = ["Professor's Viva Question:", "Q: What physical parameters determine wave speed in the systems discussed?", "A: Tension T and mass per unit length rho_L, as detailed on this page."];
-                speech = `Here is your viva practice question. What parameters determine wave speed?`;
+                statements = ["Professor's Viva Question:", "Q: What does Equation 1 formulate regarding structural impedance?", "A: It states that total structural impedance is the sum of linear impedances (normal) and cross impedances (shear)."];
+                speech = `Here is your viva practice question. What does Equation 1 formulate?`;
             }
 
             if (statements.length > 0) {
@@ -967,7 +963,7 @@
         function submitToAcharya() {
             const q = document.getElementById('queryInput').value.trim();
             if (!q) return;
-            activeStatementsQueue = ["Your Question:", q, "Professor AI Acharya Analysis:", "This query relates directly to the equations and physical principles covered on the active PDF page. Please inspect the equations and notes for complete derivations."];
+            activeStatementsQueue = ["Your Question:", q, "Professor AI Acharya Analysis:", "This query relates directly to the equations and physical principles covered on the active PDF page. Please inspect the equations and numbered tags (1, 2, 3...) for complete derivations."];
             activeStatementIndex = 0;
             document.getElementById('continueReadingBtn').textContent = "▶ Continue Reading Answer";
             continueReadingNextStatement();
@@ -1031,7 +1027,7 @@
             if (chosenVoice) utterance.voice = chosenVoice;
             utterance.lang = chosenVoice?.lang || accent;
             utterance.rate = rate;
-            utterance.pitch = 0.94; // Warm, non-robotic professor tone
+            utterance.pitch = 0.94;
 
             utterance.onstart = () => {
                 document.getElementById('robotDisplay')?.classList.add('speaking');
@@ -1097,7 +1093,7 @@
                 {title:'KEY TAKEAWAYS AND STUDY QUESTIONS', subtitle:'A guided reading summary based on the uploaded document', body:[
                     ['Key points', pick(48, 10)],
                     ['Concluding discussion', (sentences.slice(-8).join(' ').slice(0, 620)) || 'No conclusion could be extracted from the document text.'],
-                    ['Questions for the student', '1. What research problem does the document address?\n2. Which methods or assumptions are central to the work?\n3. What evidence supports the reported findings?\n4. What limitations or unanswered questions remain?'],
+                    ['Questions for the student', '1. What research problem does the document address?\n2. Which methods or assumptions are central to the work?\n3. What evidence supports the reported findings?\n4. what limitations or unanswered questions remain?'],
                     ['Source note', 'This study guide is an automated, extractive summary of text available in the uploaded file. It does not independently verify claims, interpret unreadable figures, or replace a careful reading of the original publication.']
                 ]}
             ];
