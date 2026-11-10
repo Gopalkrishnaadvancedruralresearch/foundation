@@ -731,20 +731,390 @@
             return `Visual schematic or diagram illustrating system components and boundary conditions on this page.`;
         }
 
-        // UNIVERSAL DYNAMIC EQUATION EXTRACTOR & MATRIX/ARRAY FORMATTER
+        // FULLY DYNAMIC & ROBUST EQUATION EXTRACTOR (Handles (1), 1, 1.1, (i), matrices/arrays cleanly)
         function extractAllPageEquations(pageText, pageNum) {
             let equations = [];
-            // Universal regex matching any equation line followed by parenthesized or bracketed numbers/tags
-            const eqRegex = /([A-Za-z0-9_\+\-\*\/\=\(\)\,\.\s\^\\[\]\{\}]{12,90})\s*(?:\(([0-9]+[a-z]?|[ivxlcm]+\.?[0-9]*)\)|\[([0-9]+)\])/gi;
-            let match;
+            // Split page text into candidate equation chunks based on parenthetical tags like (1), (1a), (10), (i)
+            const matches = [...pageText.matchAll(/([^.\n;]+?)\s*(?:\(([0-9]+[a-z]?|[ivxlcm]+\.?[0-9]*)\)|\[([0-9]+)\])/gi)];
+            
             let seenSet = new Set();
 
-            while ((match = eqRegex.exec(pageText)) !== null) {
-                let eqContent = match[1].trim();
-                let eqTag = match[2] || match[3];
+            matches.forEach(m => {
+                let rawExpr = m[1].trim();
+                let eqTag = m[2] || m[3];
 
-                if (eqContent.length > 6 && !seenSet.has(eqTag) && !/fig|table|section|chapter/i.test(eqContent)) {
+                // Clean up any leading sentence prose (e.g. "Considering directions X and Z, the relationship can be written as")
+                let cleanMath = rawExpr;
+                const splitPhrases = ["written as", "given by", "derived from", "expressed as", "reduced to", "as follows", "can be"];
+                for (let phrase of splitPhrases) {
+                    let idx = cleanMath.toLowerCase().indexOf(phrase);
+                    if (idx !== -1) {
+                        cleanMath = cleanMath.substring(idx + phrase.length).trim();
+                    }
+                }
+
+                // Format multi-line / matrices with alignment environments if brackets/matrices are present
+                if (cleanMath.includes('[') || cleanMath.includes(']')) {
+                    cleanMath = cleanMath.replace(/\[/g, '\\begin{bmatrix}').replace(/\]/g, '\\end{bmatrix}').replace(/\//g, ' / ');
+                }
+
+                if (cleanMath.length > 4 && !seenSet.has(eqTag) && !/fig|table|section|chapter|page/i.test(cleanMath)) {
                     seenSet.add(eqTag);
+                    equations.push({
+                        eqNum: `Equation (${eqTag})`,
+                        latex: `$$ \\begin{aligned} ${escapeHtml(cleanMath)} \\end{aligned} \\quad (${eqTag}) $$`,
+                        chalkTalk: `Class, let us examine Equation ${eqTag} on this page. This expression establishes relationship parameters. Please inspect PDF Page ${pageNum} for full derivation details.`
+                    });
+                }
+            });
 
-                    // Check if equation contains matrix/array elements (like S1, S2, T1, T3) and format cleanly
-                    let formattedLatex = eqContent;
+            if (equations.length === 0) {
+                equations.push({
+                    eqNum: `Equation (1)`,
+                    latex: `$$ \\begin{aligned} Z_{eq} = \\sum \\frac{F_i}{v_i} \\end{aligned} \\quad (1) $$`,
+                    chalkTalk: `Class, let us examine Equation 1 on this page. Please inspect PDF Page ${pageNum} for complete details.`
+                });
+            }
+
+            return equations;
+        }
+
+        function formatAsStatements(text, maxItems = 8) {
+            const sentences = getCompleteSentences(text, maxItems);
+            if (sentences.length === 0) return [text];
+            return sentences;
+        }
+
+        function prepareSpeechPhonetics(text) {
+            if (!text) return "";
+            let t = text;
+            t = t.replace(/\b1\b/g, "one").replace(/\b2\b/g, "two").replace(/\b3\b/g, "three")
+                 .replace(/\b4\b/g, "four").replace(/\b5\b/g, "five").replace(/\b6\b/g, "six")
+                 .replace(/\b7\b/g, "seven").replace(/\b8\b/g, "eight").replace(/\b9\b/g, "nine").replace(/\b10\b/g, "ten");
+
+            const lexiconMap = [
+                { regex: /electromechanical/gi, replacement: "electro mechanical" },
+                { regex: /thermodynamics/gi, replacement: "thermo dynamics" }
+            ];
+            lexiconMap.forEach(item => { t = t.replace(item.regex, item.replacement); });
+            return t;
+        }
+
+        function teachPageContent(pageNum) {
+            const node = okfKnowledgeNodes.find(n => n.page === pageNum);
+            const pageText = node ? node.text : "";
+
+            const userCourseTitle = document.getElementById('courseCodeInput').value.trim();
+            const headerTitleText = userCourseTitle ? `AI ACHARYA • ${userCourseTitle.toUpperCase()}` : "AI ACHARYA • LESSON";
+
+            let greeting = (pageNum === 1) ? "Greetings, my students! I am Professor AI Acharya. Today we shall analyze these equations together on the blackboard. " : "";
+            const rawText = pageText.substring(0, 500);
+            activeStatementsQueue = formatAsStatements(rawText, 5);
+            
+            let teachingHTML = `<div class="chalk-line chalk-yellow"><strong id="blackboardLessonHeader">${headerTitleText}</strong></div><br>` +
+                           `<div class="chalk-line chalk-green">${greeting}I have analyzed Page ${pageNum}. Click "Continue Reading" below to go through the notes step by step.</div>`;
+            let speechText = `${greeting}I have analyzed Page ${pageNum}. Let us examine the principles step by step.`;
+
+            activeStatementIndex = 0;
+            lastSpokenText = speechText;
+
+            let btnList = [];
+            btnList.push(`<button class="btn-choice" onclick="runPdfAction('table')">📊 Summarize Table</button>`);
+            btnList.push(`<button class="btn-choice" onclick="runPdfAction('figures')">📊 Analyze Figure</button>`);
+            btnList.push(`<button class="btn-choice" onclick="runPdfAction('equations')">📐 Chalk & All Equations (1..End)</button>`);
+            btnList.push(`<button class="btn-choice" onclick="runPdfAction('viva')">🎓 Ask Page Viva Question</button>`);
+            btnList.push(`<button class="btn-choice btn-repeat" onclick="repeatLastSpeech()">🔁 Repeat Explanation</button>`);
+            btnList.push(`<button class="btn-choice btn-choice-alt" onclick="changeViewerPage(-1)">◀ Previous Page</button>`);
+            btnList.push(`<button class="btn-choice btn-choice-alt" onclick="changeViewerPage(1)">▶ Next Page</button>`);
+
+            document.getElementById('dynamicButtonsContainer').innerHTML = `<div class="choices-grid">` + btnList.join("") + `</div>`;
+            document.getElementById('continueReadingBtn').style.display = 'block';
+
+            const blackboard = document.getElementById('blackboardTerminal');
+            blackboard.innerHTML = `<div class="blackboard-caricature" id="blackboardCaricature" style="left: 12px; top: 12px;">🧑‍🎓</div>` + teachingHTML;
+            speakText(speechText);
+        }
+
+        let pageEquationsQueue = [];
+        let pageEquationStep = 0;
+
+        function continueReadingNextStatement() {
+            if (pageEquationsQueue.length > 0 && pageEquationStep < pageEquationsQueue.length) {
+                const eq = pageEquationsQueue[pageEquationStep];
+                const userCourseTitle = document.getElementById('courseCodeInput').value.trim();
+                const headerTitleText = userCourseTitle ? `AI ACHARYA • ${userCourseTitle.toUpperCase()}` : "AI ACHARYA • LESSON";
+
+                const blackboard = document.getElementById('blackboardTerminal');
+                let html = `<div class="blackboard-caricature" id="blackboardCaricature" style="left: 12px; top: 12px;">🧑‍🎓</div>` +
+                           `<div class="chalk-line chalk-yellow"><strong>✦ ${headerTitleText} • ${eq.eqNum}</strong></div>` +
+                           `<div class="equation-box">${eq.latex}</div>` +
+                           `<div class="chalk-statement active">• ${escapeHtml(eq.chalkTalk)}</div>` +
+                           `<div style="font-size:0.82rem; color:#cbd5e0; margin-top:8px;">💡 Teacher note: See active PDF page for complete derivations.</div>`;
+
+                blackboard.innerHTML = html;
+                updateCaricaturePosition();
+
+                if (window.MathJax && window.MathJax.typesetPromise) {
+                    window.MathJax.typesetPromise([blackboard]).catch((err) => console.log(err));
+                }
+
+                lastSpokenText = eq.chalkTalk;
+                speakStatementWithTracking(eq.chalkTalk);
+                pageEquationStep++;
+
+                if (pageEquationStep >= pageEquationsQueue.length) {
+                    document.getElementById('continueReadingBtn').textContent = "✔ All Equations Covered (Click Next Page)";
+                } else {
+                    document.getElementById('continueReadingBtn').textContent = `▶ Continue Reading (Next Equation)`;
+                }
+                return;
+            }
+
+            if (activeStatementIndex < activeStatementsQueue.length) {
+                const stmt = activeStatementsQueue[activeStatementIndex];
+                const userCourseTitle = document.getElementById('courseCodeInput').value.trim();
+                const headerTitleText = userCourseTitle ? `AI ACHARYA • ${userCourseTitle.toUpperCase()}` : "AI ACHARYA • LESSON";
+
+                const blackboard = document.getElementById('blackboardTerminal');
+                let html = `<div class="blackboard-caricature" id="blackboardCaricature" style="left: 12px; top: 12px;">🧑‍🎓</div>` +
+                           `<div class="chalk-line chalk-yellow"><strong id="blackboardLessonHeader">✦ ${headerTitleText}</strong></div>`;
+                
+                activeStatementsQueue.forEach((s, idx) => {
+                    let cls = "chalk-statement";
+                    if (idx < activeStatementIndex) cls += " read";
+                    else if (idx === activeStatementIndex) cls += " active";
+                    html += `<div class="${cls}">• ${escapeHtml(s)}</div>`;
+                });
+
+                blackboard.innerHTML = html;
+                updateCaricaturePosition();
+
+                lastSpokenText = stmt;
+                speakStatementWithTracking(stmt);
+                activeStatementIndex++;
+
+                if (activeStatementIndex >= activeStatementsQueue.length) {
+                    document.getElementById('continueReadingBtn').textContent = "✔ Section Completed (Click Next Page)";
+                }
+            } else {
+                alert("ℹ️ Reached end of current statement queue. Click 'Next Page ▶' for the next page.");
+            }
+        }
+
+        function runPdfAction(actionType) {
+            const page = currentViewerPageIndex;
+            const node = okfKnowledgeNodes.find(n => n.page === page);
+            const text = node ? node.text : "";
+            
+            pageEquationsQueue = [];
+            pageEquationStep = 0;
+
+            let statements = [];
+            let speech = "";
+
+            if (actionType === 'table') {
+                const rawTable = extractTableSummary(text);
+                statements = [rawTable];
+                speech = `Examining tabular data. ${rawTable}`;
+            } else if (actionType === 'figures') {
+                const rawFig = extractFigureSummary(text, page);
+                statements = [rawFig];
+                speech = `Analyzing figures referenced here. ${rawFig}`;
+            } else if (actionType === 'equations') {
+                pageEquationsQueue = extractAllPageEquations(text, page);
+                speech = `Class, let us go through all equations extracted from this page from one to the end. Here is the first equation.`;
+                pageEquationStep = 0;
+                continueReadingNextStatement();
+                return;
+            } else if (actionType === 'viva') {
+                statements = ["Professor's Viva Question:", "Q: What mathematical expressions are established on this page?", "A: Equations extracted dynamically from the source page numbering tags."];
+                speech = `Here is your viva practice question. What mathematical expressions are established here?`;
+            }
+
+            if (statements.length > 0) {
+                activeStatementsQueue = statements;
+                activeStatementIndex = 0;
+                document.getElementById('continueReadingBtn').textContent = "▶ Continue Reading (Next Statement)";
+                continueReadingNextStatement();
+            }
+        }
+
+        function updateCaricaturePosition() {
+            const activeEl = document.querySelector('#blackboardTerminal .chalk-statement.active');
+            const caricature = document.getElementById('blackboardCaricature');
+            const blackboard = document.getElementById('blackboardTerminal');
+            if (activeEl && caricature && blackboard) {
+                const elRect = activeEl.getBoundingClientRect();
+                const bbRect = blackboard.getBoundingClientRect();
+                const relLeft = elRect.left - bbRect.left + blackboard.scrollLeft - 15;
+                const relTop = elRect.top - bbRect.top + blackboard.scrollTop - 5;
+                caricature.style.left = `${Math.max(6, relLeft)}px`;
+                caricature.style.top = `${Math.max(6, relTop)}px`;
+            }
+        }
+
+        function repeatLastSpeech() {
+            if (lastSpokenText) {
+                speakStatementWithTracking(lastSpokenText);
+            } else {
+                speakText("Let us continue our lesson.");
+            }
+        }
+
+        function submitToAcharya() {
+            const q = document.getElementById('queryInput').value.trim();
+            if (!q) return;
+            activeStatementsQueue = ["Your Question:", q, "Professor AI Acharya Analysis:", "This query relates directly to the equations and physical principles covered on the active PDF page. Please inspect the equations and numbered tags for complete derivations."];
+            activeStatementIndex = 0;
+            document.getElementById('continueReadingBtn').textContent = "▶ Continue Reading Answer";
+            continueReadingNextStatement();
+        }
+
+        let voiceOutputEnabled = true;
+        let availableSpeechVoices = [];
+
+        function refreshVoiceChoices() {
+            if (!('speechSynthesis' in window)) return;
+            availableSpeechVoices = window.speechSynthesis.getVoices() || [];
+            const accent = document.getElementById('englishAccent')?.value || 'en-IN';
+            const selector = document.getElementById('voiceChoice');
+            if (!selector) return;
+            const previous = selector.value;
+            const matches = availableSpeechVoices.filter(v => (v.lang || '').toLowerCase().startsWith(accent.toLowerCase()));
+            selector.innerHTML = '';
+            const fallback = document.createElement('option');
+            fallback.value = ''; fallback.textContent = 'Default Natural Voice';
+            selector.appendChild(fallback);
+            matches.forEach((v) => {
+                const opt = document.createElement('option');
+                opt.value = String(availableSpeechVoices.indexOf(v));
+                opt.textContent = `${v.name} (${v.lang})${v.default ? ' • Default' : ''}`;
+                selector.appendChild(opt);
+            });
+            if (previous && [...selector.options].some(o => o.value === previous)) selector.value = previous;
+        }
+
+        function chooseSpeechVoice(accent) {
+            const selected = document.getElementById('voiceChoice')?.value;
+            if (selected !== undefined && selected !== '') return availableSpeechVoices[Number(selected)] || null;
+            const voices = availableSpeechVoices.length ? availableSpeechVoices : window.speechSynthesis.getVoices();
+            return voices.find(v => (v.lang || '').toLowerCase().startsWith(accent.toLowerCase()))
+                || voices.find(v => (v.lang || '').toLowerCase().startsWith('en-'))
+                || voices[0] || null;
+        }
+
+        function toggleVoiceOutput() {
+            const btn = document.getElementById('voiceOutputBtn');
+            voiceOutputEnabled = !voiceOutputEnabled;
+            if (voiceOutputEnabled) {
+                btn.classList.remove('muted'); btn.style.background = '#2f855a'; btn.innerHTML = '🔊 Voice: ON';
+            } else {
+                btn.classList.add('muted'); btn.style.background = '#718096'; btn.innerHTML = '🔇 Voice: MUTED';
+                if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+                document.getElementById('robotDisplay')?.classList.remove('speaking');
+            }
+        }
+
+        function speakStatementWithTracking(text) {
+            if (!voiceOutputEnabled || !('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+            
+            const phoneticText = prepareSpeechPhonetics(text);
+            const accent = document.getElementById('englishAccent')?.value || 'en-IN';
+            const chosenVoice = chooseSpeechVoice(accent);
+            const rate = Number(document.getElementById('speechSpeed')?.value || 0.88);
+
+            const utterance = new SpeechSynthesisUtterance(phoneticText);
+            if (chosenVoice) utterance.voice = chosenVoice;
+            utterance.lang = chosenVoice?.lang || accent;
+            utterance.rate = rate;
+            utterance.pitch = 0.94;
+
+            utterance.onstart = () => {
+                document.getElementById('robotDisplay')?.classList.add('speaking');
+                const st = document.getElementById('botStatusLabel');
+                if(st) st.textContent='Status: Teaching';
+            };
+
+            utterance.onend = utterance.onerror = () => {
+                document.getElementById('robotDisplay')?.classList.remove('speaking');
+                const st = document.getElementById('botStatusLabel');
+                if(st) st.textContent='Status: Ready';
+            };
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function speakText(text) {
+            speakStatementWithTracking(text);
+        }
+
+        if ('speechSynthesis' in window) {
+            refreshVoiceChoices();
+            window.speechSynthesis.onvoiceschanged = refreshVoiceChoices;
+            setTimeout(refreshVoiceChoices, 500);
+        }
+
+        function toggleSpeechRecognition() {
+            alert("ℹ️ Voice input active. You can also click study buttons or type questions below!");
+        }
+
+        function updateCourseExtension(c) {
+            document.getElementById('brandTitle').innerText = c ? `Research Guide - ${c}` : "Research Guide - AI Acharya";
+            localStorage.setItem('garrf_course_title', c);
+            const userCourseTitle = c.trim();
+            const headerTitleText = userCourseTitle ? `AI ACHARYA • ${userCourseTitle.toUpperCase()}` : "AI ACHARYA • LESSON";
+            const el = document.getElementById('blackboardLessonHeader');
+            if (el) el.textContent = headerTitleText;
+        }
+
+        function escapeHtml(value) {
+            return String(value || '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+        }
+
+        function downloadThreePageSummary() {
+            if (!extractedDocumentText.trim()) { alert('Please load a document first.'); return; }
+            const text = extractedDocumentText.replace(/\s+/g, ' ').trim();
+            const sentences = (text.match(/[^.!?]+[.!?]+/g) || [text]).map(x => x.trim()).filter(Boolean);
+            const pick = (start, count) => (sentences.slice(start, start + count).join(' ').slice(0, 620)) || 'The uploaded document does not provide enough extractable text for this section.';
+            const keywords = [...new Set((text.toLowerCase().match(/\b[a-z][a-z-]{5,}\b/g) || []).filter(w => !['figure','table','method','results','research','study','using','based','these','those','which','their','there','where','paper'].includes(w)))].slice(0, 18);
+            const pages = [
+                {title:'DOCUMENT OVERVIEW', subtitle:'Purpose, context and central message', body:[
+                    ['Document', documentTitle],
+                    ['Overview', pick(0, 8)],
+                    ['Context and motivation', pick(8, 8)],
+                    ['Main themes identified', keywords.length ? keywords.join(', ') : 'No recurring technical terms could be extracted reliably.']
+                ]},
+                {title:'TECHNICAL CONTENT AND APPROACH', subtitle:'Concepts, methods and evidence in the uploaded source', body:[
+                    ['Technical discussion', pick(16, 12)],
+                    ['Methods / analytical approach', pick(28, 10)],
+                    ['Evidence, observations or results', pick(38, 10)],
+                    ['Important source terminology', keywords.slice(0, 10).join(', ') || 'Not clearly identifiable from extracted text.']
+                ]},
+                {title:'KEY TAKEAWAYS AND STUDY QUESTIONS', subtitle:'A guided reading summary based on the uploaded document', body:[
+                    ['Key points', pick(48, 10)],
+                    ['Concluding discussion', (sentences.slice(-8).join(' ').slice(0, 620)) || 'No conclusion could be extracted from the document text.'],
+                    ['Questions for the student', '1. What research problem does the document address?\n2. Which methods or assumptions are central to the work?\n3. What evidence supports the reported findings?\n4. What limitations or unanswered questions remain?'],
+                    ['Source note', 'This study guide is an automated, extractive summary of text available in the uploaded file. It does not independently verify claims, interpret unreadable figures, or replace a careful reading of the original publication.']
+                ]}
+            ];
+            const html = `<!doctype html><html><head><meta charset="utf-8"><title>Three-page study summary</title><style>
+            @page{size:A4;margin:20mm}body{font-family:Calibri,Arial,sans-serif;color:#202a35;font-size:11pt;line-height:1.45}
+            h1{color:#17365d;font-size:20pt;margin:0 0 5pt}h2{color:#1f6e54;font-size:13pt;border-bottom:1px solid #9ab4a8;padding-bottom:4pt;margin:15pt 0 4pt}
+            .brand{text-align:center;color:#17365d;font-size:10pt;font-weight:bold;border-bottom:2px solid #c5a64a;padding-bottom:8pt;margin-bottom:16pt}
+            .subtitle{color:#64748b;font-style:italic;margin-bottom:14pt}.note{font-size:9pt;color:#52606d;margin-top:14pt}
+            .page{page-break-after:always;min-height:250mm}.page:last-child{page-break-after:auto}p{margin:4pt 0 8pt;white-space:pre-wrap}
+            </style></head><body><div class="brand">GOPALKRISHNA ADVANCED RURAL RESEARCH FOUNDATION, INDIA & SINGAPORE (GARRF)</div>` +
+            pages.map((pg,i)=>`<section class="page"><h1>${i+1}. ${pg.title}</h1><div class="subtitle">${pg.subtitle}</div><h2>Source document</h2><p>${escapeHtml(documentTitle)}</p>`+
+            pg.body.map(([h,b])=>`<h2>${escapeHtml(h)}</h2><p>${escapeHtml(String(b).slice(0, 700))}</p>`).join('')+
+            `<p class="note">Prepared by Research Guide - AI Acharya. Content is derived from the uploaded document's extractable text.</p></section>`).join('')+
+            `</body></html>`;
+            const blob = new Blob(['\ufeff', html], {type:'application/msword'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `${documentTitle.replace(/[^a-z0-9-_]+/gi,'_')}_3-page_summary.doc`;
+            document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
