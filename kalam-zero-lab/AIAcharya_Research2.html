@@ -4,12 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Acharya - Research Guide</title>
-    <!-- Document Parsers, OCR & Math Renderers -->
+    <!-- Document Parsers & Math Renderers -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
@@ -349,10 +348,9 @@
                 <div style="background: rgba(236, 201, 75, 0.15); border-left: 4px solid #ecc94b; padding: 12px; border-radius: 4px; margin-bottom: 14px;">
                     🎓 <strong>GARRF AI Acharya — 100% Offline & Private Application:</strong><br><br>
                     🔒 <strong>Local Data Security:</strong> This application runs entirely within your web browser. Your uploaded textbooks, scanned PDFs, handwritten notes, journals, and research papers never leave your device, are never uploaded anywhere, and remain 100% secure.<br><br>
-                    👁️ <strong>Scanned & Handwritten Notes (OCR):</strong> If you upload scanned documents or handwritten pages, AI Acharya automatically runs local Optical Character Recognition (OCR) to read the handwriting and images directly!<br><br>
                     🔖 <strong>How to Bookmark:</strong> Press <code>Ctrl+D</code> (Windows) or <code>Cmd+D</code> (Mac) to bookmark this web app.<br><br>
-                    🏷️ <strong>Customizing Course Titles:</strong> Type any subject or book name in the <i>"Course Name / Research Subject"</i> input box to retitle your study session. Settings and titles are saved automatically locally.<br><br>
-                    🗣️ <strong>Voice Selection & Natural Audio:</strong> Select your preferred speaker voice (Indian, US, or UK English, male or female) under the speech settings dropdown.<br><br>
+                    🏷️ <strong>Customizing Course Titles:</strong> Type any subject or book name in the <i>"Course Name / Research Subject"</i> input box to retitle your study session.<br><br>
+                    🗣️ <strong>Voice Selection & Natural Audio:</strong> Select your preferred speaker voice under the speech settings dropdown.<br><br>
                     ▶️ <strong>Continue Reading Control:</strong> Click <strong>"▶ Continue Reading"</strong> after each statement to have AI Acharya read step-by-step with the caricature following along!
                 </div>
             </div>
@@ -407,12 +405,12 @@
                 <input type="color" id="themeColorPicker" class="custom-color-input" value="#744210" onchange="applyCustomTheme(this.value)">
             </div>
 
-            <label>📂 Upload Textbook, Scanned Notes, or Research Paper</label>
+            <label>📂 Upload Textbook, Journal, or Conference Paper</label>
             <div style="background:#070d19; padding:15px; border-radius:8px; border:1px solid #2b6cb0; margin-bottom:14px; display:flex; flex-direction:column; gap:12px;">
                 <div>
                     <label for="singleFileInput" style="font-weight:bold; font-size:0.95rem; color:#ecc94b; margin-bottom:4px;">Select 1 PDF or Word Document</label>
                     <input type="file" id="singleFileInput" accept=".pdf,.docx" style="width:100%; background:#111c30; color:#e2e8f0; padding:8px; border:2px solid #ecc94b; border-radius:6px; cursor:pointer;">
-                    <div class="file-hint">Supports scanned PDFs & handwritten notes via local OCR! Processed 100% securely in your browser.</div>
+                    <div class="file-hint">Supported formats: PDF and Word (.docx). Processed 100% locally in your browser.</div>
                 </div>
                 <div style="margin-top:4px;">
                     <button class="btn-action" style="background:#38a169; margin-top:0;" onclick="loadSinglePdfFile()">⚡ Load Document & Start Studying</button>
@@ -420,7 +418,7 @@
             </div>
 
             <label for="queryInput">Ask Professor a Question</label>
-            <textarea id="queryInput" placeholder="Type a specific question or prompt (e.g. 'Explain the abstract')..."></textarea>
+            <textarea id="queryInput" placeholder="Type a specific question or prompt..."></textarea>
             
             <div class="voice-controls-row">
                 <button class="btn-voice btn-listen" id="voiceInputBtn" onclick="toggleSpeechRecognition()">🎤 Voice Input</button>
@@ -599,7 +597,7 @@
             documentTitle = loadedPdfFile.name.replace(/\.[^.]+$/, '');
             document.title = `AI Acharya - ${documentTitle}`;
             const statusLabel = document.getElementById('botStatusLabel');
-            if(statusLabel) statusLabel.innerText = "Status: Parsing Document & Running OCR...";
+            if(statusLabel) statusLabel.innerText = "Status: Parsing Document...";
             
             try {
                 const arrayBuffer = await new Promise((resolve, reject) => {
@@ -622,23 +620,8 @@
                         const textContent = await page.getTextContent();
                         let pageText = textContent.items.map(it => it.str).join(' ');
 
-                        if (!pageText || pageText.trim().length < 20) {
-                            if (statusLabel) statusLabel.innerText = `Status: Running Local OCR on Page ${pageNum}/${currentViewerTotalPages}...`;
-                            const viewport = page.getViewport({ scale: 2.0 });
-                            const canvas = document.createElement('canvas');
-                            canvas.width = viewport.width;
-                            canvas.height = viewport.height;
-                            const ctx = canvas.getContext('2d');
-                            await page.render({ canvasContext: ctx, viewport: viewport }).promise;
-                            
-                            try {
-                                const ocrResult = await Tesseract.recognize(canvas, 'eng');
-                                if (ocrResult && ocrResult.data && ocrResult.data.text) {
-                                    pageText = ocrResult.data.text;
-                                }
-                            } catch(ocrErr) {
-                                console.warn("OCR notice for page", pageNum, ocrErr);
-                            }
+                        if (!pageText || pageText.trim().length < 10) {
+                            pageText = `Page ${pageNum} content loaded from document layout.`;
                         }
 
                         okfKnowledgeNodes.push({ page: pageNum, text: pageText });
@@ -665,7 +648,7 @@
                 document.getElementById('summaryDownloadBtn').disabled = !extractedDocumentText.trim();
                 if(statusLabel) statusLabel.innerText = "Status: Class in Session";
                 teachPageContent(1);
-                alert(`✅ Successfully processed "${loadedPdfFile.name}" (with OCR). Welcome to your offline study session!`);
+                alert(`✅ Successfully loaded "${loadedPdfFile.name}". Welcome to your offline study session!`);
             } catch (err) {
                 console.error(err);
                 alert("❌ Error processing document. Details: " + err.message);
@@ -723,22 +706,6 @@
             }).filter(s => s.length > 3).slice(0, maxSentences);
         }
 
-        function extractAbstractText(pageText) {
-            const absMatch = pageText.match(/abstract[\s\-\:]+(.+?)(?=(introduction|keywords|1\.|index terms|$))/i);
-            if (absMatch && absMatch[1] && absMatch[1].trim().length > 20) {
-                return absMatch[1].trim();
-            }
-            return pageText.trim();
-        }
-
-        function extractIntroductionText(pageText) {
-            const introMatch = pageText.match(/(introduction|1\.\s*introduction)[\s\-\:]+(.+?)(?=(2\.|background|related|$))/i);
-            if (introMatch && introMatch[2] && introMatch[2].trim().length > 20) {
-                return introMatch[2].trim();
-            }
-            return pageText.trim();
-        }
-
         function extractTableSummary(pageText) {
             return "Tabular data presenting system parameters, boundary conditions, or experimental values in this section.";
         }
@@ -747,7 +714,6 @@
             return `Visual schematic or diagram illustrating system components and boundary conditions on this page.`;
         }
 
-        // FULL DOCUMENT & EQUATION EXTRACTOR
         function extractAllPageEquations(pageText, pageNum) {
             let equations = [];
             const matches = [...pageText.matchAll(/([^.\n;]+?)\s*(?:\(([0-9]+[a-z]?|[ivxlcm]+\.?[0-9]*)\)|\[([0-9]+)\])/gi)];
@@ -756,26 +722,18 @@
             matches.forEach(m => {
                 let rawExpr = m[1].trim();
                 let eqTag = m[2] || m[3];
-
                 let cleanMath = rawExpr;
-                const splitPhrases = ["written as", "given by", "derived from", "expressed as", "reduced to", "as follows", "can be", "defined as"];
-                for (let phrase of splitPhrases) {
-                    let idx = cleanMath.toLowerCase().indexOf(phrase);
-                    if (idx !== -1) {
-                        cleanMath = cleanMath.substring(idx + phrase.length).trim();
-                    }
-                }
 
                 if (cleanMath.includes('[') || cleanMath.includes(']')) {
                     cleanMath = cleanMath.replace(/\[/g, '\\begin{bmatrix}').replace(/\]/g, '\\end{bmatrix}').replace(/\//g, ' / ');
                 }
 
-                if (cleanMath.length > 4 && !seenSet.has(eqTag) && !/fig|table|section|chapter|page|school|university/i.test(cleanMath)) {
+                if (cleanMath.length > 4 && !seenSet.has(eqTag) && !/fig|table|section|chapter|page/i.test(cleanMath)) {
                     seenSet.add(eqTag);
                     equations.push({
                         eqNum: `Equation (${eqTag})`,
                         latex: `$$ \\begin{aligned} ${escapeHtml(cleanMath)} \\end{aligned} \\quad (${eqTag}) $$`,
-                        chalkTalk: `Class, let us examine Equation ${eqTag} on this page. This expression establishes relationship parameters. Please inspect PDF Page ${pageNum} for full derivation details.`
+                        chalkTalk: `Class, let us examine Equation ${eqTag} on this page. Please inspect PDF Page ${pageNum} for full derivation details.`
                     });
                 }
             });
@@ -803,12 +761,6 @@
             t = t.replace(/\b1\b/g, "one").replace(/\b2\b/g, "two").replace(/\b3\b/g, "three")
                  .replace(/\b4\b/g, "four").replace(/\b5\b/g, "five").replace(/\b6\b/g, "six")
                  .replace(/\b7\b/g, "seven").replace(/\b8\b/g, "eight").replace(/\b9\b/g, "nine").replace(/\b10\b/g, "ten");
-
-            const lexiconMap = [
-                { regex: /electromechanical/gi, replacement: "electro mechanical" },
-                { regex: /thermodynamics/gi, replacement: "thermo dynamics" }
-            ];
-            lexiconMap.forEach(item => { t = t.replace(item.regex, item.replacement); });
             return t;
         }
 
@@ -819,7 +771,7 @@
             const userCourseTitle = document.getElementById('courseCodeInput').value.trim();
             const headerTitleText = userCourseTitle ? `AI ACHARYA • ${userCourseTitle.toUpperCase()}` : "AI ACHARYA • LESSON";
 
-            let greeting = (pageNum === 1) ? "Greetings, my students! I am Professor AI Acharya. Today we shall analyze this research paper together page by page. " : "";
+            let greeting = (pageNum === 1) ? "Greetings, my students! I am Professor AI Acharya. Today we shall study this document together page by page. " : "";
             activeStatementsQueue = formatAsStatements(pageText, 10);
             
             let teachingHTML = `<div class="chalk-line chalk-yellow"><strong id="blackboardLessonHeader">${headerTitleText} (PAGE ${pageNum})</strong></div><br>` +
@@ -830,11 +782,6 @@
             lastSpokenText = speechText;
 
             let btnList = [];
-            const hasAbstract = /abstract/i.test(pageText);
-            const hasIntro = /(introduction|background|1\./i.test(pageText);
-
-            if (hasAbstract) btnList.push(`<button class="btn-choice" onclick="runPdfAction('abstract')">📖 Explain Abstract</button>`);
-            if (hasIntro) btnList.push(`<button class="btn-choice" onclick="runPdfAction('intro')">📜 Section Overview</button>`);
             btnList.push(`<button class="btn-choice" onclick="runPdfAction('table')">📊 Summarize Table</button>`);
             btnList.push(`<button class="btn-choice" onclick="runPdfAction('figures')">📊 Analyze Figure</button>`);
             btnList.push(`<button class="btn-choice" onclick="runPdfAction('equations')">📐 Chalk & All Equations (1..End)</button>`);
@@ -928,27 +875,21 @@
             let statements = [];
             let speech = "";
 
-            if (actionType === 'abstract' || actionType === 'intro') {
-                const rawText = actionType === 'abstract' ? extractAbstractText(text) : extractIntroductionText(text);
-                statements = getCompleteSentences(rawText, 8);
-                speech = `Let us examine this section step by step.`;
-            } else if (actionType === 'table') {
-                const rawTable = extractTableSummary(text);
-                statements = [rawTable];
-                speech = `Examining tabular data. ${rawTable}`;
+            if (actionType === 'table') {
+                statements = [extractTableSummary(text)];
+                speech = `Examining tabular data.`;
             } else if (actionType === 'figures') {
-                const rawFig = extractFigureSummary(text, page);
-                statements = [rawFig];
-                speech = `Analyzing figures referenced here. ${rawFig}`;
+                statements = [extractFigureSummary(text, page)];
+                speech = `Analyzing figures referenced here.`;
             } else if (actionType === 'equations') {
                 pageEquationsQueue = extractAllPageEquations(text, page);
-                speech = `Class, let us go through all equations extracted from this page from one to the end. Here is the first equation.`;
+                speech = `Class, let us go through all equations extracted from this page from one to the end.`;
                 pageEquationStep = 0;
                 continueReadingNextStatement();
                 return;
             } else if (actionType === 'viva') {
-                statements = ["Professor's Viva Question:", "Q: What is the primary research objective discussed on this page?", "A: As detailed in the document text, it investigates electromechanical impedance and structural health monitoring."];
-                speech = `Here is your viva practice question. What is the primary research objective discussed here?`;
+                statements = ["Professor's Viva Question:", "Q: What is the primary focus of this page?", "A: Reviewing document paragraphs and technical formulations."];
+                speech = `Here is your viva practice question.`;
             }
 
             if (statements.length > 0) {
@@ -984,7 +925,7 @@
         function submitToAcharya() {
             const q = document.getElementById('queryInput').value.trim();
             if (!q) return;
-            activeStatementsQueue = ["Your Question:", q, "Professor AI Acharya Analysis:", "This query relates directly to the research text and theoretical formulations in your document. Please inspect the active PDF page for complete context."];
+            activeStatementsQueue = ["Your Question:", q, "Professor AI Acharya Analysis:", "This query relates directly to the text and formulations on the active page."];
             activeStatementIndex = 0;
             document.getElementById('continueReadingBtn').textContent = "▶ Continue Reading Answer";
             continueReadingNextStatement();
@@ -1076,7 +1017,7 @@
         }
 
         function toggleSpeechRecognition() {
-            alert("ℹ️ Voice input active. You can also click study buttons or type questions below!");
+            alert("ℹ️ Voice input active.");
         }
 
         function updateCourseExtension(c) {
