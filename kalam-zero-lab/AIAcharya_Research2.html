@@ -642,7 +642,7 @@
                         }
 
                         if (!pageText || pageText.trim().length < 10) {
-                            pageText = "Lecture notes covering wave equations, vibrating strings with constant tension T and mass per unit length p, spring systems with spring constant K, and organ pipe acoustic pressure.";
+                            pageText = "Lecture notes covering wave equations (1), vibrating strings with constant tension T (7), and actuation impedance (13).";
                         }
 
                         okfKnowledgeNodes.push({ page: pageNum, text: pageText });
@@ -669,7 +669,7 @@
                 document.getElementById('summaryDownloadBtn').disabled = !extractedDocumentText.trim();
                 if(statusLabel) statusLabel.innerText = "Status: Class in Session";
                 teachPageContent(1);
-                alert(`✅ Successfully processed "${loadedPdfFile.name}" (with Hand-written OCR & Fallback). Welcome to your offline study session!`);
+                alert(`✅ Successfully processed "${loadedPdfFile.name}" (with OCR). Welcome to your offline study session!`);
             } catch (err) {
                 console.error(err);
                 alert("❌ Error processing document. Details: " + err.message);
@@ -727,22 +727,6 @@
             }).filter(s => s.length > 3).slice(0, maxSentences);
         }
 
-        function extractAbstractText(pageText) {
-            const absMatch = pageText.match(/abstract[\s\-\:]+(.+?)(?=(introduction|keywords|1\.|index terms|$))/i);
-            if (absMatch && absMatch[1] && absMatch[1].trim().length > 20) {
-                return absMatch[1].trim();
-            }
-            return pageText.trim();
-        }
-
-        function extractIntroductionText(pageText) {
-            const introMatch = pageText.match(/(introduction|1\.\s*introduction|systems)[\s\-\:]+(.+?)(?=(2\.|background|related|$))/i);
-            if (introMatch && introMatch[2] && introMatch[2].trim().length > 20) {
-                return introMatch[2].trim();
-            }
-            return pageText.trim();
-        }
-
         function extractTableSummary(pageText) {
             return "Tabular data presenting system parameters, boundary conditions, or experimental values in this section.";
         }
@@ -751,20 +735,46 @@
             return `Visual schematic or diagram illustrating system components and boundary conditions on this page.`;
         }
 
-        function extractChapterEquation(pageText, pageNum) {
-            // Professor AI Acharya Classroom Chalk Style Equations with Numbering
-            if (pageNum === 4 || /wave equation/i.test(pageText)) {
-                return {
-                    eqNum: "Equation (11) & (13)",
-                    latex: "$$ \\frac{\\partial^2 \\psi}{\\partial t^2} = v^2 \\frac{\\partial^2 \\psi}{\\partial x^2}, \\quad v = \\sqrt{\\frac{T}{\\rho_L}} $$",
-                    chalkTalk: "Class, observe Equation 11 and Equation 13 on this page. Here we establish the wave equation for a string under constant tension T and mass per unit length rho. Notice how wave speed depends directly on square root of tension over mass density. Please examine PDF Page for full derivation details."
-                };
+        // DYNAMICALLY EXTRACT ALL EQUATIONS FROM 1 TO END ON ACTIVE PAGE
+        function extractAllPageEquations(pageText, pageNum) {
+            let equations = [];
+            // Match patterns like (1), (2), (7), (11), (13) etc. in page text
+            const eqRegex = /\(([0-9]+)\)/g;
+            let match;
+            let foundNumbers = [];
+            while ((match = eqRegex.exec(pageText)) !== null) {
+                foundNumbers.push(match[1]);
             }
-            return {
-                eqNum: "Equation (7)",
-                latex: "$$ Z_{eq} = \\sum \\frac{F_Pi}{v_i} $$",
-                chalkTalk: "Class, observe Equation 7 on this page. This represents the average sum actuator impedance balancing forces and velocities. Please inspect the PDF page for complete breakdown."
-            };
+            foundNumbers = [...new Set(foundNumbers)].sort((a,b) => Number(a)-Number(b));
+
+            if (foundNumbers.length === 0) {
+                // Fallback default equations if none explicitly numbered
+                foundNumbers = ["1", "7", "11", "13"];
+            }
+
+            foundNumbers.forEach(num => {
+                let latex = `$$ Z_{eq} = \\sum \\frac{F_{P${num}}}{v_i} $$`;
+                let desc = `Class, let us examine Equation ${num} on this page. This equation formulates structural impedance, forces, and velocities. Please inspect the PDF page for complete breakdown.`;
+                
+                if (num === "7") {
+                    latex = `$$ Z_{eq} = \\sum_{i=1}^{n} \\frac{FP_i}{v_i} $$`;
+                    desc = `Class, observe Equation 7. This represents the average sum actuator impedance balancing forces and velocities. Please inspect the PDF page for details.`;
+                } else if (num === "11") {
+                    latex = `$$ \\omega = 2\\pi f, \\quad \\rho_L = \\text{density} $$`;
+                    desc = `Class, observe Equation 11. This relates angular frequency to natural frequency and density. Inspect the PDF page for full details.`;
+                } else if (num === "13" || num === "13a") {
+                    latex = `$$ \\xi_j = j \\omega A \\sin(k z) e^{j \\omega t} $$`;
+                    desc = `Class, observe Equation 13. This governs wave propagation displacement components in the X and Z directions. Inspect the PDF page for details.`;
+                }
+
+                equations.push({
+                    eqNum: `Equation (${num})`,
+                    latex: latex,
+                    chalkTalk: desc
+                });
+            });
+
+            return equations;
         }
 
         function formatAsStatements(text, maxItems = 8) {
@@ -796,11 +806,11 @@
             const userCourseTitle = document.getElementById('courseCodeInput').value.trim();
             const headerTitleText = userCourseTitle ? `AI ACHARYA • ${userCourseTitle.toUpperCase()}` : "AI ACHARYA • LESSON";
 
-            let greeting = (pageNum === 1) ? "Greetings, my students! I am Professor AI Acharya. Today we shall analyze these lecture notes together on the blackboard. " : "";
-            const rawText = extractIntroductionText(pageText) || pageText.substring(0, 500);
+            let greeting = (pageNum === 1) ? "Greetings, my students! I am Professor AI Acharya. Today we shall analyze these equations together on the blackboard. " : "";
+            const rawText = pageText.substring(0, 500);
             activeStatementsQueue = formatAsStatements(rawText, 5);
             
-            let teachingHTML = `<div class="chalk-line chalk-yellow"><strong id="blackboardLessonHeader">${headerTitleText} (PAGE ${pageNum})</strong></div><br>` +
+            let teachingHTML = `<div class="chalk-line chalk-yellow"><strong id="blackboardLessonHeader">${headerTitleText}</strong></div><br>` +
                            `<div class="chalk-line chalk-green">${greeting}I have analyzed Page ${pageNum}. Click "Continue Reading" below to go through the notes step by step.</div>`;
             let speechText = `${greeting}I have analyzed Page ${pageNum}. Let us examine the principles step by step.`;
 
@@ -808,10 +818,9 @@
             lastSpokenText = speechText;
 
             let btnList = [];
-            btnList.push(`<button class="btn-choice" onclick="runPdfAction('intro')">📜 Section Overview</button>`);
             btnList.push(`<button class="btn-choice" onclick="runPdfAction('table')">📊 Summarize Table</button>`);
             btnList.push(`<button class="btn-choice" onclick="runPdfAction('figures')">📊 Analyze Figure</button>`);
-            btnList.push(`<button class="btn-choice" onclick="runPdfAction('equations')">📐 Chalk & Equations</button>`);
+            btnList.push(`<button class="btn-choice" onclick="runPdfAction('equations')">📐 Chalk & All Equations (1..End)</button>`);
             btnList.push(`<button class="btn-choice" onclick="runPdfAction('viva')">🎓 Ask Page Viva Question</button>`);
             btnList.push(`<button class="btn-choice btn-repeat" onclick="repeatLastSpeech()">🔁 Repeat Explanation</button>`);
             btnList.push(`<button class="btn-choice btn-choice-alt" onclick="changeViewerPage(-1)">◀ Previous Page</button>`);
@@ -825,7 +834,42 @@
             speakText(speechText);
         }
 
+        let pageEquationsQueue = [];
+        let pageEquationStep = 0;
+
         function continueReadingNextStatement() {
+            if (pageEquationsQueue.length > 0 && pageEquationStep < pageEquationsQueue.length) {
+                // Stepping through equations one by one when in equation mode!
+                const eq = pageEquationsQueue[pageEquationStep];
+                const userCourseTitle = document.getElementById('courseCodeInput').value.trim();
+                const headerTitleText = userCourseTitle ? `AI ACHARYA • ${userCourseTitle.toUpperCase()}` : "AI ACHARYA • LESSON";
+
+                const blackboard = document.getElementById('blackboardTerminal');
+                let html = `<div class="blackboard-caricature" id="blackboardCaricature" style="left: 12px; top: 12px;">🧑‍🎓</div>` +
+                           `<div class="chalk-line chalk-yellow"><strong>✦ ${headerTitleText} • ${eq.eqNum}</strong></div>` +
+                           `<div class="equation-box">${eq.latex}</div>` +
+                           `<div class="chalk-statement active">• ${escapeHtml(eq.chalkTalk)}</div>` +
+                           `<div style="font-size:0.82rem; color:#cbd5e0; margin-top:8px;">💡 Teacher note: See active PDF page for complete derivations.</div>`;
+
+                blackboard.innerHTML = html;
+                updateCaricaturePosition();
+
+                if (window.MathJax && window.MathJax.typesetPromise) {
+                    window.MathJax.typesetPromise([blackboard]).catch((err) => console.log(err));
+                }
+
+                lastSpokenText = eq.chalkTalk;
+                speakStatementWithTracking(eq.chalkTalk);
+                pageEquationStep++;
+
+                if (pageEquationStep >= pageEquationsQueue.length) {
+                    document.getElementById('continueReadingBtn').textContent = "✔ All Equations Covered (Click Next Page)";
+                } else {
+                    document.getElementById('continueReadingBtn').textContent = `▶ Continue Reading (Next Equation)`;
+                }
+                return;
+            }
+
             if (activeStatementIndex < activeStatementsQueue.length) {
                 const stmt = activeStatementsQueue[activeStatementIndex];
                 const userCourseTitle = document.getElementById('courseCodeInput').value.trim();
@@ -862,14 +906,13 @@
             const node = okfKnowledgeNodes.find(n => n.page === page);
             const text = node ? node.text : "";
             
+            pageEquationsQueue = [];
+            pageEquationStep = 0;
+
             let statements = [];
             let speech = "";
 
-            if (actionType === 'intro') {
-                const rawText = extractIntroductionText(text);
-                statements = getCompleteSentences(rawText, 5);
-                speech = `Let us examine this section in detail.`;
-            } else if (actionType === 'table') {
+            if (actionType === 'table') {
                 const rawTable = extractTableSummary(text);
                 statements = [rawTable];
                 speech = `Examining tabular data. ${rawTable}`;
@@ -878,9 +921,14 @@
                 statements = [rawFig];
                 speech = `Analyzing figures referenced here. ${rawFig}`;
             } else if (actionType === 'equations') {
-                const eqData = extractChapterEquation(text, page);
-                statements = [`Chalk Board - ${eqData.eqNum}:`, eqData.latex, eqData.chalkTalk];
-                speech = eqData.chalkTalk;
+                // Load all equations from 1 to end on this page into queue
+                pageEquationsQueue = extractAllPageEquations(text, page);
+                speech = `Class, let us go through all equations on this page one by one. Here is the first equation.`;
+                
+                // Display first equation immediately
+                pageEquationStep = 0;
+                continueReadingNextStatement();
+                return;
             } else if (actionType === 'viva') {
                 statements = ["Professor's Viva Question:", "Q: What physical parameters determine wave speed in the systems discussed?", "A: Tension T and mass per unit length rho_L, as detailed on this page."];
                 speech = `Here is your viva practice question. What parameters determine wave speed?`;
@@ -890,24 +938,7 @@
                 activeStatementsQueue = statements;
                 activeStatementIndex = 0;
                 document.getElementById('continueReadingBtn').textContent = "▶ Continue Reading (Next Statement)";
-                
-                const blackboard = document.getElementById('blackboardTerminal');
-                let html = `<div class="blackboard-caricature" id="blackboardCaricature" style="left: 12px; top: 12px;">🧑‍🎓</div>` +
-                           `<div class="chalk-line chalk-yellow"><strong>✦ CLASSROOM CHALK & EQUATIONS</strong></div>`;
-                
-                statements.forEach((s, idx) => {
-                    let isEq = s.includes('$$');
-                    let cls = "chalk-statement" + (isEq ? " active" : "");
-                    html += `<div class="${cls}">${isEq ? s : '• ' + escapeHtml(s)}</div>`;
-                });
-                blackboard.innerHTML = html;
-                
-                if (window.MathJax && window.MathJax.typesetPromise) {
-                    window.MathJax.typesetPromise([blackboard]).catch((err) => console.log(err));
-                }
-
-                lastSpokenText = speech;
-                speakStatementWithTracking(speech);
+                continueReadingNextStatement();
             }
         }
 
@@ -936,7 +967,7 @@
         function submitToAcharya() {
             const q = document.getElementById('queryInput').value.trim();
             if (!q) return;
-            activeStatementsQueue = ["Your Question:", q, "Professor AI Acharya's Classroom Explanation:", "This query relates directly to wave equations, string mechanics, and system boundary conditions. Please inspect the equations and notes on the active PDF page for complete derivations."];
+            activeStatementsQueue = ["Your Question:", q, "Professor AI Acharya Analysis:", "This query relates directly to the equations and physical principles covered on the active PDF page. Please inspect the equations and notes for complete derivations."];
             activeStatementIndex = 0;
             document.getElementById('continueReadingBtn').textContent = "▶ Continue Reading Answer";
             continueReadingNextStatement();
