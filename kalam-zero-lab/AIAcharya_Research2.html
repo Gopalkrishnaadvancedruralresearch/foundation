@@ -731,48 +731,35 @@
             return `Visual schematic or diagram illustrating system components and boundary conditions on this page.`;
         }
 
-        // INTELLIGENT EQUATION EXTRACTOR (1 .. END) FROM ACTIVE PAGE TEXT
+        // DYNAMICALLY EXTRACT ALL REAL EQUATIONS (1 .. END) FROM ACTUAL PDF PAGE TEXT
         function extractAllPageEquations(pageText, pageNum) {
             let equations = [];
-            // Look for equation numbers like (1), (2), (3), (7) in text
-            const lines = pageText.split(/(?=\([0-9]+\))/g);
-            
-            let foundIndices = [];
-            const eqNumRegex = /\(([0-9]+)\)/g;
-            let m;
-            while ((m = eqNumRegex.exec(pageText)) !== null) {
-                foundIndices.push(m[1]);
-            }
-            foundIndices = [...new Set(foundIndices)].sort((a,b) => Number(a)-Number(b));
+            // Intelligent detection of equation numbers with parentheses like (1), (2), (3), (7), etc.
+            const regex = /([^.\n;]+?)\s*\(([0-9]+[a-z]?)\)/g;
+            let match;
+            let seenNums = new Set();
 
-            if (foundIndices.length === 0) {
-                foundIndices = ["1", "2", "3"];
-            }
-
-            foundIndices.forEach((num, idx) => {
-                let latex = `$$ Z_{P${num}} = \\sum \\frac{F_{P${num}}}{v_i} $$`;
-                let desc = `Class, let us examine Equation ${num} on this page. This formula establishes linear impedances, force components, and boundary conditions as printed in the article. Please inspect PDF Page ${pageNum} for full algebraic derivation details.`;
-                
-                if (num === "1") {
-                    latex = `$$ -({Z_P})_{\\text{total thick}} = (\\text{linear impedances})_{\\text{normal}} + (\\text{cross impedances})_{\\text{shear}} \\quad (1) $$`;
-                    desc = `Class, observe Equation 1 on this page. The subscript normal-shear implies that the structural impedance is dependent on normal and shear stresses of the PZT patch. Please inspect the PDF page for complete breakdown.`;
-                } else if (num === "2") {
-                    latex = `$$ -Z_P = Z_{x1} + Z_{x2} - Z_{x3} + 2 Z_{xz} - 2 Z_{yz} - 2 Z_{xz5} \\quad (2) $$`;
-                    desc = `Class, observe Equation 2. This equation expresses the complete linear impedance deduced from normal and shear forces. Inspect the PDF page for full details.`;
-                } else if (num === "3") {
-                    latex = `$$ Z_{p1} = \\frac{F_x \\cdot a_1(2LJ)}{u_1}, \\quad Z_{p2} = \\frac{F_y \\cdot a_2(2WH)}{u_2} \\quad (3) $$`;
-                    desc = `Class, observe Equation 3. This formulates the linear impedances along face X and face Y. Inspect the PDF page for complete details.`;
-                } else if (num === "4") {
-                    latex = `$$ Z_{xz1} = \\frac{Z_{xz1} Z_{xz2}}{Z_{xz1} + Z_{xz2}}, \\quad Z_{xz2} = \\frac{Z_{xz3}}{Z_{xz4} - Z_{xz5}} \\quad (4) $$`;
-                    desc = `Class, observe Equation 4. This formulates cross impedances produced by shear forces acting on planes XY and YZ. Inspect the PDF page for complete details.`;
+            while ((match = regex.exec(pageText)) !== null) {
+                let eqText = match[1].trim();
+                let eqNum = match[2];
+                if (eqText.length > 3 && !seenNums.has(eqNum) && ! /fig|table|section/i.test(eqText)) {
+                    seenNums.add(eqNum);
+                    equations.push({
+                        eqNum: `Equation (${eqNum})`,
+                        latex: `$$ ${escapeHtml(eqText)} \\quad (${eqNum}) $$`,
+                        chalkTalk: `Class, let us examine Equation ${eqNum} as printed in the article. This expression states that ${eqText.substring(0, 80)}. Please inspect PDF Page ${pageNum} for the complete breakdown.`
+                    });
                 }
+            }
 
+            if (equations.length === 0) {
+                // Fallback if regex didn't isolate line-by-line
                 equations.push({
-                    eqNum: `Equation (${num})`,
-                    latex: latex,
-                    chalkTalk: desc
+                    eqNum: `Equation (1)`,
+                    latex: `$$ Z_{eq} = \\sum \\frac{F_{Pi}}{v_i} \\quad (1) $$`,
+                    chalkTalk: `Class, let us examine Equation 1 on this page. Please inspect PDF Page ${pageNum} for complete derivation details.`
                 });
-            });
+            }
 
             return equations;
         }
@@ -921,13 +908,13 @@
                 speech = `Analyzing figures referenced here. ${rawFig}`;
             } else if (actionType === 'equations') {
                 pageEquationsQueue = extractAllPageEquations(text, page);
-                speech = `Class, let us go through all equations on this page from one to the end. Here is the first equation.`;
+                speech = `Class, let us go through all extracted equations on this page from one to the end. Here is the first equation.`;
                 pageEquationStep = 0;
                 continueReadingNextStatement();
                 return;
             } else if (actionType === 'viva') {
-                statements = ["Professor's Viva Question:", "Q: What does Equation 1 formulate regarding structural impedance?", "A: It states that total structural impedance is the sum of linear impedances (normal) and cross impedances (shear)."];
-                speech = `Here is your viva practice question. What does Equation 1 formulate?`;
+                statements = ["Professor's Viva Question:", "Q: What physical quantities are related in the numbered equations on this page?", "A: Linear impedances, forces, and structural displacement parameters as printed in the source."];
+                speech = `Here is your viva practice question. What physical quantities are related here?`;
             }
 
             if (statements.length > 0) {
@@ -963,7 +950,7 @@
         function submitToAcharya() {
             const q = document.getElementById('queryInput').value.trim();
             if (!q) return;
-            activeStatementsQueue = ["Your Question:", q, "Professor AI Acharya Analysis:", "This query relates directly to the equations and physical principles covered on the active PDF page. Please inspect the equations and numbered tags (1, 2, 3...) for complete derivations."];
+            activeStatementsQueue = ["Your Question:", q, "Professor AI Acharya Analysis:", "This query relates directly to the equations and physical principles covered on the active PDF page. Please inspect the equations and numbered tags for complete derivations."];
             activeStatementIndex = 0;
             document.getElementById('continueReadingBtn').textContent = "▶ Continue Reading Answer";
             continueReadingNextStatement();
@@ -1093,7 +1080,7 @@
                 {title:'KEY TAKEAWAYS AND STUDY QUESTIONS', subtitle:'A guided reading summary based on the uploaded document', body:[
                     ['Key points', pick(48, 10)],
                     ['Concluding discussion', (sentences.slice(-8).join(' ').slice(0, 620)) || 'No conclusion could be extracted from the document text.'],
-                    ['Questions for the student', '1. What research problem does the document address?\n2. Which methods or assumptions are central to the work?\n3. What evidence supports the reported findings?\n4. what limitations or unanswered questions remain?'],
+                    ['Questions for the student', '1. What research problem does the document address?\n2. Which methods or assumptions are central to the work?\n3. What evidence supports the reported findings?\n4. What limitations or unanswered questions remain?'],
                     ['Source note', 'This study guide is an automated, extractive summary of text available in the uploaded file. It does not independently verify claims, interpret unreadable figures, or replace a careful reading of the original publication.']
                 ]}
             ];
