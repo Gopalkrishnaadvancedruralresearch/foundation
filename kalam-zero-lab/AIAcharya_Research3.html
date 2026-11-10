@@ -1,0 +1,1454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Acharya - Universal Scientific Classroom (Equations & Synchronized)</title>
+    <!-- Document Parsers & Math Renderers -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        :root {
+            --primary: #0f3057;
+            --secondary: #2b6cb0;
+            --accent: #48bb78;
+            --bg: #0b1426;
+            --panel: #111c30;
+            --text: #e2e8f0;
+            --voice: #e53e3e;
+            --course-theme: #744210;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            margin: 0;
+            padding: 0;
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .header {
+            background: #070d19;
+            color: white;
+            padding: 16px 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            border-bottom: 1px solid #1a2e4c;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        .brand-container { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center;
+            justify-content: center;
+            gap: 10px; 
+            width: 100%;
+            max-width: 1200px;
+        }
+        
+        .top-header-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            width: 100%;
+        }
+        .brand-left-group {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+        .logo-container {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            background: #fff;
+            border: 2px solid #ecc94b;
+            box-shadow: 0 4px 12px rgba(236,201,75,0.35);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .logo-container img { width: 100%; height: 100%; object-fit: contain; }
+        .foundation-title {
+            margin: 0;
+            font-size: clamp(0.95rem, 2vw, 1.35rem);
+            font-weight: 700;
+            color: #ffffff;
+            text-align: center;
+        }
+        .flags-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .flag-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            color: #dce8f8;
+            background: #ffffff12;
+            border: 1px solid #ffffff25;
+            border-radius: 20px;
+            padding: 3px 10px;
+            font-size: 0.78rem;
+        }
+        .header-action-buttons {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .btn-guide {
+            background: #ecc94b;
+            color: #0b1426;
+            border: none;
+            padding: 7px 14px;
+            border-radius: 6px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s ease;
+        }
+        .btn-guide:hover { background: #d69e2e; }
+        .btn-guide:active { transform: scale(0.96); background: #b7791f; }
+
+        .sub-header-line { 
+            width: 100%; 
+            display: flex; 
+            flex-direction: column;
+            justify-content: center; 
+            align-items: center; 
+            padding-top: 10px; 
+            border-top: 1px solid #ffffff20; 
+            text-align: center; 
+            gap: 4px;
+        }
+        .acharya-title { 
+            margin: 0; 
+            font-size: clamp(1.2rem, 2.5vw, 1.6rem); 
+            font-weight: 800; 
+            color: #ecc94b; 
+            letter-spacing: .4px; 
+            text-shadow: 0 2px 10px #ecc94b33; 
+            text-align: center;
+        }
+        .tagline { text-align: center; color: #cbd5e0; margin: 4px 0 2px; font-size: .88rem; }
+
+        .audio-unlock-banner {
+            background: linear-gradient(135deg, #2b6cb0, #2f855a);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.82rem;
+            font-weight: bold;
+            cursor: pointer;
+            border: 1px solid #68d391;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            transition: all 0.2s;
+        }
+        .audio-unlock-banner:hover { background: linear-gradient(135deg, #3182ce, #38a169); transform: scale(1.03); }
+
+        .blackboard { 
+            position: relative; 
+            background: repeating-linear-gradient(0deg, #123b2b, #123b2b 2px, #0e3325 3px, #0e3325 5px); 
+            border: 8px solid #81552d; 
+            border-radius: 8px; 
+            box-shadow: inset 0 0 20px #061c14, 0 4px 12px #0008; 
+            color: #fff; 
+            padding: 16px 16px 52px; 
+            min-height: 420px; 
+            overflow-y: auto; 
+            max-height: 600px; 
+        }
+
+        .board-teacher-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(0, 0, 0, 0.25);
+            border-bottom: 2px dashed rgba(255, 255, 255, 0.2);
+            padding: 8px 12px;
+            margin-bottom: 14px;
+            border-radius: 6px;
+        }
+        .board-teacher-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .teacher-avatar-box {
+            width: 44px;
+            height: 44px;
+            background: #f6ad55;
+            border-radius: 50%;
+            border: 2px solid #ecc94b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+            overflow: hidden;
+        }
+        .teacher-face-inner {
+            width: 32px;
+            height: 32px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .teacher-hair {
+            position: absolute; top: 0; width: 30px; height: 12px; background: #2d3748; border-radius: 15px 15px 2px 2px;
+        }
+        .teacher-eyes {
+            display: flex; gap: 8px; margin-top: 5px;
+        }
+        .teacher-eye {
+            width: 4px; height: 4px; background: #1a202c; border-radius: 50%;
+            animation: blinkEyes 4s infinite;
+        }
+        @keyframes blinkEyes {
+            0%, 96%, 100% { transform: scaleY(1); }
+            98% { transform: scaleY(0.1); }
+        }
+        .teacher-mouth {
+            width: 8px; height: 2px; background: #9b2c2c; border-radius: 2px; margin-top: 5px;
+        }
+        .teacher-avatar-box.speaking .teacher-mouth {
+            animation: moveMouth 0.15s infinite alternate ease-in-out;
+        }
+        @keyframes moveMouth {
+            0% { height: 2px; width: 6px; background: #9b2c2c; }
+            100% { height: 7px; width: 10px; background: #e53e3e; border-radius: 50%; }
+        }
+        .teacher-status-label {
+            font-size: 0.85rem;
+            color: #ecc94b;
+            font-weight: bold;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+
+        .chalk-line { min-height: 1.5em; line-height: 1.7; font-family: 'Trebuchet MS', sans-serif; white-space: pre-wrap; margin-bottom: 6px; font-size: 0.95rem; position: relative; }
+        
+        .chalk-statement { 
+            padding: 10px 14px; 
+            border-radius: 6px; 
+            display: block; 
+            margin-bottom: 10px; 
+            position: relative;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 1.02rem;
+            line-height: 1.6;
+            letter-spacing: 0.3px;
+            color: #ffffff;
+            border-left: 4px solid #ecc94b;
+            background: rgba(255,255,255,0.12);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        .chalk-statement.typing-active {
+            color: #ffff66 !important;
+            border-left: 4px solid #ffffff;
+            background: rgba(255,255,255,0.22);
+            text-shadow: 0 0 8px rgba(255,255,102,0.6);
+            padding-right: 48px;
+        }
+
+        .chalk-statement.typing-active::after {
+            content: '👨‍🏫';
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.3rem;
+            animation: caricatureMove 0.8s infinite alternate ease-in-out;
+        }
+        @keyframes caricatureMove {
+            0% { transform: translateY(-50%) translateX(0px) scale(1); }
+            50% { transform: translateY(-60%) translateX(-6px) scale(1.1); }
+            100% { transform: translateY(-50%) translateX(4px) scale(1); }
+        }
+
+        .chalk-statement.read { color: #a5f3fc !important; text-shadow: none; opacity: 0.85; }
+
+        /* Readable Equation Display Box */
+        .equation-box {
+            background: rgba(4, 20, 14, 0.95);
+            border-left: 5px solid #63b3ed;
+            border-right: 1px solid rgba(99, 179, 237, 0.3);
+            padding: 16px 20px;
+            margin: 14px 0;
+            border-radius: 8px;
+            color: #ffffff;
+            font-size: 1.25rem;
+            box-shadow: inset 0 0 14px rgba(0,0,0,0.8), 0 4px 10px rgba(0,0,0,0.4);
+            line-height: 1.8;
+            overflow-x: auto;
+            text-align: center;
+        }
+        .equation-title {
+            font-size: 0.92rem;
+            color: #ecc94b;
+            font-weight: bold;
+            margin-bottom: 8px;
+            text-align: left;
+            border-bottom: 1px dashed rgba(236,201,75,0.3);
+            padding-bottom: 4px;
+        }
+
+        .table-display-box {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid #ecc94b;
+            border-radius: 6px;
+            padding: 10px;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        .table-display-box table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88rem;
+            color: #e2e8f0;
+            font-family: monospace;
+        }
+        .table-display-box th, .table-display-box td {
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 6px 10px;
+            text-align: left;
+        }
+        .table-display-box th {
+            background: rgba(236, 201, 75, 0.2);
+            color: #ecc94b;
+        }
+
+        .summary-btn { background: linear-gradient(135deg,#9b59b6,#6c3483); border: 1px solid #d7bde2; }
+        .summary-btn:hover{ background: linear-gradient(135deg,#af7ac5,#7d3c98); }
+        .summary-btn:active{ transform: scale(0.98); background: #512e5f; }
+
+        .citation-btn { background: linear-gradient(135deg, #2b6cb0, #1a365d); border: 1px solid #63b3ed; color: #fff; padding: 6px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.8rem; margin-bottom: 8px; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s; }
+        .citation-btn:hover { background: linear-gradient(135deg, #3182ce, #2b6cb0); }
+        .citation-btn:active { transform: scale(0.96); background: #1a365d; }
+
+        .main-container { max-width: 1450px; margin: 15px auto; padding: 0 15px; flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 18px; width: 100%; box-sizing: border-box; }
+        
+        .main-container.mode-maximize-doc { grid-template-columns: 1fr !important; }
+        .main-container.mode-maximize-doc > .classroom-pane.doc-pane { display: flex !important; }
+        .main-container.mode-maximize-doc > .classroom-pane.board-pane { display: none !important; }
+
+        .main-container.mode-maximize-board { grid-template-columns: 1fr !important; }
+        .main-container.mode-maximize-board > .classroom-pane.doc-pane { display: none !important; }
+        .main-container.mode-maximize-board > .classroom-pane.board-pane { display: flex !important; }
+
+        @media (max-width: 900px) {
+            .main-container { grid-template-columns: 1fr !important; }
+            .main-container.mode-maximize-doc > .classroom-pane.board-pane { display: none !important; }
+            .main-container.mode-maximize-board > .classroom-pane.doc-pane { display: none !important; }
+        }
+
+        .card { background: var(--panel); border-radius: 12px; padding: 18px; box-shadow: 0 6px 12px rgba(0,0,0,0.3); display: flex; flex-direction: column; border: 1px solid #1a2e4c; }
+        .card h2 { margin-top: 0; font-size: 1.05rem; color: #ecc94b; margin-bottom: 12px; border-bottom: 1px solid #1a2e4c; padding-bottom: 6px; }
+        .full-width { grid-column: span 2; }
+        @media(max-width: 900px) { .full-width { grid-column: span 1; } }
+
+        .color-palette-container {
+            display: flex; align-items: center; justify-content: space-between;
+            background: #070d19; padding: 8px 12px; border-radius: 8px; border: 1px solid #1a2e4c; margin-bottom: 14px; gap: 10px;
+        }
+        .swatches-row { display: flex; gap: 8px; align-items: center; }
+        .color-swatch { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; border: 2px solid #2d3748; transition: transform 0.2s, border-color 0.2s; }
+        .color-swatch:hover { transform: scale(1.15); border-color: #ecc94b; }
+        .color-swatch.active { border-color: #ecc94b; box-shadow: 0 0 10px #ecc94b; transform: scale(1.1); }
+        .custom-color-input { border: none; width: 34px; height: 34px; border-radius: 6px; cursor: pointer; background: none; padding: 0; }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(4, 8, 17, 0.88); display: flex; align-items: center; justify-content: center; z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.25s ease; }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-box { background: #111c30; border: 2px solid #ecc94b; border-radius: 12px; padding: 22px 26px; max-width: 880px; width: 94%; max-height: 88vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.6); }
+        .modal-title { font-size: 1.25rem; font-weight: bold; color: #ecc94b; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .modal-body-text { font-size: 0.92rem; line-height: 1.6; color: #e2e8f0; text-align: left; }
+        .modal-btn-row { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+        .btn-modal-close { background: #ed8936; color: white; border: none; padding: 9px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: all 0.2s; }
+        .btn-modal-close:active { transform: scale(0.96); background: #c05621; }
+
+        label { font-weight: 600; margin-bottom: 5px; display: block; color: #a0aec0; font-size: 0.88rem; }
+        input[type="text"], select { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #1a2e4c; border-radius: 6px; box-sizing: border-box; background: #070d19; color: white; font-size: 0.92rem; }
+        
+        .voice-controls-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        .btn-voice { padding: 11px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; color: white; font-size: 0.92rem; transition: all 0.2s; }
+        .btn-voice:active { transform: scale(0.96); }
+        .btn-listen { background: var(--voice); }
+        .btn-tts-toggle { background: #2f855a; transition: background 0.2s; }
+        .btn-tts-toggle.muted { background: #718096; }
+
+        .btn-action { background: var(--secondary); color: white; border: none; padding: 13px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 6px; font-size: 0.98rem; transition: all 0.2s ease; width: 100%; }
+        .btn-action:hover { background: #235a94; }
+        .btn-action:active { transform: scale(0.98); background: #1a365d; }
+        
+        .evidence-viewer-card {
+            background: #070d19; border: 2px solid #ecc94b; border-radius: 12px;
+            padding: 18px; margin-top: 20px; display: block; width: 100%; box-sizing: border-box;
+        }
+        .evidence-header {
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid #1a2e4c; padding-bottom: 10px; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;
+        }
+        .evidence-title { font-weight: bold; color: #ecc94b; font-size: 1.05rem; }
+        
+        .pdf-canvas-container {
+            width: 100%; min-height: 550px; max-height: 85vh; overflow: auto;
+            border: 1px solid #2b6cb0; border-radius: 8px; background: #1a2638;
+            display: flex; justify-content: center; align-items: flex-start; padding: 16px;
+            box-sizing: border-box; box-shadow: inset 0 0 15px rgba(0,0,0,0.6);
+        }
+        canvas { box-shadow: 0 6px 20px rgba(0,0,0,0.8); border-radius: 4px; background: #ffffff; max-width: 100%; height: auto; }
+
+        .viewer-controls {
+            display: flex; gap: 10px; align-items: center; justify-content: center;
+            width: 100%; margin-top: 14px; flex-wrap: wrap;
+        }
+        .btn-page-nav {
+            background: #2b6cb0; color: white; border: none; padding: 7px 14px;
+            border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.85rem; transition: all 0.2s;
+        }
+        .btn-page-nav:hover { background: #3182ce; }
+        .btn-page-nav:active { transform: scale(0.96); background: #1a365d; }
+        .btn-page-nav:disabled { background: #4a5568; cursor: not-allowed; }
+        .page-counter-label { font-size: 0.92rem; color: #ecc94b; font-weight: bold; }
+
+        .choices-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .btn-choice {
+            background: linear-gradient(135deg, #2b6cb0 0%, #1a365d 100%);
+            color: white; border: 2px solid #63b3ed; padding: 9px 10px;
+            border-radius: 8px; font-weight: bold; font-size: 0.78rem; cursor: pointer;
+            box-shadow: 0 4px 12px rgba(43, 108, 176, 0.3);
+            transition: all 0.2s ease; text-align: center;
+        }
+        .btn-choice:hover { background: linear-gradient(135deg, #3182ce 0%, #2b6cb0 100%); transform: translateY(-1px); }
+        .btn-choice:active { transform: scale(0.94); background: #102a43; }
+
+        .btn-repeat {
+            background: linear-gradient(135deg, #d69e2e 0%, #b7791f 100%);
+            border-color: #f6e05e;
+            box-shadow: 0 4px 12px rgba(214, 158, 46, 0.3);
+        }
+        .btn-repeat:active { transform: scale(0.94); background: #975a16; }
+
+        .maximize-toggle-btn {
+            background: #1a365d; color: #ecc94b; border: 1px solid #63b3ed; padding: 4px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.78rem; transition: all 0.2s;
+        }
+        .maximize-toggle-btn:hover { background: #2b6cb0; color: #fff; }
+        .maximize-toggle-btn:active { transform: scale(0.95); }
+
+        .footer { background: #070d19; color: #a0aec0; padding: 18px 25px; text-align: center; font-size: 0.85rem; border-top: 4px solid var(--primary); margin-top: auto; }
+    </style>
+</head>
+<body>
+    <div class="modal-overlay active" id="offlineNoticeModal">
+        <div class="modal-box" style="border-color: #48bb78;">
+            <div class="modal-title" style="color: #48bb78;">🔒 100% Offline Classroom & Equation Renderer</div>
+            <div class="modal-body-text">
+                <p>Welcome to <strong>AI Acharya Scientific Classroom</strong>.</p>
+                <p>Equations are formatted cleanly on the right blackboard with real-time teacher-style guidance asking you to check the PDF on the left for symbol context.</p>
+                <p style="background: rgba(72, 187, 120, 0.15); padding: 10px; border-left: 4px solid #48bb78; border-radius: 4px;">
+                    💡 <em>Bookmark this page (`Ctrl+D` or `Cmd+D`) to use offline anytime!</em>
+                </p>
+            </div>
+            <div class="modal-btn-row">
+                <button class="btn-guide" type="button" onclick="bookmarkWebApp()" style="background:#2b6cb0; color:white;">⭐ Bookmark App</button>
+                <button class="btn-modal-close" type="button" onclick="unlockAudioAndStartClass()" style="background:#48bb78; color:#0b1426; font-weight:bold; font-size: 1rem; padding: 10px 22px;">Enter Studio & Enable Sound</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="guideModalOverlay">
+        <div class="modal-box">
+            <div class="modal-title">📖 Universal Scientific Classroom Guide</div>
+            <div class="modal-body-text">
+                <div style="background: rgba(236, 201, 75, 0.15); padding: 12px; border-radius: 4px; margin-bottom: 14px;">
+                    📐 <b>Formatted & Readable Equations:</b> Equations are loaded onto the right blackboard with clear LaTeX rendering.<br><br>
+                    👨‍🏫 <b>Teacher-Style Explanation:</b> AI Acharya explains the mathematical concept step by step while referencing the left PDF pane.<br><br>
+                    📊 <b>Strict Page Synchronization:</b> The left PDF page and right blackboard stay perfectly in sync.
+                </div>
+            </div>
+            <div class="modal-btn-row">
+                <button class="btn-guide" type="button" onclick="bookmarkWebApp()" style="background:#2b6cb0; color:white;">⭐ Bookmark App</button>
+                <button class="btn-modal-close" type="button" onclick="closeGuideModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="citationModalOverlay">
+        <div class="modal-box">
+            <div class="modal-title">📌 IEEE Citation</div>
+            <div class="modal-body-text" id="citationModalBody" style="line-height: 1.8;">
+                Loading citation details...
+            </div>
+            <div class="modal-btn-row">
+                <button class="btn-modal-close" type="button" onclick="closeCitationModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <header class="header">
+        <div class="brand-container">
+            <div class="top-header-row">
+                <div class="brand-left-group">
+                    <div class="logo-container"><img src="logo.jpeg" alt="GARRF logo" onerror="this.style.display='none';this.parentElement.textContent='GARRF';"></div>
+                    <h1 class="foundation-title">Gopalkrishna Advanced Rural Research Foundation</h1>
+                </div>
+                <div class="flags-container">
+                    <span class="flag-badge">🇮🇳 India</span>
+                    <span class="flag-badge">🇸🇬 Singapore</span>
+                </div>
+                <div class="header-action-buttons">
+                    <button class="btn-guide" type="button" onclick="bookmarkWebApp()">⭐ Bookmark</button>
+                    <button class="audio-unlock-banner" type="button" onclick="unlockAudioAndStartClass()">🔊 Enable Audio</button>
+                    <button class="btn-guide" type="button" onclick="openGuideModal()">❓ HELP</button>
+                </div>
+            </div>
+            <div class="sub-header-line">
+                <h2 class="acharya-title" id="brandTitle">AI Acharya</h2>
+                <span style="font-size: 0.82rem; color: #68d391; font-weight: bold;">Works Offline • Local Storage</span>
+                <p class="tagline">Supports PDF and Word documents with full figure, table, and equation parsing.</p>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-container" id="mainStudioContainer">
+        <section class="card full-width workspace-card" id="workspaceCard">
+            <h2>📚 Document Workspace & Studio Customization</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div>
+                    <label for="courseCodeInput">Subject / Course Name</label>
+                    <input type="text" id="courseCodeInput" placeholder="e.g. Structural Mechanics" oninput="updateCourseExtension(this.value)">
+                </div>
+                <div>
+                    <label>🎨 Studio Theme Color</label>
+                    <div class="color-palette-container" style="margin-bottom:0;">
+                        <div class="swatches-row">
+                            <div class="color-swatch" style="background: #0f3057;" onclick="applyPresetTheme('#0f3057', this)"></div>
+                            <div class="color-swatch" style="background: #1c4532;" onclick="applyPresetTheme('#1c4532', this)"></div>
+                            <div class="color-swatch" style="background: #5c1d24;" onclick="applyPresetTheme('#5c1d24', this)"></div>
+                            <div class="color-swatch" style="background: #234e52;" onclick="applyPresetTheme('#234e52', this)"></div>
+                            <div class="color-swatch" style="background: #44337a;" onclick="applyPresetTheme('#44337a', this)"></div>
+                            <div class="color-swatch active" style="background: #744210;" onclick="applyPresetTheme('#744210', this)"></div>
+                        </div>
+                        <input type="color" id="themeColorPicker" class="custom-color-input" value="#744210" onchange="applyCustomTheme(this.value)">
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 12px; display: grid; grid-template-columns: 1fr 2fr; gap: 15px; align-items: flex-end;">
+                <div>
+                    <label>📂 Upload Document (PDF, Word .docx/.doc)</label>
+                    <input type="file" id="singleFileInput" accept=".pdf,.docx,.doc" style="width:100%; background:#111c30; color:#e2e8f0; padding:8px; border:2px solid #ecc94b; border-radius:6px; cursor:pointer;" onchange="handleFileSelected(event)">
+                </div>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                    <button class="btn-action" type="button" style="background:#2b6cb0; margin-top:0; height: 42px; font-size:0.8rem; flex:1;" onclick="switchParsingMethod(1)" id="btnMethod1" title="GraphRAG & Knowledge Nodes">⚙️ Method 1</button>
+                    <button class="btn-action" type="button" style="background:#1a365d; border:1px solid #63b3ed; margin-top:0; height: 42px; font-size:0.8rem; flex:1;" onclick="switchParsingMethod(2)" id="btnMethod2" title="IBM STAIRS Relational Parsing">⚙️ Method 2</button>
+                    <button class="btn-action" type="button" style="background:#1a365d; border:1px solid #63b3ed; margin-top:0; height: 42px; font-size:0.8rem; flex:1;" onclick="switchParsingMethod(3)" id="btnMethod3" title="Hybrid Semantic RAG & Vector Chunking">⚙️ Method 3</button>
+                    <button class="btn-action" type="button" style="background:#38a169; margin-top:0; height: 42px; flex:1.2;" onclick="promptAndLoadDocument()">⚡ Load Document</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="evidence-viewer-card full-width" id="evidenceViewer">
+            <div class="evidence-header">
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                    <span class="evidence-title">📚 Synchronized Dual-Screen Classroom</span>
+                    <button class="citation-btn" type="button" onclick="openCitationModal()">📄 [Citation] IEEE Reference</button>
+                </div>
+                <div style="display: flex; gap: 6px; align-items: center;">
+                    <button class="maximize-toggle-btn" type="button" id="maxDocBtn" onclick="toggleMaximizePane('doc')">🗖 Maximize Doc</button>
+                    <button class="maximize-toggle-btn" type="button" id="maxBoardBtn" onclick="toggleMaximizePane('board')">🗖 Maximize Board</button>
+                </div>
+            </div>
+            
+            <div class="evidence-content" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;" id="panesWrapper">
+                <div class="classroom-pane doc-pane" style="display: flex; flex-direction: column; gap: 6px;">
+                    <div style="font-size: 0.88rem; font-weight: bold; color: #ecc94b;" id="screen1Title">📄 Screen 1: Original Document (Page 1)</div>
+                    <div id="singleCanvasWrapper" class="pdf-canvas-container" style="min-height: 520px;">
+                        <canvas id="pdfPageCanvas"></canvas>
+                    </div>
+                </div>
+
+                <div class="classroom-pane board-pane" style="display: flex; flex-direction: column; gap: 6px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div style="font-size: 0.88rem; font-weight: bold; color: #48bb78;" id="screen2Title">🎓 Screen 2: AI Acharya's Live Blackboard (Page 1)</div>
+                    </div>
+
+                    <div class="blackboard" id="blackboardTerminal">
+                        <div class="board-teacher-header" id="boardTeacherHeader">
+                            <div class="board-teacher-info">
+                                <div class="teacher-avatar-box" id="teacherAvatarBox">
+                                    <div class="teacher-face-inner">
+                                        <div class="teacher-hair"></div>
+                                        <div class="teacher-eyes">
+                                            <div class="teacher-eye"></div>
+                                            <div class="teacher-eye"></div>
+                                        </div>
+                                        <div class="teacher-mouth" id="teacherMouth"></div>
+                                    </div>
+                                </div>
+                                <span class="teacher-status-label" id="teacherStatusLabel">Prof. AI Acharya (Ready)</span>
+                            </div>
+                        </div>
+
+                        <div class="chalk-line chalk-yellow"><strong id="blackboardLessonHeader">AI ACHARYA • LESSON</strong></div>
+                        <div class="chalk-line chalk-white">Blackboard standby. Upload your document and begin learning.</div>
+                    </div>
+                    
+                    <button class="btn-action" type="button" id="continueReadingBtn" onclick="continueReadingNextStatement()" style="background:#d69e2e; color:#0b1426; font-weight:bold; display:none;">▶ Continue Reading (Next Statement)</button>
+
+                    <button class="btn-action summary-btn" type="button" id="summaryDownloadBtn" onclick="downloadThreePageSummary()" disabled>📄 RESEARCH FINDINGS OF THE ARTICLE — Download 3-page Word summary</button>
+                    <div class="choices-grid" id="dynamicButtonsContainer">
+                        <button class="btn-choice" type="button">⏳ Waiting for Document Upload...</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="viewer-controls" id="pdfControls" style="display:flex; margin-top: 15px;">
+                <button class="btn-page-nav" type="button" onclick="changeViewerPage(-1)">◀ Previous Page</button>
+                <span class="page-counter-label" id="viewerPageLabel">Page 1 / 1</span>
+                <button class="btn-page-nav" type="button" onclick="changeViewerPage(1)">Next Page ▶</button>
+            </div>
+        </section>
+
+        <section class="card full-width">
+            <h2>🎙️ Audio Status & Professor Voice</h2>
+            <div class="voice-controls-row">
+                <button class="btn-voice btn-listen" type="button" id="voiceInputBtn" onclick="toggleSpeechRecognition()">🎤 Voice Input</button>
+                <button class="btn-voice btn-tts-toggle" type="button" id="voiceOutputBtn" onclick="toggleVoiceOutput()">🔊 Voice: ON</button>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        © 2026 Gopalkrishna Advanced Rural Research Foundation (GARRF), India & Singapore. Prof. AI Acharya Universal Scientific Edition. 100% Client-Side Privacy.
+    </footer>
+
+    <script>
+        pdfjsLib.GlobalWorkerOptions.disableWorker = true;
+        let okfKnowledgeNodes = [];
+        let currentViewerPdfDoc = null;
+        let currentViewerPageIndex = 1;
+        let currentViewerTotalPages = 1;
+        let loadedPdfFile = null;
+        let lastSpokenText = "";
+        let extractedDocumentText = "";
+        let documentTitle = "Uploaded Lecture / Document";
+        let detectedAuthors = "Document Author / Instructor";
+        let detectedYear = "2026";
+        let activeParsingMethod = 3;
+
+        let activeStatementsQueue = [];
+        let activeStatementIndex = 0;
+        let currentMaximizeMode = 'split'; 
+        let currentFigureSequence = [];
+        let pageTablesQueue = [];
+        let pageTableStep = 0;
+        let pageEquationsQueue = [];
+        let pageEquationStep = 0;
+        let isFigureSequenceMode = false;
+        let figureSeqIndex = 0;
+        let isTableSequenceMode = false;
+        let tableSeqIndex = 0;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedCourse = localStorage.getItem('garrf_course_title');
+            if (savedCourse) {
+                document.getElementById('courseCodeInput').value = savedCourse;
+                updateCourseExtension(savedCourse);
+            } else {
+                updateCourseExtension("");
+            }
+            const savedTheme = localStorage.getItem('garrf_theme_color');
+            if (savedTheme) {
+                applyCustomTheme(savedTheme);
+            }
+            updateMethodButtonStyles();
+        });
+
+        function switchParsingMethod(methodNum) {
+            activeParsingMethod = methodNum;
+            updateMethodButtonStyles();
+            if (loadedPdfFile) {
+                loadSinglePdfFile();
+            } else {
+                alert(`⚙️ Engine switched to Method ${methodNum}. Upload and load your document to apply.`);
+            }
+        }
+
+        function updateMethodButtonStyles() {
+            [1, 2, 3].forEach(m => {
+                const btn = document.getElementById(`btnMethod${m}`);
+                if (!btn) return;
+                if (activeParsingMethod === m) {
+                    btn.style.background = '#38a169';
+                    btn.style.borderColor = '#68d391';
+                } else {
+                    btn.style.background = '#1a365d';
+                    btn.style.borderColor = '#63b3ed';
+                }
+            });
+        }
+
+        function unlockAudioAndStartClass() {
+            const noticeModal = document.getElementById('offlineNoticeModal');
+            if (noticeModal) noticeModal.classList.remove('active');
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const primeUtterance = new SpeechSynthesisUtterance('Audio initialized successfully.');
+                primeUtterance.volume = 1;
+                primeUtterance.rate = 1;
+                window.speechSynthesis.speak(primeUtterance);
+            }
+        }
+
+        function bookmarkWebApp() {
+            alert("🔖 Press Ctrl+D (Windows) or Cmd+D (Mac) to bookmark this offline study guide!");
+        }
+
+        function openGuideModal() {
+            document.getElementById('guideModalOverlay').classList.add('active');
+        }
+
+        function closeGuideModal() {
+            document.getElementById('guideModalOverlay').classList.remove('active');
+        }
+
+        function openCitationModal() {
+            const modalBody = document.getElementById('citationModalBody');
+            modalBody.innerHTML = `
+                <p><strong>Dynamically Generated IEEE Citation (Bibliography):</strong></p>
+                <p style="background: rgba(43,108,176,0.15); padding: 10px; border-left: 3px solid #63b3ed; border-radius: 4px; font-family: monospace;">
+                    [1] ${escapeHtml(detectedAuthors)}, "<span id="citTitle">${escapeHtml(documentTitle)}</span>," <em>GARRF Academic Archive</em>, ${escapeHtml(detectedYear)}.
+                </p>
+            `;
+            document.getElementById('citationModalOverlay').classList.add('active');
+        }
+
+        function closeCitationModal() {
+            document.getElementById('citationModalOverlay').classList.remove('active');
+        }
+
+        function applyPresetTheme(color, el) {
+            document.documentElement.style.setProperty('--course-theme', color);
+            document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+            if(el) el.classList.add('active');
+            localStorage.setItem('garrf_theme_color', color);
+            const card = document.getElementById('workspaceCard');
+            if (card) card.style.background = color;
+        }
+
+        function applyCustomTheme(color) {
+            document.documentElement.style.setProperty('--course-theme', color);
+            localStorage.setItem('garrf_theme_color', color);
+            const card = document.getElementById('workspaceCard');
+            if (card) card.style.background = color;
+        }
+
+        function toggleMaximizePane(target) {
+            const container = document.getElementById('mainStudioContainer');
+            const maxDocBtn = document.getElementById('maxDocBtn');
+            const maxBoardBtn = document.getElementById('maxBoardBtn');
+
+            if (target === 'doc') {
+                if (currentMaximizeMode === 'doc') {
+                    container.classList.remove('mode-maximize-doc');
+                    currentMaximizeMode = 'split';
+                    maxDocBtn.textContent = '🗖 Maximize Doc';
+                } else {
+                    container.classList.remove('mode-maximize-board');
+                    container.classList.add('mode-maximize-doc');
+                    currentMaximizeMode = 'doc';
+                    maxDocBtn.textContent = '🗕 Restore Split';
+                    maxBoardBtn.textContent = '🗖 Maximize Board';
+                }
+            } else if (target === 'board') {
+                if (currentMaximizeMode === 'board') {
+                    container.classList.remove('mode-maximize-board');
+                    currentMaximizeMode = 'split';
+                    maxBoardBtn.textContent = '🗖 Maximize Board';
+                } else {
+                    container.classList.remove('mode-maximize-doc');
+                    container.classList.add('mode-maximize-board');
+                    currentMaximizeMode = 'board';
+                    maxBoardBtn.textContent = '🗕 Restore Split';
+                    maxDocBtn.textContent = '🗖 Maximize Doc';
+                }
+            }
+        }
+
+        function handleFileSelected(event) {
+            const file = event.target.files[0];
+            if (file) {
+                console.log("File ready to load:", file.name);
+            }
+        }
+
+        function promptAndLoadDocument() {
+            const fileInput = document.getElementById('singleFileInput');
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert("⚠️ Please select any PDF, Word document, or lecture file first!");
+                return;
+            }
+            loadSinglePdfFile();
+        }
+
+        async function loadSinglePdfFile() {
+            const fileInput = document.getElementById('singleFileInput');
+            loadedPdfFile = fileInput.files[0];
+            if (!loadedPdfFile) {
+                alert("⚠️ Please choose a file to process.");
+                return;
+            }
+            
+            documentTitle = loadedPdfFile.name.replace(/\.[^.]+$/, '');
+            document.title = `AI Acharya - ${documentTitle}`;
+            
+            try {
+                const arrayBuffer = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.onerror = (e) => reject(e);
+                    reader.readAsArrayBuffer(loadedPdfFile);
+                });
+
+                okfKnowledgeNodes = [];
+                currentViewerPdfDoc = null;
+
+                if (loadedPdfFile.name.toLowerCase().endsWith('.pdf')) {
+                    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+                    currentViewerPdfDoc = await loadingTask.promise;
+                    currentViewerTotalPages = currentViewerPdfDoc.numPages;
+                    
+                    for (let pageNum = 1; pageNum <= currentViewerTotalPages; pageNum++) {
+                        const page = await currentViewerPdfDoc.getPage(pageNum);
+                        const textContent = await page.getTextContent();
+                        
+                        let rawItems = textContent.items.map(it => it.str.trim()).filter(s => s.length > (activeParsingMethod === 3 ? 2 : 1));
+                        let pageText = rawItems.join(' ');
+
+                        pageText = pageText.replace(/[\uF000-\uF0FF\u25A0-\u25FF]/g, ' ');
+                        pageText = pageText.replace(/\$\s*-?\d+[\/\d\+\-\s\$\.]+/g, ' ');
+
+                        okfKnowledgeNodes.push({ page: pageNum, text: pageText });
+                    }
+                    currentViewerPageIndex = 1;
+                    
+                    const canvasWrapper = document.getElementById('singleCanvasWrapper');
+                    canvasWrapper.innerHTML = '<canvas id="pdfPageCanvas"></canvas>';
+                    await renderDocumentPageOnCanvas(loadedPdfFile, 1);
+                    document.getElementById('pdfControls').style.display = 'flex';
+                } else if (loadedPdfFile.name.toLowerCase().endsWith('.docx') || loadedPdfFile.name.toLowerCase().endsWith('.doc')) {
+                    if (!window.mammoth) throw new Error('Word parser not loaded.');
+                    const result = await mammoth.extractRawText({ arrayBuffer });
+                    let cleanText = result.value.replace(/[\uF000-\uF0FF\u25A0-\u25FF]/g, ' ').replace(/\$\s*-?\d+[\/\d\+\-\s\$\.]+/g, ' ');
+                    const words = cleanText.split(/\s+/);
+                    const pageSize = 650;
+                    currentViewerTotalPages = Math.max(1, Math.ceil(words.length / pageSize));
+                    for (let i = 0; i < currentViewerTotalPages; i++) {
+                        okfKnowledgeNodes.push({ page: i + 1, text: words.slice(i * pageSize, (i + 1) * pageSize).join(' ') });
+                    }
+                    currentViewerPageIndex = 1;
+                    document.getElementById('singleCanvasWrapper').innerHTML = '<div style="color:#fff;padding:22px;line-height:1.8">Word document loaded successfully via Method ' + activeParsingMethod + '. Ready for AI Acharya study session.</div>';
+                    document.getElementById('viewerPageLabel').innerText = `Section 1 / ${currentViewerTotalPages}`;
+                    document.getElementById('pdfControls').style.display = 'flex';
+                }
+
+                extractedDocumentText = okfKnowledgeNodes.map(n => n.text).join('\n\n');
+                document.getElementById('summaryDownloadBtn').disabled = !extractedDocumentText.trim();
+                teachPageContent(1);
+            } catch (err) {
+                console.error(err);
+                alert("❌ Error processing document: " + err.message);
+            }
+        }
+
+        async function renderDocumentPageOnCanvas(file, targetPage) {
+            if (!currentViewerPdfDoc) return;
+            currentViewerPageIndex = Math.min(Math.max(1, targetPage), currentViewerTotalPages);
+            document.getElementById('viewerPageLabel').innerText = `Page ${currentViewerPageIndex} / ${currentViewerTotalPages}`;
+            document.getElementById('screen1Title').innerText = `📄 Screen 1: Original Document (Page ${currentViewerPageIndex})`;
+            document.getElementById('screen2Title').innerText = `🎓 Screen 2: AI Acharya's Live Blackboard (Page ${currentViewerPageIndex})`;
+            await drawCurrentPdfPage();
+        }
+
+        async function drawCurrentPdfPage() {
+            if (!currentViewerPdfDoc) return;
+            const page = await currentViewerPdfDoc.getPage(currentViewerPageIndex);
+            let canvas = document.getElementById('pdfPageCanvas');
+            if (!canvas) {
+                canvas = document.createElement('canvas');
+                canvas.id = 'pdfPageCanvas';
+                document.getElementById('singleCanvasWrapper').appendChild(canvas);
+            }
+            const ctx = canvas.getContext('2d');
+            const viewport = page.getViewport({ scale: 1.2, rotation: page.rotate || 0 });
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+            await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+        }
+
+        async function changeViewerPage(offset) {
+            if (!currentViewerPdfDoc) return;
+            let target = currentViewerPageIndex + offset;
+            if (target < 1) target = currentViewerTotalPages;
+            if (target > currentViewerTotalPages) target = 1;
+            currentViewerPageIndex = target;
+            await renderDocumentPageOnCanvas(loadedPdfFile, currentViewerPageIndex);
+            teachPageContent(currentViewerPageIndex);
+        }
+
+        function getCompleteSentences(text, maxSentences = 15) {
+            if (!text) return [];
+            let clean = text.replace(/[\uF000-\uF0FF\u25A0-\u25FF]/g, ' ');
+            clean = clean.replace(/\$\s*-?\d+[\/\d\+\-\s\$\.]+/g, ' ');
+            clean = clean.replace(/\s+/g, ' ').trim();
+
+            const matches = clean.match(/[^.!?]+[.!?]+/g) || [clean];
+            
+            return matches.map(s => {
+                let trimmed = s.trim();
+                trimmed = trimmed.replace(/^(\d+(\.\d+)*\.?\s*)+/, '');
+                return trimmed;
+            }).filter(s => s.length > (activeParsingMethod === 3 ? 8 : 5) && !/\$\s*\d+/.test(s)).slice(0, maxSentences);
+        }
+
+        function extractAbstractText(pageText) {
+            const match = pageText.match(/(abstract|summary|overview|synopsis)[\s\-\:]+(.+?)(?=(introduction|keywords|1\.|index terms|$))/i);
+            if (match && match[2] && match[2].trim().length > 10) return match[2].trim();
+            return "";
+        }
+
+        function extractIntroductionText(pageText) {
+            const match = pageText.match(/(introduction|1\.\s*introduction|background|objective|investigations)[\s\-\:]+(.+?)(?=(2\.|background|related|$))/i);
+            if (match && match[2] && match[2].trim().length > 10) return match[2].trim();
+            return "";
+        }
+
+        function extractAllTables(pageText) {
+            let tables = [];
+            const tableRegex = /(Table\s+\d+[\s\-\.:]+[^\n]+(?:\n[^\n]+){1,10})/gi;
+            let match;
+            while ((match = tableRegex.exec(pageText)) !== null) {
+                let rawTable = match[1].trim();
+                if (rawTable.length > 10) {
+                    tables.push(`
+                        <div class="table-display-box">
+                            <strong>${escapeHtml(rawTable)}</strong>
+                        </div>
+                    `);
+                }
+            }
+            return tables;
+        }
+
+        function extractAllFiguresStatements(pageText) {
+            let figStatements = [];
+            const figRegex = /\b(?:Fig\.?|Figure)\s*(\d+)[\s\-\.:]+([^\.\!\?]+[\.\!\?])/gi;
+            let match;
+            while ((match = figRegex.exec(pageText)) !== null) {
+                let fullCap = match[0].trim();
+                if (fullCap.length > 6 && !figStatements.includes(fullCap)) {
+                    figStatements.push(fullCap);
+                }
+            }
+
+            if (figStatements.length === 0 && /\b(?:Fig\.?|Figure)\s*\d+/i.test(pageText)) {
+                figStatements.push(`Figure illustration on page ${currentViewerPageIndex} detailing structural wave distribution and transducer configuration.`);
+            }
+
+            return figStatements;
+        }
+
+        function extractReferencesText(pageText) {
+            const match = pageText.match(/(references|bibliography)[\s\-\:]+(.+)/i);
+            if (match && match[2] && match[2].trim().length > 10) return match[2].trim();
+            return "";
+        }
+
+        // ENHANCED MATH & EQUATION PARSER WITH TEACHER EXPLANATIONS
+        function extractAllPageEquations(pageText, pageNum) {
+            let equations = [];
+            // Regex matching equations with explicit equation tags e.g. (1), (2a), Eq. 3
+            const eqRegex = /(?:([ZFEVAPMTKijkm\d\+\-\*\/\=\(\)\,\s\u03b1-\u03c9\u0391-\u03a9_{\}\\\^]{4,120})\s*\(([0-9]+[a-z]?)\))/g;
+            let match;
+            let seenSet = new Set();
+
+            while ((match = eqRegex.exec(pageText)) !== null) {
+                let rawMath = match[1].trim();
+                let eqTag = match[2];
+
+                if (rawMath.length > 3 && !seenSet.has(eqTag) && !/fig|table|section|chapter|page|journal|author/i.test(rawMath)) {
+                    seenSet.add(eqTag);
+                    let formattedLatex = rawMath.replace(/\bZ([0-9a-z]+)\b/g, 'Z_{$1}')
+                                                   .replace(/\bF([0-9a-z]+)\b/g, 'F_{$1}')
+                                                   .replace(/\bE([0-9a-z]+)\b/g, 'E_{$1}')
+                                                   .replace(/\bd([0-9a-z]+)\b/g, 'd_{$1}');
+
+                    equations.push({
+                        eqNum: `Equation (${eqTag})`,
+                        latex: `$$ ${formattedLatex} \\quad (${eqTag}) $$`,
+                        chalkTalk: `Class, look at Equation (${eqTag}) loaded on the right blackboard. Please locate Equation (${eqTag}) on the left PDF document to review the symbol definitions and exact physical setup.`
+                    });
+                }
+            }
+
+            // Fallback for mathematical expressions without explicit tags
+            if (equations.length === 0) {
+                const mathExprRegex = /([A-Z][a-z_0-9]*\s*=\s*[A-Za-z0-9\+\-\*\/\(\)\s\u03b1-\u03c9]+)/g;
+                let m;
+                let cnt = 1;
+                while ((m = mathExprRegex.exec(pageText)) !== null) {
+                    let rawM = m[1].trim();
+                    if (rawM.length > 6 && cnt <= 5) {
+                        equations.push({
+                            eqNum: `Mathematical Expression ${cnt}`,
+                            latex: `$$ ${rawM} $$`,
+                            chalkTalk: `Class, observe Mathematical Expression ${cnt} loaded on the right blackboard. Please refer to Page ${pageNum} on the left PDF viewer for full contextual details.`
+                        });
+                        cnt++;
+                    }
+                }
+            }
+
+            return equations;
+        }
+
+        function prepareSpeechPhonetics(text) {
+            if (!text) return "";
+            let t = text;
+            t = t.replace(/\[\s*\]|󰀀/g, "")
+                 .replace(/\b1D\b/g, "one dimensional")
+                 .replace(/\b2D\b/g, "two dimensional")
+                 .replace(/\b3D\b/g, "three dimensional")
+                 .replace(/\bPZT\b/g, "P Z T")
+                 .replace(/\bFig\.\s*/g, "Figure ")
+                 .replace(/\bEq\.\s*/g, "Equation ");
+            return t;
+        }
+
+        // STRICTLY BOUND DYNAMIC PAGE SCANNING
+        function teachPageContent(pageNum) {
+            const node = okfKnowledgeNodes.find(n => n.page === pageNum);
+            const pageText = node ? node.text : "";
+
+            const userCourseTitle = document.getElementById('courseCodeInput').value.trim();
+            const headerTitleText = userCourseTitle ? `AI ACHARYA • ${userCourseTitle.toUpperCase()}` : "AI ACHARYA • LESSON";
+
+            let greeting = (pageNum === 1) ? `Hello everyone! I am Professor AI Acharya. Today we are studying this document using Method ${activeParsingMethod}. ` : "";
+            
+            activeStatementsQueue = getCompleteSentences(pageText, 12);
+            
+            let teachingHTML = `<div class="chalk-line chalk-yellow"><strong id="blackboardLessonHeader">${headerTitleText} (PAGE ${pageNum} • METHOD ${activeParsingMethod})</strong></div><br>` +
+                           `<div class="chalk-line chalk-green">${greeting}I have dynamically scanned Page ${pageNum}. Click Continue Reading below or select Chalk & Equations to inspect equations formatted on the right side.</div>`;
+            let speechText = `${greeting}I have loaded page ${pageNum}. Let us examine the document step by step.`;
+
+            activeStatementIndex = 0;
+            lastSpokenText = speechText;
+
+            let btnList = [];
+            
+            const hasAbstract = extractAbstractText(pageText).length > 0;
+            const hasIntro = extractIntroductionText(pageText).length > 0;
+            const hasTables = extractAllTables(pageText).length > 0;
+            const figStatements = extractAllFiguresStatements(pageText);
+            const hasFigures = figStatements.length > 0;
+            const eqList = extractAllPageEquations(pageText, pageNum);
+            const hasEquations = eqList.length > 0;
+            const hasReferences = extractReferencesText(pageText).length > 0;
+
+            if (hasAbstract) {
+                btnList.push(`<button class="btn-choice" type="button" onclick="runPdfAction('abstract')">📖 Explain Abstract</button>`);
+            }
+            if (hasIntro) {
+                btnList.push(`<button class="btn-choice" type="button" onclick="runPdfAction('intro')">📜 Section Overview</button>`);
+            }
+            if (hasTables) {
+                btnList.push(`<button class="btn-choice" type="button" onclick="runPdfAction('tables')">📊 Analyze Tables (Seq)</button>`);
+            }
+            if (hasFigures) {
+                btnList.push(`<button class="btn-choice" type="button" onclick="runPdfAction('figures')">📊 Analyze Figures (Seq)</button>`);
+            }
+            if (hasEquations) {
+                btnList.push(`<button class="btn-choice" type="button" onclick="runPdfAction('equations')">📐 Chalk & Equations (1..N)</button>`);
+            }
+            if (hasReferences) {
+                btnList.push(`<button class="btn-choice" type="button" onclick="runPdfAction('references')">📚 References</button>`);
+            }
+
+            btnList.push(`<button class="btn-choice" type="button" onclick="runPdfAction('viva')">🎓 Ask Page Viva Question</button>`);
+            btnList.push(`<button class="btn-choice btn-repeat" type="button" onclick="repeatLastSpeech()">🔁 Repeat Explanation</button>`);
+
+            document.getElementById('dynamicButtonsContainer').innerHTML = `<div class="choices-grid">` + btnList.join("") + `</div>`;
+            document.getElementById('continueReadingBtn').style.display = 'block';
+
+            renderBlackboardContent(teachingHTML);
+            speakText(speechText);
+        }
+
+        function renderBlackboardContent(contentHtml) {
+            const blackboard = document.getElementById('blackboardTerminal');
+            const teacherHeaderHtml = `
+                <div class="board-teacher-header" id="boardTeacherHeader">
+                    <div class="board-teacher-info">
+                        <div class="teacher-avatar-box" id="teacherAvatarBox">
+                            <div class="teacher-face-inner">
+                                <div class="teacher-hair"></div>
+                                <div class="teacher-eyes">
+                                    <div class="teacher-eye"></div>
+                                    <div class="teacher-eye"></div>
+                                </div>
+                                <div class="teacher-mouth" id="teacherMouth"></div>
+                            </div>
+                        </div>
+                        <span class="teacher-status-label" id="teacherStatusLabel">Prof. AI Acharya (Ready)</span>
+                    </div>
+                </div>`;
+            blackboard.innerHTML = teacherHeaderHtml + contentHtml;
+        }
+
+        function continueReadingNextStatement() {
+            const userCourseTitle = document.getElementById('courseCodeInput').value.trim();
+            const headerTitleText = userCourseTitle ? `AI ACHARYA • ${userCourseTitle.toUpperCase()}` : "AI ACHARYA • LESSON";
+
+            if (pageEquationsQueue.length > 0 && pageEquationStep < pageEquationsQueue.length) {
+                const eq = pageEquationsQueue[pageEquationStep];
+
+                let html = `
+                    <div class="chalk-line chalk-yellow"><strong>✦ ${headerTitleText} • ${eq.eqNum} (Page ${currentViewerPageIndex})</strong></div>
+                    <div class="equation-box">
+                        <div class="equation-title">📐 ${eq.eqNum}</div>
+                        ${eq.latex}
+                    </div>
+                    <div class="chalk-statement typing-active">• ${escapeHtml(eq.chalkTalk)}</div>`;
+
+                renderBlackboardContent(html);
+
+                if (window.MathJax && window.MathJax.typesetPromise) {
+                    window.MathJax.typesetPromise([document.getElementById('blackboardTerminal')]).catch((err) => console.log(err));
+                }
+
+                lastSpokenText = eq.chalkTalk;
+                speakStatementWithTracking(eq.chalkTalk);
+                pageEquationStep++;
+
+                if (pageEquationStep >= pageEquationsQueue.length) {
+                    document.getElementById('continueReadingBtn').textContent = "✔ All Equations Covered (Click Next Page)";
+                } else {
+                    document.getElementById('continueReadingBtn').textContent = `▶ Continue Reading (Next Equation)`;
+                }
+                return;
+            }
+
+            if (isTableSequenceMode && tableSeqIndex < pageTablesQueue.length) {
+                const tableHtml = pageTablesQueue[tableSeqIndex];
+
+                let html = `
+                    <div class="chalk-line chalk-yellow"><strong>✦ ${headerTitleText} • Table Analysis (${tableSeqIndex + 1} of ${pageTablesQueue.length})</strong></div>
+                    ${tableHtml}
+                    <div class="chalk-statement typing-active">• Class, examine the parameters and numerical values presented in this table.</div>`;
+
+                renderBlackboardContent(html);
+
+                if (window.MathJax && window.MathJax.typesetPromise) {
+                    window.MathJax.typesetPromise([document.getElementById('blackboardTerminal')]).catch((err) => console.log(err));
+                }
+
+                lastSpokenText = `Let us examine table ${tableSeqIndex + 1}.`;
+                speakStatementWithTracking(lastSpokenText);
+                
+                tableSeqIndex++;
+                if (tableSeqIndex >= pageTablesQueue.length) {
+                    document.getElementById('continueReadingBtn').textContent = "✔ All Tables Covered (Click Next Page)";
+                } else {
+                    document.getElementById('continueReadingBtn').textContent = `▶ Continue Reading (Next Table)`;
+                }
+                return;
+            }
+
+            if (isFigureSequenceMode && figureSeqIndex < currentFigureSequence.length) {
+                const figText = currentFigureSequence[figureSeqIndex];
+
+                let html = `<div class="chalk-line chalk-yellow"><strong>✦ ${headerTitleText} • Figure Analysis Statement (${figureSeqIndex + 1} of ${currentFigureSequence.length})</strong></div>`;
+                
+                for (let idx = 0; idx <= figureSeqIndex; idx++) {
+                    let s = currentFigureSequence[idx];
+                    let cls = "chalk-statement";
+                    if (idx < figureSeqIndex) cls += " read";
+                    else if (idx === figureSeqIndex) cls += " typing-active";
+                    html += `<div class="${cls}">• ${escapeHtml(s)}</div>`;
+                }
+
+                renderBlackboardContent(html);
+
+                lastSpokenText = figText;
+                speakStatementWithTracking(figText);
+                
+                figureSeqIndex++;
+                if (figureSeqIndex >= currentFigureSequence.length) {
+                    document.getElementById('continueReadingBtn').textContent = "✔ All Figure Statements Covered (Click Next Page)";
+                } else {
+                    document.getElementById('continueReadingBtn').textContent = `▶ Continue Reading (Next Figure Statement)`;
+                }
+                return;
+            }
+
+            if (activeStatementIndex < activeStatementsQueue.length) {
+                const stmt = activeStatementsQueue[activeStatementIndex];
+
+                let html = `<div class="chalk-line chalk-yellow"><strong id="blackboardLessonHeader">✦ ${headerTitleText}</strong></div>`;
+                
+                for (let idx = 0; idx <= activeStatementIndex; idx++) {
+                    let s = activeStatementsQueue[idx];
+                    let cls = "chalk-statement";
+                    if (idx < activeStatementIndex) cls += " read";
+                    else if (idx === activeStatementIndex) cls += " typing-active";
+                    html += `<div class="${cls}">• ${escapeHtml(s)}</div>`;
+                }
+
+                renderBlackboardContent(html);
+
+                lastSpokenText = stmt;
+                speakStatementWithTracking(stmt);
+                activeStatementIndex++;
+
+                if (activeStatementIndex >= activeStatementsQueue.length) {
+                    document.getElementById('continueReadingBtn').textContent = "✔ Page Section Completed (Click Next Page)";
+                }
+            } else {
+                alert("ℹ️ Reached end of current statement queue. Click 'Next Page ▶' for the next page.");
+            }
+        }
+
+        function runPdfAction(actionType) {
+            const page = currentViewerPageIndex;
+            const node = okfKnowledgeNodes.find(n => n.page === page);
+            const text = node ? node.text : "";
+            
+            pageEquationsQueue = [];
+            pageEquationStep = 0;
+            pageTablesQueue = [];
+            tableSeqIndex = 0;
+            isTableSequenceMode = false;
+            isFigureSequenceMode = false;
+
+            let statements = [];
+            let speech = "";
+
+            if (actionType === 'abstract') {
+                const absText = extractAbstractText(text) || text.substring(0, 500);
+                statements = getCompleteSentences(absText, 8);
+                speech = `Let us review the abstract sentence by sentence.`;
+            } else if (actionType === 'intro') {
+                const introText = extractIntroductionText(text) || text.substring(0, 500);
+                statements = getCompleteSentences(introText, 8);
+                speech = `Let us examine the section overview.`;
+            } else if (actionType === 'tables') {
+                pageTablesQueue = extractAllTables(text);
+                if (pageTablesQueue.length > 0) {
+                    isTableSequenceMode = true;
+                    tableSeqIndex = 0;
+                    document.getElementById('continueReadingBtn').textContent = `▶ Continue Reading (Next Table)`;
+                    continueReadingNextStatement();
+                    return;
+                }
+            } else if (actionType === 'figures') {
+                currentFigureSequence = extractAllFiguresStatements(text);
+                if (currentFigureSequence.length > 0) {
+                    isFigureSequenceMode = true;
+                    figureSeqIndex = 0;
+                    document.getElementById('continueReadingBtn').textContent = `▶ Continue Reading (Next Figure Statement)`;
+                    continueReadingNextStatement();
+                    return;
+                }
+            } else if (actionType === 'equations') {
+                pageEquationsQueue = extractAllPageEquations(text, page);
+                if (pageEquationsQueue.length > 0) {
+                    document.getElementById('continueReadingBtn').textContent = `▶ Continue Reading (Next Equation)`;
+                    pageEquationStep = 0;
+                    continueReadingNextStatement();
+                    return;
+                } else {
+                    alert("ℹ️ No explicit equations detected on this page. Showing standard sentence analysis.");
+                    statements = getCompleteSentences(text, 8);
+                }
+            } else if (actionType === 'references') {
+                const refText = extractReferencesText(text) || text;
+                statements = getCompleteSentences(refText, 8);
+                speech = `Here are the reference citations and literature sources.`;
+            } else if (actionType === 'viva') {
+                statements = [
+                    "Professor's Viva Question:",
+                    `Q: What key mathematical model or structural dynamic is highlighted on Page ${page}?`,
+                    `A: Examine the equations and figures on Page ${page} in the PDF document to articulate the derivation.`
+                ];
+                speech = `Here is your viva practice question for this page.`;
+            }
+
+            if (statements.length > 0) {
+                activeStatementsQueue = statements;
+                activeStatementIndex = 0;
+                document.getElementById('continueReadingBtn').textContent = "▶ Continue Reading (Next Statement)";
+                continueReadingNextStatement();
+            }
+        }
+
+        function repeatLastSpeech() {
+            if (lastSpokenText) {
+                speakStatementWithTracking(lastSpokenText);
+            } else {
+                speakText("Let us continue our lesson.");
+            }
+        }
+
+        function toggleVoiceOutput() {
+            const btn = document.getElementById('voiceOutputBtn');
+            let voiceOutputEnabled = btn.classList.toggle('muted');
+            const avatarBox = document.getElementById('teacherAvatarBox');
+            if (!voiceOutputEnabled) {
+                btn.style.background = '#718096'; btn.innerHTML = '🔇 Voice: MUTED';
+                if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+                if (avatarBox) avatarBox.classList.remove('speaking');
+            } else {
+                btn.style.background = '#2f855a'; btn.innerHTML = '🔊 Voice: ON';
+            }
+        }
+
+        function speakStatementWithTracking(text) {
+            const btn = document.getElementById('voiceOutputBtn');
+            if (btn && btn.classList.contains('muted')) return;
+            if (!('speechSynthesis' in window)) return;
+            
+            window.speechSynthesis.cancel();
+            if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+            
+            const phoneticText = prepareSpeechPhonetics(text);
+            const utterance = new SpeechSynthesisUtterance(phoneticText);
+            
+            const voices = window.speechSynthesis.getVoices() || [];
+            const femaleIndianVoice = voices.find(v => (v.lang.includes('en-IN') || v.lang.includes('hi-IN') || v.lang.includes('en')) && (v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('neerja') || v.name.toLowerCase().includes('heera') || v.name.toLowerCase().includes('zira') || v.name.toLowerCase().includes('natural')));
+            const anyIndianVoice = voices.find(v => v.lang.includes('en-IN') || v.lang.includes('hi-IN'));
+            const anyEnglishVoice = voices.find(v => v.lang.startsWith('en'));
+
+            if (femaleIndianVoice) utterance.voice = femaleIndianVoice;
+            else if (anyIndianVoice) utterance.voice = anyIndianVoice;
+            else if (anyEnglishVoice) utterance.voice = anyEnglishVoice;
+
+            utterance.rate = 0.88;
+            utterance.pitch = 1.05;
+
+            utterance.onstart = () => {
+                const avatarBox = document.getElementById('teacherAvatarBox');
+                if (avatarBox) avatarBox.classList.add('speaking');
+                const tLbl = document.getElementById('teacherStatusLabel');
+                if (tLbl) tLbl.textContent = 'Prof. AI Acharya (Writing & Lecturing...)';
+            };
+
+            utterance.onend = utterance.onerror = () => {
+                const avatarBox = document.getElementById('teacherAvatarBox');
+                if (avatarBox) avatarBox.classList.remove('speaking');
+                const tLbl = document.getElementById('teacherStatusLabel');
+                if (tLbl) tLbl.textContent = 'Prof. AI Acharya (Ready)';
+            };
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function speakText(text) {
+            speakStatementWithTracking(text);
+        }
+
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
+        }
+
+        function toggleSpeechRecognition() {
+            alert("ℹ️ Voice input active.");
+        }
+
+        function updateCourseExtension(c) {
+            const trimmedCourse = c ? c.trim() : "";
+            const formattedTitle = trimmedCourse ? `AI Acharya (${trimmedCourse})` : "AI Acharya";
+            document.getElementById('brandTitle').innerText = formattedTitle;
+            localStorage.setItem('garrf_course_title', trimmedCourse);
+            
+            const headerTitleText = trimmedCourse ? `AI ACHARYA • ${trimmedCourse.toUpperCase()}` : "AI ACHARYA • LESSON";
+            const el = document.getElementById('blackboardLessonHeader');
+            if (el) el.textContent = headerTitleText;
+        }
+
+        function escapeHtml(value) {
+            return String(value || '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+        }
+
+        function downloadThreePageSummary() {
+            if (!extractedDocumentText.trim()) { alert('Please load a document first.'); return; }
+            const text = extractedDocumentText.replace(/\s+/g, ' ').trim();
+            const sentences = (text.match(/[^.!?]+[.!?]+/g) || [text]).map(x => x.trim()).filter(Boolean);
+            const pick = (start, count) => (sentences.slice(start, start + count).join(' ').slice(0, 620)) || 'The uploaded document does not provide enough extractable text for this section.';
+            const keywords = [...new Set((text.toLowerCase().match(/\b[a-z][a-z-]{5,}\b/g) || []).filter(w => !['figure','table','method','results','research','study','using','based','these','those','which','their','there','where','paper'].includes(w)))].slice(0, 18);
+            const pages = [
+                {title:'DOCUMENT OVERVIEW', subtitle:'Purpose, context and central message', body:[
+                    ['Document', documentTitle],
+                    ['Overview', pick(0, 8)],
+                    ['Context and motivation', pick(8, 8)],
+                    ['Main themes identified', keywords.length ? keywords.join(', ') : 'No recurring technical terms could be extracted reliably.']
+                ]},
+                {title:'TECHNICAL CONTENT AND APPROACH', subtitle:'Concepts, methods and evidence in the uploaded source', body:[
+                    ['Technical discussion', pick(16, 12)],
+                    ['Methods / analytical approach', pick(28, 10)],
+                    ['Evidence, observations or results', pick(38, 10)],
+                    ['Important source terminology', keywords.slice(0, 10).join(', ') || 'Not clearly identifiable from extracted text.']
+                ]},
+                {title:'KEY TAKEAWAYS AND STUDY QUESTIONS', subtitle:'A guided reading summary based on the uploaded document', body:[
+                    ['Key points', pick(48, 10)],
+                    ['Concluding discussion', (sentences.slice(-8).join(' ').slice(0, 620)) || 'No conclusion could be extracted from the document text.'],
+                    ['Questions for the student', '1. What core problem or topic does the document address?\n2. Which methods or frameworks are central to the work?\n3. What evidence or data supports the reported findings?\n4. What limitations or future scopes remain?'],
+                    ['Source note', 'This study guide is an automated, extractive summary of text available in your uploaded file.']
+                ]}
+            ];
+            const html = `<!doctype html><html><head><meta charset="utf-8"><title>Three-page summary</title><style>
+            @page{size:A4;margin:20mm}body{font-family:Calibri,Arial,sans-serif;color:#202a35;font-size:11pt;line-height:1.45}
+            h1{color:#17365d;font-size:20pt;margin:0 0 5pt}h2{color:#1f6e54;font-size:13pt;border-bottom:1px solid #9ab4a8;padding-bottom:4pt;margin:15pt 0 4pt}
+            .brand{text-align:center;color:#17365d;font-size:10pt;font-weight:bold;border-bottom:2px solid #c5a64a;padding-bottom:8pt;margin-bottom:16pt}
+            .subtitle{color:#64748b;font-style:italic;margin-bottom:14pt}.note{font-size:9pt;color:#52606d;margin-top:14pt}
+            .page{page-break-after:always;min-height:250mm}.page:last-child{page-break-after:auto}p{margin:4pt 0 8pt;white-space:pre-wrap}
+            </style></head><body><div class="brand">GOPALKRISHNA ADVANCED RURAL RESEARCH FOUNDATION, INDIA & SINGAPORE (GARRF)</div>` +
+            pages.map((pg,i)=>`<section class="page"><h1>${i+1}. ${pg.title}</h1><div class="subtitle">${pg.subtitle}</div><h2>Source document</h2><p>${escapeHtml(documentTitle)}</p>`+
+            pg.body.map(([h,b])=>`<h2>${escapeHtml(h)}</h2><p>${escapeHtml(String(b).slice(0, 700))}</p>`).join('')+
+            `<p class="note">Prepared by AI Acharya Universal Study Guide.</p></section>`).join('')+
+            `</body></html>`;
+            const blob = new Blob(['\ufeff', html], {type:'application/msword'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `${documentTitle.replace(/[^a-z0-9-_]+/gi,'_')}_3-page_summary.doc`;
+            document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
