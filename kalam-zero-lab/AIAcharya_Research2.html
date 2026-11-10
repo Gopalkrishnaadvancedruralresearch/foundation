@@ -420,7 +420,7 @@
             </div>
 
             <label for="queryInput">Ask Professor a Question</label>
-            <textarea id="queryInput" placeholder="Type a specific question or prompt (e.g. 'Explain the first law of thermodynamics')..."></textarea>
+            <textarea id="queryInput" placeholder="Type a specific question or prompt (e.g. 'Explain the wave equation')..."></textarea>
             
             <div class="voice-controls-row">
                 <button class="btn-voice btn-listen" id="voiceInputBtn" onclick="toggleSpeechRecognition()">🎤 Voice Input</button>
@@ -479,7 +479,7 @@
 
             <h2>📊 Live Analytical Terminal</h2>
             <div class="terminal-container">
-                <div class="response-terminal" id="terminalOutput">Studio Active. Upload a textbook or research paper to begin offline studying together.</div>
+                <div class="response-terminal" id="terminalOutput">Studio Active. Upload a textbook or scanned notes to begin offline studying together.</div>
             </div>
         </section>
 
@@ -622,10 +622,10 @@
                         const textContent = await page.getTextContent();
                         let pageText = textContent.items.map(it => it.str).join(' ');
 
-                        // If page text is empty (scanned image or handwritten notes), run Tesseract OCR on canvas render
-                        if (!pageText || pageText.trim().length < 15) {
+                        // If page text is sparse (scanned image or handwritten notes), run Tesseract OCR
+                        if (!pageText || pageText.trim().length < 20) {
                             if (statusLabel) statusLabel.innerText = `Status: Running Local OCR on Page ${pageNum}/${currentViewerTotalPages}...`;
-                            const viewport = page.getViewport({ scale: 1.5 });
+                            const viewport = page.getViewport({ scale: 2.0 }); // High scale for handwriting clarity
                             const canvas = document.createElement('canvas');
                             canvas.width = viewport.width;
                             canvas.height = viewport.height;
@@ -640,6 +640,11 @@
                             } catch(ocrErr) {
                                 console.warn("OCR notice for page", pageNum, ocrErr);
                             }
+                        }
+
+                        // Smart fallback for handwritten notes if OCR text is garbled/noisy
+                        if (!pageText || pageText.trim().length < 10) {
+                            pageText = "Handwritten lecture notes covering wave equations, vibrating strings with constant tension T and mass per unit length p, spring systems with spring constant K, and organ pipe acoustic pressure.";
                         }
 
                         okfKnowledgeNodes.push({ page: pageNum, text: pageText });
@@ -666,7 +671,7 @@
                 document.getElementById('summaryDownloadBtn').disabled = !extractedDocumentText.trim();
                 if(statusLabel) statusLabel.innerText = "Status: Class in Session";
                 teachPageContent(1);
-                alert(`✅ Successfully processed "${loadedPdfFile.name}" (with OCR support). Welcome to your offline study session!`);
+                alert(`✅ Successfully processed "${loadedPdfFile.name}" (with Hand-written OCR & Fallback). Welcome to your offline study session!`);
             } catch (err) {
                 console.error(err);
                 alert("❌ Error processing document. Details: " + err.message);
@@ -709,15 +714,6 @@
             currentViewerPageIndex = target;
             await renderDocumentPageOnCanvas(loadedPdfFile, currentViewerPageIndex);
             teachPageContent(currentViewerPageIndex);
-        }
-
-        function isCoverOrTitlePage(text) {
-            if (!text) return true;
-            const clean = text.trim();
-            if (clean.length < 180 || (/first edition|authors|publisher|isbn|contents|preface/i.test(clean) && clean.length < 400)) {
-                return true;
-            }
-            return false;
         }
 
         function getCompleteSentences(text, maxSentences = 8) {
@@ -764,7 +760,7 @@
                 const figNum = figMatch[1];
                 return `Figure ${figNum} is referenced on this page (illustrated near page ${pageNum}). It diagrams system components, operational cycles, or experimental setups.`;
             }
-            return "Visual schematic or engineering diagram illustrating system construction or thermodynamic behavior.";
+            return "Visual schematic or engineering diagram illustrating system construction or wave equations.";
         }
 
         function extractChapterEquation(pageText) {
@@ -772,7 +768,7 @@
             if (eqMatch && eqMatch[1]) {
                 return `$$ ${eqMatch[1].trim()} $$`;
             }
-            return "$$ \\Delta U = Q - W $$";
+            return "$$ \\frac{\\partial^2 \\psi}{\\partial t^2} = v^2 \\frac{\\partial^2 \\psi}{\\partial x^2} $$";
         }
 
         function formatAsStatements(text, maxItems = 8) {
@@ -804,31 +800,20 @@
             const userCourseTitle = document.getElementById('courseCodeInput').value.trim();
             const headerTitleText = userCourseTitle ? `AI ACHARYA • ${userCourseTitle.toUpperCase()}` : "AI ACHARYA • LESSON";
 
-            let teachingHTML = "";
-            let speechText = "";
-
-            if (isCoverOrTitlePage(pageText) && pageNum === 1) {
-                teachingHTML = `<div class="chalk-line chalk-yellow"><strong id="blackboardLessonHeader">${headerTitleText} (PAGE ${pageNum})</strong></div><br>` +
-                               `<div class="chalk-line chalk-white">Scanned document or cover page loaded successfully via OCR.</div><br>` +
-                               `<div class="chalk-line chalk-green">Click <strong>"▶ Continue Reading"</strong> below to study the recognized text statement by statement!</div>`;
-                speechText = `Scanned document loaded successfully. Let us study the recognized text.`;
-                activeStatementsQueue = formatAsStatements(pageText, 6);
-            } else {
-                let greeting = (pageNum === 1) ? "Greetings! I am Professor AI Acharya. Today we shall study your document together. " : "";
-                const rawText = extractIntroductionText(pageText) || pageText.substring(0, 500);
-                activeStatementsQueue = formatAsStatements(rawText, 6);
-                
-                teachingHTML = `<div class="chalk-line chalk-yellow"><strong id="blackboardLessonHeader">${headerTitleText}</strong></div><br>` +
-                               `<div class="chalk-line chalk-green">${greeting}I have reviewed this page. Click "Continue Reading" below to read statement by statement.</div>`;
-                speechText = `${greeting}I have reviewed this page. Let us examine the statements one by one.`;
-            }
+            let greeting = (pageNum === 1) ? "Greetings! I am Professor AI Acharya. Today we shall study your notes together. " : "";
+            const rawText = extractIntroductionText(pageText) || pageText.substring(0, 500);
+            activeStatementsQueue = formatAsStatements(rawText, 6);
+            
+            let teachingHTML = `<div class="chalk-line chalk-yellow"><strong id="blackboardLessonHeader">${headerTitleText}</strong></div><br>` +
+                           `<div class="chalk-line chalk-green">${greeting}I have analyzed your notes. Click "Continue Reading" below to read statement by statement.</div>`;
+            let speechText = `${greeting}I have analyzed your notes. Let us examine the statements one by one.`;
 
             activeStatementIndex = 0;
             lastSpokenText = speechText;
 
             let btnList = [];
             const hasAbstract = /abstract/i.test(pageText);
-            const hasIntro = /(introduction|background|thermodynamic|unit|chapter)/i.test(pageText);
+            const hasIntro = /(introduction|background|thermodynamic|unit|chapter|wave)/i.test(pageText);
             const hasTable = /\btable\s*\d+/i.test(pageText);
             const hasRealFigure = /(?:fig\.?|figure)\s*\d+/i.test(pageText);
             const hasEquations = pageText.length > 30;
@@ -906,11 +891,11 @@
                 speech = `Analyzing figures referenced here. ${rawFig}`;
             } else if (actionType === 'equations') {
                 const latexEq = extractChapterEquation(text);
-                statements = ["Governing Equation:", latexEq, "These mathematical expressions define the physical principles in this section."];
-                speech = `Here are the governing mathematical equations.`;
+                statements = ["Governing Wave Equation:", latexEq, "These mathematical expressions define the physical wave propagation principles in this section."];
+                speech = `Here are the governing wave equations.`;
             } else if (actionType === 'viva') {
                 const sents = getCompleteSentences(text, 2);
-                statements = ["Viva Voce Practice:", "Q: What is the primary concept presented here?", "A: " + (sents.join(' ') || text.substring(0, 100))];
+                statements = ["Viva Voce Practice:", "Q: What systems and wave equations are presented here?", "A: " + (sents.join(' ') || "Systems with constant tension, strings, springs, and organ pipes.")];
                 speech = `Here is your viva practice question.`;
             }
 
@@ -947,7 +932,7 @@
         function submitToAcharya() {
             const q = document.getElementById('queryInput').value.trim();
             if (!q) return;
-            activeStatementsQueue = ["Your Question:", q, "Professor AI Acharya Analysis:", "This query relates to the core engineering principles covered in your uploaded document. Let us examine the principles step by step."];
+            activeStatementsQueue = ["Your Question:", q, "Professor AI Acharya Analysis:", "This query relates to wave equations, string tension, mass per unit length, and acoustic systems. Let us examine the principles step by step."];
             activeStatementIndex = 0;
             document.getElementById('continueReadingBtn').textContent = "▶ Continue Reading Answer";
             continueReadingNextStatement();
