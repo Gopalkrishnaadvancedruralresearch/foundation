@@ -723,6 +723,22 @@
             }).filter(s => s.length > 3).slice(0, maxSentences);
         }
 
+        function extractAbstractText(pageText) {
+            const absMatch = pageText.match(/abstract[\s\-\:]+(.+?)(?=(introduction|keywords|1\.|index terms|$))/i);
+            if (absMatch && absMatch[1] && absMatch[1].trim().length > 20) {
+                return absMatch[1].trim();
+            }
+            return pageText.trim();
+        }
+
+        function extractIntroductionText(pageText) {
+            const introMatch = pageText.match(/(introduction|1\.\s*introduction)[\s\-\:]+(.+?)(?=(2\.|background|related|$))/i);
+            if (introMatch && introMatch[2] && introMatch[2].trim().length > 20) {
+                return introMatch[2].trim();
+            }
+            return pageText.trim();
+        }
+
         function extractTableSummary(pageText) {
             return "Tabular data presenting system parameters, boundary conditions, or experimental values in this section.";
         }
@@ -803,7 +819,7 @@
             const userCourseTitle = document.getElementById('courseCodeInput').value.trim();
             const headerTitleText = userCourseTitle ? `AI ACHARYA • ${userCourseTitle.toUpperCase()}` : "AI ACHARYA • LESSON";
 
-            let greeting = (pageNum === 1) ? "Greetings, my students! I am Professor AI Acharya. Today we shall study this research paper together page by page. " : "";
+            let greeting = (pageNum === 1) ? "Greetings, my students! I am Professor AI Acharya. Today we shall analyze this research paper together page by page. " : "";
             activeStatementsQueue = formatAsStatements(pageText, 10);
             
             let teachingHTML = `<div class="chalk-line chalk-yellow"><strong id="blackboardLessonHeader">${headerTitleText} (PAGE ${pageNum})</strong></div><br>` +
@@ -814,6 +830,11 @@
             lastSpokenText = speechText;
 
             let btnList = [];
+            const hasAbstract = /abstract/i.test(pageText);
+            const hasIntro = /(introduction|background|1\./i.test(pageText);
+
+            if (hasAbstract) btnList.push(`<button class="btn-choice" onclick="runPdfAction('abstract')">📖 Explain Abstract</button>`);
+            if (hasIntro) btnList.push(`<button class="btn-choice" onclick="runPdfAction('intro')">📜 Section Overview</button>`);
             btnList.push(`<button class="btn-choice" onclick="runPdfAction('table')">📊 Summarize Table</button>`);
             btnList.push(`<button class="btn-choice" onclick="runPdfAction('figures')">📊 Analyze Figure</button>`);
             btnList.push(`<button class="btn-choice" onclick="runPdfAction('equations')">📐 Chalk & All Equations (1..End)</button>`);
@@ -907,7 +928,11 @@
             let statements = [];
             let speech = "";
 
-            if (actionType === 'table') {
+            if (actionType === 'abstract' || actionType === 'intro') {
+                const rawText = actionType === 'abstract' ? extractAbstractText(text) : extractIntroductionText(text);
+                statements = getCompleteSentences(rawText, 8);
+                speech = `Let us examine this section step by step.`;
+            } else if (actionType === 'table') {
                 const rawTable = extractTableSummary(text);
                 statements = [rawTable];
                 speech = `Examining tabular data. ${rawTable}`;
