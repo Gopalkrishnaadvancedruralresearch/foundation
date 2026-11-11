@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prof. GARRF-Anna – Your Personal AI Research Professor</title>
+<script>window.MathJax={tex:{inlineMath:[['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']]},options:{skipHtmlTags:['script','noscript','style','textarea','pre']}};</script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-chtml.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Architects+Daughter&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0b1220;--panel:#111a2e;--line:#243049;--ink:#e6edf7;--mut:#94a3b8;--acc:#10b981;--gold:#fbbf24}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{display:flex;flex-direction:column;height:100vh;background:var(--bg);color:var(--ink);font:14px/1.5 Inter,system-ui,sans-serif}
+button,select,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer;background:#1e293b;border:1px solid #334155;border-radius:8px;padding:6px 11px;font-weight:600;font-size:13px}
+button:hover:not(:disabled){border-color:var(--acc)}
+button:disabled{opacity:.4;cursor:default}
+button.pri{background:var(--acc);border-color:var(--acc);color:#04130d}
+select,input[type=text],input[type=number],textarea{background:#0b1220;border:1px solid #334155;border-radius:8px;padding:5px 8px}
+header{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:8px 14px;background:#0f172a;border-bottom:1px solid var(--line)}
+.logo{width:38px;height:38px;border-radius:50%;background:#059669;border:2px solid #34d399;display:grid;place-items:center;font-weight:700;font-size:10px}
+header h1{margin:0;font-size:15px;color:#34d399}
+header small{color:var(--mut);font-size:11px;display:block}
+.sp{flex:1}
+#title{min-width:200px;flex:1;max-width:420px}
+#status{font:11px monospace;color:var(--gold)}
+/* TRUE 50:50 split */
+main{flex:1;min-height:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:minmax(0,1fr)}
+.pane{min-width:0;min-height:0;display:flex;flex-direction:column}
+#left{border-right:2px solid var(--line)}
+.bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 10px;background:var(--panel);border-bottom:1px solid var(--line)}
+.bar .hint{color:var(--mut);font-size:11px}
+#scroll{flex:1;overflow:auto;background:#1e293b;padding:14px;position:relative}
+#empty{margin:12vh auto;max-width:360px;text-align:center;color:var(--mut)}
+#wrap{position:relative;margin:0 auto;background:#fff;box-shadow:0 4px 24px #0008;display:none}
+#cv{position:absolute;left:0;top:0}
+#hl{position:absolute;inset:0;pointer-events:none;z-index:1}
+.hlbox{position:absolute;background:rgba(250,204,21,.28);border:2px solid #f59e0b;border-radius:3px}
+.tl{position:absolute;inset:0;overflow:hidden;line-height:1;z-index:2}
+.tl span{position:absolute;white-space:pre;color:transparent;cursor:pointer;transform-origin:0 0}
+.tl span:hover{background:rgba(16,185,129,.18)}
+.tl ::selection{background:rgba(37,99,235,.35)}
+/* professor: fixed until a location is clicked; position changes only via transition */
+#prof{position:absolute;z-index:3;width:54px;pointer-events:none;transition:left .6s ease,top .6s ease}
+#prof svg{display:block;width:54px;height:54px;filter:drop-shadow(0 2px 3px #0008)}
+#prof b{position:absolute;left:50%;top:100%;transform:translateX(-50%);white-space:nowrap;font-size:9px;background:#052e24;color:#a7f3d0;border:1px solid var(--acc);border-radius:6px;padding:1px 5px}
+#toast{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);background:#020617;border:1px solid var(--acc);border-radius:8px;padding:6px 12px;font-size:12px;display:none;z-index:9;max-width:90%}
+#right{overflow:auto;background:var(--bg)}
+.sec{padding:8px 12px;border-bottom:1px solid var(--line)}
+.sec h3{margin:0 0 6px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#34d399}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.chips{max-height:104px;overflow:auto}
+.chip{font-size:12px;padding:3px 9px;border-radius:999px;font-weight:500}
+.badge{font-size:11px;border-radius:999px;padding:2px 9px;border:1px solid}
+.b-basic{color:var(--gold);border-color:#92400e}.b-ai{color:#34d399;border-color:#065f46}
+#board{margin:10px 12px;padding:16px 20px;min-height:260px;background:#1a2e26;border:10px solid #4a2e1b;border-radius:6px;box-shadow:inset 0 0 30px #000b;font-family:'Architects Daughter',Inter,sans-serif}
+#bTitle{color:#fcd34d;font-size:20px;margin-bottom:2px}
+#bMeta{color:#7dd3fc;font-size:13px;margin-bottom:10px}
+.stitle{color:#67e8f9;font-size:17px;margin-bottom:6px}
+.sbody{font-size:18px;line-height:1.65;color:#f1f5f9}
+.w.say{background:#fde047;color:#111;border-radius:3px}
+.tex{margin:10px 0;padding:8px;background:#0a1f18;border-radius:6px;overflow-x:auto;color:#fff;font-size:18px}
+pre.raw{white-space:pre-wrap;background:#0a1f18;padding:8px;border-radius:6px;font:13px monospace;color:#a7f3d0}
+textarea#ltx{width:100%;min-height:54px;font:13px monospace}
+.dots{margin-top:10px;color:#34d399;letter-spacing:3px}
+.note{color:var(--mut);font-size:12px;font-family:Inter,sans-serif}
+#ctl{padding:0 12px 8px}
+#sum{margin:0 12px 10px;padding:12px;border:1px solid #065f46;background:#06281f;border-radius:8px;display:none}
+#sum h4{margin:0 0 6px;color:#34d399}
+#sumTxt{white-space:pre-wrap}
+.ask{display:flex;gap:6px}.ask input{flex:1}
+dialog{background:var(--panel);color:var(--ink);border:1px solid var(--acc);border-radius:10px;max-width:520px}
+dialog input{width:100%;margin:8px 0}
+@media(max-width:900px){
+ body{height:auto;min-height:100vh}
+ main{display:block}
+ #left{height:85vh;border-right:0;border-bottom:2px solid var(--line)}
+ #right{overflow:visible}
+}
+</style>
+</head>
+<body>
+<header>
+ <div class="logo">GARRF</div>
+ <div><h1>Prof. GARRF-Anna – Your Personal AI Research Professor</h1><small>Gopalkrishna Advanced Rural Research Foundation · Dr. APJ Abdul Kalam Research Zero Funding Initiative · garrf.in</small></div>
+ <div class="sp"></div>
+ <label><button class="pri" onclick="$('file').click()">📁 Upload PDF</button><input id="file" type="file" accept=".pdf,application/pdf" hidden></label>
+ <input id="title" type="text" placeholder="Paper title (editable)" title="Edit paper title">
+ <span id="status">No PDF loaded</span>
+ <button onclick="clearDoc()">Clear</button>
+</header>
+
+<main>
+ <!-- LEFT 50% : PDF -->
+ <section class="pane" id="left">
+  <div class="bar">
+   <button id="pPrev" title="Previous page">◀</button>
+   <input id="pNum" type="number" min="1" value="1" style="width:62px"><span id="pTot">/ 0</span>
+   <button id="pNext" title="Next page">▶</button>
+   <button id="zOut" title="Zoom out">−</button><span id="zVal">100%</span><button id="zIn" title="Zoom in">+</button>
+   <span class="hint">Click a heading, paragraph, equation, figure or table – or select any text.</span>
+  </div>
+  <div id="scroll">
+   <div id="empty"><div style="font-size:42px">📄</div><p>Upload a research paper (PDF) to begin. The PDF stays in your browser.</p></div>
+   <div id="wrap"><canvas id="cv"></canvas><div id="hl"></div><div class="tl" id="tl"></div>
+    <div id="prof"><svg viewBox="0 0 64 64"><circle cx="32" cy="34" r="20" fill="#f5c9a0"/><path d="M12 30c0-14 10-20 20-20s20 6 20 20c-4-8-10-11-20-11s-16 3-20 11z" fill="#4b5563"/><circle cx="32" cy="9" r="6" fill="#4b5563"/><g fill="none" stroke="#111" stroke-width="2"><circle cx="24" cy="34" r="6"/><circle cx="40" cy="34" r="6"/><path d="M30 34h4"/></g><circle cx="24" cy="34" r="1.8"/><circle cx="40" cy="34" r="1.8"/><path d="M26 46q6 5 12 0" stroke="#7c2d12" stroke-width="2" fill="none"/><path d="M14 62q18-14 36 0z" fill="#059669"/></svg><b>Prof. GARRF-Anna</b></div>
+   </div>
+   <div id="toast"></div>
+  </div>
+ </section>
+
+ <!-- RIGHT 50% : PROFESSOR -->
+ <section class="pane" id="right">
+  <div class="sec row">
+   <label>Level <select id="level"><option value="ug">Undergraduate</option><option value="pg" selected>Postgraduate</option><option value="phd">PhD Scholar</option><option value="fac">Faculty / Researcher</option></select></label>
+   <label>Voice <select id="voice" style="max-width:170px"></select></label>
+   <label>Speed <input id="rate" type="range" min="0.6" max="1.4" step="0.05" value="0.95" style="width:90px"></label>
+   <span class="sp"></span>
+   <span id="aiBadge" class="badge b-basic">Basic mode (no AI)</span><button id="cfgBtn" title="Connect AI service">⚙</button>
+  </div>
+  <div class="sec"><h3>Document sections</h3><div id="nav" class="row chips"><span class="note">Upload a PDF to detect its structure.</span></div>
+   <details style="margin-top:6px"><summary class="note" style="cursor:pointer">Figures · Tables · Equations</summary><div id="elems" class="row chips" style="margin-top:6px"></div></details></div>
+
+  <div id="board">
+   <div id="bTitle">Welcome, I am Prof. GARRF-Anna</div><div id="bMeta"></div>
+   <div id="bStep"><div class="sbody">Upload a paper, then click any section, paragraph, equation, figure or table on the left. I will teach it one step at a time – you press Continue when you are ready.</div></div>
+   <div class="dots" id="dots"></div>
+  </div>
+  <div id="ctl" class="row">
+   <button id="bPrev">◀ Previous</button><button id="bNext" class="pri">Continue ▶</button><button id="bRep">↻ Repeat</button>
+   <button id="bSay">🔊 Read Aloud</button><button id="bPause">⏸ Pause</button><button id="bStop">⏹ Stop</button>
+   <button id="bSum">📝 Generate Compact Summary</button>
+  </div>
+  <div id="sum"><h4>Compact summary <span id="sumKind" class="note"></span></h4><div id="sumTxt"></div><div style="margin-top:8px"><button id="bCopy">Copy summary</button></div></div>
+
+  <div class="sec"><h3>Ask Prof. GARRF-Anna about this paper</h3>
+   <div class="ask"><input id="q" type="text" placeholder="e.g. What is the research gap? What does Figure 3 indicate?"><button id="qGo" class="pri">Ask</button></div>
+   <div class="row" style="margin-top:6px" id="qs"></div>
+   <p class="note" id="modeNote"></p></div>
+ </section>
+</main>
+
+<dialog id="dlg"><form method="dialog">
+ <h3 style="margin-top:0">Connect an AI service</h3>
+ <p class="note">Enter the URL of <b>your own secure proxy</b> (e.g. a Cloudflare Worker or server on garrf.in) that holds the API key. Never put an API key in this page. Leave empty for Basic mode. See the contract in the source comments.</p>
+ <input id="cfgUrl" type="text" placeholder="https://garrf.in/api/prof-anna">
+ <div class="row"><button id="cfgSave" class="pri" value="ok">Save</button><button value="cancel">Cancel</button></div>
+</form></dialog>
+
+<script>
+'use strict';
+/* =====================================================================
+ AI INTEGRATION CONTRACT (the only place AI is plugged in: aiCall())
+ The page POSTs JSON to CFG.endpoint:
+   { task:'lesson'|'summary'|'ask', level:'ug'|'pg'|'phd'|'fac', docTitle, outline:[{name,page}],
+     kind:'section'|'paragraph'|'selection'|'figure'|'table'|'equation'|'question',
+     title, page, text, context, refs:[sentences citing it], question? }
+ and expects: lesson/ask -> { steps:[{title, body, tex?}] }   summary -> { summary:"..." }
+   body = plain prose (say equations in words, it is read aloud); tex = optional LaTeX (typeset by MathJax).
+ Server-side system prompt must say: answer ONLY from the supplied text; say when the text is insufficient;
+ never invent numbers, citations or findings; label your own suggestions as "Professor's suggestion".
+ Minimal Cloudflare Worker (key lives in env.KEY, restrict CORS to https://garrf.in, add rate-limiting):
+   export default{async fetch(req,env){const p=await req.json();
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'x-api-key':env.KEY,
+     'anthropic-version':'2023-06-01','content-type':'application/json'},body:JSON.stringify({model:env.MODEL,
+     max_tokens:1500,system:env.SYSTEM,messages:[{role:'user',content:JSON.stringify(p)}]})});
+    const j=await r.json();const t=j.content[0].text; return new Response(t,{headers:{'content-type':'application/json',
+     'access-control-allow-origin':'https://garrf.in'}})}}
+ ===================================================================== */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const CFG={endpoint:''};try{CFG.endpoint=localStorage.getItem('garrf_ai_endpoint')||''}catch(e){}
+const LV={ug:{n:2,t:'Undergraduate'},pg:{n:3,t:'Postgraduate'},phd:{n:3,t:'PhD'},fac:{n:4,t:'Faculty'}};
+const S={pdf:null,pages:{},page:1,zoom:1,scale:1,sel:null,lesson:null,tok:0,rt:null,doc:null,level:'pg'};
+const KNOWN=/^(?:[IVX]+\.?\s+|\d+(?:\.\d+)*\.?\s+)?(abstract|keywords?|index terms|introduction|literature review|related work|background|research gap|objectives?|aims?|methodology|methods?|materials? and methods?|experimental(?: setup| procedure| work| methodology)?|governing equations?|mathematical model(?:l)?ing|numerical (?:model|simulation|analysis)|results?(?: and discussion)?|discussion|conclusions?|conclusions? and future (?:work|scope)|future (?:work|scope)|acknowledg(?:e)?ments?|references|bibliography)\b/i;
+const RUNIN=/^(abstract|keywords?|index terms)\s*[—–:\-.]\s*/i;
+const STOP=new Set('the a an of and or to in on for with by is are was were be this that these those it its as at from which we our their can has have had not but also into than then such using used use'.split(' '));
+
+/* ---------- toast / status ---------- */
+let tT;function toast(m){const t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(tT);tT=setTimeout(()=>t.style.display='none',3500)}
+function setStatus(m){$('status').textContent=m}
+function updateMode(){const ai=!!CFG.endpoint;const b=$('aiBadge');b.textContent=ai?'AI connected':'Basic mode (no AI)';b.className='badge '+(ai?'b-ai':'b-basic');
+ $('modeNote').textContent=ai?'AI service connected: explanations are generated from the text extracted from your PDF.':'Basic mode: lessons are built from the paper\'s own sentences (extractive). Nothing is invented, but there is no genuine reasoning. Connect an AI service (⚙) for real explanations, derivations and research advice.'}
+
+/* ---------- text utilities ---------- */
+function splitSentences(t){t=(t||'').replace(/\b(Fig|Figs|Eq|Eqs|et al|e\.g|i\.e|vs|Dr|No|Ref|Refs|approx|Sec)\./g,'$1\u0001').replace(/(\d)\.(\d)/g,'$1\u0001$2');
+ return (t.match(/[^.!?]+(?:[.!?]+|$)/g)||[]).map(s=>s.replace(/\u0001/g,'.').trim()).filter(s=>s.length>3)}
+function cap(s,n=12000){s=s||'';return s.length>n?s.slice(0,n):s}
+function extractive(text,k=4){const ss=splitSentences(text);if(ss.length<=k)return ss.join(' ');const f={};
+ ss.forEach(s=>(s.toLowerCase().match(/[a-z]{4,}/g)||[]).forEach(w=>{if(!STOP.has(w))f[w]=(f[w]||0)+1}));
+ const sc=ss.map((s,i)=>{const w=(s.toLowerCase().match(/[a-z]{4,}/g)||[]).filter(x=>!STOP.has(x));return{i,v:w.reduce((a,x)=>a+f[x],0)/Math.sqrt(w.length+1)+(i===0?1.5:0)}});
+ return sc.sort((a,b)=>b.v-a.v).slice(0,k).sort((a,b)=>a.i-b.i).map(x=>ss[x.i]).join(' ')}
+const CUES=[['Background',/\b(recent|growing|increasing|widely|important|demand|background|currently|industry)\b/g],
+ ['Problem / gap',/\b(however|challenge|problem|limitation|lack|difficult|remain|unresolved|gap|issue|unclear)\b/g],
+ ['Objective',/\b(aim|objective|purpose|goal|this (paper|study|work|article)|we (propose|present|develop|investigate))\b/g],
+ ['Methodology',/\b(method|approach|experiment|simulation|model|algorithm|performed|measured|setup|finite element|specimen|sensor)\b/g],
+ ['Findings',/\b(result|found|observed|achieved|demonstrate|indicate|improv|increase|decrease|reduc|accuracy|%)\b/g],
+ ['Contribution / outlook',/\b(contribut|novel|first|significan|future|conclude|implication)\b/g]];
+function cue(t){t=t.toLowerCase();let best='Key point',m=0;for(const[l,r]of CUES){const c=(t.match(r)||[]).length;if(c>m){m=c;best=l}}return best}
+
+/* ---------- PDF analysis: blocks, headings, figures, tables, equations ---------- */
+function buildBlocks(items,W,H){
+ const its=[];for(const i of items){if(typeof i.str!=='string'||!i.str.trim())continue;const t=i.transform;if(Math.abs(t[1])>Math.abs(t[0])*.5)continue;
+  its.push({s:i.str,x:t[4],y:H-t[5],h:Math.hypot(t[2],t[3])||i.height||10,w:i.width})}
+ const lines=[];let L=null;
+ for(const t of its){
+  if(L&&Math.abs(t.y-L.y)<Math.max(L.h,t.h)*.45&&t.x>=L.x1-t.h*2){L.s+=(t.x-L.x1>t.h*.12?' ':'')+t.s;L.x1=Math.max(L.x1,t.x+t.w);L.top=Math.min(L.top,t.y-t.h);L.bot=Math.max(L.bot,t.y+t.h*.25);L.h=Math.max(L.h,t.h)}
+  else{L={s:t.s,y:t.y,h:t.h,x0:t.x,x1:t.x+t.w,top:t.y-t.h,bot:t.y+t.h*.25};lines.push(L)}}
+ const keep=lines.filter(l=>!((l.y<H*.05||l.y>H*.95)&&l.s.length<60));
+ const d=[];for(let i=1;i<keep.length;i++){const v=keep[i].y-keep[i-1].y;if(v>0&&v<keep[i].h*3)d.push(v)}
+ d.sort((a,b)=>a-b);const lead=d.length?d[d.length>>1]:12;
+ const blocks=[];let B=null;
+ for(const l of keep){const p=B&&B.lines[B.lines.length-1];
+  if(!B||l.y-p.y>lead*1.35||l.y-p.y<0||Math.abs(l.h-p.h)>p.h*.15||Math.abs(l.x0-p.x0)>W*.07){B={lines:[l]};blocks.push(B)}else B.lines.push(l)}
+ for(const b of blocks){let o='';for(const l of b.lines){const s=l.s.trim();if(!o)o=s;else if(/[A-Za-z]-$/.test(o)&&/^[a-z]/.test(s))o=o.slice(0,-1)+s;else o+=' '+s}
+  b.text=o.replace(/\s+/g,' ').trim();b.x=Math.min(...b.lines.map(l=>l.x0));b.y=Math.min(...b.lines.map(l=>l.top));
+  b.w=Math.max(...b.lines.map(l=>l.x1))-b.x;b.h=Math.max(...b.lines.map(l=>l.bot))-b.y;b.size=Math.max(...b.lines.map(l=>l.h))}
+ return blocks}
+const isEq=b=>{const t=b.text;if(t.length>220)return false;const a=(t.match(/[A-Za-z]{4,}/g)||[]).length;const m=/[=≈≤≥∑∫∂∇∞±×]/.test(t);return m&&a<=6};
+function classify(b,body){const t=b.text,w=t.split(/\s+/).length;let m;
+ if(m=/^(Fig\.|Figure|FIG\.|FIGURE)\s*(\d+[a-z]?)\s*(?:[.:|—–-]|\s(?=[A-Z]))/.exec(t)){b.type='figure';b.n=m[2]}
+ else if(m=/^(Table|TABLE)\s*([0-9IVX]+)\s*(?:[.:|—–-]|\s(?=[A-Z]))/.exec(t)){b.type='table';b.n=m[2]}
+ else if(b.lines.length<=2&&t.length<=100&&!/[.,;]$/.test(t)&&((b.size>body*1.08&&w<=14)||(KNOWN.test(t)&&t.length<60)||(/^\d+(\.\d+)*\.?\s+[A-Z]/.test(t)&&w<=10&&b.size>=body*.98)||(/^[A-Z][A-Z\s\d.\-:&]{3,60}$/.test(t)&&!isEq(b))))b.type='heading';
+ else if(isEq(b)){b.type='equation';const n=/\(\s*(\d+(?:\.\d+)?)\s*\)\s*$/.exec(t);b.n=n?n[1]:''}
+ else b.type='para'}
+function cleanHead(t){let depth=1;const m=/^([IVX]+\.?|\d+(?:\.\d+)*\.?)\s+/.exec(t);let r=t;
+ if(m){r=t.slice(m[0].length);if(/^\d+\.\d+/.test(m[1]))depth=m[1].replace(/\.$/,'').split('.').length}
+ if(r===r.toUpperCase())r=r.toLowerCase().replace(/(^|\s)\S/g,c=>c.toUpperCase());return{name:r.trim(),depth}}
+async function analyse(){
+ const N=S.pdf.numPages,sizes={};S.pages={};
+ for(let n=1;n<=N;n++){setStatus('Analysing page '+n+'/'+N+'…');const pg=await S.pdf.getPage(n),v=pg.getViewport({scale:1}),tc=await pg.getTextContent();
+  const bl=buildBlocks(tc.items,v.width,v.height);bl.forEach(b=>b.page=n);S.pages[n]={W:v.width,H:v.height,blocks:bl};
+  bl.forEach(b=>{const k=Math.round(b.size*2)/2;sizes[k]=(sizes[k]||0)+b.text.length})}
+ let body=10,mx=0;for(const k in sizes)if(sizes[k]>mx){mx=sizes[k];body=+k}
+ const all=[];for(let n=1;n<=N;n++)S.pages[n].blocks.forEach(b=>all.push(b));
+ if(!all.length){toast('No selectable text found – this may be a scanned PDF (OCR needed).');}
+ const first=(S.pages[1]?.blocks||[]).slice(0,10).filter(b=>b.text.length>10);let tb=null;
+ first.forEach(b=>{if(!tb||b.size>tb.size)tb=b});
+ const D={title:'',authors:'',sections:[],figs:[],tabs:[],eqs:[],sents:[]};
+ if(tb&&tb.size>body*1.15){tb.type='title';D.title=tb.text}
+ for(const b of all)if(b!==tb)classify(b,body);
+ if(!D.title){try{const m=await S.pdf.getMetadata();D.title=(m.info&&m.info.Title&&m.info.Title.length>8)?m.info.Title:''}catch(e){}}
+ // figure / table regions
+ for(let n=1;n<=N;n++){const P=S.pages[n],bs=P.blocks;bs.forEach((b,i)=>{
+  if(b.type==='figure'){const p=bs[i-1];const top=p&&p.y+p.h<b.y-4?p.y+p.h+3:b.y;b.reg={x:b.x,y:top,w:b.w,h:b.y+b.h-top}}
+  if(b.type==='table'){let e=null;for(let j=i+1;j<bs.length;j++)if(bs[j].lines.length>=3&&bs[j].text.length>180){e=bs[j];break}
+   b.reg=e&&e.y>b.y&&e.y-b.y<P.H*.6?{x:b.x,y:b.y,w:Math.max(b.w,P.W*.4),h:e.y-3-b.y}:null}})}
+ // sections
+ let cur=null,front=[];
+ for(const b of all){let nm=null,run='',m;
+  if(b.type==='heading'){nm=cleanHead(b.text)}
+  else if(b.type==='para'&&(m=RUNIN.exec(b.text))){nm={name:m[1][0].toUpperCase()+m[1].slice(1).toLowerCase(),depth:1};run=b.text.slice(m[0].length)}
+  if(nm){cur={name:nm.name,depth:nm.depth,page:b.page,block:b,own:run,paras:[]};b.secStart=cur;D.sections.push(cur)}
+  else if(cur){b.sec=cur;if(b.type==='para')cur.paras.push(b.text)}
+  else if(b.type==='para'&&b.page===1)front.push(b)}
+ D.sections.forEach(s=>{s.block.sec=s;s.text=(s.own+' '+s.paras.join(' ')).trim()});
+ if(!D.authors&&front.length){const a=front.find(b=>b.text.length>8&&b.text.length<400);D.authors=a?a.text:''}
+ for(const b of all){if(b.type==='figure')D.figs.push(b);if(b.type==='table')D.tabs.push(b);if(b.type==='equation')D.eqs.push(b);
+  if(b.type==='para'){const nm=b.sec?b.sec.name:'';splitSentences(b.text).forEach(t=>D.sents.push({t,p:b.page,sec:nm}))}}
+ S.doc=D}
+function secFullText(s){const L=S.doc.sections;let i=L.indexOf(s),o=s.text;for(let j=i+1;j<L.length&&L[j].depth>s.depth;j++)o+=' '+L[j].text;return o.trim()}
+
+/* ---------- PDF rendering ---------- */
+async function showPage(n){
+ if(!S.pdf)return;n=Math.max(1,Math.min(S.pdf.numPages,n));const tok=++S.tok;S.page=n;
+ const pg=await S.pdf.getPage(n),v1=pg.getViewport({scale:1});
+ S.scale=Math.max(.3,($('scroll').clientWidth-30)/v1.width)*S.zoom;const vp=pg.getViewport({scale:S.scale}),dpr=window.devicePixelRatio||1;
+ const wrap=$('wrap'),cv=$('cv');wrap.style.display='block';wrap.style.width=vp.width+'px';wrap.style.height=vp.height+'px';
+ cv.width=vp.width*dpr;cv.height=vp.height*dpr;cv.style.width=vp.width+'px';cv.style.height=vp.height+'px';
+ if(S.rt){try{S.rt.cancel()}catch(e){}try{await S.rt.promise}catch(e){}}
+ S.rt=pg.render({canvasContext:cv.getContext('2d'),viewport:vp,transform:dpr!==1?[dpr,0,0,dpr,0,0]:null});
+ try{await S.rt.promise}catch(e){return}
+ if(tok!==S.tok)return;
+ const tl=$('tl');tl.innerHTML='';const tc=await pg.getTextContent();
+ try{pdfjsLib.renderTextLayer({textContentSource:tc,container:tl,viewport:vp,textDivs:[]})}catch(e){console.warn(e)}
+ $('pNum').value=n;$('pTot').textContent='/ '+S.pdf.numPages;$('zVal').textContent=Math.round(S.zoom*100)+'%';draw()}
+function rectOf(b){return b.reg||{x:b.x,y:b.y,w:b.w,h:b.h}}
+function draw(){const hl=$('hl');hl.innerHTML='';let r=null;
+ if(S.sel&&S.sel.page===S.page){r=S.sel.rect;const d=document.createElement('div');d.className='hlbox';const s=S.scale;
+  d.style.cssText=`left:${r.x*s-2}px;top:${r.y*s-2}px;width:${r.w*s+4}px;height:${r.h*s+4}px`;hl.appendChild(d)}
+ placeProf(r)}
+function placeProf(r){const W=$('wrap').clientWidth,p=$('prof'),z=54;let x,y;
+ if(!r){x=W-z-8;y=8}else{const s=S.scale;x=(r.x+r.w)*s+8;y=r.y*s-4;if(x+z>W){x=r.x*s-z-6;if(x<0){x=W-z-4;y=r.y*s-z-6}}}
+ p.style.left=x+'px';p.style.top=Math.max(0,y)+'px'}
+
+/* ---------- targets (what the student selected) ---------- */
+const nextBlocks=(b,k)=>{const bs=S.pages[b.page].blocks,i=bs.indexOf(b),o=[];for(let j=i+1;j<bs.length&&o.length<k;j++){if(bs[j].type==='heading')break;if(bs[j].type==='para')o.push(bs[j].text)}return o};
+const refsFor=(re)=>S.doc.sents.filter(s=>re.test(s.t)).slice(0,8);
+function targetFromBlock(b){
+ const sec=b.secStart||b.sec,sn=sec?sec.name:'';
+ if(b.secStart)return secTarget(b.secStart);
+ if(b.type==='figure'){const re=new RegExp('\\b(Fig\\.|Figs\\.|Figure|Figures)\\s*'+b.n+'(?![0-9])');
+  return{kind:'figure',title:'Figure '+b.n,page:b.page,block:b,text:b.text,ctx:nextBlocks(b,2).join(' '),refs:refsFor(re),n:b.n}}
+ if(b.type==='table'){const re=new RegExp('\\bTables?\\s*'+b.n+'(?![0-9A-Za-z])');
+  return{kind:'table',title:'Table '+b.n,page:b.page,block:b,text:b.text,ctx:nextBlocks(b,2).join(' '),refs:refsFor(re),n:b.n}}
+ if(b.type==='equation'){const re=b.n?new RegExp('\\b(Eq\\.|Eqs\\.|Equation|equation)\\s*\\(?'+b.n.replace('.','\\.')+'\\)?'):/$^/;
+  return{kind:'equation',title:'Equation'+(b.n?' ('+b.n+')':'')+' – page '+b.page,page:b.page,block:b,text:b.text,ctx:nextBlocks(b,3).join(' '),refs:refsFor(re),n:b.n}}
+ return{kind:'paragraph',title:'Paragraph'+(sn?' in '+sn:'')+' – page '+b.page,page:b.page,block:b,text:b.text,ctx:sec?cap(sec.text,6000):'',refs:[]}}
+function secTarget(s){const t=secFullText(s);return{kind:'section',title:s.name,page:s.page,block:s.block,text:t,ctx:'',refs:[],sec:s}}
+function blockAt(p,x,y){const bs=(S.pages[p]||{}).blocks||[],inR=(r,pd)=>r&&x>=r.x-pd&&x<=r.x+r.w+pd&&y>=r.y-pd&&y<=r.y+r.h+pd;
+ return bs.find(b=>(b.type==='figure'||b.type==='table')&&inR(b.reg,0))||bs.find(b=>inR({x:b.x,y:b.y,w:b.w,h:b.h},3))||null}
+let down=null;
+$('wrap').addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clientY}});
+$('wrap').addEventListener('pointerup',e=>{const d=down;setTimeout(()=>{if(!S.doc)return;const sel=getSelection(),txt=sel?sel.toString().replace(/\s+/g,' ').trim():'';
+ const wr=$('wrap').getBoundingClientRect(),s=S.scale;
+ if(txt.length>=3&&sel.rangeCount&&!sel.isCollapsed){const r=sel.getRangeAt(0).getBoundingClientRect();
+  const rect={x:(r.left-wr.left)/s,y:(r.top-wr.top)/s,w:r.width/s,h:r.height/s},b=blockAt(S.page,rect.x+2,rect.y+rect.h/2);
+  openTarget({kind:'selection',title:'Selected text: “'+txt.slice(0,50)+(txt.length>50?'…':'')+'”',page:S.page,rect,text:txt,block:b,ctx:b?b.text:'',refs:[]})}
+ else if(d&&Math.hypot(e.clientX-d.x,e.clientY-d.y)<6){const b=blockAt(S.page,(e.clientX-wr.left)/s,(e.clientY-wr.top)/s);
+  if(b)openTarget(targetFromBlock(b));else toast('Click on text, a heading, a caption or an equation.')}},0)});
+
+/* ---------- lessons ---------- */
+async function aiCall(task,t,extra){const o={task,level:S.level,docTitle:S.doc.title,outline:S.doc.sections.map(s=>({name:s.name,page:s.page})),
+  kind:t.kind,title:t.title,page:t.page,text:cap(t.text),context:cap(t.ctx,6000),refs:(t.refs||[]).map(r=>r.t)};Object.assign(o,extra||{});
+ const r=await fetch(CFG.endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(o)});
+ if(!r.ok)throw new Error('AI service returned '+r.status);const j=await r.json();return typeof j==='string'?JSON.parse(j):j}
+function chunkSteps(text,level,page){const ss=splitSentences(text);if(!ss.length)return[{title:'Nothing to teach',body:'I could not find readable text here.',page}];
+ let k=LV[level].n;if(Math.ceil(ss.length/k)>8)k=Math.ceil(ss.length/8);const o=[];
+ for(let i=0;i<ss.length;i+=k){const c=ss.slice(i,i+k).join(' ');o.push({title:cue(c),body:c,page})}return o}
+function basicLesson(t){const lv=S.level;let st=[];const pg=t.page;
+ if(t.kind==='section'||t.kind==='paragraph'){st=chunkSteps(t.text,lv,pg);
+  if(lv==='phd'||lv==='fac'){const n=(t.sec?t.sec.name:'').toLowerCase();
+   const q=/gap|intro|literature|related|background/.test(n)?'What exactly do the authors claim is new, and is it demonstrated or only asserted? Which prior work is missing?':/method|experiment|model|material/.test(n)?'Is the method validated independently? Which assumptions limit its generality?':/result|discussion/.test(n)?'Are uncertainty, repeats and fair baselines reported? Do the data really support each claim?':'What is demonstrated, what is only claimed, and what remains unverified?';
+   st.push({title:'Questions to ask (generic prompts, not from the paper)',body:q,page:pg})}}
+ else if(t.kind==='selection'){st=[{title:'What you selected',body:cap(t.text,700),page:pg},{title:'Where it sits',body:'This is on page '+pg+(t.block&&t.block.sec?', in the section “'+t.block.sec.name+'”.':'.'),page:pg}];
+  if(t.ctx&&t.ctx!==t.text)st.push({title:'The paragraph around it',body:cap(t.ctx,900),page:pg})}
+ else if(t.kind==='figure'||t.kind==='table'){const w=t.kind==='figure'?'Figure':'Table';
+  st=[{title:'Identification',body:w+' '+t.n+' is on page '+pg+'. Caption: '+t.text,page:pg}];
+  if(t.refs.length){const ts=t.refs.map(r=>r.t);for(let i=0;i<ts.length;i+=2)st.push({title:'What the paper says about it',body:ts.slice(i,i+2).join(' '),page:t.refs[i].p})}
+  else st.push({title:'What the paper says about it',body:'I could not find sentences in the text that refer to '+w+' '+t.n+' by number.',page:pg});
+  st.push({title:'Limit of Basic mode',body:'Basic mode cannot look inside the '+w.toLowerCase()+' itself. I only report its caption and the authors\' own sentences about it. Connect an AI service (⚙) for an explanation of trends, axes, rows and columns, and always verify against the PDF.',page:pg})}
+ else if(t.kind==='equation'){const defs=splitSentences(t.ctx).filter(s=>/\b(where|denotes?|represents?|is the|are the|stands for|respectively)\b/i.test(s));
+  st=[{title:'The equation as extracted',body:'This equation is on page '+pg+(t.n?', numbered ('+t.n+').':'.')+' Text extracted from the PDF is shown below; you can paste LaTeX to typeset it.',raw:t.text,latex:true,page:pg}];
+  if(defs.length)st.push({title:'Variables and conditions given by the authors',body:defs.join(' '),page:pg});
+  if(t.refs.length)st.push({title:'Where the paper uses it',body:t.refs.slice(0,3).map(r=>r.t).join(' '),page:t.refs[0].p});
+  st.push({title:'Limit of Basic mode',body:'Basic mode cannot reliably typeset equations from a PDF, derive them, or add units and assumptions that the text does not state. Connect an AI service (⚙) for typeset equations with a variable-by-variable explanation.',page:pg})}
+ return st}
+async function openTarget(t){
+ stopSpeech();$('sum').style.display='none';
+ S.lesson={target:t,steps:[],idx:0,fullText:''};
+ const rect=t.rect||(t.block?rectOf(t.block):null);
+ if(rect){S.sel={page:t.page,rect};if(t.page!==S.page)await showPage(t.page);else draw();
+  const y=rect.y*S.scale-60;const sc=$('scroll');if(y<sc.scrollTop||y>sc.scrollTop+sc.clientHeight-120)sc.scrollTo({top:Math.max(0,y),behavior:'smooth'})}
+ $('bTitle').textContent=t.title;$('bMeta').textContent='Page '+t.page+' · '+LV[S.level].t+' level';
+ $('bStep').innerHTML='<div class="sbody">Preparing the lesson…</div>';$('dots').textContent='';
+ let steps;
+ if(CFG.endpoint){try{const j=await aiCall('lesson',t);steps=(j.steps||[]).map(s=>({title:String(s.title||''),body:String(s.body||''),tex:s.tex,page:t.page}));if(!steps.length)throw new Error('empty reply')}
+  catch(e){toast('AI service failed ('+e.message+'). Using Basic mode.');steps=basicLesson(t)}}
+ else steps=basicLesson(t);
+ S.lesson.steps=steps;S.lesson.fullText=t.kind==='section'||t.kind==='paragraph'?t.text:steps.map(s=>s.body).join(' ');
+ renderStep()}
+function wordsHTML(t){let h='',l=0;for(const m of t.matchAll(/\S+/g)){h+=esc(t.slice(l,m.index))+'<span class="w" data-s="'+m.index+'">'+esc(m[0])+'</span>';l=m.index+m[0].length}return h+esc(t.slice(l))}
+function typeset(el){if(window.MathJax&&MathJax.typesetPromise)MathJax.typesetPromise([el]).catch(()=>{})}
+function renderStep(){const L=S.lesson;if(!L||!L.steps.length)return;const s=L.steps[L.idx],n=L.steps.length;
+ let h='<div class="stitle">Step '+(L.idx+1)+' of '+n+': '+esc(s.title)+'</div><div class="sbody" id="words">'+wordsHTML(s.body)+'</div>';
+ if(s.raw)h+='<pre class="raw">'+esc(s.raw)+'</pre>';
+ if(s.tex)h+='<div class="tex">$$'+esc(s.tex)+'$$</div>';
+ if(s.latex)h+='<textarea id="ltx" placeholder="Paste or type LaTeX here, e.g. M\\ddot{x}+C\\dot{x}+Kx=F(t)"></textarea><div class="tex" id="ltxOut" style="display:none"></div>';
+ if(s.page&&s.page!==S.page)h+='<p><button onclick="showPage('+s.page+')">Show page '+s.page+' on the left</button></p>';
+ $('bStep').innerHTML=h;$('dots').textContent='●'.repeat(L.idx+1)+'○'.repeat(n-L.idx-1);
+ const lt=$('ltx');if(lt)lt.oninput=()=>{const o=$('ltxOut');o.style.display=lt.value.trim()?'block':'none';o.textContent='$$'+lt.value+'$$';typeset(o)};
+ $('bPrev').disabled=L.idx===0;$('bNext').disabled=L.idx>=n-1;typeset($('bStep'))}
+
+/* ---------- summary ---------- */
+async function summarise(){const L=S.lesson;if(!L||!L.steps.length){toast('Select something in the PDF first.');return}
+ stopSpeech();$('sum').style.display='block';$('sumTxt').textContent='Preparing summary…';let txt,kind;
+ if(CFG.endpoint){try{const j=await aiCall('summary',L.target,{text:cap(L.fullText)});txt=j.summary;kind='(AI-generated from the paper\'s text)'}catch(e){toast('AI failed: '+e.message)}}
+ if(!txt){txt=extractive(L.fullText,4);kind='(extractive: sentences taken directly from the paper)'}
+ $('sumKind').textContent=kind;$('sumTxt').textContent=txt||'Not enough text to summarise.';$('sum').scrollIntoView({behavior:'smooth',block:'nearest'})}
+$('bCopy').onclick=async()=>{const t=$('sumTxt').textContent;try{await navigator.clipboard.writeText(t)}catch(e){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove()}toast('Summary copied')};
+
+/* ---------- speech with word highlighting ---------- */
+let voices=[];
+function loadVoices(){if(!('speechSynthesis' in window))return;voices=speechSynthesis.getVoices().filter(v=>/^en/i.test(v.lang)).sort((a,b)=>(/en-IN/i.test(b.lang)-/en-IN/i.test(a.lang)));
+ $('voice').innerHTML=voices.map((v,i)=>'<option value="'+i+'">'+esc(v.name+' ('+v.lang+')')+'</option>').join('')||'<option>Default</option>'}
+if('speechSynthesis' in window){loadVoices();speechSynthesis.onvoiceschanged=loadVoices}
+function clearSay(){document.querySelectorAll('.w.say').forEach(e=>e.classList.remove('say'))}
+function speak(){const L=S.lesson;if(!L||!L.steps.length)return;if(!('speechSynthesis' in window)){toast('Speech is not supported in this browser.');return}
+ const s=L.steps[L.idx];speechSynthesis.cancel();clearSay();const u=new SpeechSynthesisUtterance(s.body);
+ const v=voices[+$('voice').value];if(v){u.voice=v;u.lang=v.lang}else u.lang='en-IN';u.rate=+$('rate').value;
+ const sp=[...document.querySelectorAll('#words .w')];
+ u.onboundary=e=>{if(e.name&&e.name!=='word')return;let f=null;for(const x of sp){if(+x.dataset.s<=e.charIndex)f=x;else break}clearSay();if(f)f.classList.add('say')};
+ u.onend=u.onerror=()=>{clearSay();$('bPause').textContent='⏸ Pause'};speechSynthesis.speak(u)}
+function stopSpeech(){if('speechSynthesis' in window)speechSynthesis.cancel();clearSay();$('bPause').textContent='⏸ Pause'}
+
+/* ---------- Q&A ---------- */
+const QMAP=[[/gap|novel/i,/gap|introduction|literature|related|background/i],[/limit/i,/limit|discussion|conclusion/i],[/method|why did|approach|setup|experiment/i,/method|experiment|material|model/i],
+ [/contribution|main|summar|about/i,/abstract|conclusion|introduction/i],[/future|extend|next/i,/conclusion|future/i],[/result|finding|observ/i,/result|discussion/i]];
+async function ask(q){q=q.trim();if(!q)return;if(!S.doc){toast('Upload a PDF first.');return}stopSpeech();$('sum').style.display='none';
+ let m;
+ if(!CFG.endpoint){
+  if(m=/fig(?:ure)?\.?\s*(\d+[a-z]?)/i.exec(q)){const b=S.doc.figs.find(x=>x.n.toLowerCase()===m[1].toLowerCase());if(b)return openTarget(targetFromBlock(b))}
+  if(m=/table\s*([0-9IVX]+)/i.exec(q)){const b=S.doc.tabs.find(x=>x.n===m[1]);if(b)return openTarget(targetFromBlock(b))}
+  if(m=/(?:eq(?:uation)?\.?)\s*\(?(\d+(?:\.\d+)?)\)?/i.exec(q)){const b=S.doc.eqs.find(x=>x.n===m[1]);if(b)return openTarget(targetFromBlock(b))}}
+ const t={kind:'question',title:'Question: '+q,page:S.page,text:q,ctx:'',refs:[]};S.sel=null;draw();
+ $('bTitle').textContent=t.title;$('bMeta').textContent='';$('bStep').innerHTML='<div class="sbody">Thinking…</div>';$('dots').textContent='';S.lesson={target:t,steps:[],idx:0,fullText:''};
+ let steps;
+ if(CFG.endpoint){try{const j=await aiCall('ask',t,{question:q,text:cap(S.doc.sections.map(s=>'## '+s.name+'\n'+s.text).join('\n'),40000)});steps=(j.steps||[]).map(s=>({title:String(s.title||''),body:String(s.body||''),tex:s.tex}));if(!steps.length)throw new Error('empty reply')}
+  catch(e){toast('AI failed ('+e.message+'). Using Basic mode.')}}
+ if(!steps){let pool=S.doc.sents;for(const[a,b]of QMAP)if(a.test(q)){const f=pool.filter(s=>b.test(s.sec));if(f.length){pool=f;break}}
+  const w=(q.toLowerCase().match(/[a-z]{3,}/g)||[]).filter(x=>!STOP.has(x));
+  const sc=pool.map(s=>({s,v:w.reduce((a,x)=>a+(s.t.toLowerCase().includes(x)?1:0),0)})).filter(x=>x.v>0).sort((a,b)=>b.v-a.v).slice(0,4);
+  steps=[];
+  if(/extend|next experiment|project|ph\.?d|learn before|attempting/i.test(q))steps.push({title:'This needs an AI connection',body:'Research suggestions (extensions, projects, prerequisites) are my own recommendations, not the authors\' content, and Basic mode cannot generate them. Connect an AI service (⚙). Meanwhile, here are passages from the paper that may help.'});
+  sc.forEach(x=>steps.push({title:'Passage from page '+x.s.p+(x.s.sec?' ('+x.s.sec+')':'')+' – keyword match, not AI',body:x.s.t,page:x.s.p}));
+  if(!steps.length)steps=[{title:'Not found in the paper',body:'I could not find passages matching your question in the extracted text. Try different words, or click the relevant section.'}]}
+ S.lesson.steps=steps;S.lesson.fullText=steps.map(s=>s.body).join(' ');renderStep()}
+
+/* ---------- navigation panels ---------- */
+function buildNav(){const D=S.doc,n=$('nav');n.innerHTML='';
+ D.sections.forEach(s=>{const b=document.createElement('button');b.className='chip';b.textContent=(s.depth>1?'↳ ':'')+s.name+' · p'+s.page;b.onclick=()=>openTarget(secTarget(s));n.appendChild(b)});
+ if(!D.sections.length)n.innerHTML='<span class="note">No headings detected – click any paragraph on the PDF instead.</span>';
+ const e=$('elems');e.innerHTML='';
+ [['📈 Fig ',D.figs],['📊 Table ',D.tabs],['🧮 Eq ',D.eqs]].forEach(([l,a])=>a.forEach(b=>{const x=document.createElement('button');x.className='chip';x.textContent=l+(b.n||'?')+' · p'+b.page;x.onclick=()=>openTarget(targetFromBlock(b));e.appendChild(x)}));
+ if(!e.children.length)e.innerHTML='<span class="note">None detected.</span>'}
+
+/* ---------- wiring ---------- */
+$('file').onchange=async e=>{const f=e.target.files[0];if(!f)return;stopSpeech();
+ try{setStatus('Loading PDF…');const buf=await f.arrayBuffer();S.pdf=await pdfjsLib.getDocument({data:buf}).promise;S.page=1;S.sel=null;S.lesson=null;
+  await analyse();$('title').value=S.doc.title||f.name.replace(/\.pdf$/i,'');S.doc.title=$('title').value;$('empty').style.display='none';buildNav();
+  setStatus(S.pdf.numPages+' pages · '+S.doc.sections.length+' headings · '+S.doc.figs.length+' fig · '+S.doc.tabs.length+' tab · '+S.doc.eqs.length+' eq');
+  await showPage(1);$('bTitle').textContent='Ready: '+S.doc.title;$('bMeta').textContent=S.doc.authors?cap(S.doc.authors,140):'';
+  $('bStep').innerHTML='<div class="sbody">Click a section above, or any paragraph, equation, figure or table on the PDF. I will wait for you to press Continue.</div>'}
+ catch(err){console.error(err);setStatus('Could not read PDF');toast('Could not read this PDF: '+err.message)}
+ e.target.value=''};
+function clearDoc(){stopSpeech();S.pdf=null;S.doc=null;S.lesson=null;S.sel=null;S.pages={};$('wrap').style.display='none';$('empty').style.display='block';$('nav').innerHTML='<span class="note">Upload a PDF to detect its structure.</span>';$('elems').innerHTML='';
+ $('title').value='';$('bTitle').textContent='Welcome, I am Prof. GARRF-Anna';$('bMeta').textContent='';$('bStep').innerHTML='<div class="sbody">Upload a paper to begin.</div>';$('dots').textContent='';$('sum').style.display='none';setStatus('No PDF loaded')}
+$('title').onchange=()=>{if(S.doc)S.doc.title=$('title').value};
+$('pPrev').onclick=()=>showPage(S.page-1);$('pNext').onclick=()=>showPage(S.page+1);$('pNum').onchange=e=>showPage(+e.target.value||1);
+$('zIn').onclick=()=>{S.zoom=Math.min(3,S.zoom+.15);showPage(S.page)};$('zOut').onclick=()=>{S.zoom=Math.max(.4,S.zoom-.15);showPage(S.page)};
+$('bPrev').onclick=()=>{stopSpeech();if(S.lesson&&S.lesson.idx>0){S.lesson.idx--;renderStep()}};
+$('bNext').onclick=()=>{stopSpeech();if(S.lesson&&S.lesson.idx<S.lesson.steps.length-1){S.lesson.idx++;renderStep()}};
+$('bRep').onclick=()=>{renderStep();speak()};$('bSay').onclick=speak;$('bStop').onclick=stopSpeech;$('bSum').onclick=summarise;
+$('bPause').onclick=()=>{if(!('speechSynthesis' in window))return;if(speechSynthesis.paused){speechSynthesis.resume();$('bPause').textContent='⏸ Pause'}else if(speechSynthesis.speaking){speechSynthesis.pause();$('bPause').textContent='▶ Resume'}};
+$('level').onchange=e=>{S.level=e.target.value;if(S.lesson&&S.lesson.target&&S.lesson.target.kind!=='question')openTarget(S.lesson.target)};
+$('qGo').onclick=()=>ask($('q').value);$('q').onkeydown=e=>{if(e.key==='Enter')ask($('q').value)};
+['What is the main contribution of this paper?','What is the research gap?','Why did the authors use this methodology?','What are the limitations?','How can I extend this research?','How can this become an M.E. project?'].forEach(q=>{const b=document.createElement('button');b.className='chip';b.textContent=q;b.onclick=()=>{$('q').value=q;ask(q)};$('qs').appendChild(b)});
+$('cfgBtn').onclick=()=>{$('cfgUrl').value=CFG.endpoint;$('dlg').showModal()};
+$('cfgSave').onclick=()=>{CFG.endpoint=$('cfgUrl').value.trim();try{localStorage.setItem('garrf_ai_endpoint',CFG.endpoint)}catch(e){}updateMode()};
+window.addEventListener('resize',()=>{if(S.pdf){clearTimeout(window._rz);window._rz=setTimeout(()=>showPage(S.page),250)}});
+try{pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'}catch(e){console.warn('PDF.js not loaded',e)}
+updateMode();
+</script>
+</body>
+</html>
