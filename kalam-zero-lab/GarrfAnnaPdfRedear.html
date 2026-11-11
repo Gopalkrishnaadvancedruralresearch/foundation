@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prof. GARRF-Anna – Your Personal AI Research Professor</title>
+<script>window.MathJax={tex:{inlineMath:[['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']]},options:{skipHtmlTags:['script','noscript','style','textarea','pre']}};</script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-chtml.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js" onerror="this.onerror=null;var x=document.createElement('script');x.src='https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js';document.head.appendChild(x)"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Patrick+Hand&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0b1220;--panel:#111a2e;--line:#243049;--ink:#e6edf7;--mut:#94a3b8;--acc:#10b981;--gold:#fbbf24}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{display:flex;flex-direction:column;height:100vh;background:var(--bg);color:var(--ink);font:14px/1.5 Inter,system-ui,sans-serif}
+button,select,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer;background:#1e293b;border:1px solid #334155;border-radius:8px;padding:6px 11px;font-weight:600;font-size:13px}
+button:hover:not(:disabled){border-color:var(--acc)}
+button:disabled{opacity:.4;cursor:default}
+button.pri{background:var(--acc);border-color:var(--acc);color:#04130d}
+select,input[type=text],input[type=number],textarea{background:#0b1220;border:1px solid #334155;border-radius:8px;padding:5px 8px}
+header{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:8px 14px;background:#0f172a;border-bottom:1px solid var(--line)}
+.logo{width:38px;height:38px;border-radius:50%;background:#059669;border:2px solid #34d399;display:grid;place-items:center;font-weight:700;font-size:10px}
+header h1{margin:0;font-size:15px;color:#34d399}
+header small{color:var(--mut);font-size:11px;display:block}
+.sp{flex:1}
+#title{min-width:200px;flex:1;max-width:420px}
+#safe{font-size:12px;color:#a7f3d0;background:#06281f;border:1px solid #065f46;border-radius:8px;padding:4px 10px}
+#safeBig{margin-top:14px;font-size:13px;color:#a7f3d0;background:#06281f;border:1px solid #065f46;border-radius:8px;padding:8px 12px}
+header .logo{background:none;border:0;border-radius:6px;width:auto;height:46px;display:block}
+header .logo img{height:46px;width:auto;display:block;border-radius:6px}
+.fl{display:inline-block;width:20px;height:13px;vertical-align:-2px;margin:0 2px;border:1px solid #475569;border-radius:2px}
+header small a{color:#fbbf24;text-decoration:none}
+footer{flex:none;padding:4px 14px;font-size:10.5px;background:#0f172a;border-top:1px solid var(--line);color:var(--mut);font-size:11px;line-height:1.45;text-align:center}
+footer b{color:#cbd5e1}
+#docView{display:none;position:relative;background:#fff;color:#111;margin:0 auto;max-width:880px;padding:34px 76px 40px 40px;font:16px/1.65 Georgia,'Times New Roman',serif;box-shadow:0 4px 24px #0008;min-height:100%}
+#docView :is(p,li,h1,h2,h3,h4,h5,h6,table){cursor:pointer;border-radius:3px}
+#docView :is(p,li,h1,h2,h3,h4,h5,h6,table):hover{background:rgba(16,185,129,.12)}
+#docView .hl-on{background:rgba(250,204,21,.38)!important;outline:2px solid #f59e0b}
+#docView img{max-width:100%;height:auto}#docView table{border-collapse:collapse;max-width:100%}#docView td,#docView th{border:1px solid #999;padding:3px 6px}
+details.eqedit{font:13px Inter,sans-serif;color:#94a3b8;margin-top:6px}details.eqedit summary{cursor:pointer}
+.eqimg.big{padding:8px;margin:10px 0}.eqimg{max-width:100%;background:#fff;border-radius:4px;display:block;margin:6px 0}
+#status{font:11px monospace;color:var(--gold)}
+/* TRUE 50:50 split */
+main{flex:1;min-height:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:minmax(0,1fr)}
+.pane{min-width:0;min-height:0;display:flex;flex-direction:column}
+#left{border-right:2px solid var(--line)}
+.bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 10px;background:var(--panel);border-bottom:1px solid var(--line)}
+.bar .hint{color:var(--mut);font-size:11px}
+#scroll{flex:1;overflow:auto;background:#1e293b;padding:14px;position:relative}
+#empty{margin:12vh auto;max-width:360px;text-align:center;color:var(--mut)}
+#wrap{position:relative;margin:0 auto;background:#fff;box-shadow:0 4px 24px #0008;display:none}
+#cv{position:absolute;left:0;top:0}
+#hl{position:absolute;inset:0;pointer-events:none;z-index:1}
+.hlbox{position:absolute;background:rgba(250,204,21,.28);border:2px solid #f59e0b;border-radius:3px}
+.tl{position:absolute;inset:0;overflow:hidden;line-height:1;z-index:2}
+.tl span{position:absolute;white-space:pre;color:transparent;cursor:pointer;transform-origin:0 0}
+.tl span:hover{background:rgba(16,185,129,.18)}
+.tl ::selection{background:rgba(37,99,235,.35)}
+/* professor: fixed until a location is clicked; position changes only via transition */
+#prof{position:absolute;z-index:3;width:54px;pointer-events:none;transition:left .6s ease,top .6s ease}
+#prof svg{display:block;width:54px;height:54px;filter:drop-shadow(0 2px 3px #0008)}
+#prof b{position:absolute;left:50%;top:100%;transform:translateX(-50%);white-space:nowrap;font-size:9px;background:#052e24;color:#a7f3d0;border:1px solid var(--acc);border-radius:6px;padding:1px 5px}
+#toast{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);background:#020617;border:1px solid var(--acc);border-radius:8px;padding:6px 12px;font-size:12px;display:none;z-index:9;max-width:90%}
+#right{overflow:auto;background:var(--bg)}
+.sec{padding:8px 12px;border-bottom:1px solid var(--line)}
+.sec h3{margin:0 0 6px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#34d399}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.chips{max-height:104px;overflow:auto}
+.chip{font-size:12px;padding:3px 9px;border-radius:999px;font-weight:500}
+.badge{font-size:11px;border-radius:999px;padding:2px 9px;border:1px solid}
+.b-basic{color:var(--gold);border-color:#92400e}.b-ai{color:#34d399;border-color:#065f46}
+#board{margin:0;padding:16px 20px;height:70vh;overflow-y:auto;overflow-x:hidden;overflow-wrap:anywhere;background:#1a2e26;border:10px solid #4a2e1b;border-radius:6px;box-shadow:inset 0 0 30px #000b;font-family:'Patrick Hand','Segoe Print',Inter,sans-serif}
+#bTitle{color:#fcd34d;font-size:26px;margin-bottom:2px}
+#bMeta{color:#7dd3fc;font-size:13px;margin-bottom:10px}
+.stitle{color:#67e8f9;font-size:17px;margin-bottom:6px}
+.sbody{font-size:24px;line-height:1.5;letter-spacing:.3px;color:#f8fafc}
+.w.say{background:#fde047;color:#111;border-radius:3px}
+.tex{margin:10px 0;padding:8px;background:#0a1f18;border-radius:6px;overflow-x:auto;color:#fff;font-size:20px}
+pre.raw{white-space:pre-wrap;background:#0a1f18;padding:8px;border-radius:6px;font:13px monospace;color:#a7f3d0}
+textarea#ltx{width:100%;min-height:54px;font:13px monospace}
+.dots{margin-top:10px;color:#34d399;letter-spacing:3px}
+.note{color:var(--mut);font-size:12px;font-family:Inter,sans-serif}
+#ctl{flex-wrap:nowrap;overflow-x:auto;height:46px;padding:0 12px;border-bottom:1px solid var(--line);background:var(--bg)}
+#ctl>*{flex:none}#ctl button{padding:5px 9px}
+#setRow{flex-wrap:nowrap;overflow-x:auto;height:46px;white-space:nowrap}
+#setRow>*{flex:none}
+.bar{height:46px;flex-wrap:nowrap;overflow-x:auto}.bar>*{flex:none}
+#secStrip{height:46px;display:flex;align-items:center;gap:6px;padding:0 10px;background:var(--panel);border-bottom:1px solid var(--line);overflow-x:auto;white-space:nowrap}
+#secStrip>*{flex:none}
+#nav{display:flex;gap:6px;align-items:center;flex-wrap:nowrap}
+#qline{padding:6px 12px 0}
+.blk{margin-top:14px}.blk:first-child{margin-top:0}
+.chalk{display:inline-block;vertical-align:-4px;margin-left:8px;width:34px;height:16px}
+#board .sbody,#board .tex,#board pre.raw{text-shadow:0 0 1px #fff6}
+#sum{margin:0 12px 10px;padding:12px;border:1px solid #065f46;background:#06281f;border-radius:8px;display:none}
+#sum h4{margin:0 0 6px;color:#34d399}
+#sumTxt{white-space:pre-wrap}
+.ask{display:flex;gap:6px}.ask input{flex:1}
+dialog{background:var(--panel);color:var(--ink);border:1px solid var(--acc);border-radius:10px;max-width:520px}
+dialog input{width:100%;margin:8px 0}
+@media(max-width:900px){
+ body{height:auto;min-height:100vh}
+ main{display:block}
+ #left{height:85vh;border-right:0;border-bottom:2px solid var(--line)}
+ #right{overflow:visible}
+}
+</style>
+</head>
+<body>
+<header>
+ <div class="logo"><img src="logo.jpeg" alt="GARRF" onerror="this.parentNode.textContent='GARRF';this.parentNode.style.cssText='width:38px;height:38px;border-radius:50%;background:#059669;border:2px solid #34d399;display:grid;place-items:center;font-weight:700;font-size:10px'"></div>
+ <div><h1>Prof. GARRF-Anna – Your Personal AI Research Professor</h1><small>Gopalkrishna Advanced Rural Research Foundation, India <svg class="fl" viewBox="0 0 30 20"><rect width="30" height="7" fill="#FF9933"/><rect y="7" width="30" height="6" fill="#fff"/><rect y="13" width="30" height="7" fill="#138808"/><circle cx="15" cy="10" r="2.6" fill="none" stroke="#000080" stroke-width=".8"/></svg> / Singapore <svg class="fl" viewBox="0 0 30 20"><rect width="30" height="10" fill="#EF3340"/><rect y="10" width="30" height="10" fill="#fff"/><circle cx="7" cy="5" r="3.2" fill="#fff"/><circle cx="8.3" cy="5" r="3" fill="#EF3340"/><g fill="#fff"><circle cx="11" cy="3" r=".7"/><circle cx="13.2" cy="4.8" r=".7"/><circle cx="12.4" cy="7.2" r=".7"/><circle cx="9.6" cy="7.2" r=".7"/><circle cx="8.8" cy="4.2" r=".01"/></g></svg></small><small>Dr. APJ Abdul Kalam Research Zero Funding Initiative · <a href="https://garrf.in" target="_blank" rel="noopener">garrf.in</a></small></div>
+ <div class="sp"></div>
+ <label><button class="pri" onclick="$('file').click()">📁 Upload PDF / Word</button><input id="file" type="file" accept=".pdf,.docx,.doc,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden></label>
+ <span id="safe">🔒 You can safely go offline. Your files are not stored on the cloud. Data is safe.</span>
+ <input id="title" type="text" placeholder="Paper title (editable)" title="Edit paper title">
+ <span id="status">No file loaded</span>
+ <button onclick="clearDoc()">Clear</button>
+</header>
+
+<main>
+ <!-- LEFT 50% : PDF -->
+ <section class="pane" id="left">
+  <div class="bar">
+   <button id="pPrev" title="Previous page">◀</button>
+   <input id="pNum" type="number" min="1" value="1" style="width:62px"><span id="pTot">/ 0</span>
+   <button id="pNext" title="Next page">▶</button>
+   <button id="zOut" title="Zoom out">−</button><span id="zVal">100%</span><button id="zIn" title="Zoom in">+</button>
+  </div>
+  <div id="secStrip"><div id="nav"><span class="note">Sections appear here after upload.</span></div></div>
+  <div id="scroll">
+   <div id="empty"><div style="font-size:42px">📄</div><p>Upload a research paper, lecture notes or a book chapter (PDF or Word) to begin.</p><div id="safeBig">🔒 You can safely go offline. Your files are not stored on the cloud. Data is safe.</div></div>
+   <div id="wrap"><canvas id="cv"></canvas><div id="hl"></div><div class="tl" id="tl"></div>
+    <div id="prof"><svg viewBox="0 0 64 64"><circle cx="32" cy="34" r="20" fill="#f5c9a0"/><path d="M12 30c0-14 10-20 20-20s20 6 20 20c-4-8-10-11-20-11s-16 3-20 11z" fill="#4b5563"/><circle cx="32" cy="9" r="6" fill="#4b5563"/><g fill="none" stroke="#111" stroke-width="2"><circle cx="24" cy="34" r="6"/><circle cx="40" cy="34" r="6"/><path d="M30 34h4"/></g><circle cx="24" cy="34" r="1.8"/><circle cx="40" cy="34" r="1.8"/><path d="M26 46q6 5 12 0" stroke="#7c2d12" stroke-width="2" fill="none"/><path d="M14 62q18-14 36 0z" fill="#059669"/></svg><b>Prof. GARRF-Anna</b></div>
+   </div>
+   <div id="docView"></div>
+  <div id="toast"></div>
+  </div>
+ </section>
+
+ <!-- RIGHT 50% : PROFESSOR -->
+ <section class="pane" id="right">
+  <div class="sec row" id="setRow">
+   <label>Level <select id="level"><option value="ug">Undergraduate</option><option value="pg" selected>Postgraduate</option><option value="phd">PhD Scholar</option><option value="fac">Faculty / Researcher</option></select></label>
+   <label>Accent <select id="accent"><option value="IN">🇮🇳 Indian</option><option value="SG">🇸🇬 Singapore</option><option value="US">🇺🇸 US</option><option value="GB">🇬🇧 UK</option></select></label>
+   <label>Voice <select id="gender"><option value="F">Female</option><option value="M">Male</option></select></label>
+   <select id="voice" style="max-width:150px" title="Fine-tune: pick any installed voice"></select>
+   <label><input type="checkbox" id="autoRead" checked> Auto-read</label><button id="bTest" title="Test the selected voice">🔈 Test voice</button>
+   <label>Speed <input id="rate" type="range" min="0.6" max="1.4" step="0.05" value="0.95" style="width:90px"></label>
+   <span class="sp"></span>
+   <span id="aiBadge" class="badge b-basic">Basic mode (no AI)</span><button id="cfgBtn" title="Connect AI service">⚙</button>
+  </div>
+  <div id="elems" hidden></div>
+
+  <div id="ctl" class="row">
+   <button id="bPrev">◀ Previous</button><button id="bNext" class="pri">Continue ▶</button><button id="bRep">↻ Repeat</button>
+   <button id="bSay">🔊 Read Aloud</button><button id="bPause">⏸ Pause</button><button id="bStop">⏹ Stop</button>
+   <button id="bSum">📝 Generate Compact Summary</button>
+  </div>
+  <div id="board">
+   <div id="bTitle">Welcome, I am Prof. GARRF-Anna</div><div id="bMeta"></div>
+   <div id="bStep"><div class="sbody">Upload a paper to begin.</div></div>
+   <div class="dots" id="dots"></div>
+  </div>
+  <div id="sum"><h4>Compact summary <span id="sumKind" class="note"></span></h4><div id="sumTxt"></div><div style="margin-top:8px"><button id="bCopy">Copy summary</button></div></div>
+
+  <div class="sec"><div id="vstat" class="note"></div><h3>Ask Prof. GARRF-Anna about this paper</h3>
+   <div class="ask"><input id="q" type="text" placeholder="Ask a question about this paper"><button id="qGo" class="pri">Ask</button><button id="bMic" title="Speak your question or say: continue, previous, repeat, stop, pause, summary">🎤 Speak</button></div></div>
+ </section>
+</main>
+
+<footer>
+ <div><b>© Dr Annamdas Venu Gopal Madhav Annamdas</b> · Proprietary Product of GARRF 2026 · Developed for Free / Low-Cost Educational Purpose</div>
+ <div>The accuracy of the Teacher depends on the parsing of data and training. GARRF is not responsible for mistakes.</div>
+</footer>
+
+<dialog id="dlg"><form method="dialog">
+ <h3 style="margin-top:0">Connect an AI service</h3>
+ <p class="note">Enter the URL of <b>your own secure proxy</b> (e.g. a Cloudflare Worker or server on garrf.in) that holds the API key. Never put an API key in this page. Leave empty for Basic mode. See the contract in the source comments.</p>
+ <input id="cfgUrl" type="text" placeholder="https://garrf.in/api/prof-anna">
+ <div class="row"><button id="cfgSave" class="pri" value="ok">Save</button><button value="cancel">Cancel</button></div>
+</form></dialog>
+
+<script>
+'use strict';
+/* =====================================================================
+ AI INTEGRATION CONTRACT (the only place AI is plugged in: aiCall())
+ The page POSTs JSON to CFG.endpoint:
+   { task:'lesson'|'summary'|'ask', level:'ug'|'pg'|'phd'|'fac', docTitle, outline:[{name,page}],
+     kind:'section'|'paragraph'|'selection'|'figure'|'table'|'equation'|'question',
+     title, page, text, context, refs:[sentences citing it], question? }
+ and expects: lesson/ask -> { steps:[{title, body, tex?}] }   summary -> { summary:"..." }
+   body = plain prose (say equations in words, it is read aloud); tex = optional LaTeX (typeset by MathJax).
+ For kind 'equation': image = PNG data-URL of the equation as printed; definitions = sentences from elsewhere in the paper that define its symbols.
+   Reply: step 1 {body: ONE sentence saying what relation the equation expresses (never read symbols aloud), tex: exact LaTeX transcribed from the image};
+   next steps explain each symbol using ONLY the supplied text. Send the image to a vision-capable model.
+ Server-side system prompt must say: answer ONLY from the supplied text; say when the text is insufficient;
+ never invent numbers, citations or findings; label your own suggestions as "Professor's suggestion".
+ Minimal Cloudflare Worker (key lives in env.KEY, restrict CORS to https://garrf.in, add rate-limiting):
+   export default{async fetch(req,env){const p=await req.json();
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'x-api-key':env.KEY,
+     'anthropic-version':'2023-06-01','content-type':'application/json'},body:JSON.stringify({model:env.MODEL,
+     max_tokens:1500,system:env.SYSTEM,messages:[{role:'user',content:JSON.stringify(p)}]})});
+    const j=await r.json();const t=j.content[0].text; return new Response(t,{headers:{'content-type':'application/json',
+     'access-control-allow-origin':'https://garrf.in'}})}}
+ ===================================================================== */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const CFG={endpoint:''};try{CFG.endpoint=localStorage.getItem('garrf_ai_endpoint')||''}catch(e){}
+const LV={ug:{n:2,t:'Undergraduate'},pg:{n:3,t:'Postgraduate'},phd:{n:3,t:'PhD'},fac:{n:4,t:'Faculty'}};
+const S={kind:'pdf',pdf:null,pages:{},page:1,zoom:1,scale:1,sel:null,lesson:null,tok:0,rt:null,doc:null,level:'pg'};
+const NOTE_LINE=/author to whom|correspondence should be addressed|corresponding author|©|printed in the uk|publishing ltd|all rights reserved|downloaded from|^\d{4}-\d{3,4}[\/-]\d+|^page \d+ of \d+/i;
+const normN=t=>t.toLowerCase().replace(/\d+/g,'#').replace(/\s+/g,' ');let NOISE={};
+function isNote(b,body){const P=S.pages[b.page],t=b.text;
+ if(NOTE_LINE.test(t)&&t.length<300)return true;
+ if(/^\d{1,4}$/.test(t)&&(b.y<P.H*.1||b.y>P.H*.9))return true;
+ if(b.size<body*.9&&b.y>P.H*.78&&t.length<400&&!/^(Fig|Figure|Table)\b/i.test(t))return true;
+ if(t.length<140&&(NOISE[normN(t)]||0)>=3&&(b.y<P.H*.12||b.y>P.H*.85))return true;return false}
+const KNOWN=/^(?:[IVX]+\.?\s+|\d+(?:\.\d+)*\.?\s+)?(abstract|keywords?|index terms|introduction|literature review|related work|background|research gap|objectives?|aims?|methodology|methods?|materials? and methods?|experimental(?: setup| procedure| work| methodology)?|governing equations?|mathematical model(?:l)?ing|numerical (?:model|simulation|analysis)|results?(?: and discussion)?|discussion|conclusions?|conclusions? and future (?:work|scope)|future (?:work|scope)|acknowledg(?:e)?ments?|references|bibliography)\b/i;
+const RUNIN=/^(abstract|keywords?|index terms)\s*[—–:\-.]\s*/i;
+const STOP=new Set('the a an of and or to in on for with by is are was were be this that these those it its as at from which we our their can has have had not but also into than then such using used use'.split(' '));
+
+/* ---------- toast / status ---------- */
+let tT;function toast(m,ms){const t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(tT);tT=setTimeout(()=>t.style.display='none',ms||3500)}
+function setStatus(m){$('status').textContent=m}
+function updateMode(){const ai=!!CFG.endpoint;const b=$('aiBadge');b.textContent=ai?'AI connected':'Basic mode (no AI)';b.className='badge '+(ai?'b-ai':'b-basic');}
+
+/* ---------- text utilities ---------- */
+function splitSentences(t){t=(t||'').replace(/\b(Fig|Figs|Eq|Eqs|et al|e\.g|i\.e|vs|Dr|No|Ref|Refs|approx|Sec)\./g,'$1\u0001').replace(/(\d)\.(\d)/g,'$1\u0001$2');
+ return (t.match(/[^.!?]+(?:[.!?]+|$)/g)||[]).map(s=>s.replace(/\u0001/g,'.').trim()).filter(s=>s.length>3)}
+function cap(s,n=12000){s=s||'';return s.length>n?s.slice(0,n):s}
+function extractive(text,k=4){const ss=splitSentences(text);if(ss.length<=k)return ss.join(' ');const f={};
+ ss.forEach(s=>(s.toLowerCase().match(/[a-z]{4,}/g)||[]).forEach(w=>{if(!STOP.has(w))f[w]=(f[w]||0)+1}));
+ const sc=ss.map((s,i)=>{const w=(s.toLowerCase().match(/[a-z]{4,}/g)||[]).filter(x=>!STOP.has(x));return{i,v:w.reduce((a,x)=>a+f[x],0)/Math.sqrt(w.length+1)+(i===0?1.5:0)}});
+ return sc.sort((a,b)=>b.v-a.v).slice(0,k).sort((a,b)=>a.i-b.i).map(x=>ss[x.i]).join(' ')}
+const CUES=[['Background',/\b(recent|growing|increasing|widely|important|demand|background|currently|industry)\b/g],
+ ['Problem / gap',/\b(however|challenge|problem|limitation|lack|difficult|remain|unresolved|gap|issue|unclear)\b/g],
+ ['Objective',/\b(aim|objective|purpose|goal|this (paper|study|work|article)|we (propose|present|develop|investigate))\b/g],
+ ['Methodology',/\b(method|approach|experiment|simulation|model|algorithm|performed|measured|setup|finite element|specimen|sensor)\b/g],
+ ['Findings',/\b(result|found|observed|achieved|demonstrate|indicate|improv|increase|decrease|reduc|accuracy|%)\b/g],
+ ['Contribution / outlook',/\b(contribut|novel|first|significan|future|conclude|implication)\b/g]];
+function cue(t){t=t.toLowerCase();let best='Key point',m=0;for(const[l,r]of CUES){const c=(t.match(r)||[]).length;if(c>m){m=c;best=l}}return best}
+
+/* ---------- PDF analysis: blocks, headings, figures, tables, equations ---------- */
+function buildBlocks(items,W,H){
+ const its=[];for(const i of items){if(typeof i.str!=='string'||!i.str.trim())continue;const t=i.transform;if(Math.abs(t[1])>Math.abs(t[0])*.5)continue;
+  its.push({s:i.str,x:t[4],y:H-t[5],h:Math.hypot(t[2],t[3])||i.height||10,w:i.width})}
+ const lines=[];let L=null;
+ for(const t of its){
+  if(L&&Math.abs(t.y-L.y)<Math.max(L.h,t.h)*.45&&t.x>=L.x1-t.h*2){L.s+=(t.x-L.x1>t.h*.12?' ':'')+t.s;L.x1=Math.max(L.x1,t.x+t.w);L.top=Math.min(L.top,t.y-t.h);L.bot=Math.max(L.bot,t.y+t.h*.25);L.h=Math.max(L.h,t.h)}
+  else{L={s:t.s,y:t.y,h:t.h,x0:t.x,x1:t.x+t.w,top:t.y-t.h,bot:t.y+t.h*.25};lines.push(L)}}
+ const keep=lines.filter(l=>!((l.y<H*.05||l.y>H*.95)&&l.s.length<60)&&!(NOTE_LINE.test(l.s)&&l.s.length<300));
+ const d=[];for(let i=1;i<keep.length;i++){const v=keep[i].y-keep[i-1].y;if(v>0&&v<keep[i].h*3)d.push(v)}
+ d.sort((a,b)=>a-b);const lead=d.length?d[d.length>>1]:12;
+ const blocks=[];let B=null;
+ for(const l of keep){const p=B&&B.lines[B.lines.length-1];
+  if(!B||l.y-p.y>lead*1.35||l.y-p.y<0||Math.abs(l.h-p.h)>p.h*.09||Math.abs(l.x0-p.x0)>W*.07){B={lines:[l]};blocks.push(B)}else B.lines.push(l)}
+ for(const b of blocks){let o='';for(const l of b.lines){const s=l.s.trim();if(!o)o=s;else if(/[A-Za-z]-$/.test(o)&&/^[a-z]/.test(s))o=o.slice(0,-1)+s;else o+=' '+s}
+  b.text=o.replace(/\s+/g,' ').trim();b.x=Math.min(...b.lines.map(l=>l.x0));b.y=Math.min(...b.lines.map(l=>l.top));
+  b.w=Math.max(...b.lines.map(l=>l.x1))-b.x;b.h=Math.max(...b.lines.map(l=>l.bot))-b.y;b.size=Math.max(...b.lines.map(l=>l.h))}
+ return blocks}
+const isEq=b=>{const t=b.text;if(t.length>220)return false;const a=(t.match(/[A-Za-z]{4,}/g)||[]).length;const m=/[=≈≤≥∑∫∂∇∞±×]/.test(t);return m&&a<=6};
+function classify(b,body){const t=b.text,w=t.split(/\s+/).length;let m;
+ if(isNote(b,body)){b.type='note';return}
+ if(/^\(\s*\d+(?:\.\d+)?[a-z]?\s*\)$/.test(t)){b.type='eqnum';b.n=t.replace(/[()\s]/g,'');return}
+ if(m=/^(Fig\.|Figure|FIG\.|FIGURE)\s*(\d+[a-z]?)\s*(?:[.:|—–-]|\s(?=[A-Z]))/.exec(t)){b.type='figure';b.n=m[2]}
+ else if(m=/^(Table|TABLE)\s*([0-9IVX]+)\s*(?:[.:|—–-]|\s(?=[A-Z]))/.exec(t)){b.type='table';b.n=m[2]}
+ else if(b.lines.length<=2&&t.length<=100&&(t.match(/[A-Za-z]/g)||[]).length/t.length>.6&&!isEq(b)&&!/[.,;]$/.test(t)&&((b.size>body*1.08&&w<=14)||(KNOWN.test(t)&&t.length<60)||(/^\d+(\.\d+)*\.?\s+[A-Z]/.test(t)&&w<=10&&b.size>=body*.98)||(/^[A-Z][A-Z\s\d.\-:&]{3,60}$/.test(t)&&!isEq(b))))b.type='heading';
+ else if(isEq(b)){b.type='equation';const n=/\(\s*(\d+(?:\.\d+)?)\s*\)\s*$/.exec(t);b.n=n?n[1]:''}
+ else b.type='para'}
+function cleanHead(t){let depth=1;const m=/^([IVX]+\.?|\d+(?:\.\d+)*\.?)\s+/.exec(t);let r=t;
+ if(m){r=t.slice(m[0].length);if(/^\d+\.\d+/.test(m[1]))depth=m[1].replace(/\.$/,'').split('.').length}
+ if(r===r.toUpperCase())r=r.toLowerCase().replace(/(^|\s)\S/g,c=>c.toUpperCase());return{name:r.trim(),depth}}
+async function analyse(){
+ const N=S.pdf.numPages,sizes={};S.pages={};
+ for(let n=1;n<=N;n++){setStatus('Analysing page '+n+'/'+N+'…');const pg=await S.pdf.getPage(n),v=pg.getViewport({scale:1}),tc=await pg.getTextContent();
+  const bl=buildBlocks(tc.items,v.width,v.height);bl.forEach(b=>b.page=n);S.pages[n]={W:v.width,H:v.height,blocks:bl};
+  bl.forEach(b=>{const k=Math.round(b.size*2)/2;sizes[k]=(sizes[k]||0)+b.text.length})}
+ let body=10,mx=0;for(const k in sizes)if(sizes[k]>mx){mx=sizes[k];body=+k}
+ const all=[];for(let n=1;n<=N;n++)S.pages[n].blocks.forEach(b=>all.push(b));
+ if(!all.length){toast('No selectable text found – this may be a scanned PDF (OCR needed).');}
+ const first=(S.pages[1]?.blocks||[]).slice(0,10).filter(b=>b.text.length>10);let tb=null;
+ first.forEach(b=>{if(!tb||b.size>tb.size)tb=b});
+ const D={title:'',authors:'',sections:[],figs:[],tabs:[],eqs:[],sents:[]};
+ if(tb&&tb.size>body*1.15){tb.type='title';D.title=tb.text}
+ NOISE={};all.forEach(b=>{if(b.text.length<140){const H=S.pages[b.page].H;if(b.y<H*.12||b.y>H*.85){const k=normN(b.text);NOISE[k]=(NOISE[k]||0)+1}}});
+ for(const b of all)if(b!==tb)classify(b,body);
+ buildEquations(N);
+ if(!D.title){try{const m=await S.pdf.getMetadata();D.title=(m.info&&m.info.Title&&m.info.Title.length>8)?m.info.Title:''}catch(e){}}
+ // figure / table regions
+ for(let n=1;n<=N;n++){const P=S.pages[n],bs=P.blocks;bs.forEach((b,i)=>{
+  if(b.type==='figure'){const p=bs[i-1];const top=p&&p.y+p.h<b.y-4?p.y+p.h+3:b.y;b.reg={x:b.x,y:top,w:b.w,h:b.y+b.h-top}}
+  if(b.type==='table'){let e=null;for(let j=i+1;j<bs.length;j++)if(bs[j].lines.length>=3&&bs[j].text.length>180){e=bs[j];break}
+   b.reg=e&&e.y>b.y&&e.y-b.y<P.H*.6?{x:b.x,y:b.y,w:Math.max(b.w,P.W*.4),h:e.y-3-b.y}:null}})}
+ buildStructure(all,D)}
+function buildStructure(all,D){
+ // sections
+ let cur=null,front=[];
+ for(const b of all){let nm=null,run='',m;
+  if(b.type==='heading'){nm=cleanHead(b.text);if(b.hl)nm.depth=b.hl}
+  else if(b.type==='para'&&(m=RUNIN.exec(b.text))){nm={name:m[1][0].toUpperCase()+m[1].slice(1).toLowerCase(),depth:1};run=b.text.slice(m[0].length)}
+  if(nm){cur={name:nm.name,depth:nm.depth,page:b.page,block:b,own:run,paras:[]};b.secStart=cur;D.sections.push(cur)}
+  else if(cur){b.sec=cur;if(b.type==='para')cur.paras.push(b.text)}
+  else if(b.type==='para'&&b.page===1)front.push(b)}
+ D.sections.forEach(s=>{s.block.sec=s;s.text=(s.own+' '+s.paras.join(' ')).trim()});
+ if(!D.authors&&front.length){const a=front.find(b=>b.text.length>8&&b.text.length<400);D.authors=a?a.text:''}
+ for(const b of all){if(b.type==='figure')D.figs.push(b);if(b.type==='table')D.tabs.push(b);if((b.type==='equation'||b.type==='eqnum')&&(!b.eq||b.eq.lead===b))D.eqs.push(b);
+  if(b.type==='para'){const nm=b.sec?b.sec.name:'';splitSentences(b.text).forEach(t=>D.sents.push({t,p:b.page,sec:nm}))}}
+ S.doc=D}
+function secFullText(s){const L=S.doc.sections;let i=L.indexOf(s),o=s.text;for(let j=i+1;j<L.length&&L[j].depth>s.depth;j++)o+=' '+L[j].text;return o.trim()}
+
+
+/* ---------- Word (.docx) support: mammoth converts to HTML; blocks are DOM elements ---------- */
+function analyseDocx(root){
+ const all=[],D={title:'',authors:'',sections:[],figs:[],tabs:[],eqs:[],sents:[]},flat=[];
+ for(const el of root.children){if(/^(UL|OL)$/.test(el.tagName))el.querySelectorAll('li').forEach(li=>flat.push(li));else flat.push(el)}
+ const add=(o,el)=>{o.page=1;o.i=all.length;o.els=o.els||[el];el.dataset.b=o.i;all.push(o);return o};
+ flat.forEach(el=>{const tag=el.tagName,t=(el.textContent||'').replace(/\s+/g,' ').trim();let m;
+  if(tag==='TABLE'){const tx=cap([...el.querySelectorAll('tr')].map(r=>[...r.children].map(c=>c.textContent.trim()).join(' | ')).join('. '),3000),last=all[all.length-1];
+   if(last&&last.type==='table'&&!last.tEl){last.tEl=el;last.els.push(el);last.text+=' '+tx;el.dataset.b=last.i}
+   else add({type:'table',n:'',text:tx,tEl:el},el);return}
+  if(!t)return;
+  if(NOTE_LINE.test(t)&&t.length<300)return;
+  const bold=el.children.length===1&&/^(STRONG|B)$/.test(el.firstElementChild.tagName)&&el.firstElementChild.textContent.trim().length===t.length&&t.length<100&&!/[.,;:]$/.test(t);
+  if(/^H[1-6]$/.test(tag))add({type:'heading',text:t,hl:+tag[1]},el);
+  else if(m=/^(Fig\.|Figure|FIG\.|FIGURE)\s*(\d+[a-z]?)\s*(?:[.:|—–-]|\s(?=[A-Z]))/.exec(t))add({type:'figure',n:m[2],text:t},el);
+  else if(m=/^(Table|TABLE)\s*([0-9IVX]+)\s*(?:[.:|—–-]|\s(?=[A-Z]))/.exec(t))add({type:'table',n:m[2],text:t},el);
+  else if(bold||(KNOWN.test(t)&&t.length<60&&t.split(' ').length<=8&&!/[.]$/.test(t)))add({type:'heading',text:t},el);
+  else add({type:'para',text:t},el)});
+ const h=all.find(b=>b.type==='heading');if(h)D.title=h.text;
+ S.pages={1:{W:1,H:1,blocks:all}};buildStructure(all,D)}
+function docHL(els){document.querySelectorAll('#docView .hl-on').forEach(e=>e.classList.remove('hl-on'));els.forEach(e=>e.classList.add('hl-on'));
+ const e0=els[0];e0.scrollIntoView({behavior:'smooth',block:'center'});
+ const dv=$('docView'),dr=dv.getBoundingClientRect(),er=e0.getBoundingClientRect();$('prof').style.left=(dv.clientWidth-62)+'px';$('prof').style.top=Math.max(0,er.top-dr.top)+'px'}
+let downD=null;
+$('docView').addEventListener('pointerdown',e=>{downD={x:e.clientX,y:e.clientY}});
+$('docView').addEventListener('pointerup',e=>{const d=downD;setTimeout(()=>{if(!S.doc||S.kind!=='docx')return;const sel=getSelection(),txt=sel?sel.toString().replace(/\s+/g,' ').trim():'';
+ const has=txt.length>=3&&sel.rangeCount&&!sel.isCollapsed;const node=has?sel.getRangeAt(0).startContainer:e.target;const el=(node.nodeType===1?node:node.parentElement),be=el&&el.closest?el.closest('[data-b]'):null,b=be?S.pages[1].blocks[+be.dataset.b]:null;
+ if(has)openTarget({kind:'selection',title:'Selected text: “'+txt.slice(0,50)+(txt.length>50?'…':'')+'”',page:1,text:txt,block:b,ctx:b?b.text:'',refs:[]});
+ else if(d&&Math.hypot(e.clientX-d.x,e.clientY-d.y)<6){if(b)openTarget(targetFromBlock(b));else toast('Click on a paragraph, heading, caption or table.')}},0)});
+function setKind(k){S.kind=k;const dv=$('docView'),d=k==='docx';dv.style.display=d?'block':'none';if(!d)dv.innerHTML='';
+ (d?dv:$('wrap')).appendChild($('prof'));['pPrev','pNext','pNum'].forEach(i=>$(i).disabled=d);if(d)$('pTot').textContent='Word document'}
+async function loadDocx(f){if(!window.mammoth)throw new Error('The Word reader did not load. Connect to the internet once and reload this page.');
+ const buf=await f.arrayBuffer(),r=await mammoth.convertToHtml({arrayBuffer:buf});S.pdf=null;S.sel=null;S.lesson=null;
+ $('wrap').style.display='none';setKind('docx');$('docView').innerHTML=r.value;analyseDocx($('docView'));S.page=1;$('docView').style.fontSize=(16*S.zoom)+'px';$('zVal').textContent=Math.round(S.zoom*100)+'%'}
+
+/* ---------- equations: best-effort LaTeX, symbol definitions found elsewhere in the document ---------- */
+const GR={α:'\\alpha',β:'\\beta',γ:'\\gamma',δ:'\\delta',ε:'\\varepsilon',ζ:'\\zeta',η:'\\eta',θ:'\\theta',λ:'\\lambda',μ:'\\mu',ν:'\\nu',ξ:'\\xi',π:'\\pi',ρ:'\\rho',σ:'\\sigma',τ:'\\tau',φ:'\\varphi',χ:'\\chi',ψ:'\\psi',ω:'\\omega',Γ:'\\Gamma',Δ:'\\Delta',Θ:'\\Theta',Λ:'\\Lambda',Ξ:'\\Xi',Π:'\\Pi',Σ:'\\Sigma',Φ:'\\Phi',Ψ:'\\Psi',Ω:'\\Omega','×':'\\times','·':'\\cdot','−':'-','≤':'\\le','≥':'\\ge','≈':'\\approx','±':'\\pm','∞':'\\infty','∂':'\\partial','∇':'\\nabla','∑':'\\sum','∫':'\\int','√':'\\sqrt','→':'\\rightarrow','≠':'\\ne','′':"'"};
+function toLatex(raw,n){let t=String(raw||'').replace(/[\uFFFD▯□]/g,'').replace(/\s+/g,' ').trim().replace(/\(\s*\d+(?:\.\d+)?\s*\)\s*$/,'').trim();
+ t=t.replace(/[\u0300-\u036f]/g,'').replace(/[^\x00-\x7f]/g,c=>GR[c]?GR[c]+' ':c).replace(/\b([A-Za-z])(\d)\b/g,'$1_{$2}').replace(/(\\[a-zA-Z]+) (\d)\b/g,'$1_{$2}').replace(/%/g,'\\%');
+ return t+(n?' \\tag{'+n+'}':'')}
+const GRN={α:'alpha',β:'beta',γ:'gamma',δ:'delta',ε:'epsilon',ζ:'zeta',η:'eta',θ:'theta',λ:'lambda',μ:'mu',ν:'nu',ξ:'xi',π:'pi',ρ:'rho',σ:'sigma',τ:'tau',φ:'phi',χ:'chi',ψ:'psi',ω:'omega',Γ:'Gamma',Δ:'Delta',Θ:'Theta',Λ:'Lambda',Ξ:'Xi',Π:'Pi',Σ:'Sigma',Φ:'Phi',Ψ:'Psi',Ω:'Omega'};
+const symLab=k=>GRN[k]?k+' ('+GRN[k]+')':k;
+function symbolDefs(t){const raw=String(t.text||'').replace(/[\uFFFD▯]/g,' ');
+ const toks=[...new Set(raw.match(/[α-ωΑ-Ω]|(?<![A-Za-z0-9])[A-Za-z][A-Za-z]?\d?(?![A-Za-z0-9])/g)||[])].filter(x=>!/^(is|of|the|and|or|in|at|to|if|as|by|an|on|for|we|it|be|tag)$/i.test(x)).slice(0,14);
+ const near=(S.doc.sents||[]).slice().sort((a,b)=>Math.abs(a.p-t.page)-Math.abs(b.p-t.page)),pool=splitSentences(t.ctx||'').map(x=>({t:x,p:t.page})).concat(near),map=new Map();
+ const NOUN='(?:ratio|modulus|coefficient|constant|factor|density|permittivity|compliance|stiffness|impedance|admittance|strain|stress|velocity|frequency|angle|length|thickness|width|mass|area|volume)';
+ for(const k of toks){const L='(?<![A-Za-z0-9])'+k+'(?![A-Za-z0-9])',fl=(k.length===1||/\d/.test(k)||GRN[k])?'':'i';
+  const res=[new RegExp(L+'[\\w\\s,;()\\u0370-\\u03ff]{0,40}?\\b(?:is|are|denotes?|represents?|stands for|refers to|being)\\b',fl),
+   new RegExp('(?:where|with|and)\\s[^.]{0,120}'+L+'\\s*(?:is|are|denotes?|represents?)',fl),
+   new RegExp(NOUN+'s?\\s*\\(?\\s*'+L,'i'),new RegExp('\\(\\s*'+k+'\\s*\\)',fl)];
+  const hit=pool.find(x=>res.some(r=>r.test(x.t)));if(hit){const e=map.get(hit.t)||{l:[],t:hit.t};e.l.push(symLab(k));map.set(hit.t,e)}}
+ return [...map.values()].map(e=>e.l.join(', ')+': '+e.t)}
+function leadIn(b){const bs=(S.pages[b.page]||{}).blocks||[],i=bs.indexOf(b);for(let j=i-1;j>=0&&j>=i-3;j--){if(bs[j].type==='para'){const ss=splitSentences(bs[j].text);return ss[ss.length-1]||''}}return ''}
+function eqCrop(r){try{const cv=$('cv'),f=(cv.width/(parseFloat(cv.style.width)||cv.width))*S.scale,x=Math.max(0,(r.x-4)*f),y=Math.max(0,(r.y-4)*f),w=Math.min(cv.width-x,(r.w+8)*f),h=Math.min(cv.height-y,(r.h+8)*f);
+ if(w<5||h<5)return '';const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(cv,x,y,w,h,0,0,w,h);return c.toDataURL('image/png')}catch(e){return ''}}
+
+
+/* ---------- whole-equation regions: clicking the number (1) or any piece selects the entire equation ---------- */
+const mathy=b=>{if(b.type==='eqnum')return true;if(b.type==='equation')return true;if(b.type!=='para')return false;const t=b.text,w=(t.match(/[A-Za-z]{3,}/g)||[]).length,m=/[=+−\-*\/×∑∫∂√≈≤≥±()\[\]α-ωΑ-Ω0-9]/.test(t);return t.length<=100&&w<=(m?2:0)};
+function buildEquations(N){for(let n=1;n<=N;n++){const P=S.pages[n],bs=P.blocks,W=P.W;P.eqs=[];
+ const wide=bs.filter(b=>b.text.length>120).map(b=>b.w).sort((a,b)=>a-b),two=wide.length>3&&wide[wide.length>>1]<W*.55;
+ const seeds=bs.filter(b=>b.type==='eqnum').concat(bs.filter(b=>b.type==='equation'));
+ for(const sd of seeds){if(sd.eq)continue;
+  const cx=sd.x+sd.w/2,lo=two?(cx<W/2?0:W/2-4):0,hi=two?(cx<W/2?W/2+4:W):W,gap=Math.max(sd.size*1.25,9),mem=[sd];let top=sd.y,bot=sd.y+sd.h,ch=true;
+  while(ch){ch=false;for(const b of bs){if(mem.includes(b)||b.eq||b.type==='eqnum'||!mathy(b))continue;if(b.x<lo-3||b.x+b.w>hi+3)continue;
+   if(b.y<bot+gap&&b.y+b.h>top-gap){mem.push(b);top=Math.min(top,b.y);bot=Math.max(bot,b.y+b.h);ch=true}}}
+  const x0=Math.min(...mem.map(b=>b.x)),x1=Math.max(...mem.map(b=>b.x+b.w));
+  const txt=mem.filter(b=>b.type!=='eqnum').sort((a,b)=>(Math.abs(a.y-b.y)<3?a.x-b.x:a.y-b.y)).map(b=>b.text).join(' ');
+  const nm=sd.type==='eqnum'?sd.n:((/\(\s*(\d+(?:\.\d+)?)\s*\)\s*$/.exec(txt)||[])[1]||'');
+  const reg={page:n,blocks:mem,rect:{x:x0,y:top,w:x1-x0,h:bot-top},text:txt,n:nm,lead:sd};
+  mem.forEach(b=>{b.eq=reg;if(b.type==='para')b.type='equation'});sd.n=nm;P.eqs.push(reg)}}}
+function eqTarget(reg){const bs=S.pages[reg.page].blocks,ix=reg.blocks.map(b=>bs.indexOf(b)),first=bs[Math.min(...ix)],last=bs[Math.max(...ix)];
+ const re=reg.n?new RegExp('\\b(Eq\\.|Eqs\\.|Equation|equation)\\s*\\(?'+reg.n.replace('.','\\.')+'\\)?'):/$^/;
+ return{kind:'equation',title:'Equation'+(reg.n?' ('+reg.n+')':''),page:reg.page,block:first,rect:reg.rect,text:reg.text,ctx:nextBlocks(last,3).join(' '),refs:refsFor(re),n:reg.n,reg}}
+/* ---------- PDF rendering ---------- */
+async function showPage(n){
+ if(S.kind==='docx'){$('docView').style.fontSize=(16*S.zoom)+'px';$('zVal').textContent=Math.round(S.zoom*100)+'%';return}
+ if(!S.pdf)return;n=Math.max(1,Math.min(S.pdf.numPages,n));const tok=++S.tok;S.page=n;
+ const pg=await S.pdf.getPage(n),v1=pg.getViewport({scale:1});
+ S.scale=Math.max(.3,($('scroll').clientWidth-30)/v1.width)*S.zoom;const vp=pg.getViewport({scale:S.scale}),dpr=window.devicePixelRatio||1;
+ const wrap=$('wrap'),cv=$('cv');wrap.style.display='block';wrap.style.width=vp.width+'px';wrap.style.height=vp.height+'px';
+ cv.width=vp.width*dpr;cv.height=vp.height*dpr;cv.style.width=vp.width+'px';cv.style.height=vp.height+'px';
+ if(S.rt){try{S.rt.cancel()}catch(e){}try{await S.rt.promise}catch(e){}}
+ S.rt=pg.render({canvasContext:cv.getContext('2d'),viewport:vp,transform:dpr!==1?[dpr,0,0,dpr,0,0]:null});
+ try{await S.rt.promise}catch(e){return}
+ if(tok!==S.tok)return;
+ const tl=$('tl');tl.innerHTML='';tl.style.setProperty('--scale-factor',vp.scale);const tc=await pg.getTextContent();
+ try{pdfjsLib.renderTextLayer({textContentSource:tc,container:tl,viewport:vp,textDivs:[]})}catch(e){console.warn(e)}
+ $('pNum').value=n;$('pTot').textContent='/ '+S.pdf.numPages;$('zVal').textContent=Math.round(S.zoom*100)+'%';draw()}
+function rectOf(b){return b.reg||{x:b.x,y:b.y,w:b.w,h:b.h}}
+function draw(){if(S.kind==='docx')return;const hl=$('hl');hl.innerHTML='';let r=null;
+ if(S.sel&&S.sel.page===S.page){r=S.sel.rect;const d=document.createElement('div');d.className='hlbox';const s=S.scale;
+  d.style.cssText=`left:${r.x*s-2}px;top:${r.y*s-2}px;width:${r.w*s+4}px;height:${r.h*s+4}px`;hl.appendChild(d)}
+ placeProf(r)}
+function placeProf(r){const W=$('wrap').clientWidth,p=$('prof'),z=54;let x,y;
+ if(!r){x=W-z-8;y=8}else{const s=S.scale;x=(r.x+r.w)*s+8;y=r.y*s-4;if(x+z>W){x=r.x*s-z-6;if(x<0){x=W-z-4;y=r.y*s-z-6}}}
+ p.style.left=x+'px';p.style.top=Math.max(0,y)+'px'}
+
+/* ---------- targets (what the student selected) ---------- */
+const nextBlocks=(b,k)=>{const bs=S.pages[b.page].blocks,i=bs.indexOf(b),o=[];for(let j=i+1;j<bs.length&&o.length<k;j++){if(bs[j].type==='heading')break;if(bs[j].type==='para')o.push(bs[j].text)}return o};
+const refsFor=(re)=>S.doc.sents.filter(s=>re.test(s.t)).slice(0,8);
+function targetFromBlock(b){
+ if(b.eq)return eqTarget(b.eq);
+ const sec=b.secStart||b.sec,sn=sec?sec.name:'';
+ if(b.secStart)return secTarget(b.secStart);
+ if(b.type==='figure'){const re=new RegExp('\\b(Fig\\.|Figs\\.|Figure|Figures)\\s*'+b.n+'(?![0-9])');
+  return{kind:'figure',title:'Figure '+b.n,page:b.page,block:b,text:b.text,ctx:nextBlocks(b,2).join(' '),refs:refsFor(re),n:b.n}}
+ if(b.type==='table'){const re=new RegExp('\\bTables?\\s*'+b.n+'(?![0-9A-Za-z])');
+  return{kind:'table',title:'Table '+b.n,page:b.page,block:b,text:b.text,ctx:nextBlocks(b,2).join(' '),refs:refsFor(re),n:b.n}}
+ if(b.type==='equation'){const re=b.n?new RegExp('\\b(Eq\\.|Eqs\\.|Equation|equation)\\s*\\(?'+b.n.replace('.','\\.')+'\\)?'):/$^/;
+  return{kind:'equation',title:'Equation'+(b.n?' ('+b.n+')':''),page:b.page,block:b,text:b.text,ctx:nextBlocks(b,3).join(' '),refs:refsFor(re),n:b.n}}
+ return{kind:'paragraph',title:'Paragraph'+(sn?' in '+sn:''),page:b.page,block:b,text:b.text,ctx:sec?cap(sec.text,6000):'',refs:[]}}
+function secTarget(s){const t=secFullText(s);return{kind:'section',title:s.name,page:s.page,block:s.block,text:t,ctx:'',refs:[],sec:s}}
+function blockAt(p,x,y){const bs=(S.pages[p]||{}).blocks||[],inR=(r,pd)=>r&&x>=r.x-pd&&x<=r.x+r.w+pd&&y>=r.y-pd&&y<=r.y+r.h+pd;
+ const R=((S.pages[p]||{}).eqs||[]).find(r=>inR(r.rect,3));
+ return bs.find(b=>(b.type==='figure'||b.type==='table')&&inR(b.reg,0))||(R?R.lead:null)||bs.find(b=>inR({x:b.x,y:b.y,w:b.w,h:b.h},3))||null}
+let down=null;
+$('wrap').addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clientY}});
+$('wrap').addEventListener('pointerup',e=>{const d=down;setTimeout(()=>{if(!S.doc)return;const sel=getSelection(),txt=sel?sel.toString().replace(/\s+/g,' ').trim():'';
+ const wr=$('wrap').getBoundingClientRect(),s=S.scale;
+ if(txt.length>=3&&sel.rangeCount&&!sel.isCollapsed){const r=sel.getRangeAt(0).getBoundingClientRect();
+  const rect={x:(r.left-wr.left)/s,y:(r.top-wr.top)/s,w:r.width/s,h:r.height/s},b=blockAt(S.page,rect.x+2,rect.y+rect.h/2);
+  openTarget({kind:'selection',title:'Selected text: “'+txt.slice(0,50)+(txt.length>50?'…':'')+'”',page:S.page,rect,text:txt,block:b,ctx:b?b.text:'',refs:[]})}
+ else if(d&&Math.hypot(e.clientX-d.x,e.clientY-d.y)<6){const b=blockAt(S.page,(e.clientX-wr.left)/s,(e.clientY-wr.top)/s);
+  if(b)openTarget(targetFromBlock(b));else toast('Click on text, a heading, a caption or an equation.')}},0)});
+
+/* ---------- lessons ---------- */
+async function aiCall(task,t,extra){const o={task,level:S.level,docTitle:S.doc.title,outline:S.doc.sections.map(s=>({name:s.name,page:s.page})),
+  kind:t.kind,title:t.title,page:t.page,text:cap(t.text),context:cap(t.ctx,6000),refs:(t.refs||[]).map(r=>r.t)};if(t.kind==='equation'){o.image=t.img||undefined;o.definitions=symbolDefs(t)}Object.assign(o,extra||{});
+ const r=await fetch(CFG.endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(o)});
+ if(!r.ok)throw new Error('AI service returned '+r.status);const j=await r.json();return typeof j==='string'?JSON.parse(j):j}
+function splitLong(x){if(x.length<=230)return[x];const g=x.split(/;\s+|:\s+(?=[A-Z])|,\s+(?=(?:which|while|whereas|however|moreover|further|but|where)\b)/i),o=[];let c='';
+ for(const p of g){if(c&&(c+' '+p).length>230){o.push(c);c=p}else c=c?c+' '+p:p}if(c)o.push(c);return o}
+function chunkSteps(text,level,page){const parts=[];splitSentences(text).filter(x=>!NOTE_LINE.test(x)).forEach(x=>splitLong(x).forEach(p=>parts.push(p)));
+ if(!parts.length)return[{title:'',body:'I could not find readable text here.',page}];
+ let k=({ug:1,pg:1,phd:2,fac:2})[level]||1;if(Math.ceil(parts.length/k)>25)k=Math.ceil(parts.length/25);const o=[];
+ for(let i=0;i<parts.length;i+=k)o.push({title:'',body:parts.slice(i,i+k).join(' '),page});return o}
+function basicLesson(t){const lv=S.level;let st=[];const pg=t.page;
+ if(t.kind==='section'||t.kind==='paragraph'){st=chunkSteps(t.text,lv,pg);}
+ else if(t.kind==='selection'){st=[{title:'What you selected',body:cap(t.text,700),page:pg}];
+  if(t.ctx&&t.ctx!==t.text)st.push({title:'The paragraph around it',body:cap(t.ctx,900),page:pg})}
+ else if(t.kind==='figure'||t.kind==='table'){const w=t.kind==='figure'?'Figure':'Table';
+  st=[{title:w+' '+t.n,body:t.text,page:pg}];
+  if(t.refs.length){const ts=t.refs.map(r=>r.t);for(let i=0;i<ts.length;i+=2)st.push({title:'What the paper says about it',body:ts.slice(i,i+2).join(' '),page:t.refs[i].p})}
+  else st.push({title:'What the paper says about it',body:'I could not find sentences in the text that refer to '+w+' '+t.n+' by number.',page:pg});}
+ else if(t.kind==='equation'){const li=t.block?leadIn(t.block):'',defs=symbolDefs(t);
+  st=[{title:'',body:(li?li+' ':'')+'This equation shows the relation between the quantities explained next.',tex:toLatex(t.text,t.n),texShow:false,img:t.img,showImg:!!t.img,edit:true,page:pg}];
+  if(defs.length){for(let i=0;i<defs.length;i+=2)st.push({title:'',body:defs.slice(i,i+2).join(' '),page:pg})}
+  else st.push({title:'',body:'The paper does not define these symbols in nearby text.',page:pg});
+  if(t.refs.length)st.push({title:'',body:'Where the paper uses it: '+t.refs.slice(0,3).map(r=>r.t).join(' '),page:t.refs[0].p});}
+ return st}
+async function openTarget(t){
+ stopSpeech();$('sum').style.display='none';
+ S.lesson={target:t,steps:[],idx:0,fullText:''};
+ if(S.kind==='docx'){if(t.kind!=='selection'&&t.block&&t.block.els)docHL(t.block.els)}
+ else{const rect=t.rect||(t.block?rectOf(t.block):null);
+  if(rect){S.sel={page:t.page,rect};if(t.page!==S.page)await showPage(t.page);else draw();
+   const y=rect.y*S.scale-60;const sc=$('scroll');if(y<sc.scrollTop||y>sc.scrollTop+sc.clientHeight-120)sc.scrollTo({top:Math.max(0,y),behavior:'smooth'});
+   if(t.kind==='equation'&&t.block)t.img=eqCrop(rect)}}
+ $('bTitle').textContent=t.title;$('bMeta').textContent='';
+ $('bStep').innerHTML='<div class="sbody">Preparing the lesson…</div>';$('dots').textContent='';
+ let steps;
+ if(CFG.endpoint){try{const j=await aiCall('lesson',t);steps=(j.steps||[]).map(s=>({title:String(s.title||''),body:String(s.body||''),tex:s.tex,edit:!!s.tex,page:t.page}));if(!steps.length)throw new Error('empty reply');if(t.img){const f0=steps.find(x=>x.tex);if(f0)f0.img=t.img}}
+  catch(e){toast('AI service failed ('+e.message+'). Using Basic mode.');steps=basicLesson(t)}}
+ else steps=basicLesson(t);
+ S.lesson.steps=steps;S.lesson.fullText=t.kind==='section'||t.kind==='paragraph'?t.text:steps.map(s=>s.body).join(' ');
+ renderStep()}
+function wordsHTML(t){let h='',l=0;for(const m of t.matchAll(/\S+/g)){h+=esc(t.slice(l,m.index))+'<span class="w" data-s="'+m.index+'">'+esc(m[0])+'</span>';l=m.index+m[0].length}return h+esc(t.slice(l))}
+function typeset(el){if(window.MathJax&&MathJax.typesetPromise)MathJax.typesetPromise([el]).catch(()=>{})}
+function renderStep(quiet){const L=S.lesson;if(!L||!L.steps.length)return;const n=L.steps.length;let h='';
+ for(let i=0;i<=L.idx;i++){const s=L.steps[i],cur=i===L.idx;h+='<div class="blk">';
+  if(s.body||cur)h+='<div class="sbody">'+(cur?'<span id="words">'+wordsHTML(s.body)+'</span>':esc(s.body))+(cur?'<span class="chalk" title="Written on the board"><svg viewBox="0 0 34 16" width="34" height="16"><g transform="rotate(-12 17 8)"><rect x="2" y="4" width="30" height="8" rx="3" fill="#f8fafc"/><rect x="2" y="4" width="30" height="3" rx="1.5" fill="#fff" opacity=".7"/><rect x="9" y="4" width="6" height="8" fill="#93c5fd"/></g></svg></span>':'')+'</div>';
+  if(s.img&&s.showImg)h+='<img class="eqimg big" src="'+s.img+'" alt="">';
+  if(s.tex)h+='<div class="tex"'+(cur?' id="texCur"':'')+(s.texShow===false?' style="display:none"></div>':'>$$'+esc(s.tex)+'$$</div>');
+  if(s.edit&&cur)h+='<details class="eqedit"><summary>✎ Edit LaTeX</summary>'+(s.img&&!s.showImg?'<img class="eqimg" src="'+s.img+'" alt="">':'')+'<textarea id="ltx" style="width:100%;min-height:60px;font:13px monospace">'+esc(s.tex)+'</textarea></details>';
+  h+='</div>'}
+ $('bStep').innerHTML=h;const lt=$('ltx'),cs=L.steps[L.idx];if(lt)lt.oninput=()=>{cs.tex=lt.value;cs.texShow=true;const o=$('texCur');o.style.display='block';o.textContent='$$'+lt.value+'$$';typeset(o)};
+ $('bPrev').disabled=L.idx===0;$('bNext').disabled=L.idx>=n-1;typeset($('bStep'));
+ const bd=$('board');setTimeout(()=>{bd.scrollTo({top:bd.scrollHeight,behavior:'smooth'})},60);
+ if(!quiet&&$('autoRead').checked)setTimeout(speak,120)}
+
+/* ---------- summary ---------- */
+async function summarise(){const L=S.lesson;if(!L||!L.steps.length){toast('Select something in the PDF first.');return}
+ stopSpeech();$('sum').style.display='block';$('sumTxt').textContent='Preparing summary…';let txt,kind;
+ if(CFG.endpoint){try{const j=await aiCall('summary',L.target,{text:cap(L.fullText)});txt=j.summary;kind='(AI-generated from the paper\'s text)'}catch(e){toast('AI failed: '+e.message)}}
+ if(!txt){txt=extractive(L.fullText,4);kind='(extractive: sentences taken directly from the paper)'}
+ $('sumKind').textContent=kind;$('sumTxt').textContent=txt||'Not enough text to summarise.';$('sum').scrollIntoView({behavior:'smooth',block:'nearest'})}
+$('bCopy').onclick=async()=>{const t=$('sumTxt').textContent;try{await navigator.clipboard.writeText(t)}catch(e){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove()}toast('Summary copied')};
+
+/* ---------- natural speech: accent + gender, neural voice preference, sentence chunking, word highlighting ---------- */
+let voices=[],speakTok=0,keepAlive=null;
+const FEM=/(neerja|heera|veena|swara|kalpana|aditi|raveena|priya|luna|yu|aria|jenny|michelle|ana\b|zira|hazel|susan|libby|sonia|maisie|natasha|catherine|karen|samantha|allison|ava|susan|serena|kate|martha|fiona|moira|tessa|victoria|nicky|female|woman|samara|jane|sara|emma|olivia|amy|joanna|ivy|kendra|kimberly|salli|raveena|google uk english female|-ena\b|-sfg)/i;
+const MAL=/(prabhat|ravi|rishi|hemant|madhur|wayne|guy|davis|david|mark|ryan|thomas|george|james|alfred|daniel|oliver|arthur|alex|tom\b|evan|fred|aaron|gordon|brian|matthew|joey|justin|male\b|man\b|google uk english male|-iom|-ene\b|-sfg)/i;
+function vGender(v){const n=v.name;if(/female/i.test(n))return'F';if(/\bmale\b/i.test(n))return'M';if(FEM.test(n)&&!MAL.test(n))return'F';if(MAL.test(n)&&!FEM.test(n))return'M';return'?'}
+function vQuality(v){const n=v.name;let q=0;if(/natural|neural|online/i.test(n))q+=100;if(/premium|enhanced/i.test(n))q+=60;if(/google/i.test(n))q+=40;if(/microsoft/i.test(n))q+=10;if(!v.localService)q+=20;if(/espeak|compact|novelty|whisper|bad|bubbles|zarvox|trinoids|cellos|bells|organ|jester|boing|albert|junior|ralph|kathy|fred$/i.test(n))q-=200;return q}
+const LANGS={IN:['en-IN'],SG:['en-SG'],US:['en-US'],GB:['en-GB']};
+const FALL={IN:['en-GB','en-AU','en-US'],SG:['en-IN','en-GB','en-AU','en-US'],US:['en-GB'],GB:['en-AU','en-US']};
+function lc(v){return v.lang.replace('_','-')}
+function pickVoices(){
+ const acc=$('accent').value,g=$('gender').value;let note='';
+ const inLangs=l=>voices.filter(v=>l.some(x=>lc(v).toLowerCase()===x.toLowerCase()||lc(v).toLowerCase().startsWith(x.toLowerCase())));
+ let pool=inLangs(LANGS[acc]);
+ if(!pool.length){for(const fb of FALL[acc]){pool=inLangs([fb]);if(pool.length){note='No '+acc+' voice installed on this device – using closest ('+fb+').';break}}}
+ if(!pool.length){pool=voices.slice();note='Using default English voice.'}
+ const exact=pool.filter(v=>vGender(v)===g),unk=pool.filter(v=>vGender(v)==='?');
+ let list=exact.length?exact:unk.length?unk:pool;
+ if(!exact.length&&pool.length)note=(note?note+' ':'')+'Gender-matched voice not found – pitch-adjusted.';
+ list=list.slice().sort((a,b)=>vQuality(b)-vQuality(a));
+ return{list,note,matched:exact.length>0}}
+function renderVoiceList(){
+ const{list,note}=pickVoices();
+ $('voice').innerHTML=list.map((v,i)=>'<option value="'+voices.indexOf(v)+'">'+esc(v.name.replace(/^Microsoft |^Google /,'')+' ('+lc(v)+')')+'</option>').join('')||'<option value="-1">Default</option>';
+ $('voice').title=note||'Best natural voice auto-selected. Change to fine-tune.';
+ try{localStorage.setItem('garrfVoice',JSON.stringify({a:$('accent').value,g:$('gender').value}))}catch(e){}
+ if(note)toast(note)}
+function loadVoices(){if(!('speechSynthesis' in window))return;voices=speechSynthesis.getVoices().filter(v=>/^en/i.test(v.lang));if(!voices.length)return;
+ try{const p=JSON.parse(localStorage.getItem('garrfVoice')||'null');if(p&&!loadVoices.done){$('accent').value=p.a;$('gender').value=p.g}}catch(e){}
+ loadVoices.done=1;renderVoiceList()}
+if('speechSynthesis' in window){loadVoices();speechSynthesis.onvoiceschanged=loadVoices;setTimeout(loadVoices,600)}
+$('accent').onchange=$('gender').onchange=()=>{renderVoiceList();if(S.lesson&&speechSynthesis.speaking)speak()};
+$('voice').onchange=()=>{if(S.lesson&&speechSynthesis.speaking)speak()};
+function clearSay(){document.querySelectorAll('.w.say').forEach(e=>e.classList.remove('say'))}
+/* make text sound spoken, not read: drop citations, expand abbreviations, say symbols */
+function spoken(t){return t.replace(/[α-ωΑ-Ω]/g,c=>' '+(GRN[c]||'')+' ').replace(/\[\s*\d+(\s*[,–-]\s*\d+)*\s*\]/g,'').replace(/\(\s*(?:[A-Z][A-Za-z-]+(?: et al\.?)?,? \d{4}[a-z]?(?:;\s*)?)+\)/g,'')
+ .replace(/\be\.g\.,?/gi,'for example,').replace(/\bi\.e\.,?/gi,'that is,').replace(/\bet al\.?/g,'and colleagues').replace(/\bFigs?\.\s*/g,'Figure ').replace(/\bEqs?\.\s*/g,'Equation ').replace(/\bvs\.?/gi,'versus').replace(/\bcf\.\s*/g,'compare ').replace(/\betc\./g,'etcetera')
+ .replace(/≥/g,' greater than or equal to ').replace(/≤/g,' less than or equal to ').replace(/±/g,' plus or minus ').replace(/×/g,' times ').replace(/≈/g,' approximately ').replace(/%/g,' percent').replace(/→/g,' leads to ').replace(/\s*[–—]\s*/g,', ').replace(/\s+/g,' ').trim()}
+function chunks(body){const out=[],re=/[^.!?;:\n]+[.!?;:]*\s*/g;let m,cur=null;
+ while((m=re.exec(body))){const seg=m[0];if(!seg.trim())continue;
+  if(cur&&cur.t.length<160&&cur.t.length+seg.length<260){cur.t+=seg}else{if(cur)out.push(cur);cur={s:m.index,t:seg}}}
+ if(cur)out.push(cur);return out}
+function texSpeak(t){return String(t||'').replace(/\\frac\s*\{([^{}]*)\}\s*\{([^{}]*)\}/g,' $1 over $2 ').replace(/\\sqrt\s*\{([^{}]*)\}/g,' square root of $1 ').replace(/\\sum/g,' sum of ').replace(/\\int/g,' integral of ')
+ .replace(/\\partial/g,' partial ').replace(/\\(?:dot|ddot)\s*\{?([A-Za-z])\}?/g,' $1 dot ').replace(/\\(alpha|beta|gamma|delta|epsilon|theta|lambda|mu|nu|pi|rho|sigma|tau|phi|omega|Delta|Omega|Sigma)\b/g,' $1 ')
+ .replace(/\\cdot|\\times/g,' times ').replace(/\\le(q)?\b/g,' less than or equal to ').replace(/\\ge(q)?\b/g,' greater than or equal to ').replace(/\^\{?([^{}\s]+)\}?/g,' to the power $1 ').replace(/_\{?([^{}\s]+)\}?/g,' sub $1 ')
+ .replace(/=/g,' equals ').replace(/\+/g,' plus ').replace(/(\w)\s*-\s*(\w)/g,'$1 minus $2').replace(/\\[a-zA-Z]+/g,' ').replace(/[{}$\\]/g,' ').replace(/\s+/g,' ').trim()}
+function vstat(m){const e=$('vstat');if(e)e.textContent=m}
+function speak(){const L=S.lesson;if(!L||!L.steps.length)return;if(!('speechSynthesis' in window)){toast('Speech is not supported in this browser. Use Chrome, Edge or Safari.');vstat('⚠ Speech not supported in this browser.');return}
+ const s=L.steps[L.idx];speechSynthesis.cancel();clearSay();const tok=++speakTok;
+ const sel=voices[+$('voice').value],g=$('gender').value,{matched}=pickVoices();
+ const rate=+$('rate').value,sp=speak.test?[]:[...document.querySelectorAll('#words .w')];
+ /* queue = EVERYTHING on the green board, in order: step heading, body text (word-highlighted), raw extract, equation */
+ const Q=[];
+ chunks(s.body).forEach(c=>Q.push({t:c.t,s:c.s}));
+ let i=0,useVoice=sel,retried=false;
+ const basePitch=matched?1:(g==='M'?0.8:1.12);
+ clearInterval(keepAlive);keepAlive=setInterval(()=>{if(speechSynthesis.speaking&&!speechSynthesis.paused){speechSynthesis.pause();speechSynthesis.resume()}},12000);
+ const done=()=>{clearInterval(keepAlive);clearSay();$('bPause').textContent='⏸ Pause';vstat('✔ Finished.')};
+ function next(){if(tok!==speakTok)return;if(i>=Q.length){done();return}
+  const c=Q[i],txt=spoken(c.t);if(!txt){i++;next();return}
+  const u=new SpeechSynthesisUtterance(txt);let started=false;
+  if(useVoice){u.voice=useVoice;u.lang=useVoice.lang}else u.lang=({IN:'en-IN',SG:'en-SG',US:'en-US',GB:'en-GB'})[$('accent').value]||'en-US';
+  const q=/\?\s*$/.test(c.t.trim());u.rate=rate*(txt.length>140?1.0:0.97);u.pitch=basePitch*(q?1.04:1)*(i%2?1:0.985);u.volume=1;
+  const wd=setTimeout(()=>{if(started||tok!==speakTok)return;/* nothing started: retry once with the browser default voice */
+   if(!retried){retried=true;useVoice=null;speechSynthesis.cancel();vstat('Selected voice did not respond – retrying with the default voice…');setTimeout(()=>{if(tok===speakTok)next()},80)}
+   else{vstat('⚠ No sound produced. Check device volume, that this tab is not muted, and try Chrome or Edge.');toast('No sound produced – check volume / tab mute.')}},3000);
+  u.onstart=()=>{started=true;clearTimeout(wd);vstat('🔊 Speaking…')};
+  u.onboundary=e=>{if(tok!==speakTok||c.s<0||(e.name&&e.name!=='word'))return;const pos=c.s+Math.round(e.charIndex/Math.max(1,txt.length)*c.t.length);let f=null;for(const x of sp){if(+x.dataset.s<=pos)f=x;else break}clearSay();if(f)f.classList.add('say')};
+  u.onend=()=>{clearTimeout(wd);if(tok!==speakTok)return;i++;/[.!?:]\s*$/.test(c.t.trim())?setTimeout(next,170):next()};
+  u.onerror=e=>{clearTimeout(wd);if(tok!==speakTok)return;if(e.error==='interrupted'||e.error==='canceled')return;
+   if(!retried){retried=true;useVoice=null;vstat('Voice error ('+e.error+') – retrying with default voice…');setTimeout(()=>{if(tok===speakTok)next()},80)}
+   else{vstat('⚠ Speech failed: '+e.error);clearInterval(keepAlive)}};
+  speechSynthesis.speak(u)}
+ vstat('Starting voice…');setTimeout(()=>{if(tok===speakTok)next()},90)}
+/* unlock audio on first user touch (Safari/Chrome autoplay policy) */
+let unlocked=false;function unlock(){if(unlocked||!('speechSynthesis' in window))return;unlocked=true;try{const u=new SpeechSynthesisUtterance(' ');u.volume=0;speechSynthesis.speak(u)}catch(e){}}
+document.addEventListener('pointerdown',unlock,{once:true});document.addEventListener('keydown',unlock,{once:true});
+$('bTest').onclick=()=>{unlock();const keep=S.lesson;S.lesson={target:{},steps:[{title:'Voice test',body:'Hello, I am Professor Garrf Anna. If you can hear me clearly, your voice is working. Press Continue to hear each step of the lesson.'}],idx:0,fullText:''};
+ speak.test=true;speak();speak.test=false;S.lesson=keep}
+/* ---------- listening: voice questions and commands ---------- */
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;let rec=null;
+function voiceCmd(t){t=t.toLowerCase().replace(/[.,!?]/g,'').trim();
+ if(/^(continue|next|next step|go on|proceed|carry on)$/.test(t))return $('bNext').click(),1;
+ if(/^(previous|back|go back|previous step)$/.test(t))return $('bPrev').click(),1;
+ if(/^(repeat|again|say that again|repeat that)$/.test(t))return $('bRep').click(),1;
+ if(/^(stop|quiet|silence|be quiet)$/.test(t))return stopSpeech(),1;
+ if(/^(pause|wait|hold on)$/.test(t))return $('bPause').click(),1;
+ if(/^(resume|play)$/.test(t))return(speechSynthesis.paused?$('bPause').click():speak()),1;
+ if(/^(read|read aloud|speak|read it)$/.test(t))return speak(),1;
+ if(/summar/.test(t)&&t.split(' ').length<5)return $('bSum').click(),1;return 0}
+$('bMic').onclick=()=>{unlock();if(!SR){toast('Voice input needs Chrome, Edge or Safari. Firefox does not support it.');vstat('⚠ Voice input is not supported in this browser.');return}
+ if(rec){rec.stop();return}stopSpeech();
+ rec=new SR();rec.lang=({IN:'en-IN',SG:'en-SG',US:'en-US',GB:'en-GB'})[$('accent').value]||'en-US';rec.interimResults=true;rec.maxAlternatives=1;
+ $('bMic').textContent='🎙 Listening… (click to stop)';vstat('🎙 Listening – ask a question, or say: continue, previous, repeat, stop, pause, summary.');
+ rec.onresult=e=>{let t='',fin=false;for(const r of e.results){t+=r[0].transcript;if(r.isFinal)fin=true}$('q').value=t;if(fin){if(!voiceCmd(t))ask(t);$('q').value=''}};
+ rec.onerror=e=>{const m={'not-allowed':'Microphone permission was blocked. Allow the mic for this page.','no-speech':'I did not hear anything. Try again.','audio-capture':'No microphone found.','network':'Voice input needs an internet connection.'};toast(m[e.error]||('Voice input error: '+e.error));vstat('⚠ '+(m[e.error]||e.error))};
+ rec.onend=()=>{rec=null;$('bMic').textContent='🎤 Speak'};
+ try{rec.start()}catch(e){rec=null;$('bMic').textContent='🎤 Speak'}};
+function stopSpeech(){speakTok++;clearInterval(keepAlive);if('speechSynthesis' in window)speechSynthesis.cancel();clearSay();$('bPause').textContent='⏸ Pause'}
+
+/* ---------- Q&A ---------- */
+const QMAP=[[/gap|novel/i,/gap|introduction|literature|related|background/i],[/limit/i,/limit|discussion|conclusion/i],[/method|why did|approach|setup|experiment/i,/method|experiment|material|model/i],
+ [/contribution|main|summar|about/i,/abstract|conclusion|introduction/i],[/future|extend|next/i,/conclusion|future/i],[/result|finding|observ/i,/result|discussion/i]];
+async function ask(q){q=q.trim();if(!q)return;if(!S.doc){toast('Upload a PDF first.');return}stopSpeech();$('sum').style.display='none';
+ let m;
+ if(!CFG.endpoint){
+  if(m=/fig(?:ure)?\.?\s*(\d+[a-z]?)/i.exec(q)){const b=S.doc.figs.find(x=>x.n.toLowerCase()===m[1].toLowerCase());if(b)return openTarget(targetFromBlock(b))}
+  if(m=/table\s*([0-9IVX]+)/i.exec(q)){const b=S.doc.tabs.find(x=>x.n===m[1]);if(b)return openTarget(targetFromBlock(b))}
+  if(m=/(?:eq(?:uation)?\.?)\s*\(?(\d+(?:\.\d+)?)\)?/i.exec(q)){const b=S.doc.eqs.find(x=>x.n===m[1]);if(b)return openTarget(targetFromBlock(b))}}
+ const t={kind:'question',title:'Question: '+q,page:S.page,text:q,ctx:'',refs:[]};S.sel=null;draw();
+ $('bTitle').textContent=t.title;$('bMeta').textContent='';$('bStep').innerHTML='<div class="sbody">Thinking…</div>';$('dots').textContent='';S.lesson={target:t,steps:[],idx:0,fullText:''};
+ let steps;
+ if(CFG.endpoint){try{const j=await aiCall('ask',t,{question:q,text:cap(S.doc.sections.map(s=>'## '+s.name+'\n'+s.text).join('\n'),40000)});steps=(j.steps||[]).map(s=>({title:String(s.title||''),body:String(s.body||''),tex:s.tex}));if(!steps.length)throw new Error('empty reply')}
+  catch(e){toast('AI failed ('+e.message+'). Using Basic mode.')}}
+ if(!steps){let pool=S.doc.sents;for(const[a,b]of QMAP)if(a.test(q)){const f=pool.filter(s=>b.test(s.sec));if(f.length){pool=f;break}}
+  const w=(q.toLowerCase().match(/[a-z]{3,}/g)||[]).filter(x=>!STOP.has(x));
+  const sc=pool.map(s=>({s,v:w.reduce((a,x)=>a+(s.t.toLowerCase().includes(x)?1:0),0)})).filter(x=>x.v>0).sort((a,b)=>b.v-a.v).slice(0,4);
+  steps=[];
+  if(/extend|next experiment|project|ph\.?d|learn before|attempting/i.test(q))steps.push({title:'AI connection needed',body:'Research suggestions need an AI service (⚙). Related passages from the paper follow.'});
+  sc.forEach(x=>steps.push({title:x.s.sec||'From the paper',body:x.s.t,page:x.s.p}));
+  if(!steps.length)steps=[{title:'Not found in the paper',body:'I could not find passages matching your question in the extracted text. Try different words, or click the relevant section.'}]}
+ S.lesson.steps=steps;S.lesson.fullText=steps.map(s=>s.body).join(' ');renderStep()}
+
+/* ---------- navigation panels ---------- */
+function buildNav(){const D=S.doc,n=$('nav');n.innerHTML='';
+ D.sections.forEach(s=>{const b=document.createElement('button');b.className='chip';b.textContent=(s.depth>1?'↳ ':'')+s.name;b.onclick=()=>openTarget(secTarget(s));n.appendChild(b)});
+ [['📈 Fig ',D.figs],['📊 Table ',D.tabs]].forEach(([l,a])=>a.forEach(b=>{const x=document.createElement('button');x.className='chip';x.textContent=l+(b.n||'?');x.onclick=()=>openTarget(targetFromBlock(b));n.appendChild(x)}));
+ if(!n.children.length)n.innerHTML='<span class="note">No headings detected – click any paragraph on the PDF.</span>'}
+
+/* ---------- wiring ---------- */
+$('file').onchange=async e=>{const f=e.target.files[0];if(!f)return;stopSpeech();toast('🔒 You can safely go offline. Your files are not stored on the cloud. Data is safe.',6000);
+ const ext=(f.name.split('.').pop()||'').toLowerCase();
+ try{setStatus('Loading…');
+  if(ext==='doc')throw new Error('Old .doc files are not supported. Open it in Word, choose Save As .docx, and upload that.');
+  if(ext==='docx'){await loadDocx(f)}
+  else{const buf=await f.arrayBuffer();S.pdf=await pdfjsLib.getDocument({data:buf}).promise;S.page=1;S.sel=null;S.lesson=null;setKind('pdf');await analyse()}
+  $('title').value=S.doc.title||f.name.replace(/\.(pdf|docx)$/i,'');S.doc.title=$('title').value;$('empty').style.display='none';buildNav();
+  setStatus((S.kind==='pdf'?S.pdf.numPages+' pages · ':'')+S.doc.sections.length+' headings · '+S.doc.figs.length+' fig · '+S.doc.tabs.length+' tab'+(S.kind==='pdf'?' · '+S.doc.eqs.length+' eq':''));
+  if(S.kind==='pdf')await showPage(1);$('bTitle').textContent='Ready: '+S.doc.title;$('bMeta').textContent=S.doc.authors?cap(S.doc.authors,140):'';
+  $('bStep').innerHTML=''}
+ catch(err){console.error(err);setStatus('Could not read file');toast('Could not read this file: '+err.message,6000)}
+ e.target.value=''};
+function clearDoc(){stopSpeech();setKind('pdf');S.pdf=null;S.doc=null;S.lesson=null;S.sel=null;S.pages={};$('wrap').style.display='none';$('empty').style.display='block';$('nav').innerHTML='<span class="note">Sections appear here after upload.</span>';
+ $('title').value='';$('bTitle').textContent='Welcome, I am Prof. GARRF-Anna';$('bMeta').textContent='';$('bStep').innerHTML='<div class="sbody">Upload a paper to begin.</div>';$('sum').style.display='none';setStatus('No file loaded')}
+$('title').onchange=()=>{if(S.doc)S.doc.title=$('title').value};
+$('pPrev').onclick=()=>showPage(S.page-1);$('pNext').onclick=()=>showPage(S.page+1);$('pNum').onchange=e=>showPage(+e.target.value||1);
+$('zIn').onclick=()=>{S.zoom=Math.min(3,S.zoom+.15);showPage(S.page)};$('zOut').onclick=()=>{S.zoom=Math.max(.4,S.zoom-.15);showPage(S.page)};
+$('bPrev').onclick=()=>{stopSpeech();if(S.lesson&&S.lesson.idx>0){S.lesson.idx--;renderStep()}};
+$('bNext').onclick=()=>{stopSpeech();if(S.lesson&&S.lesson.idx<S.lesson.steps.length-1){S.lesson.idx++;renderStep()}};
+$('bRep').onclick=()=>{renderStep(true);speak()};$('bSay').onclick=speak;$('bStop').onclick=stopSpeech;$('bSum').onclick=summarise;
+$('bPause').onclick=()=>{if(!('speechSynthesis' in window))return;if(speechSynthesis.paused){speechSynthesis.resume();$('bPause').textContent='⏸ Pause'}else if(speechSynthesis.speaking){speechSynthesis.pause();$('bPause').textContent='▶ Resume'}};
+$('level').onchange=e=>{S.level=e.target.value;if(S.lesson&&S.lesson.target&&S.lesson.target.kind!=='question')openTarget(S.lesson.target)};
+$('qGo').onclick=()=>ask($('q').value);$('q').onkeydown=e=>{if(e.key==='Enter')ask($('q').value)};
+$('cfgBtn').onclick=()=>{$('cfgUrl').value=CFG.endpoint;$('dlg').showModal()};
+$('cfgSave').onclick=()=>{CFG.endpoint=$('cfgUrl').value.trim();try{localStorage.setItem('garrf_ai_endpoint',CFG.endpoint)}catch(e){}updateMode()};
+function sizeBoard(){const b=$('board');b.style.height=(window.innerWidth>900?$('scroll').offsetHeight:Math.round(window.innerHeight*.75))+'px'}
+sizeBoard();window.addEventListener('load',sizeBoard);window.addEventListener('resize',sizeBoard);setTimeout(sizeBoard,400);
+window.addEventListener('resize',()=>{if(S.pdf){clearTimeout(window._rz);window._rz=setTimeout(()=>showPage(S.page),250)}});
+try{pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'}catch(e){console.warn('PDF.js not loaded',e)}
+updateMode();
+</script>
+</body>
+</html>
