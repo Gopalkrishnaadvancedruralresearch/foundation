@@ -588,11 +588,13 @@ function initGate(){
  const g=$('gate'), form=$('gateForm'), pw=$('gatePw'), err=$('gateErr');
  if(!g||!form||!pw) return;
  try{ if(sessionStorage.getItem(GATE_KEY)==='1'){ unlockClassroom(); return; } }catch(e){}
- form.addEventListener('submit',function(e){
+form.addEventListener('submit',function(e){
   e.preventDefault();
   const val=(pw.value||'').trim();
   if(val===GATE_PASS){
    if(err) err.textContent='';
+   // Unlock speech audio in the same user gesture (critical on iOS / mobile Chrome)
+   try{ if(typeof unlock==='function') unlock(true); }catch(ex){}
    unlockClassroom();
    try{ pw.value=''; }catch(ex){}
   } else {
@@ -1208,7 +1210,11 @@ function renderStep(quiet){const L=S.lesson;if(!L||!L.steps.length)return;const 
  $('bStep').innerHTML=h;const lt=$('ltx'),cs=L.steps[L.idx];if(lt)lt.oninput=()=>{cs.tex=lt.value;cs.texShow=true;const o=$('texCur');o.style.display='block';o.textContent='$$'+lt.value+'$$';typeset(o)};
  $('bPrev').disabled=L.idx===0;$('bNext').disabled=L.idx>=n-1;typeset($('bStep'));
  const bd=$('board');setTimeout(()=>{bd.scrollTo({top:bd.scrollHeight,behavior:'smooth'})},60);
- if(!quiet&&$('autoRead').checked)setTimeout(speak,120)}
+ if(!quiet&&$('autoRead')&&$('autoRead').checked){
+  // Mobile needs speech inside the user-gesture stack — avoid long delay
+  if(isMobileUA()){ try{ unlock(true); speak(); }catch(e){} }
+  else setTimeout(()=>{try{speak()}catch(e){}},120);
+ }}
 
 /* ---------- summary ---------- */
 async function summarise(){const L=S.lesson;if(!L||!L.steps.length){toast('Select something in the PDF first.');return}
@@ -1244,10 +1250,25 @@ function renderVoiceList(){
  $('voice').title=note||'Best natural voice auto-selected. Change to fine-tune.';
  try{localStorage.setItem('garrfVoice',JSON.stringify({a:$('accent').value,g:$('gender').value}))}catch(e){}
  if(note)toast(note)}
-function loadVoices(){if(!('speechSynthesis' in window))return;voices=speechSynthesis.getVoices().filter(v=>/^en/i.test(v.lang));if(!voices.length)return;
+function isMobileUA(){return /Android|iPhone|iPad|iPod|Mobile|webOS|BlackBerry/i.test(navigator.userAgent||'')||(navigator.maxTouchPoints>1&&/Mac/i.test(navigator.platform||''))}
+function loadVoices(){
+ if(!('speechSynthesis' in window))return;
+ const all=speechSynthesis.getVoices()||[];
+ // Prefer English; if none yet (common on iOS before gesture), keep empty and retry
+ let en=all.filter(v=>/^en/i.test(v.lang||'')||/\benglish\b/i.test(v.name||''));
+ if(!en.length&&all.length) en=all.slice(); // last resort: any voice
+ voices=en;
+ if(!voices.length) return;
  try{const p=JSON.parse(localStorage.getItem('garrfVoice')||'null');if(p&&!loadVoices.done){$('accent').value=p.a;$('gender').value=p.g}}catch(e){}
- loadVoices.done=1;renderVoiceList()}
-if('speechSynthesis' in window){loadVoices();speechSynthesis.onvoiceschanged=loadVoices;setTimeout(loadVoices,600)}
+ loadVoices.done=1;renderVoiceList();
+}
+if('speechSynthesis' in window){
+ loadVoices();
+ speechSynthesis.onvoiceschanged=loadVoices;
+ setTimeout(loadVoices,400);
+ setTimeout(loadVoices,1200);
+ setTimeout(loadVoices,3000);
+}
 $('accent').onchange=$('gender').onchange=()=>{renderVoiceList();if(S.lesson&&speechSynthesis.speaking)speak()};
 $('voice').onchange=()=>{if(S.lesson&&speechSynthesis.speaking)speak()};
 try{ const ol=localStorage.getItem('garrfOcrLang'); if(ol && $('ocrLang')) $('ocrLang').value=ol; }catch(e){}
@@ -1286,38 +1307,116 @@ function texSpeak(t){return String(t||'').replace(/\\frac\s*\{([^{}]*)\}\s*\{([^
  .replace(/\\cdot|\\times/g,' times ').replace(/\\le(q)?\b/g,' less than or equal to ').replace(/\\ge(q)?\b/g,' greater than or equal to ').replace(/\^\{?([^{}\s]+)\}?/g,' to the power $1 ').replace(/_\{?([^{}\s]+)\}?/g,' sub $1 ')
  .replace(/=/g,' equals ').replace(/\+/g,' plus ').replace(/(\w)\s*-\s*(\w)/g,'$1 minus $2').replace(/\\[a-zA-Z]+/g,' ').replace(/[{}$\\]/g,' ').replace(/\s+/g,' ').trim()}
 function vstat(m){const e=$('vstat');if(e)e.textContent=m}
-function speak(){const L=S.lesson;if(!L||!L.steps.length)return;if(!('speechSynthesis' in window)){toast('Speech is not supported in this browser. Use Chrome, Edge or Safari.');vstat('⚠ Speech not supported in this browser.');return}
- const s=L.steps[L.idx];speechSynthesis.cancel();clearSay();const tok=++speakTok;
- const sel=voices[+$('voice').value],g=$('gender').value,{matched}=pickVoices();
- const rate=+$('rate').value,sp=speak.test?[]:[...document.querySelectorAll('#words .w')];
- /* queue = EVERYTHING on the green board, in order: step heading, body text (word-highlighted), raw extract, equation */
+function speak(opts){
+ const L=S.lesson;if(!L||!L.steps.length)return;
+ if(!('speechSynthesis' in window)){toast('Speech is not supported in this browser. Use Chrome or Safari.');vstat('⚠ Speech not supported in this browser.');return}
+ unlock(true); // must run inside the same user-gesture stack when possible
+ if(!voices.length) loadVoices();
+ const s=L.steps[L.idx];
+ try{speechSynthesis.cancel()}catch(e){}
+ clearSay();const tok=++speakTok;
+ let sel=null;
+ try{ const vi=+$('voice').value; if(vi>=0&&voices[vi]) sel=voices[vi]; }catch(e){}
+ if(!sel&&voices.length) sel=voices[0];
+ const g=$('gender').value,{matched}=pickVoices();
+ const rate=Math.max(0.6, Math.min(1.4, +($('rate')&&$('rate').value)||0.95));
+ const sp=speak.test?[]:[...document.querySelectorAll('#words .w')];
  const Q=[];
  chunks(s.body).forEach(c=>Q.push({t:c.t,s:c.s}));
+ if(!Q.length){ const t=(s.body||'').trim(); if(t) Q.push({t:t,s:0}); }
  let i=0,useVoice=sel,retried=false;
- const basePitch=matched?1:(g==='M'?0.8:1.12);
- clearInterval(keepAlive);keepAlive=setInterval(()=>{if(speechSynthesis.speaking&&!speechSynthesis.paused){speechSynthesis.pause();speechSynthesis.resume()}},12000);
- const done=()=>{clearInterval(keepAlive);clearSay();$('bPause').textContent='⏸ Pause';vstat('✔ Finished.')};
- function next(){if(tok!==speakTok)return;if(i>=Q.length){done();return}
-  const c=Q[i],txt=spoken(c.t);if(!txt){i++;next();return}
-  const u=new SpeechSynthesisUtterance(txt);let started=false;
-  if(useVoice){u.voice=useVoice;u.lang=useVoice.lang}else u.lang=({IN:'en-IN',SG:'en-SG',US:'en-US',GB:'en-GB'})[$('accent').value]||'en-US';
-  const q=/\?\s*$/.test(c.t.trim());u.rate=rate*(txt.length>140?1.0:0.97);u.pitch=basePitch*(q?1.04:1)*(i%2?1:0.985);u.volume=1;
-  const wd=setTimeout(()=>{if(started||tok!==speakTok)return;/* nothing started: retry once with the browser default voice */
-   if(!retried){retried=true;useVoice=null;speechSynthesis.cancel();vstat('Selected voice did not respond – retrying with the default voice…');setTimeout(()=>{if(tok===speakTok)next()},80)}
-   else{vstat('⚠ No sound produced. Check device volume, that this tab is not muted, and try Chrome or Edge.');toast('No sound produced – check volume / tab mute.')}},3000);
+ const basePitch=matched?1:(g==='M'?0.85:1.1);
+ const mobile=isMobileUA();
+ clearInterval(keepAlive);
+ // Chrome Android often kills long speech; pause/resume keeps it alive. Skip on iOS (can glitch).
+ if(!mobile || /Android/i.test(navigator.userAgent||'')){
+  keepAlive=setInterval(()=>{
+   try{ if(speechSynthesis.speaking&&!speechSynthesis.paused){speechSynthesis.pause();speechSynthesis.resume()} }catch(e){}
+  }, mobile?9000:12000);
+ }
+ const done=()=>{clearInterval(keepAlive);clearSay();if($('bPause'))$('bPause').textContent='⏸ Pause';vstat('✔ Finished.')};
+ function next(){
+  if(tok!==speakTok)return;
+  if(i>=Q.length){done();return}
+  const c=Q[i],txt=spoken(c.t);
+  if(!txt){i++;next();return}
+  const u=new SpeechSynthesisUtterance(txt);
+  let started=false;
+  if(useVoice){u.voice=useVoice;u.lang=useVoice.lang||'en-US'}
+  else u.lang=({IN:'en-IN',SG:'en-SG',US:'en-US',GB:'en-GB'})[$('accent')&&$('accent').value]||'en-US';
+  const q=/\?\s*$/.test(c.t.trim());
+  u.rate=rate*(txt.length>140?1.0:0.97);
+  u.pitch=basePitch*(q?1.04:1)*(i%2?1:0.985);
+  u.volume=1;
+  // Mobile: longer watchdog – engines sometimes start slowly
+  const wd=setTimeout(()=>{
+   if(started||tok!==speakTok)return;
+   if(!retried){
+    retried=true;useVoice=null;
+    try{speechSynthesis.cancel()}catch(e){}
+    vstat('Selected voice silent – retrying default…');
+    setTimeout(()=>{if(tok===speakTok)next()}, mobile?40:80);
+   } else {
+    vstat('⚠ No sound. Raise media volume, unmute tab, and tap 🔊 Read Aloud or 🔈 Test voice.');
+    toast('No sound – check volume, then tap 🔈 Test voice');
+   }
+  }, mobile?4500:3000);
   u.onstart=()=>{started=true;clearTimeout(wd);vstat('🔊 Speaking…')};
-  u.onboundary=e=>{if(tok!==speakTok||c.s<0||(e.name&&e.name!=='word'))return;const pos=c.s+Math.round(e.charIndex/Math.max(1,txt.length)*c.t.length);let f=null;for(const x of sp){if(+x.dataset.s<=pos)f=x;else break}clearSay();if(f)f.classList.add('say')};
-  u.onend=()=>{clearTimeout(wd);if(tok!==speakTok)return;i++;/[.!?:]\s*$/.test(c.t.trim())?setTimeout(next,170):next()};
-  u.onerror=e=>{clearTimeout(wd);if(tok!==speakTok)return;if(e.error==='interrupted'||e.error==='canceled')return;
-   if(!retried){retried=true;useVoice=null;vstat('Voice error ('+e.error+') – retrying with default voice…');setTimeout(()=>{if(tok===speakTok)next()},80)}
-   else{vstat('⚠ Speech failed: '+e.error);clearInterval(keepAlive)}};
-  speechSynthesis.speak(u)}
- vstat('Starting voice…');setTimeout(()=>{if(tok===speakTok)next()},90)}
+  u.onboundary=e=>{
+   if(tok!==speakTok||c.s<0||(e.name&&e.name!=='word'))return;
+   const pos=c.s+Math.round(e.charIndex/Math.max(1,txt.length)*c.t.length);
+   let f=null;for(const x of sp){if(+x.dataset.s<=pos)f=x;else break}
+   clearSay();if(f)f.classList.add('say');
+  };
+  u.onend=()=>{clearTimeout(wd);if(tok!==speakTok)return;i++; /[.!?:]\s*$/.test(c.t.trim())?setTimeout(next, mobile?120:170):next()};
+  u.onerror=e=>{
+   clearTimeout(wd);if(tok!==speakTok)return;
+   if(e.error==='interrupted'||e.error==='canceled')return;
+   if(!retried){
+    retried=true;useVoice=null;
+    vstat('Voice error ('+e.error+') – retrying default…');
+    setTimeout(()=>{if(tok===speakTok)next()}, mobile?40:80);
+   } else {
+    vstat('⚠ Speech failed: '+(e.error||'unknown'));
+    clearInterval(keepAlive);
+    toast('Speech failed on this device. Try Chrome/Safari, raise volume, tap 🔈 Test voice.');
+   }
+  };
+  try{ speechSynthesis.speak(u); }
+  catch(err){ clearTimeout(wd); vstat('⚠ Speech error'); toast('Could not start speech: '+(err&&err.message||err)); }
+ }
+ vstat('Starting voice…');
+ // iOS/Safari: must speak inside the user-gesture call stack when possible
+ if(mobile){ next(); }
+ else { setTimeout(()=>{if(tok===speakTok)next()},50); }
+}
 /* unlock audio on first user touch (Safari/Chrome autoplay policy) */
-let unlocked=false;function unlock(){if(unlocked||!('speechSynthesis' in window))return;unlocked=true;try{const u=new SpeechSynthesisUtterance(' ');u.volume=0;speechSynthesis.speak(u)}catch(e){}}
-document.addEventListener('pointerdown',unlock,{once:true});document.addEventListener('keydown',unlock,{once:true});
-$('bTest').onclick=()=>{unlock();const keep=S.lesson;S.lesson={target:{},steps:[{title:'Voice test',body:'Hello, I am Professor Garrf Anna. If you can hear me clearly, your voice is working. Press Continue to hear each step of the lesson.'}],idx:0,fullText:''};
- speak.test=true;speak();speak.test=false;S.lesson=keep}
+let unlocked=false;
+function unlock(force){
+ if(!('speechSynthesis' in window)) return;
+ if(unlocked&&!force) return;
+ unlocked=true;
+ try{ loadVoices(); }catch(e){}
+ try{
+  // iOS needs a real utterance in a user gesture; volume 0 is often ignored
+  const u=new SpeechSynthesisUtterance('.');
+  u.volume=0.01; u.rate=1; u.pitch=1;
+  if(voices[0]){ u.voice=voices[0]; u.lang=voices[0].lang; }
+  else u.lang='en-US';
+  speechSynthesis.speak(u);
+  // cancel quickly so user does not hear a click (Android may still need a tick)
+  setTimeout(()=>{ try{ if(!speechSynthesis.speaking) return; /* leave if real speech started */ }catch(e){} }, 0);
+ }catch(e){}
+}
+['pointerdown','touchstart','click','keydown'].forEach(ev=>{
+ document.addEventListener(ev,function onceUnlock(){ unlock(false); },{once:true,passive:true,capture:true});
+});
+$('bTest').onclick=()=>{
+ unlock(true);
+ const keep=S.lesson;
+ S.lesson={target:{},steps:[{title:'Voice test',body:'Hello, I am Professor Garrf Anna. If you can hear me clearly, your voice is working.'}],idx:0,fullText:''};
+ speak.test=true;speak();speak.test=false;S.lesson=keep;
+};
 /* ---------- listening: voice questions and commands ---------- */
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;let rec=null;
 function voiceCmd(t){t=t.toLowerCase().replace(/[.,!?]/g,'').trim();
@@ -1504,8 +1603,17 @@ $('pPrev').onclick=()=>showPage(S.page-1);$('pNext').onclick=()=>showPage(S.page
 $('zIn').onclick=()=>{S.zoom=Math.min(3,S.zoom+.15);showPage(S.page)};$('zOut').onclick=()=>{S.zoom=Math.max(.4,S.zoom-.15);showPage(S.page)};
 $('bPrev').onclick=()=>{stopSpeech();if(S.lesson&&S.lesson.idx>0){S.lesson.idx--;renderStep()}};
 $('bNext').onclick=()=>{stopSpeech();if(S.lesson&&S.lesson.idx<S.lesson.steps.length-1){S.lesson.idx++;renderStep()}};
-$('bRep').onclick=()=>{renderStep(true);speak()};$('bSay').onclick=speak;$('bStop').onclick=stopSpeech;$('bSum').onclick=summarise;
-$('bPause').onclick=()=>{if(!('speechSynthesis' in window))return;if(speechSynthesis.paused){speechSynthesis.resume();$('bPause').textContent='⏸ Pause'}else if(speechSynthesis.speaking){speechSynthesis.pause();$('bPause').textContent='▶ Resume'}};
+$('bRep').onclick=()=>{unlock(true);renderStep(true);speak()};
+$('bSay').onclick=()=>{unlock(true);speak()};
+$('bStop').onclick=stopSpeech;$('bSum').onclick=summarise;
+$('bPause').onclick=()=>{
+ if(!('speechSynthesis' in window))return;
+ unlock(true);
+ try{
+  if(speechSynthesis.paused){speechSynthesis.resume();$('bPause').textContent='⏸ Pause'}
+  else if(speechSynthesis.speaking){speechSynthesis.pause();$('bPause').textContent='▶ Resume'}
+ }catch(e){}
+};
 $('level').onchange=e=>{S.level=e.target.value;if(S.lesson&&S.lesson.target&&S.lesson.target.kind!=='question')openTarget(S.lesson.target)};
 $('qGo').onclick=()=>ask($('q').value);$('q').onkeydown=e=>{if(e.key==='Enter')ask($('q').value)};
 $('cfgBtn').onclick=()=>{$('cfgUrl').value=CFG.endpoint;$('dlg').showModal()};
@@ -2841,47 +2949,62 @@ async function ocRenderSlide(){
 
 function ocSpeakCurrent(){
  const s=OC.slides[OC.idx]; if(!s)return;
- stopSpeech();
+ // Soft stop: cancel current speech without killing the mobile audio session harder than needed
+ try{ speakTok++; clearInterval(keepAlive); if('speechSynthesis' in window) speechSynthesis.cancel(); }catch(e){}
+ clearSay();
  const body=s.speak||s.bullets.join('. ');
  const keep=S.lesson;
  S.lesson={target:{},steps:[{title:s.title,body:body}],idx:0,fullText:body};
+ unlock(true);
  speak();
  S.lesson=keep;
  clearInterval(OC._chk);
+ clearTimeout(OC.timer);
+ // Auto-advance when speech finishes. Short gap on mobile so the engine stays warm.
+ const gap=isMobileUA()?600:1600;
  OC._chk=setInterval(()=>{
-  if(!speechSynthesis.speaking&&!speechSynthesis.pending){
-   clearInterval(OC._chk);
-   if(OC.playing&&!OC.paused) OC.timer=setTimeout(()=>{if(OC.playing&&!OC.paused) ocNext(true)},2000);
+  if(!('speechSynthesis' in window)) return;
+  if(speechSynthesis.speaking||speechSynthesis.pending) return;
+  clearInterval(OC._chk);
+  if(OC.playing&&!OC.paused){
+   OC.timer=setTimeout(()=>{
+    if(OC.playing&&!OC.paused) ocNext(true);
+   }, gap);
   }
- },500);
+ },400);
 }
 function ocNext(auto){
  if(OC.idx>=OC.slides.length-1){ OC.playing=false; $('ocStatus').textContent='Class finished'; $('ocStart').textContent='▶ Start Class'; return }
  OC.idx++;
  ocRenderSlide();
  if(auto){ if(OC.playing&&!OC.paused) ocSpeakCurrent(); }
- else ocSpeakCurrent();
+ else { unlock(true); ocSpeakCurrent(); }
 }
-function ocPrev(){ stopSpeech(); clearTimeout(OC.timer); if(OC.idx>0){ OC.idx--; ocRenderSlide(); } }
+function ocPrev(){ stopSpeech(); clearTimeout(OC.timer); clearInterval(OC._chk); if(OC.idx>0){ OC.idx--; ocRenderSlide(); } }
 function ocStart(){
  if(!OC.slides.length) return;
- unlock();
+ unlock(true);
  OC.playing=true; OC.paused=false;
  $('ocStart').textContent='▶ Playing…';
- $('ocStatus').textContent='Teaching…';
+ $('ocStatus').textContent=isMobileUA()?'Teaching… (raise media volume)':'Teaching…';
  $('ocPause').textContent='⏸ Pause';
  ocRenderSlide();
  ocSpeakCurrent();
 }
 function ocPause(){
  if(!('speechSynthesis' in window)) return;
+ unlock(true);
  if(OC.paused){
-  OC.paused=false; speechSynthesis.resume();
+  OC.paused=false;
+  try{ speechSynthesis.resume(); }catch(e){}
   $('ocPause').textContent='⏸ Pause'; $('ocStatus').textContent='Teaching…';
-  if(OC.playing) OC.timer=setTimeout(()=>{if(OC.playing&&!OC.paused) ocNext(true)},1200);
+  // If nothing is speaking after resume, restart current slide speech (helps mobile)
+  setTimeout(()=>{
+   if(OC.playing&&!OC.paused&&!speechSynthesis.speaking&&!speechSynthesis.pending) ocSpeakCurrent();
+  }, 200);
  } else {
-  OC.paused=true; clearTimeout(OC.timer);
-  if(speechSynthesis.speaking) speechSynthesis.pause();
+  OC.paused=true; clearTimeout(OC.timer); clearInterval(OC._chk);
+  try{ if(speechSynthesis.speaking) speechSynthesis.pause(); }catch(e){}
   $('ocPause').textContent='▶ Resume'; $('ocStatus').textContent='Paused';
  }
 }
