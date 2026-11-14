@@ -160,36 +160,64 @@ h1{
 .call-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 800; padding: 4px 8px; border-radius: 4px; background: #e2e8f0; color: #64748b; }
 .call-badge.active { background: #dcfce7; color: #166534; }
 
-/* Timer Display & Bar for Button 10 */
+/* Recording Controls Panel for Button 10 */
 #timerContainer {
   display: none;
   width: 100%;
-  margin-top: 10px;
+  margin-top: 12px;
   background: #fff;
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: 1.5px solid #16a34a;
+  padding: 14px;
+  border-radius: 12px;
+  border: 2px solid #16a34a;
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.2);
 }
 .timer-header {
   display: flex;
   justify-content: space-between;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 800;
   color: #166534;
-  margin-bottom: 5px;
+  margin-bottom: 8px;
 }
 #timerTrack {
   width: 100%;
   background: #e2e8f0;
   border-radius: 6px;
   overflow: hidden;
-  height: 10px;
+  height: 12px;
+  margin-bottom: 12px;
 }
 #timerBar {
   width: 100%;
   height: 100%;
   background: #16a34a;
   transition: width 1s linear;
+}
+.rec-action-buttons {
+  display: flex;
+  gap: 10px;
+}
+.btn-stop-send {
+  flex: 1;
+  background: #16a34a;
+  color: #fff;
+  border: none;
+  padding: 10px;
+  border-radius: 8px;
+  font-weight: 800;
+  cursor: pointer;
+  font-size: 13px;
+}
+.btn-cancel-rec {
+  flex: 1;
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  padding: 10px;
+  border-radius: 8px;
+  font-weight: 800;
+  cursor: pointer;
+  font-size: 13px;
 }
 
 .grid-2col{
@@ -372,18 +400,22 @@ footer strong{display:block; margin-bottom:4px;}
         <option value="bn-IN">🇮🇳 বাংলা (Bengali)</option>
         <option value="gu-IN">🇮🇳 ગુજરાતી (Gujarati)</option>
         <option value="pa-IN">🇮🇳 ਪੰਜਾਬੀ (Punjabi)</option>
-        <option value="ml-IN">🇮🇳 മലയാളം (Malayalam)</option>
+        <option value="ml-IN">🇮 മലയാളം (Malayalam)</option>
       </select>
     </div>
 
-    <!-- Live Timer Display & Bar for Button 10 -->
+    <!-- Interactive Recording Panel with Stop & Send and Cancel Buttons -->
     <div id="timerContainer">
       <div class="timer-header">
-        <span id="timerLabel">🔴 Recording Voice Message...</span>
+        <span id="timerLabel">🔴 Recording Voice Note...</span>
         <span id="timerCountdown">30s</span>
       </div>
       <div id="timerTrack">
         <div id="timerBar"></div>
+      </div>
+      <div class="rec-action-buttons">
+        <button class="btn-stop-send" onclick="stopAndSendVoiceMessage()">⏹️ STOP & SEND</button>
+        <button class="btn-cancel-rec" onclick="cancelVoiceMessage()">❌ CANCEL</button>
       </div>
     </div>
     
@@ -447,7 +479,7 @@ footer strong{display:block; margin-bottom:4px;}
 
       <div class="notice-box">
         Your enquiry is not sent merely by filling the form. You review your details first and explicitly choose whether to send the prepared email.<br>
-        <strong>Tip:</strong> Press <strong>9</strong> to talk to Prakruthi interactively, or <strong>10</strong> to record a voice message (up to 30 seconds with live countdown timer) sent via Telegram.
+        <strong>Tip:</strong> Press <strong>9</strong> to talk to Prakruthi interactively, or <strong>10</strong> to record a voice message (up to 30 seconds with live countdown and Stop/Send controls) sent via Telegram.
       </div>
     </section>
 
@@ -510,7 +542,7 @@ let mediaRecorder = null;
 let audioChunks = [];
 let recordingInterval = null;
 
-// ========== LANGUAGE DATA (10 Indian Languages) ==========
+// ========== STRICT LANGUAGE DATA (10 Indian Languages) ==========
 const languageData = {
   'en-IN': {
     greeting: "Hello, I am Prakruthi, AI Assistant to Dr. Venu Gopal Madhav Annamdas, Founder of GARRF Foundation. Please choose one of the options from 1 to 8 on the keypad, press 9 to continue talking, press 10 for a Voice Message to the Founder, or press 11 to Reset.",
@@ -686,23 +718,22 @@ async function notifyTelegram(payload) {
   }
 }
 
-// ========== ROBUST LOW-PITCHED INDIAN FEMALE VOICE CONFIGURATION ==========
+// ========== STRICT SINGLE-LANGUAGE VOICE CONFIGURATION ==========
 function loadPrakruthiVoice() {
   if (!('speechSynthesis' in window)) return;
   const voices = speechSynthesis.getVoices();
-  const langCode = currentLang.split('-')[0];
+  const langCode = currentLang.split('-')[0]; // e.g. 'hi', 'te', 'ta', 'en'
   
+  // Find voice strictly matching the currently selected language
   let matchedVoice = voices.find(v => 
     v.lang.toLowerCase().includes(langCode) && 
     (v.name.toLowerCase().includes('female') || 
      v.name.toLowerCase().includes('google') || 
      v.name.toLowerCase().includes('natural') || 
      v.name.toLowerCase().includes('zira') || 
-     v.name.toLowerCase().includes('heera') || 
      v.name.toLowerCase().includes('kalpana') || 
      v.name.toLowerCase().includes('lekha') || 
-     v.name.toLowerCase().includes('puja') || 
-     v.name.toLowerCase().includes('veena')) &&
+     v.name.toLowerCase().includes('puja')) &&
     !v.name.toLowerCase().includes('male')
   );
 
@@ -710,11 +741,7 @@ function loadPrakruthiVoice() {
     matchedVoice = voices.find(v => v.lang.toLowerCase().includes(langCode));
   }
 
-  if (!matchedVoice) {
-    matchedVoice = voices.find(v => v.lang.includes('IN') && (v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('google')));
-  }
-
-  prakruthiVoice = matchedVoice || voices[0] || null;
+  prakruthiVoice = matchedVoice || null;
 }
 
 if ('speechSynthesis' in window) {
@@ -728,7 +755,7 @@ function speak(text) {
     if (!('speechSynthesis' in window)) { resolve(); return; }
     
     speechSynthesis.cancel();
-    loadPrakruthiVoice();
+    loadPrakruthiVoice(); // Refresh voice based on currentLang
 
     let resolved = false;
     const done = () => {
@@ -740,10 +767,12 @@ function speak(text) {
     };
 
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = currentLang;
-    if (prakruthiVoice) utterance.voice = prakruthiVoice;
+    utterance.lang = currentLang; // STRICTLY forces browser to use the selected language locale
+    if (prakruthiVoice) {
+      utterance.voice = prakruthiVoice;
+    }
     utterance.rate = 0.9;
-    utterance.pitch = 0.88; // Natural, low-pitched, warm sweet female tone
+    utterance.pitch = 0.88; // Low-pitched, warm sweet female tone
     utterance.onend = done;
     utterance.onerror = done;
 
@@ -919,7 +948,7 @@ function focusKeypad() {
   document.getElementById('keypadCard').scrollIntoView({ behavior: 'smooth' });
 }
 
-// ========== BUTTON 10: ACTUAL VOICE RECORDING WITH LIVE COUNTDOWN TIMER ==========
+// ========== BUTTON 10: ACTUAL VOICE RECORDING WITH LIVE COUNTDOWN & STOP/SEND CONTROLS ==========
 async function startVoiceMessageFlow() {
   if (!callActive) return;
 
@@ -979,9 +1008,9 @@ async function startVoiceMessageFlow() {
         };
 
         mediaRecorder.start();
-        document.getElementById('statusText').textContent = "🔴 Recording voice note... Speak now (Press any key to stop early)";
+        document.getElementById('statusText').textContent = "🔴 Recording voice note... Speak now";
 
-        // Live Countdown Timer setup
+        // Live Countdown Timer setup (30 seconds)
         let timeLeft = 30;
         const timerContainer = document.getElementById('timerContainer');
         const timerBar = document.getElementById('timerBar');
@@ -989,6 +1018,7 @@ async function startVoiceMessageFlow() {
 
         if (timerContainer && timerBar && timerCountdown) {
           timerContainer.style.display = 'block';
+          timerBar.style.transition = 'none';
           timerBar.style.width = '100%';
           timerCountdown.textContent = timeLeft + 's';
 
@@ -1004,15 +1034,12 @@ async function startVoiceMessageFlow() {
 
             if (timeLeft <= 0) {
               clearInterval(recordingInterval);
+              if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+              }
             }
           }, 1000);
         }
-
-        dmTimer = setTimeout(() => {
-          if (mediaRecorder && mediaRecorder.state === 'recording') {
-            mediaRecorder.stop();
-          }
-        }, 30000);
 
       } catch (err) {
         console.error("Mic error:", err);
@@ -1021,6 +1048,26 @@ async function startVoiceMessageFlow() {
       }
     });
   });
+}
+
+function stopAndSendVoiceMessage() {
+  clearTimeout(dmTimer);
+  clearInterval(recordingInterval);
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    mediaRecorder.stop();
+  }
+}
+
+function cancelVoiceMessage() {
+  clearTimeout(dmTimer);
+  clearInterval(recordingInterval);
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    mediaRecorder.stop();
+  }
+  const timerContainer = document.getElementById('timerContainer');
+  if (timerContainer) timerContainer.style.display = 'none';
+  addChatMsg("Voice message cancelled.");
+  if (callActive) setKeypadState(true);
 }
 
 // ========== BUTTON 9: CONTINUE TALKING (Interactive Step-by-Step Flow) ==========
@@ -1169,7 +1216,7 @@ function startListening(callback) {
   }
 
   recognition = new SpeechRecognition();
-  recognition.lang = currentLang;
+  recognition.lang = currentLang; // STRICTLY follows selected language
   recognition.interimResults = false;
   recognition.maxAlternatives = 1;
   recognition.continuous = false;
@@ -1212,16 +1259,6 @@ function stopListening() {
 // ========== KEYPAD / FORM ==========
 function selectOption(num) {
   if (!callActive) return;
-
-  // If user presses any keypad button while recording voice message 10, stop early and send
-  if (mediaRecorder && mediaRecorder.state === 'recording') {
-    clearTimeout(dmTimer);
-    mediaRecorder.stop();
-    const timerContainer = document.getElementById('timerContainer');
-    if (timerContainer) timerContainer.style.display = 'none';
-    return;
-  }
-
   resetInactivityTimer();
   const langTexts = languageData[currentLang] || languageData['en-IN'];
 
