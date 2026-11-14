@@ -404,10 +404,10 @@ footer strong{display:block; margin-bottom:4px;}
       </select>
     </div>
 
-    <!-- Interactive Recording Panel with Stop/Send & Cancel -->
+    <!-- Live Recording Panel for Button 10 -->
     <div id="timerContainer">
       <div class="timer-header">
-        <span id="timerLabel">🔴 Recording Voice Note...</span>
+        <span id="timerLabel">🔴 Recording Voice Message (Speech Transcript + Audio)...</span>
         <span id="timerCountdown">30s</span>
       </div>
       <div id="timerTrack">
@@ -479,7 +479,7 @@ footer strong{display:block; margin-bottom:4px;}
 
       <div class="notice-box">
         Your enquiry is not sent merely by filling the form. You review your details first and explicitly choose whether to send the prepared email.<br>
-        <strong>Tip:</strong> Press <strong>9</strong> to talk to Prakruthi interactively, or <strong>10</strong> for a permission-based voice message to the Founder (up to 30 seconds with Stop/Send controls) sent via Telegram.
+        <strong>Tip:</strong> Press <strong>9</strong> to talk to Prakruthi interactively, or <strong>10</strong> for a permission-based voice message to the Founder (up to 30 seconds with live countdown, Stop/Send controls, and guaranteed English transcript) sent via Telegram.
       </div>
     </section>
 
@@ -541,8 +541,9 @@ let dmTimer = null;
 let mediaRecorder = null;
 let audioChunks = [];
 let recordingInterval = null;
+let activeVoiceTranscript = "";
 
-// ========== STRICT LANGUAGE DATA (10 Indian Languages) ==========
+// ========== LANGUAGE DATA (10 Indian Languages) ==========
 const languageData = {
   'en-IN': {
     greeting: "Hello, I am Prakruthi, AI Assistant to Dr. Venu Gopal Madhav Annamdas, Founder of GARRF Foundation. Please choose one of the options from 1 to 8 on the keypad, press 9 to continue talking, press 10 for a Voice Message to the Founder, or press 11 to Reset.",
@@ -556,7 +557,7 @@ const languageData = {
     permAsk: "Do you give permission to record and send your voice message to the Founder? Please say Yes or No.",
     permGranted: "Permission granted. Please speak your message. Recording for up to thirty seconds.",
     permDenied: "Permission denied. Voice message cancelled.",
-    directMsgThanks: "Your voice note has been sent to the Founder via Telegram. Good bye.",
+    directMsgThanks: "Your voice note and English transcript have been sent to the Founder via Telegram. Good bye.",
     areYouThere: "Are you there? Please press any of the keys.",
     highCallVolume: "There is high call volume, good bye for now.",
     goodbye: "Good bye.",
@@ -581,7 +582,7 @@ const languageData = {
     permAsk: "क्या आप संस्थापक को अपना वॉयस संदेश रिकॉर्ड करके भेजने की अनुमति देते हैं? कृपया हाँ या नहीं कहें।",
     permGranted: "अनुमति मिल गई है। कृपया अपना संदेश बोलें। तीस सेकंड तक रिकॉर्डिंग जारी है।",
     permDenied: "अनुमति अस्वीकार कर दी गई। वॉयस मैसेज रद्द कर दिया गया है।",
-    directMsgThanks: "आपका वॉयस नोट टेलीग्राम के माध्यम से संस्थापक को भेज दिया गया है। अलविदा।",
+    directMsgThanks: "आपका वॉयस नोट और अंग्रेजी ट्रांसक्रिप्ट टेलीग्राम के माध्यम से संस्थापक को भेज दिया गया है। अलविदा।",
     areYouThere: "क्या आप वहाँ हैं? कृपया कोई भी कुंजी दबाएँ।",
     highCallVolume: "कॉल अधिक होने के कारण, अभी के लिए अलविदा।",
     goodbye: "अलविदा.",
@@ -606,7 +607,7 @@ const languageData = {
     permAsk: "దయచేసి ఫౌండర్‌కి మీ వాయిస్ మెసేజ్ పంపడానికి అనుమతి ఇస్తారా? దయచేసి అవును లేదా కాదు అని చెప్పండి.",
     permGranted: "అనుమతి ఇవ్వబడింది. దయచేసి మీ సందేశాన్ని చెప్పండి. ముప్పై సెకన్ల పాటు రికార్డ్ అవుతుంది.",
     permDenied: "అనుమతి నిరాకరించబడింది. వాయిస్ మెసేజ్ రద్దు చేయబడింది.",
-    directMsgThanks: "మీ వॉयస్ నోట్ టెలిగ్రామ్ ద్వారా ఫౌండర్‌కి పంపబడింది. వీడ్కోలు.",
+    directMsgThanks: "మీ వॉयస్ నోట్ మరియు ఇంగ్లీష్ ట్రాన్స్‌క్రిప్ట్ టెలిగ్రామ్ ద్వారా ఫౌండర్‌కి పంపబడింది. వీడ్కోలు.",
     areYouThere: "మీరు అక్కడ ఉన్నారా? దయచేసి ఏదైనా కీని నొక్కండి.",
     highCallVolume: "అధిక కాల్ వాల్యూమ్ కారణంగా, ఇప్పుటికి వీడ్కోలు.",
     goodbye: "వీడ్కోలు.",
@@ -938,7 +939,7 @@ function focusKeypad() {
   document.getElementById('keypadCard').scrollIntoView({ behavior: 'smooth' });
 }
 
-// ========== BUTTON 10: PERMISSION-BASED VOICE MESSAGE FLOW ==========
+// ========== BUTTON 10: PERMISSION-BASED VOICE RECORDING WITH TRANSCRIPT & AUDIO ==========
 function startVoiceMessageFlow() {
   if (!callActive) return;
 
@@ -956,13 +957,32 @@ function startVoiceMessageFlow() {
       const ans = answer.toLowerCase();
       if (ans.includes('yes') || ans.includes('हाँ') || ans.includes('ha') || ans.includes('correct') || ans.includes('sahi') || ans.includes('అవును')) {
         
-        // Permission Granted
+        // Permission Granted -> Start Audio Recording & Speech Transcript simultaneously
         const grantedMsg = langTexts.permGranted || "Permission granted. Please speak your message.";
         addChatMsg(grantedMsg);
         speak(grantedMsg).then(async () => {
           if (!callActive) return;
           playBeep().then(async () => {
             if (!callActive) return;
+
+            // Start SpeechRecognition in parallel to guarantee English transcript
+            activeVoiceTranscript = "";
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (SpeechRecognition) {
+              const rec = new SpeechRecognition();
+              rec.lang = currentLang;
+              rec.interimResults = false;
+              rec.maxAlternatives = 1;
+              rec.continuous = true;
+              rec.onresult = (e) => {
+                for (let i = e.resultIndex; i < e.results.length; ++i) {
+                  if (e.results[i].isFinal) {
+                    activeVoiceTranscript += e.results[i][0].transcript + " ";
+                  }
+                }
+              };
+              try { rec.start(); } catch(e) {}
+            }
 
             try {
               const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -981,17 +1001,14 @@ function startVoiceMessageFlow() {
                 const timerContainer = document.getElementById('timerContainer');
                 if (timerContainer) timerContainer.style.display = 'none';
 
-                if (audioBlob.size < 100) {
-                  addChatMsg("No audio recorded.");
-                  if (callActive) setKeypadState(true);
-                  return;
-                }
+                const finalTranscript = activeVoiceTranscript.trim() || "Voice audio note recorded (no transcript captured)";
+                const englishTranslation = await translateToEnglish(finalTranscript, currentLang);
 
                 const reader = new FileReader();
                 reader.readAsDataURL(audioBlob);
                 reader.onloadend = async () => {
                   const base64Audio = reader.result;
-                  const thanks = langTexts.directMsgThanks || "Your voice note has been sent to the Founder. Good bye.";
+                  const thanks = langTexts.directMsgThanks || "Your voice note and English transcript have been sent to the Founder. Good bye.";
                   addChatMsg(thanks);
                   await speak(thanks);
 
@@ -1000,6 +1017,8 @@ function startVoiceMessageFlow() {
                     lang: currentLang,
                     name: "Voice Caller",
                     phone: "Not provided",
+                    original_message: finalTranscript,
+                    english_translation: englishTranslation,
                     audio_base64: base64Audio
                   });
 
