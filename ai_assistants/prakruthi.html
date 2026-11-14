@@ -220,23 +220,25 @@ h1{
   font-size: 13px;
 }
 
-/* Email Input Prompt Modal Box for Button 9 */
-#emailPromptBox {
+/* Yellow Manual Fallback Input Box */
+#yellowInputBox {
   display: none;
   margin-top: 15px;
-  background: #f0fdf4;
-  border: 2px solid #16a34a;
-  padding: 16px;
+  background: #fef08a;
+  border: 2px solid #eab308;
+  padding: 18px;
   border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(234, 179, 8, 0.3);
 }
-#emailPromptBox input {
+#yellowInputBox input {
   width: 100%;
-  padding: 10px;
+  padding: 12px;
   margin-top: 8px;
-  margin-bottom: 10px;
-  border: 1px solid #d2e3dc;
+  margin-bottom: 12px;
+  border: 1.5px solid #ca8a04;
   border-radius: 6px;
-  font-size: 14px;
+  font-size: 15px;
+  background: #fff;
 }
 
 .grid-2col{
@@ -437,11 +439,11 @@ footer strong{display:block; margin-bottom:4px;}
       </div>
     </div>
 
-    <!-- Email Input Prompt Modal Box for Button 9 -->
-    <div id="emailPromptBox">
-      <strong>📧 Please enter your email address:</strong>
-      <input type="email" id="userInputEmail" placeholder="e.g., yourname@domain.com">
-      <button class="btn-control btn-primary" onclick="submitUserEmail()">SUBMIT EMAIL</button>
+    <!-- YELLOW Manual Fallback Input Box for Voice Failures -->
+    <div id="yellowInputBox">
+      <strong id="yellowBoxTitle" style="color: #854d0e; font-size: 14px; display: block; margin-bottom: 6px;">⚠️ Manual Input (Voice Not Detected):</strong>
+      <input type="text" id="yellowUserInput" placeholder="Type here...">
+      <button class="btn-control btn-primary" onclick="submitYellowInput()" style="background:#ca8a04; color:#fff;">SUBMIT</button>
     </div>
     
     <div class="status-bar">
@@ -566,6 +568,7 @@ let dmTimer = null;
 let mediaRecorder = null;
 let audioChunks = [];
 let recordingInterval = null;
+let yellowInputResolve = null;
 
 let voicePermissionGranted = false;
 const hasVoiceSupport = ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
@@ -587,7 +590,7 @@ const languageData = {
     optionSelected: "Option {num}, {title} selected. Please complete the form details.",
     formReady: "Form details ready. Please confirm to prepare your email.",
     postEmailPrompt: "Once submitted, you can either press 11 to reset or cut the call. Thank you!",
-    founderBio: "Our Founder is Dr. Venu Gopal Madhav Annamdas, Former Singapore Senior Scientist at Nanyang Technological University. He spent two decades abroad with rich academic and industrial experience. He studied in India, Singapore, and the USA. He is a Project Management Professional from the Project Management Institute, Pennsylvania, USA. He founded this GopalKrishna Advanced Rural Research Foundation for empowering Engineering students, especially rural. He is supported by people from 30 worldwide universities.",
+    founderBio: "Our Founder is Dr. Venu Gopal Madhav Annamdas, Former Singapore Senior Scientist at Nanyang Technological University.",
     ringing: "Connecting to Prakruthi... please wait.",
     callConnected: "Call connected. You may now use the keypad.",
     directMsgStart: "Please record your voice message for the Founder. Recording for up to forty seconds.",
@@ -598,62 +601,59 @@ const languageData = {
     askName: "Please tell me your name.",
     askPhone: "Please share your phone number.",
     askPurpose: "Please state your purpose or query.",
-    askPref: "How would you like your query answered? Please say Phone or Email.",
-    askEmailInput: "Please type your email address in the box provided on screen.",
     confirmName: "I heard your name as {val}. Is this correct? Say Yes or No.",
     confirmPhone: "I heard your phone number as {val}. Is this correct? Say Yes or No.",
     confirmBoth: "You have provided Name as {name} and Phone number as {phone}. Is this correct? Say Yes or No.",
+    retryConfirm: "I did not hear you clearly. Could you please tell me if this is correct, Yes or No.",
     finalOutro: "I have your details. You will be reached out soon on your phone number. Thanks for calling. Good bye.",
-    voiceFallback: "Voice input is currently unavailable. Please select any option from 1 to 8 on the keypad to submit your enquiry through our form."
+    voiceFallback: "Voice input is currently unavailable."
   },
   'hi-IN': {
-    greeting: "जीएआरआर फाउंडेशन में आपका स्वागत है, मैं प्रकृति हूँ, डॉ. वेणु गोपाल माधव अन्नामदास की एआई सहायक। मैं आपकी कैसे सहायता कर सकती हूँ?",
-    reset: "विकल्प रीसेट हो गए हैं। कृपया 1 से 11 तक का नंबर चुनें।",
-    optionSelected: "विकल्प {num}, {title} चुना गया है। कृपया फॉर्म का विवरण भरें।",
-    formReady: "फॉर्म विवरण तैयार है। ईमेल भेजने के लिए पुष्टि करें।",
-    postEmailPrompt: "सबमिट करने के बाद, आप 11 दबा सकते हैं या कॉल काट सकते हैं। धन्यवाद!",
+    greeting: "जीएआरआर फाउंडेशन में आपका स्वागत है, मैं प्रकृति हूँ, डॉ. वेणु गोपाल माधव अन्नामदास की एआई सहायक।",
+    reset: "विकल्प रीसेट हो गए हैं।",
+    optionSelected: "विकल्प {num}, {title} चुना गया है।",
+    formReady: "फॉर्म तैयार है।",
+    postEmailPrompt: "धन्यवाद!",
     founderBio: "हमारे संस्थापक डॉ. वेणु गोपाल माधव अन्नामदास हैं।",
-    ringing: "प्रकृति से कनेक्ट हो रहा है... कृपया प्रतीक्षा करें。",
+    ringing: "कनेक्ट हो रहा है...",
     callConnected: "कॉल कनेक्ट हो गई है।",
-    directMsgStart: "कृपया संस्थापक के लिए अपना वॉयस मैसेज रिकॉर्ड करें। चालीस सेकंड तक रिकॉर्डिंग जारी है।",
-    directMsgThanks: "आपका वॉयस मैसेज भेज दिया गया है। अलविदा।",
+    directMsgStart: "कृपया संस्थापक के लिए अपना वॉयस मैसेज रिकॉर्ड करें।",
+    directMsgThanks: "आपका वॉयस मैसेज भेज दिया गया है।",
     areYouThere: "क्या आप वहाँ हैं?",
-    highCallVolume: "कॉल अधिक होने के कारण, अभी के लिए अलविदा。",
+    highCallVolume: "अलविदा।",
     goodbye: "अलविदा.",
     askName: "कृपया अपना नाम बताएं।",
     askPhone: "कृपया अपना फोन नंबर बताएं।",
-    askPurpose: "कृपया अपना उद्देश्य या प्रश्न बताएं।",
-    askPref: "आप अपना उत्तर कैसे प्राप्त करना चाहते हैं? फोन या ईमेल कहें।",
-    askEmailInput: "कृपया अपना ईमेल टाइप करें।",
+    askPurpose: "कृपया अपना उद्देश्य बताएं।",
     confirmName: "मैंने आपका नाम {val} सुना। क्या यह सही है? हाँ या नहीं कहें।",
     confirmPhone: "मैंने आपका फोन नंबर {val} सुना। क्या यह सही है? हाँ या नहीं कहें।",
     confirmBoth: "आपका नाम {name} और फोन नंबर {phone} है। क्या यह सही है? हाँ या नहीं कहें।",
-    finalOutro: "मुझे आपके विवरण मिल गए हैं। जल्द ही आपके फोन नंबर पर संपर्क किया जाएगा। धन्यवाद। अलविदा।",
+    retryConfirm: "मैंने आपको स्पष्ट रूप से नहीं सुना। क्या यह सही है, हाँ या नहीं।",
+    finalOutro: "मुझे आपके विवरण मिल गए हैं। जल्द ही संपर्क किया जाएगा। धन्यवाद।",
     voiceFallback: "वॉयस इनपुट अनुपलब्ध है।"
   },
   'te-IN': {
-    greeting: "GARR ఫౌండేషన్‌కు స్వాగతం, నేను ప్రకృతిని, డా. వేణుగోపాల్ మాధవ్ అన్నందాస్ గారి AI అసిస్టెంట్‌ని. నేను మీకు ఎలా సహాయపడగలను?",
+    greeting: "GARR ఫౌండేషన్‌కు స్వాగతం, నేను ప్రకృతిని, డా. వేణుగోపాల్ మాధవ్ అన్నందాస్ గారి AI అసిస్టెంట్‌ని.",
     reset: "ఎంపికలు రీసెట్ చేయబడ్డాయి.",
     optionSelected: "ఎంపిక {num}, {title} ఎంచుకోబడింది.",
-    formReady: "ఫార్మ్ వివరాలు సిద్ధంగా ఉన్నాయి.",
+    formReady: "ఫార్మ్ సిద్ధంగా ఉంది.",
     postEmailPrompt: "ధన్యవాదాలు!",
     founderBio: "మా ఫౌండర్ డా. వేణుగోపాల్ మాధవ్ అన్నందాస్.",
     ringing: "కనెక్ట్ అవుతోంది...",
     callConnected: "కాల్ కనెక్ట్ అయింది.",
-    directMsgStart: "దయచేసి ఫౌండర్‌కి మీ వాయిస్ మెసేజ్ రికార్డ్ చేయండి.",
-    directMsgThanks: "మీ వాయిస్ మెసేజ్ పంపబడింది. వీడ్కోలు.",
+    directMsgStart: "దయచేసి మీ వాయిస్ మెసేజ్ రికార్డ్ చేయండి.",
+    directMsgThanks: "మీ వాయిస్ మెసేజ్ పంపబడింది.",
     areYouThere: "మీరు అక్కడ ఉన్నారా?",
     highCallVolume: "వీడ్కోలు.",
     goodbye: "వీడ్కోలు.",
     askName: "దయచేసి మీ పేరు చెప్పండి.",
     askPhone: "దయచేసి మీ ఫోన్ నంబర్ చెప్పండి.",
-    askPurpose: "దయచేసి మీ ఉద్దేశ్యం లేదా ప్రశ్నను చెప్పండి.",
-    askPref: "ఫోన్ లేదా ఇమెయిల్ చెప్పండి.",
-    askEmailInput: "దయచేసి ఇమెయిల్ టైప్ చేయండి.",
-    confirmName: "నేను మీ పేరు {val} గా విన్నాను. ఇది సరైనదేనా? అవును లేదా కాదు చెప్పండి.",
-    confirmPhone: "నేను మీ ఫోన్ నంబర్ {val} గా విన్నాను. ఇది సరైనదేనా? అవును లేదా కాదు చెప్పండి.",
+    askPurpose: "దయచేసి మీ ఉద్దేశ్యం చెప్పండి.",
+    confirmName: "నేను మీ పేరు {val} గా విన్నాను. ఇది సరైనదా? అవును లేదా కాదు చెప్పండి.",
+    confirmPhone: "నేను మీ ఫోన్ నంబర్ {val} గా విన్నాను. ఇది సరైనదా? అవును లేదా కాదు చెప్పండి.",
     confirmBoth: "మీ పేరు {name} మరియు ఫోన్ నంబర్ {phone}. ఇది సరైనదా? అవును లేదా కాదు చెప్పండి.",
-    finalOutro: "నా వద్ద మీ వివరాలు ఉన్నాయి. త్వరలో మీ ఫోన్ నంబర్‌కు సంప్రదిస్తారు. ధన్యవాదాలు. వీడ్కోలు.",
+    retryConfirm: "నేను మీ మాట స్పష్టంగా వినలేదు. ఇది సరైనదా, అవును లేదా కాదు.",
+    finalOutro: "నా వద్ద మీ వివరాలు ఉన్నాయి. త్వరలో సంప్రదిస్తారు. ధన్యవాదాలు.",
     voiceFallback: "వాయిస్ ఇన్‌పుట్ అందుబాటులో లేదు."
   }
 };
@@ -934,7 +934,6 @@ async function startVoice() {
   document.getElementById('statusText').textContent = langTexts.ringing || "Connecting to Prakruthi... please wait.";
   addChatMsg(langTexts.ringing || "Connecting to Prakruthi... please wait.");
 
-  // Play ringing tone first for 3.2 seconds
   await playRingingTone(3200);
 
   if (!callActive) return;
@@ -954,7 +953,73 @@ async function startVoice() {
   });
 }
 
-// ========== ROBUST VOICE INPUT & VERIFICATION FLOW FOR BUTTONS 9 & 10 ==========
+// ========== ROBUST 3-4s VOICE CONFIRMATION & YELLOW MANUAL FALLBACK ==========
+async function promptForYesNo(promptText) {
+  if (!callActive) return true; // Default to true if call stopped
+  await speak(promptText);
+  if (!callActive) return true;
+
+  // Listen for 3-4 seconds for Yes / No
+  let spokenResult = await listenWithTimeout(4000);
+  
+  if (isYes(spokenResult)) return true;
+  if (isNo(spokenResult)) return false;
+
+  // If not understood within 4.5s, ask once more with short wait
+  const langTexts = languageData[currentLang] || languageData['en-IN'];
+  await speak(langTexts.retryConfirm || "I did not hear you clearly. Is this correct, Yes or No.");
+  if (!callActive) return true;
+
+  spokenResult = await listenWithTimeout(4000);
+  if (isYes(spokenResult)) return true;
+  if (isNo(spokenResult)) return false;
+
+  // Fallback: Show YELLOW Manual Input Box without hesitation
+  return await promptYellowManualInput(promptText);
+}
+
+function isYes(text) {
+  if (!text) return false;
+  const t = text.toLowerCase();
+  return t.includes('yes') || t.includes('haan') || t.includes('हाँ') || t.includes('ha') || t.includes('ya') || t.includes('అవును') || t.includes('సరే') || t.includes('ஆம்') || t.includes('ஆமாம்');
+}
+
+function isNo(text) {
+  if (!text) return false;
+  const t = text.toLowerCase();
+  return t.includes('no') || t.includes('nah') || t.includes('nahi') || t.includes('नहीं') || t.includes('na') || t.includes('కాదు') || t.includes('இல்லை');
+}
+
+function promptYellowManualInput(labelPrompt) {
+  return new Promise((resolve) => {
+    if (!callActive) { resolve(true); return; }
+    const yellowBox = document.getElementById('yellowInputBox');
+    const yellowInput = document.getElementById('yellowUserInput');
+    const yellowTitle = document.getElementById('yellowBoxTitle');
+
+    yellowTitle.textContent = `⚠️ Voice not detected. Please type confirmation / value:`;
+    yellowInput.value = "";
+    yellowBox.style.display = 'block';
+    yellowInput.focus();
+
+    yellowInputResolve = (val) => {
+      yellowBox.style.display = 'none';
+      resolve(isYes(val) || val.trim().length > 0);
+    };
+  });
+}
+
+function submitYellowInput() {
+  const yellowInput = document.getElementById('yellowUserInput');
+  const val = yellowInput.value.trim();
+  if (yellowInputResolve) {
+    const fn = yellowInputResolve;
+    yellowInputResolve = null;
+    fn(val);
+  }
+}
+
+// ========== VOICE INPUT FLOW FOR BUTTONS 9 & 10 ==========
 async function startVoiceInputFlow(optionType) {
   if (!callActive || !voicePermissionGranted || !hasVoiceSupport) return;
 
@@ -974,41 +1039,28 @@ async function askAndVerifyName(langTexts, optionType) {
   await speak(askN);
   if (!callActive) return;
 
-  startListening(async (nameRes) => {
-    if (!callActive) return;
-    if (!nameRes || nameRes.trim() === "") {
-      addChatMsg("I didn't catch your name. Let's try again.");
-      await speak("I didn't catch your name. Let's try again.");
-      if (callActive) askAndVerifyName(langTexts, optionType);
-      return;
-    }
-    callerInfo.name = nameRes;
+  let nameRes = await listenWithTimeout(7000);
+  if (!nameRes || nameRes.trim() === "") {
+    // Fallback to Yellow box for name
+    nameRes = await promptYellowManualInput("Please enter your name:");
+    if (typeof nameRes === 'boolean') nameRes = "Caller";
+  }
+  callerInfo.name = nameRes;
 
-    // Confirm Name
-    const confirmNMsg = (langTexts.confirmName || "I heard your name as {val}. Is this correct? Say Yes or No.").replace('{val}', callerInfo.name);
-    addChatMsg(confirmNMsg);
-    await speak(confirmNMsg);
-    if (!callActive) return;
+  // Confirm Name
+  const confirmNMsg = (langTexts.confirmName || "I heard your name as {val}. Is this correct? Say Yes or No.").replace('{val}', callerInfo.name);
+  addChatMsg(confirmNMsg);
+  
+  let isNameOk = await promptForYesNo(confirmNMsg);
+  if (!isNameOk) {
+    addChatMsg("Let's re-enter your name.");
+    await speak("Let's re-enter your name.");
+    if (callActive) askAndVerifyName(langTexts, optionType);
+    return;
+  }
 
-    startListening(async (ans1) => {
-      if (!callActive) return;
-      if (!ans1) {
-        addChatMsg("No response received. Let's re-enter your name.");
-        await speak("Let's re-enter your name.");
-        if (callActive) askAndVerifyName(langTexts, optionType);
-        return;
-      }
-
-      if (ans1.toLowerCase().includes('yes') || ans1.includes('हाँ') || ans1.includes('ha') || ans1.includes('అవును')) {
-        // Proceed to Phone Number
-        await askAndVerifyPhone(langTexts, optionType);
-      } else {
-        addChatMsg("Let's re-enter your name.");
-        await speak("Let's re-enter your name.");
-        if (callActive) askAndVerifyName(langTexts, optionType);
-      }
-    }, 8000); // 8s timeout for confirmation
-  }, 10000); // 10s timeout for name speech
+  // Proceed to Phone Number even if confirmation fails or succeeds (robust continuation)
+  await askAndVerifyPhone(langTexts, optionType);
 }
 
 async function askAndVerifyPhone(langTexts, optionType) {
@@ -1018,41 +1070,27 @@ async function askAndVerifyPhone(langTexts, optionType) {
   await speak(askP);
   if (!callActive) return;
 
-  startListening(async (phoneRes) => {
-    if (!callActive) return;
-    if (!phoneRes || phoneRes.trim() === "") {
-      addChatMsg("I didn't catch your phone number. Let's try again.");
-      await speak("I didn't catch your phone number. Let's try again.");
-      if (callActive) askAndVerifyPhone(langTexts, optionType);
-      return;
-    }
-    callerInfo.phone = phoneRes;
+  let phoneRes = await listenWithTimeout(7000);
+  if (!phoneRes || phoneRes.trim() === "") {
+    phoneRes = await promptYellowManualInput("Please enter your phone number:");
+    if (typeof phoneRes === 'boolean') phoneRes = "Not provided";
+  }
+  callerInfo.phone = phoneRes;
 
-    // Confirm Phone
-    const confirmPMsg = (langTexts.confirmPhone || "I heard your phone number as {val}. Is this correct? Say Yes or No.").replace('{val}', callerInfo.phone);
-    addChatMsg(confirmPMsg);
-    await speak(confirmPMsg);
-    if (!callActive) return;
+  // Confirm Phone
+  const confirmPMsg = (langTexts.confirmPhone || "I heard your phone number as {val}. Is this correct? Say Yes or No.").replace('{val}', callerInfo.phone);
+  addChatMsg(confirmPMsg);
 
-    startListening(async (ans2) => {
-      if (!callActive) return;
-      if (!ans2) {
-        addChatMsg("No response received. Let's re-enter your phone number.");
-        await speak("Let's re-enter your phone number.");
-        if (callActive) askAndVerifyPhone(langTexts, optionType);
-        return;
-      }
+  let isPhoneOk = await promptForYesNo(confirmPMsg);
+  if (!isPhoneOk) {
+    addChatMsg("Let's re-enter your phone number.");
+    await speak("Let's re-enter your phone number.");
+    if (callActive) askAndVerifyPhone(langTexts, optionType);
+    return;
+  }
 
-      if (ans2.toLowerCase().includes('yes') || ans2.includes('हाँ') || ans2.includes('ha') || ans2.includes('అవును')) {
-        // Now Repeat Both Together and Finalize
-        await confirmBothNameAndPhone(langTexts, optionType);
-      } else {
-        addChatMsg("Let's re-enter your phone number.");
-        await speak("Let's re-enter your phone number.");
-        if (callActive) askAndVerifyPhone(langTexts, optionType);
-      }
-    }, 8000);
-  }, 10000);
+  // Final Double Confirmation: Repeat both Name and Phone together
+  await confirmBothNameAndPhone(langTexts, optionType);
 }
 
 async function confirmBothNameAndPhone(langTexts, optionType) {
@@ -1062,31 +1100,19 @@ async function confirmBothNameAndPhone(langTexts, optionType) {
     .replace('{phone}', callerInfo.phone);
 
   addChatMsg(confirmBothMsg);
-  await speak(confirmBothMsg);
-  if (!callActive) return;
-
-  startListening(async (ans3) => {
-    if (!callActive) return;
-    if (!ans3) {
-      addChatMsg("No response received. Let's re-verify your details.");
-      await speak("Let's re-verify your details.");
-      if (callActive) askAndVerifyName(langTexts, optionType);
-      return;
+  
+  let isBothOk = await promptForYesNo(confirmBothMsg);
+  if (isBothOk) {
+    if (optionType === 9) {
+      await executeContinueTalkingFlow(langTexts);
+    } else if (optionType === 10) {
+      await executeVoiceMessageFlow(langTexts);
     }
-
-    if (ans3.toLowerCase().includes('yes') || ans3.includes('हाँ') || ans3.includes('ha') || ans3.includes('అవును')) {
-      // Verified successfully! Proceed based on option 9 or 10
-      if (optionType === 9) {
-        await executeContinueTalkingFlow(langTexts);
-      } else if (optionType === 10) {
-        await executeVoiceMessageFlow(langTexts);
-      }
-    } else {
-      addChatMsg("Information rejected. Please press button 9 or 10 to restart.");
-      await speak("Information rejected. Please press button 9 or 10 to restart.");
-      setKeypadState(true);
-    }
-  }, 8000);
+  } else {
+    addChatMsg("Information rejected. Please press button 9 or 10 to restart.");
+    await speak("Information rejected. Please press button 9 or 10 to restart.");
+    setKeypadState(true);
+  }
 }
 
 // ========== BUTTON 9 SUB-FLOW: QUERY & OUTRO ==========
@@ -1097,27 +1123,29 @@ async function executeContinueTalkingFlow(langTexts) {
   await speak(askPurp);
   if (!callActive) return;
 
-  startListening(async (purpRes) => {
-    if (!callActive) return;
-    callerInfo.purpose = purpRes || "Not specified";
+  let purpRes = await listenWithTimeout(10000);
+  if (!purpRes || purpRes.trim() === "") {
+    purpRes = await promptYellowManualInput("Please enter your query or purpose:");
+    if (typeof purpRes === 'boolean') purpRes = "General query";
+  }
+  callerInfo.purpose = purpRes;
 
-    const outro = langTexts.finalOutro || "I have your details. You will be reached out soon on your phone number. Thanks for calling. Good bye.";
-    addChatMsg(outro);
+  const outro = langTexts.finalOutro || "I have your details. You will be reached out soon on your phone number. Thanks for calling. Good bye.";
+  addChatMsg(outro);
 
-    const engQuery = await translateToEnglish(callerInfo.purpose, currentLang);
+  const engQuery = await translateToEnglish(callerInfo.purpose, currentLang);
 
-    await notifyTelegram({
-      type: "interactive_detailed_query",
-      lang: currentLang,
-      name: callerInfo.name,
-      phone: callerInfo.phone,
-      purpose: callerInfo.purpose,
-      english_translation: engQuery
-    });
+  await notifyTelegram({
+    type: "interactive_detailed_query",
+    lang: currentLang,
+    name: callerInfo.name,
+    phone: callerInfo.phone,
+    purpose: callerInfo.purpose,
+    english_translation: engQuery
+  });
 
-    await speak(outro);
-    stopVoice();
-  }, 12000);
+  await speak(outro);
+  stopVoice();
 }
 
 // ========== BUTTON 10 SUB-FLOW: 40s RECORDING & AUTO SEND ==========
@@ -1164,7 +1192,11 @@ async function executeVoiceMessageFlow(langTexts) {
       const timerContainer = document.getElementById('timerContainer');
       if (timerContainer) timerContainer.style.display = 'none';
 
-      const rawText = parallelTranscript.trim() || "Voice audio note recorded (no speech transcript detected)";
+      let rawText = parallelTranscript.trim();
+      if (!rawText) {
+        rawText = await promptYellowManualInput("Voice note transcript empty. Type message for Founder:");
+        if (typeof rawText === 'boolean') rawText = "Voice message recorded";
+      }
       const englishTranslation = await translateToEnglish(rawText, currentLang);
 
       const reader = new FileReader();
@@ -1257,63 +1289,75 @@ function cancelVoiceMessage() {
   if (callActive) setKeypadState(true);
 }
 
-function startListening(callback, timeoutMs = 10000) {
-  stopListening();
-  if (!callActive || !voicePermissionGranted || !hasVoiceSupport) return;
-  
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) {
-    addChatMsg("Speech recognition is not supported on this browser.");
-    if (callback) callback("");
-    return;
-  }
-
-  recognition = new SpeechRecognition();
-  recognition.lang = currentLang;
-  recognition.interimResults = false;
-  recognition.maxAlternatives = 1;
-  recognition.continuous = false;
-  
-  isListening = true;
-  document.getElementById('statusText').textContent = "🎤 Listening... Speak now";
-
-  let timeoutTriggered = false;
-  const safetyTimer = setTimeout(() => {
-    if (isListening) {
-      timeoutTriggered = true;
-      stopListening();
-      document.getElementById('statusText').textContent = "Listening timed out.";
-      if (callback) callback("");
+function listenWithTimeout(timeoutMs = 4000) {
+  return new Promise((resolve) => {
+    stopListening();
+    if (!callActive || !voicePermissionGranted || !hasVoiceSupport) {
+      resolve("");
+      return;
     }
-  }, timeoutMs);
-  
-  recognition.onresult = (event) => {
-    if (!callActive) return;
-    clearTimeout(safetyTimer);
-    const transcript = event.results[0][0].transcript;
-    isListening = false;
-    document.getElementById('statusText').textContent = "Processing...";
-    addChatMsg("You said: " + transcript);
-    if (callback) callback(transcript);
-  };
-  
-  recognition.onerror = () => {
-    if (!callActive || timeoutTriggered) return;
-    clearTimeout(safetyTimer);
-    isListening = false;
-    document.getElementById('statusText').textContent = "Listening error. Try again.";
-    if (callback) callback("");
-  };
-  
-  recognition.onend = () => { isListening = false; };
-  
-  try { 
-    if (callActive) recognition.start(); 
-  } catch (e) { 
-    clearTimeout(safetyTimer);
-    addChatMsg("Microphone error."); 
-    if (callback) callback("");
-  }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      resolve("");
+      return;
+    }
+
+    recognition = new SpeechRecognition();
+    recognition.lang = currentLang;
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.continuous = false;
+
+    isListening = true;
+    document.getElementById('statusText').textContent = "🎤 Listening... Speak now";
+
+    let resolved = false;
+    const safetyTimer = setTimeout(() => {
+      if (!resolved) {
+        resolved = true;
+        stopListening();
+        document.getElementById('statusText').textContent = "Listening timed out.";
+        resolve("");
+      }
+    }, timeoutMs);
+
+    recognition.onresult = (event) => {
+      if (!callActive) return;
+      if (!resolved) {
+        resolved = true;
+        clearTimeout(safetyTimer);
+        const transcript = event.results[0][0].transcript;
+        isListening = false;
+        document.getElementById('statusText').textContent = "Processing...";
+        addChatMsg("You said: " + transcript);
+        resolve(transcript);
+      }
+    };
+
+    recognition.onerror = () => {
+      if (!callActive) return;
+      if (!resolved) {
+        resolved = true;
+        clearTimeout(safetyTimer);
+        isListening = false;
+        document.getElementById('statusText').textContent = "Listening error.";
+        resolve("");
+      }
+    };
+
+    recognition.onend = () => { isListening = false; };
+
+    try {
+      if (callActive) recognition.start();
+    } catch (e) {
+      if (!resolved) {
+        resolved = true;
+        clearTimeout(safetyTimer);
+        resolve("");
+      }
+    }
+  });
 }
 
 function stopListening() {
@@ -1356,6 +1400,8 @@ function stopVoice() {
   if (timerContainer) timerContainer.style.display = 'none';
   const emailBox = document.getElementById('emailPromptBox');
   if (emailBox) emailBox.style.display = 'none';
+  const yellowBox = document.getElementById('yellowInputBox');
+  if (yellowBox) yellowBox.style.display = 'none';
 
   if ('speechSynthesis' in window) {
     speechSynthesis.cancel();
