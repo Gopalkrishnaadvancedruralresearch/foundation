@@ -141,7 +141,6 @@ h1{
 }
 
 .btn-neutral{background:#dbebe2; color:var(--dark-green);}
-.btn-perm-granted { background: #dcfce7 !important; color: #166534 !important; border: 1px solid #16a34a !important; }
 
 .lang-select{
   padding:11px 14px;
@@ -391,16 +390,12 @@ footer strong{display:block; margin-bottom:4px;}
   <section class="card">
     <div class="badge">GARRF AI ASSISTANT</div>
     <h1>Prakruthi</h1>
-    <p class="hero-p">A warm, mobile-friendly AI assistant to Dr. Venu Gopal Madhav Annamdas, Founder of GARRF Foundation. Press "CALL PRAKRUTHI" to automatically request microphone permission and connect your call.</p>
+    <p class="hero-p">A warm, mobile-friendly AI assistant to Dr. Venu Gopal Madhav Annamdas, Founder of GARRF Foundation. Click "CALL PRAKRUTHI" to start your call.</p>
     
     <div class="controls">
       <button class="btn-control btn-primary" id="callBtn" onclick="startVoice()">
         <svg viewBox="0 0 24 24"><path d="M6.62 10.79a15.053 15.053 0 006.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
         <span id="callBtnText">CALL PRAKRUTHI</span>
-      </button>
-
-      <button class="btn-control btn-neutral" id="permBtn" onclick="requestVoicePermission()">
-        🎙️ VOICE PERMISSION
       </button>
 
       <button class="btn-control btn-light" id="endCallBtn" onclick="stopVoice()">
@@ -450,7 +445,7 @@ footer strong{display:block; margin-bottom:4px;}
     </div>
     
     <div class="status-bar">
-      <div class="status-text" id="statusText">Press "CALL PRAKRUTHI" to request microphone permission and start your call.</div>
+      <div class="status-text" id="statusText">Press "CALL PRAKRUTHI" to start your call.</div>
       <div class="call-badge" id="callBadge">● STANDBY</div>
     </div>
   </section>
@@ -509,7 +504,7 @@ footer strong{display:block; margin-bottom:4px;}
 
       <div class="notice-box">
         Your enquiry is not sent merely by filling the form. You review your details first and explicitly choose whether to send the prepared email.<br>
-        <strong>Tip:</strong> Pressing <strong>CALL PRAKRUTHI</strong> automatically requests voice permission before connecting. If voice permission is denied, buttons <strong>9 & 10</strong> stay disabled, while options <strong>1 to 8 and 11</strong> remain active.
+        <strong>Tip:</strong> Clicking <strong>CALL PRAKRUTHI</strong> automatically asks for microphone permission. If permission is granted, buttons 9 & 10 are fully enabled. If denied, options 1 to 8 remain fully functional.
       </div>
     </section>
 
@@ -846,61 +841,35 @@ function resetInactivityTimer() {
   }, 30000);
 }
 
-// ========== VOICE PERMISSION HANDLER ==========
-async function requestVoicePermission(silent = false) {
-  const permBtn = document.getElementById('permBtn');
+// ========== AUTOMATIC SILENT MIC CHECK ==========
+async function checkVoicePermissionSilently() {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     voicePermissionGranted = false;
-    permBtn.className = "btn-control btn-light";
-    permBtn.textContent = "❌ MIC UNSUPPORTED";
-    if (!silent) {
-      alert("Microphone access is not supported in this browser. Buttons 9 and 10 will remain disabled. Please use options 1 to 8.");
-    }
-    if (callActive) setKeypadState(true);
-    return false;
+    return;
   }
-
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    stream.getTracks().forEach(track => track.stop()); // release stream immediately
-    
+    stream.getTracks().forEach(track => track.stop());
     if (hasVoiceSupport) {
       voicePermissionGranted = true;
-      permBtn.className = "btn-control btn-perm-granted";
-      permBtn.textContent = "✅ VOICE PERMISSION GRANTED";
-      addChatMsg("Voice permission granted successfully!");
-      if (callActive) setKeypadState(true);
-      return true;
     } else {
       voicePermissionGranted = false;
-      permBtn.className = "btn-control btn-light";
-      permBtn.textContent = "⚠️ SPEECH UNSUPPORTED";
-      if (!silent) {
-        alert("Microphone is available, but Speech Recognition is not supported on this browser. Voice buttons 9 & 10 will remain disabled.");
-      }
-      if (callActive) setKeypadState(true);
-      return false;
     }
   } catch (err) {
-    console.warn("Voice permission denied:", err);
     voicePermissionGranted = false;
-    permBtn.className = "btn-control btn-light";
-    permBtn.textContent = "❌ PERMISSION DENIED";
-    addChatMsg("Microphone permission was denied. Proceeding with keypad options 1 to 8 (buttons 9 & 10 disabled).");
-    if (!silent) {
-      alert("Microphone permission was denied. Buttons 9 and 10 will remain disabled. Please use options 1 to 8.");
-    }
-    if (callActive) setKeypadState(true);
-    return false;
   }
 }
+
+// Run silent check on page load
+window.addEventListener('DOMContentLoaded', () => {
+  checkVoicePermissionSilently();
+});
 
 function setKeypadState(enabled) {
   document.querySelectorAll('.keypad-btn').forEach(btn => {
     if (!enabled) {
       btn.disabled = true;
     } else {
-      // If voice permission is not granted or voice absent, disable buttons 9 and 10
       if ((!voicePermissionGranted || !hasVoiceSupport) && (btn.id === 'btn9' || btn.id === 'btn10')) {
         btn.disabled = true;
       } else {
@@ -934,10 +903,17 @@ function changeLanguage() {
 async function startVoice() {
   if (callActive) return;
 
-  // Automatically seek voice permission BEFORE call starts
-  if (!voicePermissionGranted) {
-    document.getElementById('statusText').textContent = "Requesting microphone permission before starting call...";
-    await requestVoicePermission(true);
+  // Automatically request microphone permission seamlessly when the call button is clicked
+  if (!voicePermissionGranted && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(track => track.stop());
+      if (hasVoiceSupport) {
+        voicePermissionGranted = true;
+      }
+    } catch (e) {
+      voicePermissionGranted = false;
+    }
   }
 
   callActive = true;
