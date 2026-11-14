@@ -133,6 +133,12 @@ h1{
 }
 
 .btn-light{background:#faece8; color:#9c3827;}
+.btn-light.pressed-red {
+  background: #dc2626 !important;
+  color: #fff !important;
+  transform: scale(0.96);
+}
+
 .btn-neutral{background:#dbebe2; color:var(--dark-green);}
 .btn-input{background:#1b7a5e; color:#fff;}
 .btn-input:disabled{
@@ -315,7 +321,7 @@ footer strong{display:block; margin-bottom:4px;}
         <span id="callBtnText">CALL PRAKRUTHI</span>
       </button>
 
-      <button class="btn-control btn-light" onclick="stopVoice()">
+      <button class="btn-control btn-light" id="endCallBtn" onclick="stopVoice()">
         <svg viewBox="0 0 24 24"><path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.7.28-.28 0-.53-.11-.71-.29L.29 13.08a.996.996 0 010-1.41C2.97 9.12 7.23 7.5 12 7.5s9.03 1.62 11.71 4.17c.39.39.39 1.02 0 1.41l-2.48 2.48c-.18.18-.43.29-.71.29-.27 0-.52-.11-.7-.28-.79-.73-1.68-1.36-2.66-1.85-.33-.16-.56-.5-.56-.9v-3.1C15.15 9.25 13.6 9 12 9z"/></svg>
         END CALL
       </button>
@@ -659,9 +665,8 @@ async function notifyTelegram(payload) {
 function loadPrakruthiVoice() {
   if (!('speechSynthesis' in window)) return;
   const voices = speechSynthesis.getVoices();
-  const langCode = currentLang.split('-')[0]; // e.g., 'hi', 'te', 'en'
+  const langCode = currentLang.split('-')[0];
   
-  // 1. Prioritize voices matching language and strictly female/google/natural identifiers
   let matchedVoice = voices.find(v => 
     v.lang.toLowerCase().includes(langCode) && 
     (v.name.toLowerCase().includes('female') || 
@@ -676,12 +681,10 @@ function loadPrakruthiVoice() {
     !v.name.toLowerCase().includes('male')
   );
 
-  // 2. Fallback to any voice matching the language code
   if (!matchedVoice) {
     matchedVoice = voices.find(v => v.lang.toLowerCase().includes(langCode));
   }
 
-  // 3. Fallback to Indian English female voice
   if (!matchedVoice) {
     matchedVoice = voices.find(v => v.lang.includes('IN') && (v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('google')));
   }
@@ -827,6 +830,13 @@ async function startVoice() {
 }
 
 function stopVoice() {
+  // Visual Red feedback on End Call button click
+  const endBtn = document.getElementById('endCallBtn');
+  if (endBtn) {
+    endBtn.classList.add('pressed-red');
+    setTimeout(() => endBtn.classList.remove('pressed-red'), 600);
+  }
+
   // Aggressively clear timers, speech, and listening regardless of state flags
   clearTimeout(warningTimer);
   clearTimeout(inactivityTimer);
@@ -838,8 +848,10 @@ function stopVoice() {
   interactiveMode = false;
   stopListening();
 
+  // Force cancel speech synthesis immediately
   if ('speechSynthesis' in window) {
     speechSynthesis.cancel();
+    setTimeout(() => speechSynthesis.cancel(), 50);
   }
 
   const callBtn = document.getElementById('callBtn');
