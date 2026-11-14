@@ -160,6 +160,24 @@ h1{
 .call-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 800; padding: 4px 8px; border-radius: 4px; background: #e2e8f0; color: #64748b; }
 .call-badge.active { background: #dcfce7; color: #166534; }
 
+/* Timer Bar for Button 10 */
+#timerContainer {
+  display: none;
+  width: 100%;
+  background: #e2e8f0;
+  border-radius: 6px;
+  overflow: hidden;
+  height: 10px;
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+#timerBar {
+  width: 100%;
+  height: 100%;
+  background: #16a34a;
+  transition: width linear;
+}
+
 .grid-2col{
   display:grid;
   grid-template-columns:1fr 1fr;
@@ -308,7 +326,7 @@ footer strong{display:block; margin-bottom:4px;}
   <section class="card">
     <div class="badge">GARRF AI ASSISTANT</div>
     <h1>Prakruthi</h1>
-    <p class="hero-p">A warm, mobile-friendly AI assistant to Dr. Venu Gopal Madhav Annamdas, Founder of GARRF Foundation. Use the call controls and keypad options below.</p>
+    <p class="hero-p">A warm, mobile-friendly AI assistant to Dr. Venu Gopal Madhav Annamdas, Founder of GARRF Foundation. Use call controls and keypad options below.</p>
     
     <div class="controls">
       <button class="btn-control btn-primary" id="callBtn" onclick="startVoice()">
@@ -338,6 +356,11 @@ footer strong{display:block; margin-bottom:4px;}
         <option value="pa-IN">🇮🇳 ਪੰਜਾਬੀ (Punjabi)</option>
         <option value="ml-IN">🇮🇳 മലയാളം (Malayalam)</option>
       </select>
+    </div>
+
+    <!-- Timer Bar for Button 10 -->
+    <div id="timerContainer">
+      <div id="timerBar"></div>
     </div>
     
     <div class="status-bar">
@@ -400,7 +423,7 @@ footer strong{display:block; margin-bottom:4px;}
 
       <div class="notice-box">
         Your enquiry is not sent merely by filling the form. You review your details first and explicitly choose whether to send the prepared email.<br>
-        <strong>Tip:</strong> After calling Prakruthi, press <strong>10</strong> for a voice message to the Founder (sent securely with English translation via Telegram) or <strong>11</strong> to Reset.
+        <strong>Tip:</strong> Press <strong>9</strong> to talk to Prakruthi interactively, or <strong>10</strong> to record a voice message (up to 40 seconds with live timer) sent via Telegram.
       </div>
     </section>
 
@@ -460,7 +483,7 @@ let inactivityTimer = null;
 let warningTimer = null;
 let dmTimer = null;
 
-// ========== LANGUAGE DATA ==========
+// ========== LANGUAGE DATA (10 Indian Languages) ==========
 const languageData = {
   'en-IN': {
     greeting: "Hello, I am Prakruthi, AI Assistant to Dr. Venu Gopal Madhav Annamdas, Founder of GARRF Foundation. Please choose one of the options from 1 to 8 on the keypad, press 9 to continue talking, press 10 for a Voice Message to the Founder, or press 11 to Reset.",
@@ -471,14 +494,19 @@ const languageData = {
     founderBio: "Our Founder is Dr. Venu Gopal Madhav Annamdas, Former Singapore Senior Scientist at Nanyang Technological University. He spent two decades abroad with rich academic and industrial experience. He studied in India, Singapore, and the USA. He is a Project Management Professional from the Project Management Institute, Pennsylvania, USA. He founded this GopalKrishna Advanced Rural Research Foundation for empowering Engineering students, especially rural. He is supported by people from 30 worldwide universities.",
     ringing: "Connecting to Prakruthi... please wait.",
     callConnected: "Call connected. You may now use the keypad.",
-    directMsgStart: "You selected Voice Message to Founder. Please speak your message clearly after the beep. You have up to forty seconds.",
-    directMsgRecorded: "I recorded your message. Please tell me your name.",
-    directMsgPhone: "Thank you. Please share your phone number so the Founder can reach you if needed.",
+    directMsgStart: "Please speak your message for the Founder. You have up to forty seconds.",
     directMsgThanks: "Your voice message has been sent to the Founder via Telegram with English translation. Good bye.",
-    btn10Hint: "If you want to send a Voice Message to the Founder, press button 10.",
     areYouThere: "Are you there? Please press any of the keys.",
     highCallVolume: "There is high call volume, good bye for now.",
-    goodbye: "Good bye."
+    goodbye: "Good bye.",
+    askQuery: "Please give me your query.",
+    recordedQuery: "I recorded your query as: {query}. Is this correct? Please say Yes or No.",
+    askName: "Please give me your name.",
+    recordedName: "I recorded your name as: {name}. Is this correct? Please say Yes or No.",
+    askPhone: "Please give me your phone number.",
+    phoneRemind: "Indian phone numbers should be 10 digits. Is this correct or are you calling from overseas?",
+    recordedPhone: "I recorded your phone number as: {phone}. Is this correct? Please say Yes or No.",
+    convThanks: "Thank you. Your query has been recorded and an email is being prepared for the Founder."
   },
   'hi-IN': {
     greeting: "नमस्ते, मैं प्रकृति हूँ। कृपया कीपैड पर 1 से 8 तक का विकल्प चुनें, 9 दबाकर बात जारी रखें, 10 दबाकर संस्थापक को वॉयस मैसेज भेजें, या 11 दबाकर रीसेट करें।",
@@ -489,14 +517,19 @@ const languageData = {
     founderBio: "हमारे संस्थापक डॉ. वेणु गोपाल माधव अन्नामदास हैं, जो नानयांग टेक्नोलॉजिकल यूनिवर्सिटी में सिंगापुर के पूर्व वरिष्ठ वैज्ञानिक रहे हैं।",
     ringing: "प्रकृति से कनेक्ट हो रहा है... कृपया प्रतीक्षा करें।",
     callConnected: "कॉल कनेक्ट हो गई है। अब आप कीपैड का उपयोग कर सकते हैं।",
-    directMsgStart: "आपने संस्थापक को वॉयस मैसेज चुना है। कृपया बीप के बाद अपना संदेश स्पष्ट रूप से बोलें। आपके पास चालीस सेकंड हैं।",
-    directMsgRecorded: "मैंने आपका संदेश दर्ज कर लिया है। कृपया अपना नाम बताएं।",
-    directMsgPhone: "धन्यवाद। कृपया अपना फोन नंबर बताएं।",
+    directMsgStart: "कृपया संस्थापक के लिए अपना संदेश बोलें। आपके पास चालीस सेकंड हैं।",
     directMsgThanks: "आपका वॉयस मैसेज अंग्रेजी अनुवाद के साथ टेलीग्राम के माध्यम से संस्थापक को भेज दिया गया है। अलविदा।",
-    btn10Hint: "यदि आप संस्थापक को वॉयस मैसेज भेजना चाहते हैं तो बटन 10 दबाएं।",
     areYouThere: "क्या आप वहाँ हैं? कृपया कोई भी कुंजी दबाएँ।",
     highCallVolume: "कॉल अधिक होने के कारण, अभी के लिए अलविदा।",
-    goodbye: "अलविदा."
+    goodbye: "अलविदा.",
+    askQuery: "कृपया अपना प्रश्न बताएं।",
+    recordedQuery: "मैंने आपका प्रश्न इस प्रकार दर्ज किया है: {query}। क्या यह सही है? हाँ या नहीं कहें।",
+    askName: "कृपया अपना नाम बताएं।",
+    recordedName: "मैंने आपका नाम इस प्रकार दर्ज किया है: {name}। क्या यह सही है? हाँ या नहीं कहें।",
+    askPhone: "कृपया अपना फोन नंबर बताएं।",
+    phoneRemind: "भारतीय फोन नंबर 10 अंकों के होने चाहिए। क्या यह सही है या आप विदेश से कॉल कर रहे हैं?",
+    recordedPhone: "मैंने फोन नंबर {phone} दर्ज किया। क्या यह सही है? हाँ या नहीं कहें।",
+    convThanks: "धन्यवाद। आपका प्रश्न दर्ज हो गया है और संस्थापक के लिए ईमेल तैयार किया जा रहा है।"
   },
   'te-IN': {
     greeting: "नमस्ते, నేను ప్రకృతిని. ద कृपया 1 నుండి 8 వరకు ఎంచుకోండి, 9 నొక్కి మాట్లాడటం కొనసాగించండి, 10 నొక్కి ఫౌండర్‌కి వాయిస్ మెసేజ్ పంపండి, లేదా 11 నొక్కి రీసెట్ చేయండి.",
@@ -507,14 +540,19 @@ const languageData = {
     founderBio: "మా ఫౌండర్ డా. వేణుగోపాల్ మాధవ్ అన్నందాస్, NTU సింగపూర్ మాజీ సీనియర్ సైంటిస్ట్.",
     ringing: "కనెక్ట్ అవుతోంది... దయచేసి వేచి ఉండండి.",
     callConnected: "కాల్ కనెక్ట్ అయింది. మీరు ఇప్పుడు కీప్యాడ్ ఉపయోగించవచ్చు.",
-    directMsgStart: "మీరు ఫౌండర్‌కి వాయిస్ మెసేజ్ ఎంచుకున్నారు. బీప్ తర్వాత మీ సందేశాన్ని చెప్పండి. మీకు నలభై సెకన్లు ఉన్నాయి.",
-    directMsgRecorded: "నేను మీ సందేశాన్ని రికార్డ్ చేసాను. మీ పేరు చెప్పండి.",
-    directMsgPhone: "ధన్యవాదాలు. మీ ఫోన్ నంబర్ తెలపండి.",
-    directMsgThanks: "మీ వాయిస్ మెసేజ్ ఇంగ్లీష్ అనువాదంతో ఫౌండర్‌కి పంపబడింది. వీడ్కోలు.",
-    btn10Hint: "ఫౌండర్‌కి వాయిస్ మెసేజ్ పంపడానికి బటన్ 10 నొక్కండి.",
+    directMsgStart: "దయచేసి ఫౌండర్‌కి మీ సందేశాన్ని చెప్పండి. మీకు నలభై సెకన్లు ఉన్నాయి.",
+    directMsgThanks: "మీ వॉयస్ మెసేజ్ ఇంగ్లీష్ అనువాదంతో ఫౌండర్‌కి పంపబడింది. వీడ్కోలు.",
     areYouThere: "మీరు అక్కడ ఉన్నారా? దయచేసి ఏదైనా కీని నొక్కండి.",
     highCallVolume: "అధిక కాల్ వాల్యూమ్ కారణంగా, ఇప్పుటికి వీడ్కోలు.",
-    goodbye: "వీడ్కోలు."
+    goodbye: "వీడ్కోలు.",
+    askQuery: "దయచేసి మీ ప్రశ్నను చెప్పండి.",
+    recordedQuery: "నేను మీ ప్రశ్నను ఇలా రికార్డ్ చేసాను: {query}. ఇది సరైనదేనా? అవును లేదా కాదు చెప్పండి.",
+    askName: "దయచేసి మీ పేరు చెప్పండి.",
+    recordedName: "నేను మీ పేరును ఇలా రికార్డ్ చేసాను: {name}. ఇది సరైనదేనా? అవును లేదా కాదు చెప్పండి.",
+    askPhone: "దయచేసి మీ ఫోన్ నంబర్ చెప్పండి.",
+    phoneRemind: "భారతీయ ఫోన్ నంబర్లు 10 అంకెలు ఉండాలి. ఇది సరైనదా లేదా మీరు విదేశాల నుండి కాల్ చేస్తున్నారా?",
+    recordedPhone: "ఫోన్ నంబర్ {phone} రికార్డ్ చేసాను. ఇది సరైనదేనా? అవును లేదా కాదు చెప్పండి.",
+    convThanks: "ధన్యవాదాలు. మీ ప్రశ్న రికార్డ్ చేయబడింది మరియు ఇమెయిల్ సిద్ధం చేయబడుతోంది."
   }
 };
 
@@ -621,12 +659,13 @@ async function notifyTelegram(payload) {
   }
 }
 
-// ========== STRICT INDIAN FEMALE VOICE CONFIGURATION ==========
+// ========== ROBUST LOW-PITCHED INDIAN FEMALE VOICE CONFIGURATION ==========
 function loadPrakruthiVoice() {
   if (!('speechSynthesis' in window)) return;
   const voices = speechSynthesis.getVoices();
-  const langCode = currentLang.split('-')[0];
+  const langCode = currentLang.split('-')[0]; // e.g. 'hi', 'te', 'ta', 'en'
   
+  // 1. Try finding a specific voice matching the language and female/natural markers
   let matchedVoice = voices.find(v => 
     v.lang.toLowerCase().includes(langCode) && 
     (v.name.toLowerCase().includes('female') || 
@@ -641,15 +680,18 @@ function loadPrakruthiVoice() {
     !v.name.toLowerCase().includes('male')
   );
 
+  // 2. Fallback to any voice matching the language code prefix
   if (!matchedVoice) {
     matchedVoice = voices.find(v => v.lang.toLowerCase().includes(langCode));
   }
 
+  // 3. Fallback to Indian English or Hindi female voice
   if (!matchedVoice) {
     matchedVoice = voices.find(v => v.lang.includes('IN') && (v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('google')));
   }
 
-  prakruthiVoice = matchedVoice || voices[0];
+  // 4. Ultimate fallback to first available voice
+  prakruthiVoice = matchedVoice || voices[0] || null;
 }
 
 if ('speechSynthesis' in window) {
@@ -659,8 +701,11 @@ if ('speechSynthesis' in window) {
 
 function speak(text) {
   return new Promise((resolve) => {
+    if (!callActive) { resolve(); return; }
     if (!('speechSynthesis' in window)) { resolve(); return; }
+    
     speechSynthesis.cancel();
+    loadPrakruthiVoice(); // Ensure voices are fresh
 
     let resolved = false;
     const done = () => {
@@ -672,17 +717,21 @@ function speak(text) {
     };
 
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = currentLang;
+    utterance.lang = currentLang; // Ensures correct TTS rendering locale for all 10 languages
     if (prakruthiVoice) utterance.voice = prakruthiVoice;
-    utterance.rate = 0.95;
-    utterance.pitch = 1.05; // Warm, sweet feminine tone
+    utterance.rate = 0.9;
+    utterance.pitch = 0.88; // Natural, low-pitched, warm sweet female tone
     utterance.onend = done;
     utterance.onerror = done;
 
     setTimeout(done, Math.max(3000, text.length * 120));
 
     try {
-      speechSynthesis.speak(utterance);
+      if (callActive) {
+        speechSynthesis.speak(utterance);
+      } else {
+        done();
+      }
     } catch(e) {
       done();
     }
@@ -766,17 +815,22 @@ async function startVoice() {
     console.log("Audio bypass:", err);
   }
 
+  if (!callActive) return; // Immediate check if user cut call during ringing
+
   const connectedMsg = languageData[currentLang].callConnected || "Call connected.";
   addChatMsg(connectedMsg);
 
+  if (!callActive) return;
   const greeting = languageData[currentLang].greeting || languageData['en-IN'].greeting;
   addChatMsg(greeting);
   await speak(greeting);
 
-  const hint = languageData[currentLang].btn10Hint || "If you want to send a Voice Message, press button 10.";
+  if (!callActive) return;
+  const hint = languageData[currentLang].btn10Hint || "If you want to send a Voice Message to the Founder, press button 10.";
   addChatMsg(hint);
   await speak(hint);
 
+  if (!callActive) return;
   notifyTelegram({
     type: "call_started",
     lang: currentLang,
@@ -785,28 +839,36 @@ async function startVoice() {
 }
 
 function stopVoice() {
-  // Turn End Call button red immediately upon press
   const endBtn = document.getElementById('endCallBtn');
   if (endBtn) {
     endBtn.classList.add('pressed-red');
     setTimeout(() => endBtn.classList.remove('pressed-red'), 600);
   }
 
-  // Clear all timers and states immediately
+  // 1. Immediately toggle callActive to false so ongoing async speech loops abort instantly
+  callActive = false;
+
+  // 2. Clear all timers immediately
   clearTimeout(warningTimer);
   clearTimeout(inactivityTimer);
   clearTimeout(dmTimer);
 
   const duration = callStartTime ? Math.round((Date.now() - callStartTime) / 1000) : 0;
-  callActive = int = false;
+  
+  // 3. Stop recognition
   stopListening();
 
-  // Force cancel speech synthesis
+  // 4. Hide timer bar if active
+  const timerContainer = document.getElementById('timerContainer');
+  if (timerContainer) timerContainer.style.display = 'none';
+
+  // 5. Force cancel speech synthesis aggressively
   if ('speechSynthesis' in window) {
     speechSynthesis.cancel();
-    setTimeout(() => speechSynthesis.cancel(), 50);
+    setTimeout(() => speechSynthesis.cancel(), 20);
   }
 
+  // 6. Reset UI buttons and status badges immediately
   const callBtn = document.getElementById('callBtn');
   const callBtnText = document.getElementById('callBtnText');
   const callBadge = document.getElementById('callBadge');
@@ -837,59 +899,275 @@ function focusKeypad() {
   document.getElementById('keypadCard').scrollIntoView({ behavior: 'smooth' });
 }
 
-// ========== VOICE MESSAGE (Button 10) - 40 SECONDS MAX WITH ENGLISH TRANSLATION ==========
+// ========== BUTTON 10: VOICE MESSAGE WITH LIVE TIMER BAR ==========
 function startVoiceMessageFlow() {
   if (!callActive) return;
 
   setKeypadState(false);
-  collectedQuery = "";
-  collectedName = "";
-  collectedPhone = "";
   resetInactivityTimer();
 
-  const startMsg = languageData[currentLang].directMsgStart || "Please speak your voice message for the Founder. You have up to 40 seconds.";
+  const langTexts = languageData[currentLang] || languageData['en-IN'];
+  const startMsg = langTexts.directMsgStart || "Please speak your message for the Founder. You have up to forty seconds.";
   addChatMsg(startMsg);
 
   speak(startMsg).then(() => {
+    if (!callActive) return;
     playBeep().then(() => {
+      if (!callActive) return;
+      
+      const timerContainer = document.getElementById('timerContainer');
+      const timerBar = document.getElementById('timerBar');
+      if (timerContainer && timerBar) {
+        timerContainer.style.display = 'block';
+        timerBar.style.transition = 'none';
+        timerBar.style.width = '100%';
+        setTimeout(() => {
+          if (!callActive) return;
+          timerBar.style.transition = 'width 40s linear';
+          timerBar.style.width = '0%';
+        }, 50);
+      }
+
       dmTimer = setTimeout(() => {
+        if (!callActive) return;
         stopListening();
         finishVoiceMessageTimeLimit();
       }, 40000);
 
-      startListening((transcript) => {
+      // Start speech recognition specifically for recording the message
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        addChatMsg("Speech recognition not supported.");
+        if (timerContainer) timerContainer.style.display = 'none';
+        setKeypadState(true);
+        return;
+      }
+
+      const rec = new SpeechRecognition();
+      rec.lang = currentLang;
+      rec.interimResults = false;
+      rec.maxAlternatives = 1;
+      rec.continuous = false;
+
+      isListening = true;
+      document.getElementById('statusText').textContent = "🎤 Recording voice message... Speak now";
+
+      rec.onresult = async (event) => {
+        if (!callActive) return;
         clearTimeout(dmTimer);
-        collectedQuery = transcript || "No message recorded";
-        proceedAfterVoiceMessage();
-      });
+        if (timerContainer) timerContainer.style.display = 'none';
+        isListening = false;
+
+        const originalMsg = event.results[0][0].transcript;
+        addChatMsg("Recorded message: " + originalMsg);
+
+        const thanks = langTexts.directMsgThanks || "Your voice message has been sent to the Founder with English translation. Good bye.";
+        addChatMsg(thanks);
+        
+        const englishTranslation = await translateToEnglish(originalMsg, currentLang);
+        if (!callActive) return;
+        await speak(thanks);
+
+        if (!callActive) return;
+        await notifyTelegram({
+          type: "voice_message",
+          lang: currentLang,
+          name: "Voice Caller",
+          phone: "Not provided",
+          original_message: originalMsg,
+          english_translation: englishTranslation
+        });
+
+        stopVoice();
+      };
+
+      rec.onerror = () => {
+        if (!callActive) return;
+        isListening = false;
+        clearTimeout(dmTimer);
+        if (timerContainer) timerContainer.style.display = 'none';
+        addChatMsg("Recording timeout or no speech detected. Please press 10 to try again.");
+        speak("No speech detected. Please try again.").then(() => {
+          if (callActive) setKeypadState(true);
+        });
+      };
+
+      try {
+        rec.start();
+      } catch(e) {
+        if (timerContainer) timerContainer.style.display = 'none';
+        setKeypadState(true);
+      }
     });
   });
 }
 
 function finishVoiceMessageTimeLimit() {
+  if (!callActive) return;
   stopListening();
+  const timerContainer = document.getElementById('timerContainer');
+  if (timerContainer) timerContainer.style.display = 'none';
+
   const timeoutMsg = "40 seconds maximum reached. Recording finished.";
   addChatMsg(timeoutMsg);
-  collectedQuery = "Recorded via voice (Max 40s limit reached)";
-  proceedAfterVoiceMessage();
+  
+  (async () => {
+    if (!callActive) return;
+    const langTexts = languageData[currentLang] || languageData['en-IN'];
+    const originalMsg = "Recorded via voice (Max 40s limit reached)";
+    const thanks = langTexts.directMsgThanks || "Your voice message has been sent to the Founder with English translation. Good bye.";
+    addChatMsg(thanks);
+    
+    const englishTranslation = await translateToEnglish(originalMsg, currentLang);
+    if (!callActive) return;
+    await speak(thanks);
+
+    if (!callActive) return;
+    await notifyTelegram({
+      type: "voice_message",
+      lang: currentLang,
+      name: "Voice Caller",
+      phone: "Not provided",
+      original_message: originalMsg,
+      english_translation: englishTranslation
+    });
+
+    stopVoice();
+  })();
 }
 
-function proceedAfterVoiceMessage() {
-  const recorded = languageData[currentLang].directMsgRecorded || "Message recorded. Please tell me your name.";
-  addChatMsg(recorded);
-  speak(recorded).then(() => {
-    startListening((name) => {
-      collectedName = name || "Anonymous";
-      const phoneAsk = languageData[currentLang].directMsgPhone || "Please share your phone number.";
-      addChatMsg(phoneAsk);
-      speak(phoneAsk).then(() => {
-        startListening((phone) => {
-          collectedPhone = phone || "Not provided";
-          finishVoiceMessage();
+// ========== BUTTON 9: CONTINUE TALKING (Interactive Step-by-Step Flow) ==========
+function startContinueTalkingFlow() {
+  if (!callActive) return;
+
+  setKeypadState(false);
+  resetInactivityTimer();
+
+  const langTexts = languageData[currentLang] || languageData['en-IN'];
+  
+  // Step 1: Query
+  const askQ = langTexts.askQuery || "Please give me your query.";
+  addChatMsg(askQ);
+
+  speak(askQ).then(() => {
+    if (!callActive) return;
+    startListening((queryResult) => {
+      if (!callActive) return;
+      if (!queryResult || queryResult.length < 2) {
+        addChatMsg("I didn't catch that. Let's try again.");
+        speak("I didn't catch that. Let's try again.").then(startContinueTalkingFlow);
+        return;
+      }
+
+      const recQMsg = (langTexts.recordedQuery || "I recorded your query as: {query}. Is this correct?").replace('{query}', queryResult);
+      addChatMsg(recQMsg);
+      speak(recQMsg).then(() => {
+        if (!callActive) return;
+        startListening((ans1) => {
+          if (!callActive) return;
+          const a1 = ans1.toLowerCase();
+          if (a1.includes('yes') || a1.includes('हाँ') || a1.includes('ha') || a1.includes('correct') || a1.includes('sahi') || a1.includes('అవును')) {
+            
+            // Step 2: Name
+            const askN = langTexts.askName || "Please give me your name.";
+            addChatMsg(askN);
+            speak(askN).then(() => {
+              if (!callActive) return;
+              startListening((nameResult) => {
+                if (!callActive) return;
+                const userName = nameResult || "Anonymous";
+                const recNMsg = (langTexts.recordedName || "I recorded your name as: {name}. Is this correct?").replace('{name}', userName);
+                addChatMsg(recNMsg);
+                speak(recNMsg).then(() => {
+                  if (!callActive) return;
+                  startListening((ans2) => {
+                    if (!callActive) return;
+                    const a2 = ans2.toLowerCase();
+                    if (a2.includes('yes') || a2.includes('हाँ') || a2.includes('ha') || a2.includes('correct') || a2.includes('sahi') || a2.includes('అవును')) {
+                      
+                      // Step 3: Phone Number
+                      const askP = langTexts.askPhone || "Please give me your phone number.";
+                      addChatMsg(askP);
+                      speak(askP).then(() => {
+                        if (!callActive) return;
+                        startListening(async (phoneResult) => {
+                          if (!callActive) return;
+                          let userPhone = phoneResult || "Not provided";
+                          const digitsOnly = userPhone.replace(/\D/g, '');
+
+                          if (digitsOnly.length > 0 && digitsOnly.length < 10 && !userPhone.toLowerCase().includes('overseas') && !userPhone.toLowerCase().includes('foreign') && !userPhone.toLowerCase().includes('abroad')) {
+                            const remindMsg = langTexts.phoneRemind || "Indian phone numbers should be 10 digits. Is this correct or are you calling from overseas?";
+                            addChatMsg(remindMsg);
+                            if (!callActive) return;
+                            await speak(remindMsg);
+                            
+                            if (!callActive) return;
+                            startListening(async (phoneConfirm) => {
+                              if (!callActive) return;
+                              if (phoneConfirm && phoneConfirm.length > 2) userPhone = phoneConfirm;
+                              await finalizeConversation(queryResult, userName, userPhone);
+                            });
+                          } else {
+                            await finalizeConversation(queryResult, userName, userPhone);
+                          }
+                        });
+                      });
+
+                    } else {
+                      if (!callActive) return;
+                      addChatMsg("Let's re-enter your name.");
+                      speak("Let's re-enter your name.").then(() => startContinueTalkingFlow());
+                    }
+                  });
+                });
+              });
+            });
+
+          } else {
+            if (!callActive) return;
+            addChatMsg("Let's re-enter your query.");
+            speak("Let's re-enter your query.").then(startContinueTalkingFlow);
+          }
         });
       });
     });
   });
+}
+
+async function finalizeConversation(query, name, phone) {
+  if (!callActive) return;
+  const langTexts = languageData[currentLang] || languageData['en-IN'];
+  const thanksMsg = langTexts.convThanks || "Thank you. Your query has been recorded and an email is being prepared for the Founder.";
+  addChatMsg(thanksMsg);
+  
+  const engQuery = await translateToEnglish(query, currentLang);
+  if (!callActive) return;
+  await speak(thanksMsg);
+
+  if (!callActive) return;
+  const subject = "GARRF Voice Enquiry via Prakruthi (Interactive)";
+  let body = `GARRF INTERACTIVE VOICE ENQUIRY\n`;
+  body += `Language: ${currentLang}\n`;
+  body += `==================================\n\n`;
+  body += `Name: ${name}\n\n`;
+  body += `Phone: ${phone}\n\n`;
+  body += `Original Query (${currentLang}):\n${query}\n\n`;
+  body += `English Translation:\n${engQuery}\n\n`;
+  body += `==================================\nSent via Prakruthi AI Assistant`;
+
+  await notifyTelegram({
+    type: "interactive_query",
+    lang: currentLang,
+    name: name,
+    phone: phone,
+    original_message: query,
+    english_translation: engQuery
+  });
+
+  const mailtoUrl = `mailto:founder@garrf.in?cc=venuannamdas1976@gmail.com&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  window.location.href = mailtoUrl;
+
+  stopVoice();
 }
 
 function playBeep() {
@@ -909,29 +1187,9 @@ function playBeep() {
   });
 }
 
-async function finishVoiceMessage() {
-  const thanks = languageData[currentLang].directMsgThanks || "Your voice message has been sent to the Founder with English translation. Good bye.";
-  addChatMsg(thanks);
-  
-  const englishTranslation = await translateToEnglish(collectedQuery, currentLang);
-
-  await speak(thanks);
-
-  await notifyTelegram({
-    type: "voice_message",
-    lang: currentLang,
-    name: collectedName,
-    phone: collectedPhone,
-    original_message: collectedQuery,
-    english_translation: englishTranslation
-  });
-
-  document.getElementById('statusText').textContent = "Voice message sent via Telegram with English translation. Call ending.";
-  stopVoice();
-}
-
 function startListening(callback) {
   stopListening();
+  if (!callActive) return;
   
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition) {
@@ -950,6 +1208,7 @@ function startListening(callback) {
   document.getElementById('statusText').textContent = "🎤 Listening... Speak now";
   
   recognition.onresult = (event) => {
+    if (!callActive) return;
     const transcript = event.results[0][0].transcript;
     isListening = false;
     document.getElementById('statusText').textContent = "Processing...";
@@ -958,16 +1217,18 @@ function startListening(callback) {
   };
   
   recognition.onerror = () => {
+    if (!callActive) return;
     isListening = false;
     document.getElementById('statusText').textContent = "Listening error. Try again.";
-    addChatMsg("Sorry, I could not hear clearly. Please try again.");
-    if (callback) callback("");
   };
   
   recognition.onend = () => { isListening = false; };
   
-  try { recognition.start(); } 
-  catch (e) { addChatMsg("Microphone error. Please allow microphone permissions."); }
+  try { 
+    if (callActive) recognition.start(); 
+  } catch (e) { 
+    addChatMsg("Microphone error. Please allow microphone permissions."); 
+  }
 }
 
 function stopListening() {
@@ -995,10 +1256,7 @@ function selectOption(num) {
   }
 
   if (num === 9) {
-    const contMsg = "Continuing talk. Please use keypad options.";
-    addChatMsg(contMsg);
-    speak(contMsg);
-    setKeypadState(true);
+    startContinueTalkingFlow();
     return;
   }
 
