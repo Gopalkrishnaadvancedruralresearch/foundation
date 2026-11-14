@@ -52,9 +52,13 @@ footer{  background:var(--dark-green);  color:#fff;  text-align:center;  padding
 
 const optionsMap = {  1: { title: "Student Enquiry", fields: ["Full Name", "Institution", "Course / Year", "Message"] },  2: { title: "Faculty Enquiry", fields: ["Full Name", "Department / College", "Research Area", "Message"] },  3: { title: "Freelancer Collaboration", fields: ["Full Name", "Expertise Domain", "Portfolio Link", "Proposal"] },  4: { title: "Know our Founder (Dr. Venu Gopal)", fields: ["Your Name", "Email / Phone", "Direct Message for Founder"] },  5: { title: "Visitor Enquiry", fields: ["Visitor Name", "Purpose of Visit", "Date & Message"] },  6: { title: "Industry Partner", fields: ["Contact Person", "Company Name", "Partnership Proposal"] },  7: { title: "Password Access Request", fields: ["Applicant Name", "Institution", "Reason for Experiment Access"] },  8: { title: "GARRF.IN Staff", fields: ["Staff Name", "Department", "Internal Message"] },  9: { title: "Continue Talking", fields: ["Your Query / Continued Discussion"] },  10: { title: "Voice Message to Founder", fields: ["Your Name", "Phone Number", "Voice Message Content"] },  11: { title: "Reset", fields: [] }};
 
-// ========== TRANSLATION HELPER ==========async function translateToEnglish(text, sourceLang) {  if (!text || sourceLang.startsWith('en')) return text;  try {    const langCode = sourceLang.split('-')[0];    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${langCode}|en`;    const res = await fetch(url);    const data = await res.json();    if (data && data.responseData && data.responseData.translatedText) {      return data.responseData.translatedText;    }  } catch (e) {    console.warn("Translation API warning:", e);  }  return text; // Fallback to original text if offline}
+// ========== TRANSLATION HELPER ==========async function translateToEnglish(text, sourceLang) {  if (!text || sourceLang.startsWith('en')) return text;  try {    const langCode = sourceLang.split('-')[0];    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${langCode}|en`;    const res = await fetch(url);    const data = await res.json();    if (data && data.responseData && data.responseData.translatedText) {      return data.responseData.translatedText;    }  } catch (e) {    console.warn("Translation API warning:", e);  }  return text;}
 
-// ========== RINGING SOUND ==========function playRingingTone(durationMs = 3200) {  return new Promise((resolve) => {    try {      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();      if (audioCtx.state === "suspended") audioCtx.resume();
+// ========== RINGING SOUND WITH FAILSAFE ==========function playRingingTone(durationMs = 3200) {  return new Promise((resolve) => {    let resolved = false;    const finish = () => {      if (!resolved) {        resolved = true;        resolve();      }    };
+    // Failsafe timer so it NEVER gets stuck if audio context fails
+    setTimeout(finish, durationMs + 200);
+
+    try {      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();      if (audioCtx.state === "suspended") audioCtx.resume();
 
       const now = audioCtx.currentTime;      const osc1 = audioCtx.createOscillator();      const osc2 = audioCtx.createOscillator();      const gain = audioCtx.createGain();
 
@@ -64,7 +68,7 @@ const optionsMap = {  1: { title: "Student Enquiry", fields: ["Full Name", "Inst
 
       osc1.connect(gain);      osc2.connect(gain);      gain.connect(audioCtx.destination);      osc1.start(now);      osc2.start(now);      osc1.stop(end);      osc2.stop(end);
 
-      setTimeout(resolve, durationMs + 100);    } catch (e) {      setTimeout(resolve, durationMs);    }  });}
+      setTimeout(finish, durationMs + 50);    } catch (e) {      finish();    }  });}
 
 // ========== TELEGRAM ==========async function notifyTelegram(payload) {  try {    await fetch(WORKER_NOTIFY_URL, {      method: "POST",      headers: { "Content-Type": "application/json" },      body: JSON.stringify(payload)    });  } catch (e) {    console.warn("Telegram notify failed", e);  }}
 
@@ -72,7 +76,7 @@ const optionsMap = {  1: { title: "Student Enquiry", fields: ["Full Name", "Inst
 
 if ('speechSynthesis' in window) {  speechSynthesis.onvoiceschanged = loadPrakruthiVoice;  loadPrakruthiVoice();}
 
-function speak(text) {  return new Promise((resolve) => {    if (!('speechSynthesis' in window)) { resolve(); return; }    speechSynthesis.cancel();    const utterance = new SpeechSynthesisUtterance(text);    utterance.lang = currentLang;    if (prakruthiVoice) utterance.voice = prakruthiVoice;    utterance.rate = 0.9;    utterance.pitch = 0.92; // Sweet female voice with less pitch    utterance.onend = () => { resetInactivityTimer(); resolve(); };    utterance.onerror = () => { resetInactivityTimer(); resolve(); };    speechSynthesis.speak(utterance);  });}
+function speak(text) {  return new Promise((resolve) => {    if (!('speechSynthesis' in window)) { resolve(); return; }    speechSynthesis.cancel();    const utterance = new SpeechSynthesisUtterance(text);    utterance.lang = currentLang;    if (prakruthiVoice) utterance.voice = prakruthiVoice;    utterance.rate = 0.9;    utterance.pitch = 0.92;    utterance.onend = () => { resetInactivityTimer(); resolve(); };    utterance.onerror = () => { resetInactivityTimer(); resolve(); };    speechSynthesis.speak(utterance);  });}
 
 function resetInactivityTimer() {  if (!callActive && !interactiveMode) return;  clearTimeout(warningTimer);  clearTimeout(inactivityTimer);
 
@@ -90,7 +94,8 @@ async function startVoice() {  if (callActive) return;
 
   document.getElementById('statusText').textContent = "📞 Ringing Prakruthi...";  const ringMsg = languageData[currentLang].ringing || "Connecting to Prakruthi... please wait.";  addChatMsg(ringMsg);
 
-  await playRingingTone(3200);
+  // Failsafe ringing tone execution
+  try {    await playRingingTone(3200);  } catch(err) {    console.log("Audio bypass:", err);  }
 
   callActive = true;  interactiveMode = false;  callStartTime = Date.now();  setKeypadState(true);  document.getElementById('inputBtn').disabled = false;
   document.getElementById('statusText').textContent = `Call Connected to Prakruthi (${currentLang})`;  resetInactivityTimer();
@@ -152,7 +157,6 @@ function proceedAfterVoiceMessage() {  const recorded = languageData[currentLang
 function playBeep() {  return new Promise((resolve) => {    try {      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();      if (audioCtx.state === "suspended") audioCtx.resume();      const osc = audioCtx.createOscillator();      const gain = audioCtx.createGain();      osc.frequency.value = 880;      gain.gain.value = 0.15;      osc.connect(gain);      gain.connect(audioCtx.destination);      osc.start();      setTimeout(() => { osc.stop(); resolve(); }, 180);    } catch (e) { resolve(); }  });}
 
 async function finishVoiceMessage() {  const thanks = languageData[currentLang].directMsgThanks || "Your voice message has been sent to the Founder with English translation. Good bye.";  addChatMsg(thanks);  
-  // Translate the voice message text into English if spoken in another language
   const englishTranslation = await translateToEnglish(collectedQuery, currentLang);
 
   await speak(thanks);
