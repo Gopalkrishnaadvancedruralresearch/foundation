@@ -141,6 +141,7 @@ h1{
 }
 
 .btn-neutral{background:#dbebe2; color:var(--dark-green);}
+.btn-perm-granted { background: #dcfce7 !important; color: #166534 !important; border: 1px solid #16a34a !important; }
 
 .lang-select{
   padding:11px 14px;
@@ -159,6 +160,85 @@ h1{
 .status-text{font-size:12px; color:var(--mid-green); font-weight: 600;}
 .call-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 800; padding: 4px 8px; border-radius: 4px; background: #e2e8f0; color: #64748b; }
 .call-badge.active { background: #dcfce7; color: #166534; }
+
+/* 40-Second Recording Control Panel for Button 10 */
+#timerContainer {
+  display: none;
+  width: 100%;
+  margin-top: 12px;
+  background: #fff;
+  padding: 14px;
+  border-radius: 12px;
+  border: 2px solid #16a34a;
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.2);
+}
+.timer-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 800;
+  color: #166534;
+  margin-bottom: 8px;
+}
+#timerTrack {
+  width: 100%;
+  background: #e2e8f0;
+  border-radius: 6px;
+  overflow: hidden;
+  height: 12px;
+  margin-bottom: 12px;
+}
+#timerBar {
+  width: 100%;
+  height: 100%;
+  background: #16a34a;
+  transition: width 1s linear;
+}
+.rec-action-buttons {
+  display: flex;
+  gap: 10px;
+}
+.btn-stop-send {
+  flex: 1;
+  background: #16a34a;
+  color: #fff;
+  border: none;
+  padding: 10px;
+  border-radius: 8px;
+  font-weight: 800;
+  cursor: pointer;
+  font-size: 13px;
+}
+.btn-cancel-rec {
+  flex: 1;
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  padding: 10px;
+  border-radius: 8px;
+  font-weight: 800;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+/* Email Input Prompt Modal Box for Button 9 */
+#emailPromptBox {
+  display: none;
+  margin-top: 15px;
+  background: #f0fdf4;
+  border: 2px solid #16a34a;
+  padding: 16px;
+  border-radius: 12px;
+}
+#emailPromptBox input {
+  width: 100%;
+  padding: 10px;
+  margin-top: 8px;
+  margin-bottom: 10px;
+  border: 1px solid #d2e3dc;
+  border-radius: 6px;
+  font-size: 14px;
+}
 
 .grid-2col{
   display:grid;
@@ -311,12 +391,16 @@ footer strong{display:block; margin-bottom:4px;}
   <section class="card">
     <div class="badge">GARRF AI ASSISTANT</div>
     <h1>Prakruthi</h1>
-    <p class="hero-p">A warm, mobile-friendly AI assistant to Dr. Venu Gopal Madhav Annamdas, Founder of GARRF Foundation. Use call controls and keypad options below.</p>
+    <p class="hero-p">A warm, mobile-friendly AI assistant to Dr. Venu Gopal Madhav Annamdas, Founder of GARRF Foundation. Click call to connect with Prakruthi, and use keypad options below.</p>
     
     <div class="controls">
       <button class="btn-control btn-primary" id="callBtn" onclick="startVoice()">
         <svg viewBox="0 0 24 24"><path d="M6.62 10.79a15.053 15.053 0 006.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
         <span id="callBtnText">CALL PRAKRUTHI</span>
+      </button>
+
+      <button class="btn-control btn-neutral" id="permBtn" onclick="requestVoicePermission()">
+        🎙️ VOICE PERMISSION
       </button>
 
       <button class="btn-control btn-light" id="endCallBtn" onclick="stopVoice()">
@@ -342,9 +426,31 @@ footer strong{display:block; margin-bottom:4px;}
         <option value="ml-IN">🇮🇳 മലയാളം (Malayalam)</option>
       </select>
     </div>
+
+    <!-- 40-Second Recording Control Panel for Button 10 -->
+    <div id="timerContainer">
+      <div class="timer-header">
+        <span id="timerLabel">🔴 Recording Voice Message (Up to 40s)...</span>
+        <span id="timerCountdown">40s</span>
+      </div>
+      <div id="timerTrack">
+        <div id="timerBar"></div>
+      </div>
+      <div class="rec-action-buttons">
+        <button class="btn-stop-send" onclick="stopAndSendVoiceMessage()">⏹️ STOP & SEND</button>
+        <button class="btn-cancel-rec" onclick="cancelVoiceMessage()">❌ CANCEL</button>
+      </div>
+    </div>
+
+    <!-- Email Input Prompt Modal Box for Button 9 -->
+    <div id="emailPromptBox">
+      <strong>📧 Please enter your email address:</strong>
+      <input type="email" id="userInputEmail" placeholder="e.g., yourname@domain.com">
+      <button class="btn-control btn-primary" onclick="submitUserEmail()">SUBMIT EMAIL</button>
+    </div>
     
     <div class="status-bar">
-      <div class="status-text" id="statusText">Press "CALL PRAKRUTHI" to start, then use keypad options 1 to 11.</div>
+      <div class="status-text" id="statusText">Press "CALL PRAKRUTHI" to start your call.</div>
       <div class="call-badge" id="callBadge">● STANDBY</div>
     </div>
   </section>
@@ -352,7 +458,7 @@ footer strong{display:block; margin-bottom:4px;}
   <div class="grid-2col">
     <section class="card" id="keypadCard">
       <h3 style="margin:0 0 6px 0;">Choose an Option</h3>
-      <p style="font-size:12px; color:var(--text-muted); margin:0 0 14px 0;" id="keypadNotice">Please press "CALL PRAKRUTHI" to enable keypad options.</p>
+      <p style="font-size:12px; color:var(--text-muted); margin:0 0 14px 0;" id="keypadNotice">Press "CALL PRAKRUTHI" to enable keypad options.</p>
 
       <div class="keypad-grid">
         <button class="keypad-btn" onclick="selectOption(1)" disabled>
@@ -403,7 +509,7 @@ footer strong{display:block; margin-bottom:4px;}
 
       <div class="notice-box">
         Your enquiry is not sent merely by filling the form. You review your details first and explicitly choose whether to send the prepared email.<br>
-        <strong>Tip:</strong> Press <strong>9</strong> to talk to Prakruthi interactively, or <strong>10</strong> to speak your voice message directly (converted to text and sent via Telegram with English translation).
+        <strong>Tip:</strong> You can call Prakruthi even if voice permission is denied. Buttons <strong>9 & 10</strong> require microphone permission and remain disabled if permission is denied, while options <strong>1 to 8 and 11</strong> remain fully available.
       </div>
     </section>
 
@@ -411,7 +517,7 @@ footer strong{display:block; margin-bottom:4px;}
       <h3 style="margin:0 0 14px 0;">💬 Communicate with Prakruthi</h3>
       <div class="chat-box" id="chatBox">
         <div class="chat-msg" id="greetingMsg">
-          Hello! Please press "CALL PRAKRUTHI" to start. After the call connects you can use keypad options 1 to 11.
+          Hello! Press "CALL PRAKRUTHI" to start your call.
         </div>
       </div>
     </section>
@@ -462,6 +568,21 @@ let audioCtx = null;
 let inactivityTimer = null;
 let warningTimer = null;
 let dmTimer = null;
+let mediaRecorder = null;
+let audioChunks = [];
+let recordingInterval = null;
+
+let voicePermissionGranted = false;
+const hasVoiceSupport = ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
+
+// Caller Identification & Flow State
+let callerInfo = {
+  name: "",
+  phone: "",
+  purpose: "",
+  answerPref: "",
+  email: ""
+};
 
 // ========== LANGUAGE DATA (10 Indian Languages) ==========
 const languageData = {
@@ -474,19 +595,21 @@ const languageData = {
     founderBio: "Our Founder is Dr. Venu Gopal Madhav Annamdas, Former Singapore Senior Scientist at Nanyang Technological University. He spent two decades abroad with rich academic and industrial experience. He studied in India, Singapore, and the USA. He is a Project Management Professional from the Project Management Institute, Pennsylvania, USA. He founded this GopalKrishna Advanced Rural Research Foundation for empowering Engineering students, especially rural. He is supported by people from 30 worldwide universities.",
     ringing: "Connecting to Prakruthi... please wait.",
     callConnected: "Call connected. You may now use the keypad.",
-    directMsgStart: "Please speak your voice message for the Founder now. I am listening.",
+    directMsgStart: "Please record your voice message for the Founder. Recording for up to forty seconds.",
     directMsgThanks: "Your voice message and English transcript have been sent to the Founder via Telegram. Good bye.",
     areYouThere: "Are you there? Please press any of the keys.",
     highCallVolume: "There is high call volume, good bye for now.",
     goodbye: "Good bye.",
-    askQuery: "Please give me your query.",
-    recordedQuery: "I recorded your query as: {query}. Is this correct? Please say Yes or No.",
-    askName: "Please give me your name.",
-    recordedName: "I recorded your name as: {name}. Is this correct? Please say Yes or No.",
-    askPhone: "Please give me your phone number.",
+    askName: "Please tell me your name.",
+    askPhone: "Please share your phone number.",
     phoneRemind: "Indian phone numbers should be 10 digits. Is this correct or are you calling from overseas?",
-    recordedPhone: "I recorded your phone number as: {phone}. Is this correct? Please say Yes or No.",
-    convThanks: "Thank you. Your query has been recorded and an email is being prepared for the Founder."
+    askPurpose: "Please state your purpose or query.",
+    askPref: "How would you like your query answered? Please say Phone or Email.",
+    askEmailInput: "Please type your email address in the box provided on screen.",
+    confirmYesNo: "Is this correct? Please say Yes or No.",
+    finalOutro: "I have your details. I will send it to the Admin section. Thanks for calling. Good bye.",
+    micAbsent: "At this time, your voice input permission is absent. Anyway, we have your number, will reach out to you. Thanks.",
+    voiceFallback: "Voice input is currently unavailable. Please select any option from 1 to 8 on the keypad to submit your enquiry through our form."
   },
   'hi-IN': {
     greeting: "नमस्ते, मैं प्रकृति हूँ। कृपया कीपैड पर 1 से 8 तक का विकल्प चुनें, 9 दबाकर बात जारी रखें, 10 दबाकर संस्थापक को वॉयस मैसेज भेजें, या 11 दबाकर रीसेट करें।",
@@ -497,19 +620,21 @@ const languageData = {
     founderBio: "हमारे संस्थापक डॉ. वेणु गोपाल माधव अन्नामदास हैं, जो नानयांग टेक्नोलॉजिकल यूनिवर्सिटी में सिंगापुर के पूर्व वरिष्ठ वैज्ञानिक रहे हैं।",
     ringing: "प्रकृति से कनेक्ट हो रहा है... कृपया प्रतीक्षा करें।",
     callConnected: "कॉल कनेक्ट हो गई है। अब आप कीपैड का उपयोग कर सकते हैं।",
-    directMsgStart: "कृपया संस्थापक के लिए अपना वॉयस मैसेज बोलें। मैं सुन रही हूँ।",
+    directMsgStart: "कृपया संस्थापक के लिए अपना वॉयस मैसेज रिकॉर्ड करें। चालीस सेकंड तक रिकॉर्डिंग जारी है।",
     directMsgThanks: "आपका वॉयस मैसेज और अंग्रेजी ट्रांसक्रिप्ट टेलीग्राम के माध्यम से संस्थापक को भेज दिया गया है। अलविदा।",
     areYouThere: "क्या आप वहाँ हैं? कृपया कोई भी कुंजी दबाएँ।",
     highCallVolume: "कॉल अधिक होने के कारण, अभी के लिए अलविदा।",
     goodbye: "अलविदा.",
-    askQuery: "कृपया अपना प्रश्न बताएं।",
-    recordedQuery: "मैंने आपका प्रश्न इस प्रकार दर्ज किया है: {query}। क्या यह सही है? हाँ या नहीं कहें।",
     askName: "कृपया अपना नाम बताएं।",
-    recordedName: "मैंने आपका नाम इस प्रकार दर्ज किया है: {name}। क्या यह सही है? हाँ या नहीं कहें।",
     askPhone: "कृपया अपना फोन नंबर बताएं।",
     phoneRemind: "भारतीय फोन नंबर 10 अंकों के होने चाहिए। क्या यह सही है या आप विदेश से कॉल कर रहे हैं?",
-    recordedPhone: "मैंने फोन नंबर {phone} दर्ज किया। क्या यह सही है? हाँ या नहीं कहें।",
-    convThanks: "धन्यवाद। आपका प्रश्न दर्ज हो गया है और संस्थापक के लिए ईमेल तैयार किया जा रहा है।"
+    askPurpose: "कृपया अपना उद्देश्य या प्रश्न बताएं।",
+    askPref: "आप अपना उत्तर कैसे प्राप्त करना चाहते हैं? फोन या ईमेल कहें।",
+    askEmailInput: "कृपया स्क्रीन पर दिए गए बॉक्स में अपना ईमेल टाइप करें।",
+    confirmYesNo: "क्या यह सही है? हाँ या नहीं कहें।",
+    finalOutro: "मेरे पास आपका विवरण है। मैं इसे प्रशासनिक अनुभाग में भेज दूंगा। कॉल करने के लिए धन्यवाद। अलविदा।",
+    micAbsent: "इस समय आपकी वॉइस इनपुट अनुमति अनुपस्थित है। वैसे, हमारे पास आपका नंबर है, हम आपसे संपर्क करेंगे। धन्यवाद।",
+    voiceFallback: "वॉयस इनपुट वर्तमान में अनुपलब्ध है। कृपया हमारे फॉर्म के माध्यम से अपनी पूछताछ सबमिट करने के लिए कीपैड पर 1 से 8 तक का कोई भी विकल्प चुनें।"
   },
   'te-IN': {
     greeting: "नमस्ते, నేను ప్రకృతిని. ద कृपया 1 నుండి 8 వరకు ఎంచుకోండి, 9 నొక్కి మాట్లాడటం కొనసాగించండి, 10 నొక్కి ఫౌండర్‌కి వాయిస్ మెసేజ్ పంపండి, లేదా 11 నొక్కి రీసెట్ చేయండి.",
@@ -520,19 +645,21 @@ const languageData = {
     founderBio: "మా ఫౌండర్ డా. వేణుగోపాల్ మాధవ్ అన్నందాస్, NTU సింగపూర్ మాజీ సీనియర్ సైంటిస్ట్.",
     ringing: "కనెక్ట్ అవుతోంది... దయచేసి వేచి ఉండండి.",
     callConnected: "కాల్ కనెక్ట్ అయింది. మీరు ఇప్పుడు కీప్యాడ్ ఉపయోగించవచ్చు.",
-    directMsgStart: "దయచేసి ఫౌండర్‌కి మీ వాయిస్ మెసేజ్ చెప్పండి. నేను వింటున్నాను.",
-    directMsgThanks: "మీ వॉयస్ మెసేజ్ మరియు ఇంగ్లీష్ ట్రాన్స్‌క్రిప్ట్ టెలిగ్రామ్ ద్వారా ఫౌండర్‌కి పంపబడింది. వీడ్కోలు.",
+    directMsgStart: "దయచేసి ఫౌండర్‌కి మీ వాయిస్ మెసేజ్ రికార్డ్ చేయండి. నలభై సెకన్ల పాటు రికార్డ్ అవుతుంది.",
+    directMsgThanks: "మీ వాయిస్ మెసేజ్ మరియు ఇంగ్లీష్ ట్రాన్స్‌క్రిప్ట్ టెలిగ్రామ్ ద్వారా ఫౌండర్‌కి పంపబడింది. వీడ్కోలు.",
     areYouThere: "మీరు అక్కడ ఉన్నారా? దయచేసి ఏదైనా కీని నొక్కండి.",
     highCallVolume: "అధిక కాల్ వాల్యూమ్ కారణంగా, ఇప్పుటికి వీడ్కోలు.",
     goodbye: "వీడ్కోలు.",
-    askQuery: "దయచేసి మీ ప్రశ్నను చెప్పండి.",
-    recordedQuery: "నేను మీ ప్రశ్నను ఇలా రికార్డ్ చేసాను: {query}. ఇది సరైనదేనా? అవును లేదా కాదు చెప్పండి.",
     askName: "దయచేసి మీ పేరు చెప్పండి.",
-    recordedName: "నేను మీ పేరును ఇలా రికార్డ్ చేసాను: {name}. ఇది సరైనదేనా? అవును లేదా కాదు చెప్పండి.",
     askPhone: "దయచేసి మీ ఫోన్ నంబర్ చెప్పండి.",
     phoneRemind: "భారతీయ ఫోన్ నంబర్లు 10 అంకెలు ఉండాలి. ఇది సరైనదా లేదా మీరు విదేశాల నుండి కాల్ చేస్తున్నారా?",
-    recordedPhone: "ఫోన్ నంబర్ {phone} రికార్డ్ చేసాను. ఇది సరైనదేనా? అవును లేదా కాదు చెప్పండి.",
-    convThanks: "ధన్యవాదాలు. మీ ప్రశ్న రికార్డ్ చేయబడింది మరియు ఇమెయిల్ సిద్ధం చేయబడుతోంది."
+    askPurpose: "దయచేసి మీ ఉద్దేశ్యం లేదా ప్రశ్నను చెప్పండి.",
+    askPref: "మీరు మీ సమాధానాన్ని ఎలా పొందాలనుకుంటున్నారు? ఫోన్ లేదా ఇమెయిల్ చెప్పండి.",
+    askEmailInput: "దయచేసి స్క్రీన్ పై ఉన్న బాక్స్‌లో మీ ఇమెయిల్ టైప్ చేయండి.",
+    confirmYesNo: "ఇది సరైనదేనా? అవును లేదా కాదు చెప్పండి.",
+    finalOutro: "నా వద్ద మీ వివరాలు ఉన్నాయి. నేను దానిని అడ్మిన్ విభాగానికి పంపుతాను. కాల్ చేసినందుకు ధన్యవాదాలు. వీడ్కోలు.",
+    micAbsent: "ఈ సమయంలో మీ వాయిస్ ఇన్‌పుట్ అనుమతి లేదు. ఏమైనప్పటికీ, మా వద్ద మీ నంబర్ ఉంది, మేము మిమ్మల్ని సంప్రదిస్తాము. ధన్యవాదాలు.",
+    voiceFallback: "వాయిస్ ఇన్‌పుట్ ప్రస్తుతం అందుబాటులో లేదు. దయచేసి మా ఫారమ్ ద్వారా మీ విచారణను సమర్పించడానికి కీప్యాడ్‌లో 1 నుండి 8 వరకు ఏదైనా ఎంపికను ఎంచుకోండి."
   }
 };
 
@@ -643,7 +770,7 @@ async function notifyTelegram(payload) {
 function loadPrakruthiVoice() {
   if (!('speechSynthesis' in window)) return;
   const voices = speechSynthesis.getVoices();
-  const langCode = currentLang.split('-')[0]; // e.g., 'hi', 'te', 'ta', 'en'
+  const langCode = currentLang.split('-')[0];
   
   let matchedVoice = voices.find(v => v.lang.toLowerCase().startsWith(langCode));
   prakruthiVoice = matchedVoice || null;
@@ -672,7 +799,7 @@ function speak(text) {
     };
 
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = currentLang; // Strictly locks speech renderer to the chosen language
+    utterance.lang = currentLang;
     if (prakruthiVoice) {
       utterance.voice = prakruthiVoice;
     }
@@ -719,12 +846,56 @@ function resetInactivityTimer() {
   }, 30000);
 }
 
+// ========== VOICE PERMISSION HANDLER ==========
+async function requestVoicePermission() {
+  const permBtn = document.getElementById('permBtn');
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    stream.getTracks().forEach(track => track.stop()); // release stream immediately
+    
+    if (hasVoiceSupport) {
+      voicePermissionGranted = true;
+      permBtn.className = "btn-control btn-perm-granted";
+      permBtn.textContent = "✅ VOICE PERMISSION GRANTED";
+      addChatMsg("Voice permission granted successfully!");
+      if (callActive) setKeypadState(true);
+    } else {
+      alert("Microphone is available, but Speech Recognition is not supported on this browser. Voice buttons 9 & 10 will remain disabled.");
+    }
+  } catch (err) {
+    console.warn("Voice permission denied:", err);
+    voicePermissionGranted = false;
+    permBtn.className = "btn-control btn-light";
+    permBtn.textContent = "❌ PERMISSION DENIED";
+    alert("Microphone permission was denied. Buttons 9 and 10 will remain disabled. Please use options 1 to 8.");
+    if (callActive) setKeypadState(true);
+  }
+}
+
 function setKeypadState(enabled) {
-  document.querySelectorAll('.keypad-btn').forEach(btn => btn.disabled = !enabled);
+  document.querySelectorAll('.keypad-btn').forEach(btn => {
+    if (!enabled) {
+      btn.disabled = true;
+    } else {
+      // If voice permission is not granted or voice absent, disable buttons 9 and 10
+      if ((!voicePermissionGranted || !hasVoiceSupport) && (btn.id === 'btn9' || btn.id === 'btn10')) {
+        btn.disabled = true;
+      } else {
+        btn.disabled = false;
+      }
+    }
+  });
+
   const notice = document.getElementById('keypadNotice');
-  notice.textContent = enabled 
-    ? "Please press a number from 1 to 8, 9 for Continue Talking, 10 for Voice Message, or 11 to Reset."
-    : "Please press 'CALL PRAKRUTHI' to enable keypad options.";
+  if (enabled) {
+    if (voicePermissionGranted && hasVoiceSupport) {
+      notice.textContent = "Please press a number from 1 to 8, 9 for Continue Talking, 10 for Voice Message, or 11 to Reset.";
+    } else {
+      notice.textContent = "Voice permission not granted or unsupported. Buttons 9 & 10 are disabled. Please use options 1 to 8.";
+    }
+  } else {
+    notice.textContent = "Press 'CALL PRAKRUTHI' to enable keypad options.";
+  }
 }
 
 function changeLanguage() {
@@ -758,41 +929,105 @@ async function startVoice() {
   document.getElementById('statusText').textContent = `Call Connected to Prakruthi (${currentLang})`;
   resetInactivityTimer();
 
-  const ringMsg = languageData[currentLang].ringing || "Connecting to Prakruthi... please wait.";
-  addChatMsg(ringMsg);
-
-  try {
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if (audioCtx.state === "suspended") await audioCtx.resume();
-  } catch(e) {}
-
-  try {
-    await playRingingTone(3200);
-  } catch(err) {
-    console.log("Audio bypass:", err);
+  if (voicePermissionGranted && hasVoiceSupport) {
+    gatherInitialCallerInfo();
+  } else {
+    const langTexts = languageData[currentLang] || languageData['en-IN'];
+    const greetingMsg = langTexts.greeting || "Hello, I am Prakruthi...";
+    addChatMsg(greetingMsg);
+    await speak(greetingMsg);
   }
+}
 
+async function gatherInitialCallerInfo() {
+  const langTexts = languageData[currentLang] || languageData['en-IN'];
+  
+  const askN = langTexts.askName || "Please tell me your full name.";
+  addChatMsg(askN);
+  await speak(askN);
   if (!callActive) return;
 
-  const connectedMsg = languageData[currentLang].callConnected || "Call connected.";
-  addChatMsg(connectedMsg);
+  startListening(async (nameRes) => {
+    if (!callActive) return;
+    
+    if (!nameRes || nameRes.trim() === "") {
+      triggerVoiceFallback();
+      return;
+    }
 
+    callerInfo.name = nameRes;
+    
+    const confirmN = (langTexts.confirmYesNo || "Is this correct? Say Yes or No.").replace('{val}', callerInfo.name);
+    addChatMsg(`Name: ${callerInfo.name}. ${confirmN}`);
+    await speak(confirmN);
+    if (!callActive) return;
+
+    startListening(async (ans1) => {
+      if (!callActive) return;
+      if (!ans1) { triggerVoiceFallback(); return; }
+
+      if (ans1.toLowerCase().includes('yes') || ans1.includes('हाँ') || ans1.includes('ha') || ans1.includes('అవును')) {
+        
+        // Get Phone
+        const askP = langTexts.askPhone || "Please share your phone number.";
+        addChatMsg(askP);
+        await speak(askP);
+        if (!callActive) return;
+
+        startListening(async (phoneRes) => {
+          if (!callActive) return;
+          if (!phoneRes) { triggerVoiceFallback(); return; }
+
+          callerInfo.phone = phoneRes;
+          const digits = callerInfo.phone.replace(/\D/g, '');
+
+          if (digits.length > 0 && digits.length < 10 && !callerInfo.phone.toLowerCase().includes('overseas') && !callerInfo.phone.toLowerCase().includes('abroad')) {
+            const remind = langTexts.phoneRemind || "Indian phone numbers should be 10 digits. Is this correct or are you calling from overseas?";
+            addChatMsg(remind);
+            await speak(remind);
+            if (!callActive) return;
+            startListening(async (pConf) => {
+              if (!callActive) return;
+              if (pConf && pConf.length > 2) callerInfo.phone = pConf;
+              finishInitialGreeting();
+            });
+          } else {
+            finishInitialGreeting();
+          }
+        });
+
+      } else {
+        addChatMsg("Let's re-enter your name.");
+        await speak("Let's re-enter your name.");
+        if (callActive) gatherInitialCallerInfo();
+      }
+    });
+  });
+}
+
+async function finishInitialGreeting() {
   if (!callActive) return;
-  const greeting = languageData[currentLang].greeting || languageData['en-IN'].greeting;
+  const langTexts = languageData[currentLang] || languageData['en-IN'];
+
+  const greeting = langTexts.greeting || "Hello, I am Prakruthi...";
   addChatMsg(greeting);
   await speak(greeting);
 
-  if (!callActive) return;
-  const hint = languageData[currentLang].btn10Hint || "If you want to send a Voice Message to the Founder, press button 10.";
-  addChatMsg(hint);
-  await speak(hint);
-
-  if (!callActive) return;
   notifyTelegram({
-    type: "call_started",
+    type: "call_started_with_caller",
     lang: currentLang,
+    name: callerInfo.name,
+    phone: callerInfo.phone,
     ua: navigator.userAgent
   });
+}
+
+function triggerVoiceFallback() {
+  if (!callActive) return;
+  const langTexts = languageData[currentLang] || languageData['en-IN'];
+  const fallbackMsg = langTexts.voiceFallback || "Voice input is currently unavailable. Please select any option from 1 to 8 on the keypad to submit your enquiry through our form.";
+  addChatMsg(fallbackMsg);
+  speak(fallbackMsg);
 }
 
 function stopVoice() {
@@ -806,9 +1041,19 @@ function stopVoice() {
   clearTimeout(warningTimer);
   clearTimeout(inactivityTimer);
   clearTimeout(dmTimer);
+  clearInterval(recordingInterval);
+
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    try { mediaRecorder.stop(); } catch(e) {}
+  }
 
   const duration = callStartTime ? Math.round((Date.now() - callStartTime) / 1000) : 0;
   stopListening();
+
+  const timerContainer = document.getElementById('timerContainer');
+  if (timerContainer) timerContainer.style.display = 'none';
+  const emailBox = document.getElementById('emailPromptBox');
+  if (emailBox) emailBox.style.display = 'none';
 
   if ('speechSynthesis' in window) {
     speechSynthesis.cancel();
@@ -845,143 +1090,211 @@ function focusKeypad() {
   document.getElementById('keypadCard').scrollIntoView({ behavior: 'smooth' });
 }
 
-// ========== BUTTON 10: DIRECT VOICE-TO-TEXT & TELEGRAM FALLBACK ==========
-function startVoiceMessageFlow() {
-  if (!callActive) return;
+// ========== BUTTON 10: 40-SECOND VOICE MESSAGE FLOW WITH FALLBACK ==========
+async function startVoiceMessageFlow() {
+  if (!callActive || !voicePermissionGranted || !hasVoiceSupport) return;
 
   setKeypadState(false);
   resetInactivityTimer();
 
   const langTexts = languageData[currentLang] || languageData['en-IN'];
-  const startMsg = langTexts.directMsgStart || "Please speak your voice message for the Founder now. I am listening.";
+  const startMsg = langTexts.directMsgStart || "Please record your voice message for the Founder. Recording for up to forty seconds.";
   addChatMsg(startMsg);
 
-  speak(startMsg).then(() => {
-    if (!callActive) return;
-    
-    // Directly listen to voice and convert to text
-    startListening(async (transcript) => {
-      if (!callActive) return;
-      if (!transcript || transcript.trim() === "") {
-        addChatMsg("No speech detected. Please press 10 again.");
-        speak("No speech detected.").then(() => { if (callActive) setKeypadState(true); });
-        return;
-      }
+  await speak(startMsg);
+  if (!callActive) return;
 
-      const originalMsg = transcript;
-      const thanks = langTexts.directMsgThanks || "Your voice message and English transcript have been sent to the Founder via Telegram. Good bye.";
-      addChatMsg(thanks);
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
+
+    let parallelTranscript = "";
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const rec = new SpeechRecognition();
+      rec.lang = currentLang;
+      rec.interimResults = false;
+      rec.maxAlternatives = 1;
+      rec.continuous = true;
+      rec.onresult = (e) => {
+        for (let i = e.resultIndex; i < e.results.length; ++i) {
+          if (e.results[i].isFinal) {
+            parallelTranscript += e.results[i][0].transcript + " ";
+          }
+        }
+      };
+      try { rec.start(); } catch(e) {}
+    }
+
+    mediaRecorder.ondataavailable = (event) => {
+      if (event.data.size > 0) audioChunks.push(event.data);
+    };
+
+    mediaRecorder.onstop = async () => {
+      clearInterval(recordingInterval);
+      stream.getTracks().forEach(track => track.stop());
+      const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
       
-      const englishTranslation = await translateToEnglish(originalMsg, currentLang);
-      if (!callActive) return;
-      await speak(thanks);
+      const timerContainer = document.getElementById('timerContainer');
+      if (timerContainer) timerContainer.style.display = 'none';
 
-      if (!callActive) return;
-      await notifyTelegram({
-        type: "voice_message_transcript",
-        lang: currentLang,
-        name: "Voice Caller",
-        phone: "Not provided",
-        original_message: originalMsg,
-        english_translation: englishTranslation
-      });
+      const rawText = parallelTranscript.trim() || "Voice audio note recorded (no speech transcript detected)";
+      const englishTranslation = await translateToEnglish(rawText, currentLang);
 
-      stopVoice();
+      const reader = new FileReader();
+      reader.readAsDataURL(audioBlob);
+      reader.onloadend = async () => {
+        const base64Audio = reader.result;
+        const thanks = langTexts.directMsgThanks || "Your voice message and English transcript have been sent to the Founder via Telegram. Good bye.";
+        addChatMsg(thanks);
+        await speak(thanks);
+
+        await notifyTelegram({
+          type: "voice_audio_message",
+          lang: currentLang,
+          name: callerInfo.name || "Caller",
+          phone: callerInfo.phone || "Not provided",
+          original_message: rawText,
+          english_translation: englishTranslation,
+          audio_base64: base64Audio
+        });
+
+        stopVoice();
+      };
+    };
+
+    mediaRecorder.start();
+    document.getElementById('statusText').textContent = "🔴 Recording voice message... Speak now (Up to 40s)";
+
+    let timeLeft = 40;
+    const timerContainer = document.getElementById('timerContainer');
+    const timerBar = document.getElementById('timerBar');
+    const timerCountdown = document.getElementById('timerCountdown');
+
+    if (timerContainer && timerBar && timerCountdown) {
+      timerContainer.style.display = 'block';
+      timerBar.style.transition = 'none';
+      timerBar.style.width = '100%';
+      timerCountdown.textContent = timeLeft + 's';
+
+      recordingInterval = setInterval(() => {
+        if (!callActive || !mediaRecorder || mediaRecorder.state !== 'recording') {
+          clearInterval(recordingInterval);
+          return;
+        }
+        timeLeft--;
+        timerCountdown.textContent = timeLeft + 's';
+        let pct = (timeLeft / 40) * 100;
+        timerBar.style.width = pct + '%';
+
+        if (timeLeft <= 0) {
+          clearInterval(recordingInterval);
+          if (mediaRecorder && mediaRecorder.state === 'recording') {
+            mediaRecorder.stop();
+          }
+        }
+      }, 1000);
+    }
+
+    dmTimer = setTimeout(() => {
+      if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+      }
+    }, 40000);
+
+  } catch (err) {
+    console.error("Mic error:", err);
+    const absMsg = langTexts.micAbsent || "At this time, your voice input permission is absent. Anyway, we have your number, will reach out to you. Thanks.";
+    addChatMsg(absMsg);
+    await notifyTelegram({
+      type: "mic_permission_absent",
+      lang: currentLang,
+      name: callerInfo.name || "Caller",
+      phone: callerInfo.phone || "Not provided"
     });
-  });
+    await speak(absMsg);
+    stopVoice();
+  }
 }
 
-// ========== BUTTON 9: CONTINUE TALKING (Interactive Step-by-Step Flow) ==========
+function stopAndSendVoiceMessage() {
+  clearTimeout(dmTimer);
+  clearInterval(recordingInterval);
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    mediaRecorder.stop();
+  }
+}
+
+function cancelVoiceMessage() {
+  clearTimeout(dmTimer);
+  clearInterval(recordingInterval);
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    mediaRecorder.stop();
+  }
+  const timerContainer = document.getElementById('timerContainer');
+  if (timerContainer) timerContainer.style.display = 'none';
+  addChatMsg("Voice message cancelled.");
+  if (callActive) setKeypadState(true);
+}
+
+// ========== BUTTON 9: CONTINUE TALKING (Structured Flow) ==========
 function startContinueTalkingFlow() {
-  if (!callActive) return;
+  if (!callActive || !voicePermissionGranted || !hasVoiceSupport) return;
 
   setKeypadState(false);
   resetInactivityTimer();
 
   const langTexts = languageData[currentLang] || languageData['en-IN'];
   
-  // Step 1: Query
-  const askQ = langTexts.askQuery || "Please give me your query.";
-  addChatMsg(askQ);
+  const askPurp = langTexts.askPurpose || "Please state your purpose or query.";
+  addChatMsg(askPurp);
 
-  speak(askQ).then(() => {
+  speak(askPurp).then(() => {
     if (!callActive) return;
-    startListening((queryResult) => {
+    startListening((purpRes) => {
       if (!callActive) return;
-      if (!queryResult || queryResult.length < 2) {
-        addChatMsg("I didn't catch that. Let's try again.");
-        speak("I didn't catch that. Let's try again.").then(startContinueTalkingFlow);
-        return;
-      }
+      if (!purpRes) { triggerVoiceFallback(); return; }
 
-      const recQMsg = (langTexts.recordedQuery || "I recorded your query as: {query}. Is this correct?").replace('{query}', queryResult);
-      addChatMsg(recQMsg);
-      speak(recQMsg).then(() => {
+      callerInfo.purpose = purpRes;
+
+      const confirmPurp = langTexts.confirmYesNo || "Is this correct? Say Yes or No.";
+      addChatMsg(`Recorded Purpose: ${callerInfo.purpose}. ${confirmPurp}`);
+      speak(confirmPurp).then(() => {
         if (!callActive) return;
-        startListening((ans1) => {
+        startListening((ans3) => {
           if (!callActive) return;
-          const a1 = ans1.toLowerCase();
-          if (a1.includes('yes') || a1.includes('हाँ') || a1.includes('ha') || a1.includes('correct') || a1.includes('sahi') || a1.includes('అవును')) {
+          if (!ans3) { triggerVoiceFallback(); return; }
+
+          if (ans3.toLowerCase().includes('yes') || ans3.includes('हाँ') || ans3.includes('ha') || ans3.includes('అవును')) {
             
-            // Step 2: Name
-            const askN = langTexts.askName || "Please give me your name.";
-            addChatMsg(askN);
-            speak(askN).then(() => {
+            const askPrefMsg = langTexts.askPref || "How would you like your query answered? Please say Phone or Email.";
+            addChatMsg(askPrefMsg);
+            speak(askPrefMsg).then(() => {
               if (!callActive) return;
-              startListening((nameResult) => {
+              startListening((prefRes) => {
                 if (!callActive) return;
-                const userName = nameResult || "Anonymous";
-                const recNMsg = (langTexts.recordedName || "I recorded your name as: {name}. Is this correct?").replace('{name}', userName);
-                addChatMsg(recNMsg);
-                speak(recNMsg).then(() => {
-                  if (!callActive) return;
-                  startListening((ans2) => {
-                    if (!callActive) return;
-                    const a2 = ans2.toLowerCase();
-                    if (a2.includes('yes') || a2.includes('हाँ') || a2.includes('ha') || a2.includes('correct') || a2.includes('sahi') || a2.includes('అవును')) {
-                      
-                      // Step 3: Phone Number
-                      const askP = langTexts.askPhone || "Please give me your phone number.";
-                      addChatMsg(askP);
-                      speak(askP).then(() => {
-                        if (!callActive) return;
-                        startListening(async (phoneResult) => {
-                          if (!callActive) return;
-                          let userPhone = phoneResult || "Not provided";
-                          const digitsOnly = userPhone.replace(/\D/g, '');
+                if (!prefRes) { triggerVoiceFallback(); return; }
 
-                          if (digitsOnly.length > 0 && digitsOnly.length < 10 && !userPhone.toLowerCase().includes('overseas') && !userPhone.toLowerCase().includes('foreign') && !userPhone.toLowerCase().includes('abroad')) {
-                            const remindMsg = langTexts.phoneRemind || "Indian phone numbers should be 10 digits. Is this correct or are you calling from overseas?";
-                            addChatMsg(remindMsg);
-                            if (!callActive) return;
-                            await speak(remindMsg);
-                            
-                            if (!callActive) return;
-                            startListening(async (phoneConfirm) => {
-                              if (!callActive) return;
-                              if (phoneConfirm && phoneConfirm.length > 2) userPhone = phoneConfirm;
-                              await finalizeConversation(queryResult, userName, userPhone);
-                            });
-                          } else {
-                            await finalizeConversation(queryResult, userName, userPhone);
-                          }
-                        });
-                      });
+                const pref = prefRes.toLowerCase();
+                if (pref.includes('email') || pref.includes('ईमेल') || pref.includes('ఇమెయిల్')) {
+                  callerInfo.answerPref = "Email";
+                  
+                  const emailBox = document.getElementById('emailPromptBox');
+                  if (emailBox) emailBox.style.display = 'block';
+                  addChatMsg("Please enter your email address in the box provided above.");
+                  speak(langTexts.askEmailInput || "Please type your email address in the box provided on screen.");
 
-                    } else {
-                      if (!callActive) return;
-                      addChatMsg("Let's re-enter your name.");
-                      speak("Let's re-enter your name.").then(() => startContinueTalkingFlow());
-                    }
-                  });
-                });
+                } else {
+                  callerInfo.answerPref = "Phone";
+                  finalizeInteractiveFlow();
+                }
               });
             });
 
           } else {
-            if (!callActive) return;
-            addChatMsg("Let's re-enter your query.");
-            speak("Let's re-enter your query.").then(startContinueTalkingFlow);
+            addChatMsg("Let's re-enter your purpose.");
+            speak("Let's re-enter your purpose.").then(startContinueTalkingFlow);
           }
         });
       });
@@ -989,45 +1302,46 @@ function startContinueTalkingFlow() {
   });
 }
 
-async function finalizeConversation(query, name, phone) {
+function submitUserEmail() {
+  const emailInput = document.getElementById('userInputEmail');
+  if (!emailInput || !emailInput.value) {
+    alert("Please enter a valid email address.");
+    return;
+  }
+  callerInfo.email = emailInput.value;
+  const emailBox = document.getElementById('emailPromptBox');
+  if (emailBox) emailBox.style.display = 'none';
+  addChatMsg(`Entered Email: ${callerInfo.email}`);
+  finalizeInteractiveFlow();
+}
+
+async function finalizeInteractiveFlow() {
   if (!callActive) return;
   const langTexts = languageData[currentLang] || languageData['en-IN'];
-  const thanksMsg = langTexts.convThanks || "Thank you. Your query has been recorded and an email is being prepared for the Founder.";
-  addChatMsg(thanksMsg);
-  
-  const engQuery = await translateToEnglish(query, currentLang);
-  if (!callActive) return;
-  await speak(thanksMsg);
 
-  if (!callActive) return;
-  const subject = "GARRF Voice Enquiry via Prakruthi (Interactive)";
-  let body = `GARRF INTERACTIVE VOICE ENQUIRY\n`;
-  body += `Language: ${currentLang}\n`;
-  body += `==================================\n\n`;
-  body += `Name: ${name}\n\n`;
-  body += `Phone: ${phone}\n\n`;
-  body += `Original Query (${currentLang}):\n${query}\n\n`;
-  body += `English Translation:\n${engQuery}\n\n`;
-  body += `==================================\nSent via Prakruthi AI Assistant`;
+  const outro = langTexts.finalOutro || "I have your details. I will send it to the Admin section. Thanks for calling. Good bye.";
+  addChatMsg(outro);
+
+  const engQuery = await translateToEnglish(callerInfo.purpose, currentLang);
 
   await notifyTelegram({
-    type: "interactive_query",
+    type: "interactive_detailed_query",
     lang: currentLang,
-    name: name,
-    phone: phone,
-    original_message: query,
-    english_translation: engQuery
+    name: callerInfo.name || "Caller",
+    phone: callerInfo.phone || "Not provided",
+    purpose: callerInfo.purpose,
+    english_translation: engQuery,
+    answer_preference: callerInfo.answerPref || "Phone",
+    email: callerInfo.email || "Not provided"
   });
 
-  const mailtoUrl = `mailto:founder@garrf.in?cc=venuannamdas1976@gmail.com&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-  window.location.href = mailtoUrl;
-
+  await speak(outro);
   stopVoice();
 }
 
 function startListening(callback) {
   stopListening();
-  if (!callActive) return;
+  if (!callActive || !voicePermissionGranted || !hasVoiceSupport) return;
   
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition) {
@@ -1037,7 +1351,7 @@ function startListening(callback) {
   }
 
   recognition = new SpeechRecognition();
-  recognition.lang = currentLang; // STRICTLY follows selected language
+  recognition.lang = currentLang;
   recognition.interimResults = false;
   recognition.maxAlternatives = 1;
   recognition.continuous = false;
@@ -1096,11 +1410,19 @@ function selectOption(num) {
   }
 
   if (num === 9) {
+    if (!voicePermissionGranted || !hasVoiceSupport) {
+      triggerVoiceFallback();
+      return;
+    }
     startContinueTalkingFlow();
     return;
   }
 
   if (num === 10) {
+    if (!voicePermissionGranted || !hasVoiceSupport) {
+      triggerVoiceFallback();
+      return;
+    }
     startVoiceMessageFlow();
     return;
   }
