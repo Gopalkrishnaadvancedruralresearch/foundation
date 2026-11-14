@@ -160,22 +160,36 @@ h1{
 .call-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 800; padding: 4px 8px; border-radius: 4px; background: #e2e8f0; color: #64748b; }
 .call-badge.active { background: #dcfce7; color: #166534; }
 
-/* Timer Bar for Button 10 (30 seconds) */
+/* Timer Display & Bar for Button 10 */
 #timerContainer {
   display: none;
+  width: 100%;
+  margin-top: 10px;
+  background: #fff;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1.5px solid #16a34a;
+}
+.timer-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 800;
+  color: #166534;
+  margin-bottom: 5px;
+}
+#timerTrack {
   width: 100%;
   background: #e2e8f0;
   border-radius: 6px;
   overflow: hidden;
   height: 10px;
-  margin-top: 8px;
-  margin-bottom: 8px;
 }
 #timerBar {
   width: 100%;
   height: 100%;
   background: #16a34a;
-  transition: width linear;
+  transition: width 1s linear;
 }
 
 .grid-2col{
@@ -362,9 +376,15 @@ footer strong{display:block; margin-bottom:4px;}
       </select>
     </div>
 
-    <!-- Timer Bar for Button 10 (30 seconds) -->
+    <!-- Live Timer Display & Bar for Button 10 -->
     <div id="timerContainer">
-      <div id="timerBar"></div>
+      <div class="timer-header">
+        <span id="timerLabel">🔴 Recording Voice Message...</span>
+        <span id="timerCountdown">30s</span>
+      </div>
+      <div id="timerTrack">
+        <div id="timerBar"></div>
+      </div>
     </div>
     
     <div class="status-bar">
@@ -427,7 +447,7 @@ footer strong{display:block; margin-bottom:4px;}
 
       <div class="notice-box">
         Your enquiry is not sent merely by filling the form. You review your details first and explicitly choose whether to send the prepared email.<br>
-        <strong>Tip:</strong> Press <strong>9</strong> to talk to Prakruthi interactively, or <strong>10</strong> to record a voice message (up to 30 seconds with live timer) sent via Telegram.
+        <strong>Tip:</strong> Press <strong>9</strong> to talk to Prakruthi interactively, or <strong>10</strong> to record a voice message (up to 30 seconds with live countdown timer) sent via Telegram.
       </div>
     </section>
 
@@ -488,6 +508,7 @@ let warningTimer = null;
 let dmTimer = null;
 let mediaRecorder = null;
 let audioChunks = [];
+let recordingInterval = null;
 
 // ========== LANGUAGE DATA (10 Indian Languages) ==========
 const languageData = {
@@ -500,7 +521,7 @@ const languageData = {
     founderBio: "Our Founder is Dr. Venu Gopal Madhav Annamdas, Former Singapore Senior Scientist at Nanyang Technological University. He spent two decades abroad with rich academic and industrial experience. He studied in India, Singapore, and the USA. He is a Project Management Professional from the Project Management Institute, Pennsylvania, USA. He founded this GopalKrishna Advanced Rural Research Foundation for empowering Engineering students, especially rural. He is supported by people from 30 worldwide universities.",
     ringing: "Connecting to Prakruthi... please wait.",
     callConnected: "Call connected. You may now use the keypad.",
-    directMsgStart: "Please speak your voice message for the Founder. Recording for up to thirty seconds. Press any key or wait to finish.",
+    directMsgStart: "Please speak your voice message for the Founder. Recording for up to thirty seconds.",
     directMsgThanks: "Your voice note has been sent to the Founder via Telegram. Good bye.",
     areYouThere: "Are you there? Please press any of the keys.",
     highCallVolume: "There is high call volume, good bye for now.",
@@ -523,7 +544,7 @@ const languageData = {
     founderBio: "हमारे संस्थापक डॉ. वेणु गोपाल माधव अन्नामदास हैं, जो नानयांग टेक्नोलॉजिकल यूनिवर्सिटी में सिंगापुर के पूर्व वरिष्ठ वैज्ञानिक रहे हैं।",
     ringing: "प्रकृति से कनेक्ट हो रहा है... कृपया प्रतीक्षा करें।",
     callConnected: "कॉल कनेक्ट हो गई है। अब आप कीपैड का उपयोग कर सकते हैं।",
-    directMsgStart: "कृपया संस्थापक के लिए अपना वॉयस मैसेज बोलें। तीस सेकंड तक रिकॉर्डिंग जारी है। समाप्त करने के लिए कोई भी बटन दबाएं।",
+    directMsgStart: "कृपया संस्थापक के लिए अपना वॉयस मैसेज बोलें। तीस सेकंड तक रिकॉर्डिंग जारी है।",
     directMsgThanks: "आपका वॉयस नोट टेलीग्राम के माध्यम से संस्थापक को भेज दिया गया है। अलविदा।",
     areYouThere: "क्या आप वहाँ हैं? कृपया कोई भी कुंजी दबाएँ।",
     highCallVolume: "कॉल अधिक होने के कारण, अभी के लिए अलविदा।",
@@ -851,8 +872,8 @@ function stopVoice() {
   clearTimeout(warningTimer);
   clearTimeout(inactivityTimer);
   clearTimeout(dmTimer);
+  clearInterval(recordingInterval);
 
-  // If MediaRecorder is recording, stop it
   if (mediaRecorder && mediaRecorder.state === 'recording') {
     try { mediaRecorder.stop(); } catch(e) {}
   }
@@ -898,7 +919,7 @@ function focusKeypad() {
   document.getElementById('keypadCard').scrollIntoView({ behavior: 'smooth' });
 }
 
-// ========== BUTTON 10: ACTUAL VOICE RECORDING (Max 30s, Stop Early on any key) ==========
+// ========== BUTTON 10: ACTUAL VOICE RECORDING WITH LIVE COUNTDOWN TIMER ==========
 async function startVoiceMessageFlow() {
   if (!callActive) return;
 
@@ -924,9 +945,13 @@ async function startVoiceMessageFlow() {
         };
 
         mediaRecorder.onstop = async () => {
+          clearInterval(recordingInterval);
           stream.getTracks().forEach(track => track.stop());
           const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
           
+          const timerContainer = document.getElementById('timerContainer');
+          if (timerContainer) timerContainer.style.display = 'none';
+
           if (audioBlob.size < 100) {
             addChatMsg("No audio recorded.");
             if (callActive) setKeypadState(true);
@@ -956,25 +981,37 @@ async function startVoiceMessageFlow() {
         mediaRecorder.start();
         document.getElementById('statusText').textContent = "🔴 Recording voice note... Speak now (Press any key to stop early)";
 
+        // Live Countdown Timer setup
+        let timeLeft = 30;
         const timerContainer = document.getElementById('timerContainer');
         const timerBar = document.getElementById('timerBar');
-        if (timerContainer && timerBar) {
+        const timerCountdown = document.getElementById('timerCountdown');
+
+        if (timerContainer && timerBar && timerCountdown) {
           timerContainer.style.display = 'block';
-          timerBar.style.transition = 'none';
           timerBar.style.width = '100%';
-          setTimeout(() => {
-            if (!callActive) return;
-            timerBar.style.transition = 'width 30s linear';
-            timerBar.style.width = '0%';
-          }, 50);
+          timerCountdown.textContent = timeLeft + 's';
+
+          recordingInterval = setInterval(() => {
+            if (!callActive || !mediaRecorder || mediaRecorder.state !== 'recording') {
+              clearInterval(recordingInterval);
+              return;
+            }
+            timeLeft--;
+            timerCountdown.textContent = timeLeft + 's';
+            let pct = (timeLeft / 30) * 100;
+            timerBar.style.width = pct + '%';
+
+            if (timeLeft <= 0) {
+              clearInterval(recordingInterval);
+            }
+          }, 1000);
         }
 
-        // Max 30 seconds timer
         dmTimer = setTimeout(() => {
           if (mediaRecorder && mediaRecorder.state === 'recording') {
             mediaRecorder.stop();
           }
-          if (timerContainer) timerContainer.style.display = 'none';
         }, 30000);
 
       } catch (err) {
