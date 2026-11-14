@@ -172,7 +172,7 @@ h1{
   cursor:pointer;
 }
 
-/* 40-Second Recording Control Panel for Button 10 */
+/* 40-Second Voice Message Control Panel for Button 10 */
 #timerContainer {
   display: none;
   width: 100%;
@@ -209,11 +209,11 @@ h1{
   background: #f8fafc;
   border: 1px dashed #94a3b8;
   border-radius: 8px;
-  padding: 8px 10px;
-  font-size: 12px;
-  color: #334155;
+  padding: 10px;
+  font-size: 13px;
+  color: #1e293b;
   margin-bottom: 10px;
-  min-height: 36px;
+  min-height: 44px;
 }
 .rec-action-buttons {
   display: flex;
@@ -473,16 +473,16 @@ footer strong{display:block; margin-bottom:4px;}
       </select>
     </div>
 
-    <!-- 40-Second Recording Control Panel for Button 10 -->
+    <!-- 40-Second Voice Message Control Panel for Button 10 -->
     <div id="timerContainer">
       <div class="timer-header">
-        <span id="timerLabel">🔴 Recording Voice Message (Up to 40s)...</span>
+        <span id="timerLabel">🎤 Listening to Your Voice Message (Up to 40s)...</span>
         <span id="timerCountdown">40s</span>
       </div>
       <div id="timerTrack">
         <div id="timerBar"></div>
       </div>
-      <div class="live-transcript-preview" id="liveTranscriptPreview">🎤 Listening for live transcript...</div>
+      <div class="live-transcript-preview" id="liveTranscriptPreview">🎤 Speak now... your words will appear here.</div>
       <div class="rec-action-buttons">
         <button class="btn-stop-send" onclick="stopAndSendVoiceMessage()">⏹️ STOP & SEND</button>
         <button class="btn-cancel-rec" onclick="cancelVoiceMessage()">❌ CANCEL</button>
@@ -491,7 +491,7 @@ footer strong{display:block; margin-bottom:4px;}
 
     <!-- YELLOW Dialogue Box (Confirmations, Option 9 & Option 10 Fallbacks) -->
     <div id="yellowInputBox">
-      <strong id="yellowBoxTitle" style="color: #854d0e; font-size: 14px; display: block; margin-bottom: 6px;">⚠️ Manual Input:</strong>
+      <strong id="yellowBoxTitle" style="color: #854d0e; font-size: 14px; display: block; margin-bottom: 6px;">⚠️ Please Enter Details:</strong>
       <div id="yellowBoxBody"></div>
     </div>
     
@@ -557,7 +557,7 @@ footer strong{display:block; margin-bottom:4px;}
       </div>
 
       <div class="notice-box">
-        Options 1 to 8 prepare an email after you confirm your details. Options 9 &amp; 10 reach the Founder immediately on Telegram (with a Yellow Dialogue Box fallback if voice confirmation fails).
+        Options 1 to 8 prepare an email after you confirm your details. Options 9 &amp; 10 send your message directly to the Founder.
       </div>
     </section>
 
@@ -618,11 +618,12 @@ let inactivityTimer = null;
 let warningTimer = null;
 let inactivityPaused = false;
 let dmTimer = null;
-let mediaRecorder = null;
-let audioChunks = [];
-let recordingInterval = null;
+let voiceMsgInterval = null;
 let activeRecForOption10 = null;
+let stopOption10CaptureFn = null;
+let cancelOption10CaptureFn = null;
 let yellowInputResolve = null;
+let detailsSentToFounder = false;
 
 let voicePermissionGranted = false;
 const hasVoiceSupport = ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
@@ -634,10 +635,10 @@ let callerInfo = {
   purpose: ""
 };
 
-// ========== LANGUAGE DATA ==========
+// ========== LANGUAGE DATA (NO MENTION OF TELEGRAM TO VISITOR) ==========
 const languageData = {
   'en-IN': {
-    greeting: "Welcome to GARR Foundation, this is Prakruthi, AI Assistant to Dr. Venu Gopal Madhav Annamdas. How may I help you? Please press buttons 1 to 8 for email enquiry, 9 to talk and send an instant message, or 10 to send a voice message.",
+    greeting: "Welcome to GARR Foundation, this is Prakruthi, AI Assistant to Dr. Venu Gopal Madhav Annamdas. How may I help you? Please press buttons 1 to 8 for email enquiry, 9 to talk and send a direct message, or 10 to send a voice message.",
     reset: "Options reset. Please choose a number from 1 to 11.",
     optionSelected: "Option {num}, {title} selected. Please complete the form details.",
     formReady: "Form details ready. Please confirm to prepare your email.",
@@ -645,8 +646,8 @@ const languageData = {
     founderBio: "Our Founder is Dr. Venu Gopal Madhav Annamdas, Former Singapore Senior Scientist at Nanyang Technological University.",
     ringing: "Connecting to Prakruthi... please wait.",
     callConnected: "Call connected. You may now use the keypad.",
-    directMsgStart: "Please record your voice message for the Founder for up to forty seconds. Speak now.",
-    directMsgThanks: "Your voice message and English transcript have been sent to the Founder on Telegram. Good bye.",
+    directMsgStart: "Please speak your voice message for the Founder for up to forty seconds. Speak now.",
+    directMsgThanks: "Thank you. Your voice message has been received and forwarded to the Founder. Good bye.",
     areYouThere: "Are you there? Please press any of the keys.",
     highCallVolume: "There is high call volume, good bye for now.",
     goodbye: "Good bye.",
@@ -657,7 +658,7 @@ const languageData = {
     confirmPhone: "I heard your mobile number as {val}. Is this correct? Say Yes or No.",
     confirmPurpose: "I heard your query as {val}. Is this correct? Say Yes or No.",
     retryConfirm: "I could not hear Yes or No clearly. Please say Yes or No, or use the yellow box below.",
-    finalOutro: "Thank you. Your details have been sent immediately to the Founder on Telegram. You will be contacted soon. Good bye.",
+    finalOutro: "Thank you. Your details have been forwarded to the Founder. You will be contacted soon. Good bye.",
     voiceFallback: "Voice input is unavailable. Please use the yellow dialogue box below."
   },
   'hi-IN': {
@@ -669,8 +670,8 @@ const languageData = {
     founderBio: "हमारे संस्थापक डॉ. वेणु गोपाल माधव अन्नामदास हैं।",
     ringing: "कनेक्ट हो रहा है...",
     callConnected: "कॉल कनेक्ट हो गई है।",
-    directMsgStart: "कृपया संस्थापक के लिए 40 सेकंड तक अपना वॉयस मैसेज रिकॉर्ड करें। अब बोलें।",
-    directMsgThanks: "आपका वॉयस मैसेज और अंग्रेजी ट्रांसक्रिप्ट टेलीग्राम पर भेज दिया गया है। अलविदा।",
+    directMsgStart: "कृपया संस्थापक के लिए 40 सेकंड तक अपना वॉयस मैसेज बोलें। अब बोलें।",
+    directMsgThanks: "धन्यवाद। आपका वॉयस मैसेज संस्थापक तक पहुंचा दिया गया है। अलविदा।",
     areYouThere: "क्या आप वहाँ हैं?",
     highCallVolume: "अलविदा।",
     goodbye: "अलविदा।",
@@ -681,7 +682,7 @@ const languageData = {
     confirmPhone: "मैंने आपका नंबर {val} सुना। क्या यह सही है? हाँ या नहीं कहें।",
     confirmPurpose: "मैंने आपका उद्देश्य {val} सुना। क्या यह सही है? हाँ या नहीं कहें।",
     retryConfirm: "मैंने हाँ या नहीं स्पष्ट नहीं सुना। कृपया हाँ या नहीं कहें, या नीचे पीले बॉक्स का उपयोग करें।",
-    finalOutro: "धन्यवाद। आपका विवरण तुरंत टेलीग्राम पर संस्थापक को भेज दिया गया है। जल्द संपर्क किया जाएगा। अलविदा।",
+    finalOutro: "धन्यवाद। आपका विवरण संस्थापक तक पहुंचा दिया गया है। जल्द संपर्क किया जाएगा। अलविदा।",
     voiceFallback: "वॉयस इनपुट उपलब्ध नहीं है। कृपया नीचे पीले बॉक्स का उपयोग करें।"
   },
   'te-IN': {
@@ -693,8 +694,8 @@ const languageData = {
     founderBio: "మా ఫౌండర్ డా. వేణుగోపాల్ మాధవ్ అన్నందాస్.",
     ringing: "కనెక్ట్ అవుతోంది...",
     callConnected: "కాల్ కనెక్ట్ అయింది.",
-    directMsgStart: "దయచేసి ఫౌండర్ కోసం 40 సెకన్ల వరకు మీ వాయిస్ మెసేజ్ రికార్డ్ చేయండి. ఇప్పుడు మాట్లాడండి.",
-    directMsgThanks: "మీ వాయిస్ మెసేజ్ మరియు ఆంగ్ల అనువాదం టెలిగ్రామ్‌లో పంపబడింది. వీడ్కోలు.",
+    directMsgStart: "దయచేసి ఫౌండర్ కోసం 40 సెకన్ల వరకు మీ వాయిస్ మెసేజ్ మాట్లాడండి. ఇప్పుడు మాట్లాడండి.",
+    directMsgThanks: "ధన్యవాదాలు. మీ వాయిస్ మెసేజ్ ఫౌండర్‌కు పంపబడింది. వీడ్కోలు.",
     areYouThere: "మీరు అక్కడ ఉన్నారా?",
     highCallVolume: "వీడ్కోలు.",
     goodbye: "వీడ్కోలు.",
@@ -705,7 +706,7 @@ const languageData = {
     confirmPhone: "నేను మీ నంబర్ {val} గా విన్నాను. ఇది సరైనదా? అవును లేదా కాదు చెప్పండి.",
     confirmPurpose: "నేను మీ ఉద్దేశ్యం {val} గా విన్నాను. ఇది సరైనదా? అవును లేదా కాదు చెప్పండి.",
     retryConfirm: "అవును లేదా కాదు స్పష్టంగా వినిపించలేదు. దయచేసి మళ్లీ చెప్పండి లేదా క్రింది పసుపు పెట్టెను ఉపయోగించండి.",
-    finalOutro: "ధన్యవాదాలు. మీ వివరాలు వెంటనే టెలిగ్రామ్‌లో ఫౌండర్‌కు పంపబడ్డాయి. వీడ్కోలు.",
+    finalOutro: "ధన్యవాదాలు. మీ వివరాలు ఫౌండర్‌కు పంపబడ్డాయి. త్వరలో సంప్రదిస్తారు. వీడ్కోలు.",
     voiceFallback: "వాయిస్ ఇన్‌పుట్ అందుబాటులో లేదు. దయచేసి క్రింది పసుపు పెట్టెను ఉపయోగించండి."
   }
 };
@@ -749,7 +750,6 @@ function extractIndianMobileDigits(rawText) {
   if (!rawText) return "";
   let s = rawText.toLowerCase();
 
-  // Handle "double X" and "triple X"
   const wordToDigit = {
     'zero': '0', 'oh': '0', 'o': '0', 'shunya': '0', 'sunna': '0',
     'one': '1', 'won': '1', 'ek': '1', 'okati': '1',
@@ -763,7 +763,6 @@ function extractIndianMobileDigits(rawText) {
     'nine': '9', 'nain': '9', 'nau': '9', 'tommidi': '9'
   };
 
-  // Replace "double <word/digit>" and "triple <word/digit>"
   s = s.replace(/\bdouble\s+([a-z0-9]+)/g, (_, tok) => {
     const d = wordToDigit[tok] || (/^\d$/.test(tok) ? tok : '');
     return d ? d + d : tok;
@@ -773,13 +772,11 @@ function extractIndianMobileDigits(rawText) {
     return d ? d + d + d : tok;
   });
 
-  // Replace spoken number words
   Object.keys(wordToDigit).forEach(w => {
     s = s.replace(new RegExp(`\\b${w}\\b`, 'g'), wordToDigit[w]);
   });
 
   let digits = s.replace(/\D/g, '');
-  // Normalize +91 / 91 prefix or leading 0 if 11/12 digits
   if (digits.length === 12 && digits.startsWith('91')) {
     digits = digits.slice(2);
   } else if (digits.length === 11 && digits.startsWith('0')) {
@@ -861,8 +858,8 @@ function playRingingTone(durationMs = 3000) {
   });
 }
 
-// ========== TELEGRAM ==========
-async function notifyTelegram(payload) {
+// ========== WORKER NOTIFICATION (SILENT TO VISITOR) ==========
+async function notifyFounder(payload) {
   try {
     const res = await fetch(WORKER_NOTIFY_URL, {
       method: "POST",
@@ -872,7 +869,7 @@ async function notifyTelegram(payload) {
     });
     return res.ok;
   } catch (e) {
-    console.warn("Telegram notify failed", e);
+    console.warn("Notify failed", e);
     return false;
   }
 }
@@ -918,7 +915,6 @@ function speak(text) {
     utterance.onend = done;
     utterance.onerror = done;
 
-    // Fallback timeout in case browser TTS hangs
     setTimeout(done, Math.max(3500, text.length * 115));
 
     try {
@@ -956,7 +952,7 @@ function resetInactivityTimer() {
     const warnText = langTexts.areYouThere || "Are you there? Please press any of the keys.";
     addChatMsg(warnText);
 
-    inactivityPaused = true; // prevent speak() from resetting warningTimer into a loop
+    inactivityPaused = true;
     await speak(warnText);
     inactivityPaused = false;
 
@@ -978,8 +974,7 @@ function setKeypadState(enabled) {
     if (!enabled) {
       btn.disabled = true;
     } else {
-      // Option 9 can always run (via Yellow Box if voice isn't allowed); Option 10 needs mic/voice
-      if ((!voicePermissionGranted) && btn.id === 'btn10') {
+      if ((!voicePermissionGranted || !hasVoiceSupport) && btn.id === 'btn10') {
         btn.disabled = true;
       } else {
         btn.disabled = false;
@@ -990,10 +985,12 @@ function setKeypadState(enabled) {
   const notice = document.getElementById('keypadNotice');
   if (enabled) {
     if (voicePermissionGranted && hasVoiceSupport) {
-      notice.textContent = "Press 1–8 for email, 9 for instant Telegram query, 10 for voice message, or 11 to Reset.";
+      notice.textContent = "Press 1–8 for email, 9 to talk and send directly, 10 for voice message, or 11 to Reset.";
     } else {
-      notice.textContent = "Mic unavailable or unsupported: Options 1–8 and 9 (Yellow Box) are active.";
+      notice.textContent = "Voice recognition unavailable: Options 1–8 and 9 (Yellow Dialogue Box) are active.";
     }
+  } else if (callActive) {
+    notice.textContent = "Voice session in progress... please follow the prompts above.";
   } else {
     notice.textContent = "Press 'CALL PRAKRUTHI' to enable keypad options.";
   }
@@ -1012,6 +1009,7 @@ function changeLanguage() {
 async function startVoice() {
   if (callActive) return;
 
+  // Test mic permission once and immediately release stream so SpeechRecognition has exclusive mic access
   if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -1025,6 +1023,8 @@ async function startVoice() {
   callActive = true;
   callStartTime = Date.now();
   inactivityPaused = false;
+  detailsSentToFounder = false;
+  callerInfo = { name: "", phone: "", purpose: "" };
 
   const callBtn = document.getElementById('callBtn');
   const callBtnText = document.getElementById('callBtnText');
@@ -1043,8 +1043,7 @@ async function startVoice() {
   document.getElementById('statusText').textContent = langTexts.ringing;
   addChatMsg(langTexts.ringing);
 
-  // Notify Founder immediately when call starts
-  notifyTelegram({
+  notifyFounder({
     type: "call_started",
     lang: currentLang,
     voice_enabled: voicePermissionGranted && hasVoiceSupport,
@@ -1096,7 +1095,6 @@ function closeYellowBox() {
   if (box) box.style.display = 'none';
 }
 
-// Mode 1: Confirm captured value OR switch immediately to manual edit
 function showYellowConfirmOrEdit(title, label, currentVal, isPhone = false) {
   return new Promise((resolve) => {
     if (!callActive) { resolve({ confirmed: false, value: currentVal }); return; }
@@ -1126,7 +1124,7 @@ function showYellowConfirmOrEdit(title, label, currentVal, isPhone = false) {
     const inp = document.getElementById('yellowSingleField');
     const errEl = document.getElementById('yellowValidationErr');
 
-    const finish = (confirmed, val) => {
+    const finish = (val) => {
       if (isPhone) {
         const d = extractIndianMobileDigits(val);
         if (d.length !== 10) {
@@ -1147,8 +1145,8 @@ function showYellowConfirmOrEdit(title, label, currentVal, isPhone = false) {
       resolve({ confirmed: true, value: val.trim() });
     };
 
-    document.getElementById('yBtnYes').onclick = () => finish(true, inp.value.trim() || currentVal);
-    document.getElementById('yBtnSave').onclick = () => finish(true, inp.value.trim());
+    document.getElementById('yBtnYes').onclick = () => finish(inp.value.trim() || currentVal);
+    document.getElementById('yBtnSave').onclick = () => finish(inp.value.trim());
 
     yellowInputResolve = () => {
       closeYellowBox();
@@ -1157,7 +1155,6 @@ function showYellowConfirmOrEdit(title, label, currentVal, isPhone = false) {
   });
 }
 
-// Mode 2: Full Yellow Dialogue Box for Option 9 (Name, 10-digit Phone, Query -> Instant Telegram)
 function showYellowOption9Dialogue(prefilled) {
   return new Promise((resolve) => {
     if (!callActive) { resolve(null); return; }
@@ -1167,10 +1164,10 @@ function showYellowOption9Dialogue(prefilled) {
     const titleEl = document.getElementById('yellowBoxTitle');
     const bodyEl = document.getElementById('yellowBoxBody');
 
-    titleEl.textContent = "⚠️ Yellow Dialogue Box — Option 9 (Immediate Telegram to Founder)";
+    titleEl.textContent = "⚠️ Please Verify or Enter Your Details";
     bodyEl.innerHTML = `
       <div style="font-size:12px; color:#713f12; margin-bottom:8px;">
-        Please verify or enter your details below and press Submit to send immediately to the Founder on Telegram.
+        Please verify or enter your details below and press Submit to send directly to the Founder.
       </div>
       <label>Full Name *</label>
       <input type="text" id="y9Name" value="${escapeHtml(prefilled.name || '')}" placeholder="Enter your full name">
@@ -1184,7 +1181,7 @@ function showYellowOption9Dialogue(prefilled) {
       <div id="y9Err" style="color:#b91c1c; font-size:12px; font-weight:700; display:none; margin-bottom:6px;"></div>
 
       <div class="yellow-btn-row">
-        <button type="button" class="btn-control btn-yellow-submit" id="y9SubmitBtn">📨 SUBMIT & SEND TO FOUNDER (TELEGRAM)</button>
+        <button type="button" class="btn-control btn-yellow-submit" id="y9SubmitBtn">📨 SUBMIT & SEND TO FOUNDER</button>
         <button type="button" class="btn-control btn-neutral" id="y9CancelBtn">CANCEL</button>
       </div>
     `;
@@ -1237,7 +1234,6 @@ function showYellowOption9Dialogue(prefilled) {
   });
 }
 
-// Mode 3: Transcript Fallback Box for Option 10 (with 1-tap Voice button after MediaRecorder finishes)
 function showYellowTranscriptBox() {
   return new Promise((resolve) => {
     if (!callActive) { resolve(""); return; }
@@ -1247,15 +1243,16 @@ function showYellowTranscriptBox() {
     const titleEl = document.getElementById('yellowBoxTitle');
     const bodyEl = document.getElementById('yellowBoxBody');
 
-    titleEl.textContent = "📝 Voice Transcript Box (Option 10 — Will Convert to English & Send)";
+    titleEl.textContent = "📝 Voice Message Input";
     bodyEl.innerHTML = `
       <div style="font-size:12px; color:#713f12; margin-bottom:8px;">
-        Live speech-to-text could not capture words while recording audio. Tap the mic button to speak your short summary or type it below:
+        We could not capture your message clearly. Tap the mic button to speak again or type your message below:
       </div>
-      <textarea id="y10Text" rows="3" placeholder="Speak or type your message here..."></textarea>
+      <textarea id="y10Text" rows="3" placeholder="Speak or type your message for the Founder..."></textarea>
+      <div id="y10Err" style="color:#b91c1c; font-size:12px; font-weight:700; display:none; margin-bottom:6px;"></div>
       <div class="yellow-btn-row">
-        ${hasVoiceSupport ? `<button type="button" class="btn-control btn-yellow-mic" id="y10SpeakBtn">🎤 SPEAK TRANSCRIPT</button>` : ''}
-        <button type="button" class="btn-control btn-yellow-submit" id="y10SendBtn">📨 CONVERT TO ENGLISH & SEND</button>
+        ${hasVoiceSupport ? `<button type="button" class="btn-control btn-yellow-mic" id="y10SpeakBtn">🎤 SPEAK MESSAGE</button>` : ''}
+        <button type="button" class="btn-control btn-yellow-submit" id="y10SendBtn">📨 SUBMIT & SEND TO FOUNDER</button>
       </div>
     `;
 
@@ -1263,22 +1260,31 @@ function showYellowTranscriptBox() {
     box.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
     const textEl = document.getElementById('y10Text');
+    const errEl = document.getElementById('y10Err');
     const speakBtn = document.getElementById('y10SpeakBtn');
+
     if (speakBtn) {
       speakBtn.onclick = async () => {
         speakBtn.disabled = true;
         speakBtn.textContent = "🎤 Listening...";
-        const heard = await listenForSentence(10000);
+        const heard = await listenForSentence(15000, 2500);
         if (heard) {
           textEl.value = (textEl.value + " " + heard).trim();
+          errEl.style.display = 'none';
         }
         speakBtn.disabled = false;
-        speakBtn.textContent = "🎤 SPEAK TRANSCRIPT";
+        speakBtn.textContent = "🎤 SPEAK MESSAGE";
       };
     }
 
     document.getElementById('y10SendBtn').onclick = () => {
-      const val = textEl.value.trim() || "Voice audio message recorded (no text transcript provided).";
+      const val = textEl.value.trim();
+      if (!val) {
+        errEl.textContent = "Please speak or type your message before sending.";
+        errEl.style.display = 'block';
+        textEl.focus();
+        return;
+      }
       yellowInputResolve = null;
       closeYellowBox();
       resolve(val);
@@ -1291,7 +1297,7 @@ function showYellowTranscriptBox() {
   });
 }
 
-// ========== ADVANCED VOICE LISTENERS ==========
+// ========== VOICE LISTENERS ==========
 function finishActiveListening() {
   if (activeListeningResolver) {
     activeListeningResolver();
@@ -1309,7 +1315,6 @@ function stopListening() {
   isListening = false;
 }
 
-// 1) Dedicated Yes/No listener: fast interim matching + generous 6.5s window
 function listenForYesNo(timeoutMs = 6500) {
   return new Promise(async (resolve) => {
     stopListening();
@@ -1318,7 +1323,7 @@ function listenForYesNo(timeoutMs = 6500) {
       return;
     }
 
-    await sleep(350); // acoustic settle buffer after TTS stops
+    await sleep(350);
     if (!callActive) { resolve(null); return; }
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -1376,7 +1381,6 @@ function listenForYesNo(timeoutMs = 6500) {
     recognition.onend = () => {
       isListening = false;
       if (!resolved && callActive) {
-        // If ended early without result, wait briefly or finish
         finish(classifyYesNo(lastRaw), lastRaw);
       }
     };
@@ -1389,7 +1393,6 @@ function listenForYesNo(timeoutMs = 6500) {
   });
 }
 
-// 2) Dedicated 10-digit Indian Mobile Number listener
 function listenForIndianPhone(maxWaitMs = 15000) {
   return new Promise(async (resolve) => {
     stopListening();
@@ -1446,13 +1449,9 @@ function listenForIndianPhone(maxWaitMs = 15000) {
         let sessionInterim = "";
         for (let i = 0; i < event.results.length; i++) {
           const t = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
-            sessionFinal += t + " ";
-          } else {
-            sessionInterim += t + " ";
-          }
+          if (event.results[i].isFinal) sessionFinal += t + " ";
+          else sessionInterim += t + " ";
         }
-        // Track cumulative text properly across restarts
         interimTranscript = sessionFinal + sessionInterim;
 
         const digits = getCurrentDigits();
@@ -1461,7 +1460,6 @@ function listenForIndianPhone(maxWaitMs = 15000) {
 
         clearTimeout(settleTimer);
         if (digits.length >= 10) {
-          // Wait 1.6s after 10 digits appear in case user is still finishing "+91" or corrections
           settleTimer = setTimeout(finish, 1600);
         }
       };
@@ -1478,7 +1476,6 @@ function listenForIndianPhone(maxWaitMs = 15000) {
           finalTranscript += " " + interimTranscript.trim();
           interimTranscript = "";
         }
-        // Keep restarting until we have 10 digits or timeout/Done button
         if (!resolved && callActive) {
           const digits = getCurrentDigits();
           if (digits.length >= 10) {
@@ -1501,7 +1498,6 @@ function listenForIndianPhone(maxWaitMs = 15000) {
   });
 }
 
-// 3) Patient Sentence / Name / Query listener (continuous + silence-after-speech)
 function listenForSentence(maxWaitMs = 12000, silenceAfterSpeechMs = 2300) {
   return new Promise(async (resolve) => {
     stopListening();
@@ -1584,7 +1580,7 @@ function listenForSentence(maxWaitMs = 12000, silenceAfterSpeechMs = 2300) {
   });
 }
 
-// ========== CONFIRMATION HELPER (VOICE YES/NO + YELLOW FALLBACK) ==========
+// ========== CONFIRMATION HELPER ==========
 async function confirmFieldWithVoiceOrYellow(promptSpeak, label, value, isPhone = false) {
   if (!callActive) return value;
 
@@ -1597,7 +1593,6 @@ async function confirmFieldWithVoiceOrYellow(promptSpeak, label, value, isPhone 
     return value;
   }
 
-  // If unclear, retry once quickly before opening Yellow Dialogue Box
   if (decision === null) {
     const langTexts = languageData[currentLang] || languageData['en-IN'];
     addChatMsg(langTexts.retryConfirm);
@@ -1609,9 +1604,8 @@ async function confirmFieldWithVoiceOrYellow(promptSpeak, label, value, isPhone 
     }
   }
 
-  // Either user said "No" OR Yes/No could not be verified -> Show Yellow Dialogue Box
   const yellowRes = await showYellowConfirmOrEdit(
-    `⚠️ Verify / Edit ${label} (Voice Confirmation Needed)`,
+    `⚠️ Verify / Edit ${label}`,
     label,
     value,
     isPhone
@@ -1624,18 +1618,18 @@ async function startVoiceInputFlow(optionType) {
   if (!callActive) return;
 
   callerInfo = { name: "", phone: "", purpose: "" };
+  detailsSentToFounder = false;
   setKeypadState(false);
   pauseInactivityTimer();
 
   const langTexts = languageData[currentLang] || languageData['en-IN'];
 
-  // If Option 9 is chosen without voice permission/support, jump directly to Yellow Dialogue Box
   if (optionType === 9 && (!voicePermissionGranted || !hasVoiceSupport)) {
     addChatMsg(langTexts.voiceFallback);
     await speak(langTexts.voiceFallback);
     const manual9 = await showYellowOption9Dialogue(callerInfo);
     if (manual9 && callActive) {
-      await sendOption9ToTelegram(manual9, langTexts);
+      await sendToFounderImmediately(manual9, langTexts, false);
     } else if (callActive) {
       setKeypadState(true);
       resumeInactivityTimer();
@@ -1689,7 +1683,7 @@ async function startVoiceInputFlow(optionType) {
   }
 }
 
-// ========== BUTTON 9 SUB-FLOW: QUERY -> YELLOW FALLBACK -> IMMEDIATE TELEGRAM ==========
+// ========== BUTTON 9 SUB-FLOW ==========
 async function executeContinueTalkingFlow(langTexts) {
   if (!callActive) return;
 
@@ -1719,10 +1713,9 @@ async function executeContinueTalkingFlow(langTexts) {
     }
   }
 
-  // If query was empty OR unable to confirm -> open Option 9 Yellow Dialogue Box
   if (!confirmed) {
     callerInfo.purpose = spokenQuery || "";
-    const msg = "Please confirm or enter your details in the yellow dialogue box to send immediately to the Founder.";
+    const msg = "Please confirm or enter your details in the yellow dialogue box to submit to the Founder.";
     addChatMsg(msg);
     await speak(msg);
     if (!callActive) return;
@@ -1736,232 +1729,199 @@ async function executeContinueTalkingFlow(langTexts) {
     callerInfo = finalData;
   }
 
-  await sendOption9ToTelegram(callerInfo, langTexts);
+  await sendToFounderImmediately(callerInfo, langTexts, false);
 }
 
-async function sendOption9ToTelegram(data, langTexts) {
-  if (!callActive) return;
-  document.getElementById('statusText').textContent = "📨 Sending to Founder on Telegram...";
-
-  const engQuery = await translateToEnglish(data.purpose, currentLang);
-  const ok = await notifyTelegram({
-    type: "interactive_detailed_query",
-    lang: currentLang,
-    name: data.name,
-    phone: data.phone,
-    purpose: data.purpose,
-    english_translation: engQuery
-  });
-
-  if (ok) {
-    addChatMsg(`✅ Sent immediately to Founder on Telegram!\nName: ${data.name} | Phone: ${data.phone}\nQuery (EN): ${engQuery}`);
-  } else {
-    addChatMsg(`⚠️ Attempted Telegram send (check network). Details recorded: ${data.name}, ${data.phone}`);
-  }
-
-  const outro = langTexts.finalOutro;
-  addChatMsg(outro);
-  await speak(outro);
-  stopVoice();
-}
-
-// ========== BUTTON 10 SUB-FLOW: 40s VOICE MESSAGE + ENGLISH TRANSCRIPT TO TELEGRAM ==========
+// ========== BUTTON 10 SUB-FLOW (PURE SPEECH-TO-TEXT, ZERO ANDROID DUAL-MIC CONFLICT) ==========
 async function executeVoiceMessageFlow(langTexts) {
   if (!callActive) return;
   pauseInactivityTimer();
+  stopListening();
 
   const startMsg = langTexts.directMsgStart;
   addChatMsg(startMsg);
   await speak(startMsg);
   if (!callActive) return;
 
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm'
-                   : (MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : '');
-    mediaRecorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
-    audioChunks = [];
+  await sleep(350);
+  if (!callActive) return;
 
-    let finalizedTranscript = "";
-    let liveInterim = "";
-    let recordingActive = true;
-    const previewEl = document.getElementById('liveTranscriptPreview');
-    if (previewEl) previewEl.textContent = "🎤 Listening for live transcript...";
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    const txt = await showYellowTranscriptBox();
+    if (!txt || !callActive) { setKeypadState(true); resumeInactivityTimer(); return; }
+    callerInfo.purpose = txt;
+    await sendToFounderImmediately(callerInfo, langTexts, true);
+    return;
+  }
 
-    const startParallelSpeechRec = () => {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition || !recordingActive) return;
-      const rec = new SpeechRecognition();
-      activeRecForOption10 = rec;
-      rec.lang = currentLang;
-      rec.interimResults = true;
-      rec.maxAlternatives = 1;
-      rec.continuous = true;
+  let finalizedTranscript = "";
+  let liveInterim = "";
+  let captureActive = true;
+  let timeLeft = 40;
 
-      rec.onresult = (e) => {
-        let f = "";
-        let it = "";
-        for (let i = 0; i < e.results.length; ++i) {
-          const t = e.results[i][0].transcript;
-          if (e.results[i].isFinal) f += t + " ";
-          else it += t + " ";
-        }
-        liveInterim = (f + it).trim();
-        const combined = (finalizedTranscript + " " + liveInterim).trim();
-        if (previewEl && combined) {
-          previewEl.textContent = "🎤 Heard: " + combined;
-        }
-      };
+  const timerContainer = document.getElementById('timerContainer');
+  const timerBar = document.getElementById('timerBar');
+  const timerCountdown = document.getElementById('timerCountdown');
+  const previewEl = document.getElementById('liveTranscriptPreview');
 
-      rec.onend = () => {
-        if (liveInterim) {
-          finalizedTranscript = (finalizedTranscript + " " + liveInterim).trim();
-          liveInterim = "";
-        }
-        if (recordingActive && callActive) {
-          setTimeout(startParallelSpeechRec, 150);
-        }
-      };
+  if (previewEl) previewEl.textContent = "🎤 Speak now... your words will appear here.";
+  if (timerContainer && timerBar && timerCountdown) {
+    timerContainer.style.display = 'block';
+    timerBar.style.width = '100%';
+    timerCountdown.textContent = timeLeft + 's';
+  }
+  document.getElementById('statusText').textContent = "🎤 Listening to your voice message (Up to 40s)...";
 
-      rec.onerror = () => {};
-      try { rec.start(); } catch(e) {}
-    };
+  const startSession = () => {
+    if (!captureActive || !callActive) return;
+    const rec = new SpeechRecognition();
+    activeRecForOption10 = rec;
+    rec.lang = currentLang;
+    rec.interimResults = true;
+    rec.maxAlternatives = 1;
+    rec.continuous = true;
 
-    startParallelSpeechRec();
-
-    mediaRecorder.ondataavailable = (event) => {
-      if (event.data && event.data.size > 0) audioChunks.push(event.data);
-    };
-
-    mediaRecorder.onstop = async () => {
-      recordingActive = false;
-      clearInterval(recordingInterval);
-      clearTimeout(dmTimer);
-      if (activeRecForOption10) {
-        try { activeRecForOption10.stop(); } catch(e) {}
+    rec.onresult = (e) => {
+      if (!captureActive || !callActive) return;
+      let f = "";
+      let it = "";
+      for (let i = 0; i < e.results.length; ++i) {
+        const t = e.results[i][0].transcript;
+        if (e.results[i].isFinal) f += t + " ";
+        else it += t + " ";
       }
-      stream.getTracks().forEach(track => track.stop());
-
-      // Wait briefly so SpeechRecognition flushes final words
-      await sleep(400);
-      activeRecForOption10 = null;
-
-      const timerContainer = document.getElementById('timerContainer');
-      if (timerContainer) timerContainer.style.display = 'none';
-
-      if (!callActive) return;
-
-      const audioBlob = new Blob(audioChunks, { type: mimeType || 'audio/webm' });
-
-      let rawText = (finalizedTranscript + " " + liveInterim).trim();
-      if (!rawText) {
-        rawText = await showYellowTranscriptBox();
-        if (!callActive) return;
+      liveInterim = (f + it).trim();
+      const combined = (finalizedTranscript + " " + liveInterim).trim();
+      if (previewEl && combined) {
+        previewEl.textContent = "🎤 Heard: " + combined;
       }
-
-      document.getElementById('statusText').textContent = "🌐 Converting to English & sending to Telegram...";
-      const englishTranslation = await translateToEnglish(rawText, currentLang);
-      addChatMsg(`📝 Voice Transcript (EN): ${englishTranslation}`);
-
-      const reader = new FileReader();
-      reader.readAsDataURL(audioBlob);
-      reader.onloadend = async () => {
-        const base64Audio = reader.result;
-        await notifyTelegram({
-          type: "voice_audio_message",
-          lang: currentLang,
-          name: callerInfo.name,
-          phone: callerInfo.phone,
-          original_message: rawText,
-          english_translation: englishTranslation,
-          audio_base64: base64Audio
-        });
-
-        const thanks = langTexts.directMsgThanks;
-        addChatMsg(thanks);
-        await speak(thanks);
-        stopVoice();
-      };
     };
 
-    mediaRecorder.start();
-    document.getElementById('statusText').textContent = "🔴 Recording voice message... Speak now (Up to 40s)";
+    rec.onend = () => {
+      if (liveInterim) {
+        finalizedTranscript = (finalizedTranscript + " " + liveInterim).trim();
+        liveInterim = "";
+      }
+      if (captureActive && callActive) {
+        setTimeout(startSession, 150);
+      }
+    };
 
-    let timeLeft = 40;
-    const timerContainer = document.getElementById('timerContainer');
-    const timerBar = document.getElementById('timerBar');
-    const timerCountdown = document.getElementById('timerCountdown');
+    rec.onerror = (err) => {
+      if (err && (err.error === 'not-allowed' || err.error === 'service-not-allowed')) {
+        if (stopOption10CaptureFn) stopOption10CaptureFn();
+      }
+    };
 
-    if (timerContainer && timerBar && timerCountdown) {
-      timerContainer.style.display = 'block';
-      timerBar.style.width = '100%';
-      timerCountdown.textContent = timeLeft + 's';
+    try { rec.start(); } catch(e) {}
+  };
 
-      recordingInterval = setInterval(() => {
-        if (!callActive || !mediaRecorder || mediaRecorder.state !== 'recording') {
-          clearInterval(recordingInterval);
-          return;
-        }
-        timeLeft--;
-        timerCountdown.textContent = timeLeft + 's';
-        timerBar.style.width = ((timeLeft / 40) * 100) + '%';
+  startSession();
 
-        if (timeLeft <= 0) {
-          clearInterval(recordingInterval);
-          if (mediaRecorder && mediaRecorder.state === 'recording') {
-            mediaRecorder.stop();
-          }
-        }
-      }, 1000);
+  const cleanup10 = () => {
+    captureActive = false;
+    clearInterval(voiceMsgInterval);
+    clearTimeout(dmTimer);
+    stopOption10CaptureFn = null;
+    cancelOption10CaptureFn = null;
+    if (activeRecForOption10) {
+      try { activeRecForOption10.stop(); } catch(e) {}
+    }
+    if (timerContainer) timerContainer.style.display = 'none';
+  };
+
+  stopOption10CaptureFn = async () => {
+    if (!captureActive) return;
+    cleanup10();
+    await sleep(350);
+    activeRecForOption10 = null;
+    if (!callActive) return;
+
+    let rawText = (finalizedTranscript + " " + liveInterim).trim();
+    if (!rawText) {
+      rawText = await showYellowTranscriptBox();
+      if (!rawText || !callActive) {
+        setKeypadState(true);
+        resumeInactivityTimer();
+        return;
+      }
     }
 
-    dmTimer = setTimeout(() => {
-      if (mediaRecorder && mediaRecorder.state === 'recording') {
-        mediaRecorder.stop();
-      }
-    }, 40000);
+    callerInfo.purpose = rawText;
+    await sendToFounderImmediately(callerInfo, langTexts, true);
+  };
 
-  } catch (err) {
-    console.error("Mic error:", err);
-    const absMsg = "Microphone error encountered during recording.";
-    addChatMsg(absMsg);
-    await speak(absMsg);
-    setKeypadState(true);
-    resumeInactivityTimer();
-  }
+  cancelOption10CaptureFn = () => {
+    cleanup10();
+    if (activeRecForOption10) {
+      try { activeRecForOption10.abort(); } catch(e) {}
+      activeRecForOption10 = null;
+    }
+    addChatMsg("Voice message cancelled.");
+    if (callActive) {
+      setKeypadState(true);
+      resumeInactivityTimer();
+    }
+  };
+
+  voiceMsgInterval = setInterval(() => {
+    if (!captureActive || !callActive) {
+      clearInterval(voiceMsgInterval);
+      return;
+    }
+    timeLeft--;
+    if (timerCountdown) timerCountdown.textContent = timeLeft + 's';
+    if (timerBar) timerBar.style.width = ((timeLeft / 40) * 100) + '%';
+    if (timeLeft <= 0 && stopOption10CaptureFn) {
+      stopOption10CaptureFn();
+    }
+  }, 1000);
+
+  dmTimer = setTimeout(() => {
+    if (stopOption10CaptureFn) stopOption10CaptureFn();
+  }, 40000);
 }
 
 function stopAndSendVoiceMessage() {
-  clearTimeout(dmTimer);
-  clearInterval(recordingInterval);
-  if (mediaRecorder && mediaRecorder.state === 'recording') {
-    mediaRecorder.stop();
-  }
+  if (stopOption10CaptureFn) stopOption10CaptureFn();
 }
 
 function cancelVoiceMessage() {
-  clearTimeout(dmTimer);
-  clearInterval(recordingInterval);
-  if (activeRecForOption10) {
-    try { activeRecForOption10.abort(); } catch(e) {}
-    activeRecForOption10 = null;
+  if (cancelOption10CaptureFn) cancelOption10CaptureFn();
+}
+
+// ========== UNIFIED INSTANT SEND FOR OPTIONS 9 & 10 ==========
+async function sendToFounderImmediately(data, langTexts, isVoiceMsg = false) {
+  if (!callActive) return;
+  document.getElementById('statusText').textContent = isVoiceMsg
+    ? "🌐 Processing your voice message..."
+    : "📨 Sending your message to the Founder...";
+
+  const engQuery = await translateToEnglish(data.purpose, currentLang);
+  const formattedPurpose = isVoiceMsg ? `[Option 10 Voice Message] ${data.purpose}` : data.purpose;
+
+  const ok = await notifyFounder({
+    type: "interactive_detailed_query",
+    lang: currentLang,
+    name: data.name,
+    phone: data.phone,
+    purpose: formattedPurpose,
+    english_translation: engQuery
+  });
+
+  detailsSentToFounder = true;
+
+  if (ok) {
+    addChatMsg(`✅ Sent to Founder!\nName: ${data.name}\nMobile: ${data.phone}\nMessage (EN): ${engQuery}`);
+  } else {
+    addChatMsg(`⚠️ Details recorded: ${data.name} (${data.phone}).`);
   }
-  if (mediaRecorder && mediaRecorder.state === 'recording') {
-    // Detach onstop before stopping so cancelled audio isn't sent
-    mediaRecorder.onstop = () => {
-      if (mediaRecorder && mediaRecorder.stream) {
-        mediaRecorder.stream.getTracks().forEach(t => t.stop());
-      }
-    };
-    mediaRecorder.stop();
-  }
-  const timerContainer = document.getElementById('timerContainer');
-  if (timerContainer) timerContainer.style.display = 'none';
-  addChatMsg("Voice message cancelled.");
-  if (callActive) {
-    setKeypadState(true);
-    resumeInactivityTimer();
-  }
+
+  const outro = isVoiceMsg ? langTexts.directMsgThanks : langTexts.finalOutro;
+  addChatMsg(outro);
+  await speak(outro);
+  stopVoice();
 }
 
 // ========== END CALL ==========
@@ -1972,20 +1932,19 @@ function stopVoice() {
     setTimeout(() => endBtn.classList.remove('pressed-red'), 600);
   }
 
+  const wasActive = callActive;
   callActive = false;
   inactivityPaused = false;
   clearTimeout(warningTimer);
   clearTimeout(inactivityTimer);
   clearTimeout(dmTimer);
-  clearInterval(recordingInterval);
+  clearInterval(voiceMsgInterval);
+  stopOption10CaptureFn = null;
+  cancelOption10CaptureFn = null;
 
   if (activeRecForOption10) {
     try { activeRecForOption10.abort(); } catch(e) {}
     activeRecForOption10 = null;
-  }
-  if (mediaRecorder && mediaRecorder.state === 'recording') {
-    mediaRecorder.onstop = null;
-    try { mediaRecorder.stop(); } catch(e) {}
   }
 
   if (yellowInputResolve) {
@@ -1994,6 +1953,19 @@ function stopVoice() {
     fn();
   }
   closeYellowBox();
+
+  // Safety fallback: if caller gave Name or Phone and disconnected before finishing, still forward partial lead
+  if (wasActive && !detailsSentToFounder && (callerInfo.name || callerInfo.phone)) {
+    detailsSentToFounder = true;
+    notifyFounder({
+      type: "interactive_detailed_query",
+      lang: currentLang,
+      name: callerInfo.name || "Not captured",
+      phone: callerInfo.phone || "Not captured",
+      purpose: callerInfo.purpose || "[Caller ended call before completing query]",
+      english_translation: callerInfo.purpose || "[Caller ended call before completing query]"
+    });
+  }
 
   const duration = callStartTime ? Math.round((Date.now() - callStartTime) / 1000) : 0;
   stopListening();
@@ -2022,7 +1994,7 @@ function stopVoice() {
   addChatMsg("Call ended. Press 'CALL PRAKRUTHI' to start again.");
 
   if (callStartTime) {
-    notifyTelegram({
+    notifyFounder({
       type: "call_ended",
       lang: currentLang,
       duration: duration
@@ -2059,7 +2031,7 @@ function selectOption(num) {
   }
 
   if (num === 10) {
-    if (!voicePermissionGranted) {
+    if (!voicePermissionGranted || !hasVoiceSupport) {
       addChatMsg(langTexts.voiceFallback);
       speak(langTexts.voiceFallback);
       return;
