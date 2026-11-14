@@ -418,7 +418,7 @@ footer strong{display:block; margin-bottom:4px;}
         <option value="bn-IN">🇮🇳 বাংলা (Bengali)</option>
         <option value="gu-IN">🇮🇳 ગુજરાતી (Gujarati)</option>
         <option value="pa-IN">🇮🇳 ਪੰਜਾਬੀ (Punjabi)</option>
-        <option value="ml-IN">🇮 മലയാളം (Malayalam)</option>
+        <option value="ml-IN">🇮🇳 മലയാളം (Malayalam)</option>
       </select>
     </div>
 
@@ -696,6 +696,61 @@ async function translateToEnglish(text, sourceLang) {
   return text;
 }
 
+// ========== RINGING SOUND ==========
+function playRingingTone(durationMs = 3200) {
+  return new Promise((resolve) => {
+    let resolved = false;
+    const finish = () => {
+      if (!resolved) {
+        resolved = true;
+        resolve();
+      }
+    };
+    setTimeout(finish, durationMs + 200);
+
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+
+      const now = audioCtx.currentTime;
+      const osc1 = audioCtx.createOscillator();
+      const osc2 = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      osc1.type = "sine";
+      osc2.type = "sine";
+      osc1.frequency.value = 440;
+      osc2.frequency.value = 480;
+      gain.gain.setValueAtTime(0, now);
+
+      let t = now;
+      const end = now + (durationMs / 1000);
+      while (t < end) {
+        gain.gain.setValueAtTime(0.25, t);
+        gain.gain.setValueAtTime(0, t + 0.4);
+        t += 0.6;
+        if (t < end) {
+          gain.gain.setValueAtTime(0.25, t);
+          gain.gain.setValueAtTime(0, t + 0.4);
+          t += 1.0;
+        }
+      }
+
+      osc1.connect(gain);
+      osc2.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc1.start(now);
+      osc2.start(now);
+      osc1.stop(end);
+      osc2.stop(end);
+
+      setTimeout(finish, durationMs + 50);
+    } catch (e) {
+      finish();
+    }
+  });
+}
+
 // ========== TELEGRAM ==========
 async function notifyTelegram(payload) {
   try {
@@ -877,10 +932,19 @@ async function startVoice() {
   }
 
   setKeypadState(true);
+  
+  const langTexts = languageData[currentLang] || languageData['en-IN'];
+  document.getElementById('statusText').textContent = langTexts.ringing || "Connecting to Prakruthi... please wait.";
+  addChatMsg(langTexts.ringing || "Connecting to Prakruthi... please wait.");
+
+  // Play ringing tone first for a few seconds before welcoming the user
+  await playRingingTone(3200);
+
+  if (!callActive) return;
+
   document.getElementById('statusText').textContent = `Call Connected to Prakruthi (${currentLang})`;
   resetInactivityTimer();
 
-  const langTexts = languageData[currentLang] || languageData['en-IN'];
   const greetingMsg = langTexts.greeting;
   addChatMsg(greetingMsg);
   await speak(greetingMsg);
