@@ -135,7 +135,7 @@ dialog{background:var(--panel);color:var(--ink);border:1px solid var(--acc);bord
  </div>
  <div class="sp"></div>
  <label><button class="pri" onclick="$('file').click()">📁 Upload PDF / Word / Notes</button><input id="file" type="file" multiple accept=".pdf,.docx,.doc,image/*,.png,.jpg,.jpeg,.webp" hidden></label>
- <span id="aiModeBadge" class="ai-badge">🧠 RAG Ready</span>
+ <span id="aiModeBadge" class="ai-badge">☁ Cloudflare AI Live</span>
  <input id="title" type="text" placeholder="Course title"><span id="status">Ready</span>
  <button onclick="clearDoc()">Clear</button><button onclick="clearAllDocs()">Clear all</button><button onclick="lockApp()">🔒 Lock</button>
  <button id="btnUG" class="pri" disabled>🎓 Live Class (UG)</button><button id="btnPG" class="pri" disabled>📚 Live Class (PG)</button>
@@ -251,11 +251,11 @@ dialog{background:var(--panel);color:var(--ink);border:1px solid var(--acc);bord
 </dialog>
 
 <dialog id="dlg"><form method="dialog"><h3 style="margin-top:0;color:#34d399">⚙ AI Classroom Settings</h3>
- <p class="note">Connect your zero-retention <b>Cloudflare Workers AI URL</b> (for online students) or <b>Local Ollama</b> (100% offline on PC). Leave blank to use built-in local RAG.</p>
- <label class="note">Cloudflare AI Worker URL (Recommended Online):</label><input id="cfgUrl" type="text" placeholder="https://prof-anna-ai.YOUR-ACCOUNT.workers.dev">
+ <p class="note">Pre-connected to your zero-retention <b>Cloudflare AI Worker</b>. You can also switch to <b>Local Ollama</b> (100% offline on PC) or clear the Worker URL for offline RAG only.</p>
+ <label class="note">Cloudflare AI Worker URL:</label><input id="cfgUrl" type="text" placeholder="https://garrfclass.annamdas-ntu.workers.dev/">
  <label class="note">Local Ollama URL (100% Offline on PC):</label><input id="cfgOllamaUrl" type="text" placeholder="http://localhost:11434">
  <label class="note">Ollama Model:</label><input id="cfgOllamaModel" type="text" placeholder="qwen2.5vl:7b">
- <div class="row" style="margin-top:10px"><button id="cfgSave" class="pri" value="ok">Save</button><button value="cancel">Cancel</button></div>
+ <div class="row" style="margin-top:10px"><button type="button" onclick="$('cfgUrl').value='https://garrfclass.annamdas-ntu.workers.dev/'">Reset Default Worker</button><span class="sp"></span><button id="cfgSave" class="pri" value="ok">Save</button><button value="cancel">Cancel</button></div>
 </form></dialog>
 
 <dialog id="helpDlg"><div style="padding:10px">
@@ -270,9 +270,11 @@ dialog{background:var(--panel);color:var(--ink);border:1px solid var(--acc);bord
 <script>
 'use strict';
 const $=id=>document.getElementById(id),esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const CFG={endpoint:'',ollamaUrl:'',ollamaModel:'qwen2.5vl:7b'};
+const DEFAULT_ENDPOINT='https://garrfclass.annamdas-ntu.workers.dev/';
+const CFG={endpoint:DEFAULT_ENDPOINT,ollamaUrl:'',ollamaModel:'qwen2.5vl:7b'};
 try{
-  CFG.endpoint=localStorage.getItem('garrf_ai_endpoint')||'';
+  const savedEp=localStorage.getItem('garrf_ai_endpoint');
+  if(savedEp!==null)CFG.endpoint=savedEp;
   CFG.ollamaUrl=localStorage.getItem('garrf_ollama_url')||'';
   CFG.ollamaModel=localStorage.getItem('garrf_ollama_model')||'qwen2.5vl:7b';
 }catch(e){}
@@ -308,12 +310,11 @@ function splitSentences(t){t=cleanText(t).replace(/([A-Za-z])-\s+([a-z])/g,'$1-$
 const normHead=t=>String(t||'').toLowerCase().replace(/\d+/g,'#').replace(/[^a-z#\s]/g,' ').replace(/\s+/g,' ').trim();
 function runningHeads(pages){const cnt={},keys=Object.keys(pages||{});keys.forEach(pn=>{const seen=new Set();((pages[pn]||{}).blocks||[]).forEach(b=>{const t=(b.text||'').trim();if(t.length>=6&&t.length<=120)seen.add(normHead(t))});seen.forEach(k=>{cnt[k]=(cnt[k]||0)+1})});const need=keys.length>=4?2:99,out=new Set();Object.keys(cnt).forEach(k=>{if(cnt[k]>=need)out.add(k)});return out}
 
-// FIXED: Preserve sentences that explain equations (only reject pure unreadable symbol dumps!)
 function isEquationSoup(t){
   if(!t)return false;
   const words=(t.match(/\b[A-Za-z]{3,}\b/g)||[]).length;
   const ops=(t.match(/[=+\-–≈¼\[\]∑∫∂]/g)||[]).length;
-  if(words>=5)return false; // Real explanatory sentences stay!
+  if(words>=5)return false;
   return ops>=3 && words<=3;
 }
 function isTableDumpText(s){const t=String(s||''),nums=(t.match(/\b\d+(?:\.\d+)?\b/g)||[]).length,dig=(t.match(/\d/g)||[]).length,letC=(t.match(/[A-Za-z]/g)||[]).length;return (dig>30&&dig>letC*0.7)||(nums>=9&&(t.match(/[.!?]/g)||[]).length<=1)}
@@ -362,7 +363,6 @@ async function ocrFromCanvas(rawCv,p,w,h,scale){
  return{blocks:((res.data&&res.data.lines)||[]).map(ln=>{const t=cleanText((ln.text||'').trim()),bb=ln.bbox||{x0:0,y0:0,x1:w*scale,y1:20};return t.length>2?{text:t,x:bb.x0/scale,y:bb.y0/scale,w:(bb.x1-bb.x0)/scale,h:Math.max(10,(bb.y1-bb.y0)/scale),size:12,page:p,type:'para'}:null}).filter(Boolean),W:w,H:h};
 }
 
-// IMPROVED EQUATION DETECTION & CROPPING
 const isEqText=t=>{if(!t||t.length>240)return false;const a=(t.match(/[A-Za-z]{4,}/g)||[]).length;return(/[=≈≤≥∑∫∂∇±×]/.test(t)&&a<=6)||/^\(\s*\d+(?:\.\d+)*[a-z]?\s*\)$/.test(t.trim())};
 const mathy=b=>{if(b.type==='eqnum'||b.type==='equation')return true;if(b.type!=='para')return false;const t=(b.text||'').trim();if(/^(where|the |this |substituting|differentiating|fig|table)/i.test(t)&&t.length>45)return false;if(/^(and|or|with|for)$/i.test(t))return true;const w=(t.match(/[A-Za-z]{4,}/g)||[]).length,m=/[=+−\-*\/×∑∫∂√≈≤≥±()\[\]α-ωΑ-Ω0-9]/.test(t);return t.length<=135&&w<=(m?3:0)};
 function buildEquations(N){
@@ -410,7 +410,6 @@ async function smartMediaCrop(m){
  c.width=Math.max(1,Math.round((rx1-rx0)*sc));c.height=Math.max(1,Math.round((ry1-ry0)*sc));c.getContext('2d').drawImage(bm.c,rx0*sc,ry0*sc,(rx1-rx0)*sc,(ry1-ry0)*sc,0,0,c.width,c.height);return c.toDataURL('image/png');
 }
 
-// FIXED: 2-Column PDF Reading Order Sorting!
 function sortBlocksReadingOrder(blocks,W){
   const wide=blocks.filter(b=>b.text.length>60).map(b=>b.w).sort((a,b)=>a-b);
   const twoCol=wide.length>4&&wide[wide.length>>1]<W*0.52;
@@ -462,7 +461,6 @@ async function analysePDF(){
    splitSentences(t).forEach(s=>{if(!isJunkText(s,D.title)){D.sents.push({t:s,p:n,sec:cur.name});cur.items.push({kind:'sent',t:s,p:n})}});
   });
  }
- // Remove empty initial placeholder section if real sections follow
  if(D.sections.length>1&&!D.sections[0].text.trim()&&!D.sections[0].items.length)D.sections.shift();
  buildEquations(N);
  for(let n=1;n<=N;n++)(S.pages[n].eqs||[]).forEach(reg=>{D.eqs.push(reg);const sec=D.sections.find(s=>s.page<=n&&s.items.some(it=>it.p===n))||D.sections[0];if(sec)sec.items.push({kind:'eq',eq:reg})});
@@ -487,7 +485,6 @@ async function loadImagesBatch(files){
  S.doc=D;return{imgDataUrls:urls,name:D.title,size:sorted.reduce((a,x)=>a+x.size,0)};
 }
 
-// FIXED: Extract Word (.docx) embedded images & tables too!
 async function loadDocx(f){
  const buf=await f.arrayBuffer(),r=await mammoth.convertToHtml({arrayBuffer:buf});
  S.pdf=null;S.pdfBytes=null;S.imgPages={};setKind('docx');$('wrap').style.display='none';
@@ -594,7 +591,6 @@ RULES:
 
   const userPrompt=`Task: ${payload.taskDescription}\n\nContext from Uploaded Material:\n${payload.context}\n\n${payload.question?'Student Question: '+payload.question:''}`;
 
-  // 1. Local Ollama (100% Private on PC)
   if(CFG.ollamaUrl){
     try{
       const r=await fetch(CFG.ollamaUrl.replace(/\/$/,'')+'/api/chat',{
@@ -605,7 +601,6 @@ RULES:
     }catch(e){}
   }
 
-  // 2. Cloudflare Workers AI Proxy
   if(CFG.endpoint){
     try{
       const r=await fetch(CFG.endpoint,{
@@ -622,7 +617,7 @@ RULES:
       if(r.ok){const d=await r.json();const txt=d?.answer||d?.reply||d?.choices?.[0]?.message?.content;if(txt)return txt;}
     }catch(e){}
   }
-  return null; // Graceful offline fallback
+  return null;
 }
 
 // ============================================================
@@ -647,7 +642,6 @@ async function speakPhrases(text,onDone,onPhrase){
  stopSpeech();const tok=++speakTok;
  if($('useNeuralLive').checked){try{$('vstat').textContent='🎙 Loading Neural Voice…';if(onPhrase)onPhrase(clean,0);const tts=await getKokoro(m=>{$('vstat').textContent=m});if(tok!==speakTok)return;const v=$('gender').value==='M'?($('accent').value==='GB'?'bm_george':'am_michael'):($('accent').value==='GB'?'bf_emma':'af_heart'),au=await tts.generate(clean,{voice:v});if(tok!==speakTok)return;const url=URL.createObjectURL(au.toBlob());liveAudio=new Audio(url);liveAudio.playbackRate=+$('rate').value;$('ocProf').classList.add('talking');$('vstat').textContent='🔊 Neural Voice Speaking…';liveAudio.onended=()=>{URL.revokeObjectURL(url);$('ocProf').classList.remove('talking');if(tok===speakTok){$('vstat').textContent='✔ Finished';onDone&&onDone()}};liveAudio.play();return}catch(e){toast('Neural Voice fallback: '+e.message)}}
  if(!('speechSynthesis' in window)){setTimeout(()=>onDone&&onDone(),2200);return}
- // Speak full sentences cleanly (no comma stuttering!)
  const parts=splitSentences(clean),sel=voices[+$('voice').value],g=$('gender').value,{matched}=pickVoices(),basePitch=matched?1:(g==='M'?0.92:1.04),rate=+$('rate').value;
  let i=0,useV=sel,retried=false;keepAlive=setInterval(()=>{if(speechSynthesis.speaking&&!speechSynthesis.paused){speechSynthesis.pause();speechSynthesis.resume()}},11000);
  function next(){if(tok!==speakTok)return;if(i>=parts.length){clearInterval(keepAlive);$('vstat').textContent='✔ Finished';return onDone&&onDone()}
@@ -749,7 +743,6 @@ function analyzeWorkload(scopeAll){
     tabs+=(d.doc?.tabs||[]).length;
     eqs+=(d.doc?.eqs||[]).length;
   });
-  // ~125 words/min spoken + 0.8 min per equation derivation + 0.6 min per fig/table + 1.5 min checkpoints
   const estMin=Math.max(12,Math.round((words/130) + eqs*0.9 + figs*0.6 + tabs*0.5 + 3));
   return{docs,pages,words,figs,tabs,eqs,secs,estMin};
 }
@@ -776,13 +769,11 @@ function promptTimePlan(mode){
   $('timePlanDlg').showModal();
 }
 
-// LOGICAL SECTION-FIRST SLIDE BUILDER (Attaches Figures, Tables & Equations IN-CONTEXT!)
 function buildLogicalDeck(mode,targetMinutes=45,scopeAll=true){
   const isPG=mode==='pg';
   const docs=scopeAll&&LIB.length?LIB:(LIBACT>=0?[LIB[LIBACT]]:[]);
   if(!docs.length)return[];
 
-  // Target ~1.8 min per slide (so 30m ~ 16 slides, 45m ~ 24 slides, 60m ~ 32 slides)
   const maxSlides=Math.max(8,Math.round(targetMinutes/1.8));
   const rawSlides=[];
   let tipIdx=0;
@@ -804,10 +795,7 @@ function buildLogicalDeck(mode,targetMinutes=45,scopeAll=true){
     });
 
     (D.sections||[]).forEach(sec=>{
-      const sents=[];
-      const figs=[];
-      const tabs=[];
-      const eqs=[];
+      const sents=[];const figs=[];const tabs=[];const eqs=[];
       (sec.items||[]).forEach(it=>{
         if(it.kind==='sent')sents.push(it);
         else if(it.kind==='fig')figs.push(it.b);
@@ -822,7 +810,6 @@ function buildLogicalDeck(mode,targetMinutes=45,scopeAll=true){
         const d=distillToSlide(slice.map(x=>x.t),isPG,D.title,5,tipIdx++);
         if(!d)continue;
         const sl={kind:'text',docIdx,docEntry,title:sec.name,meta:`${shorten(D.title,24)} · Page ${pg}`,page:pg,bullets:d.bullets,tip:d.tip,narration:d.narration,rawContext:slice.map(x=>x.t).join(' ')};
-        // Attach the matching Figure or Equation directly to the slide that discusses it!
         const matchFig=figs.find(f=>!f._used&&f.page===pg);
         const matchEq=eqs.find(eq=>!eq._used&&eq.page===pg);
         if(matchFig){matchFig._used=true;sl.media=matchFig}
@@ -830,7 +817,6 @@ function buildLogicalDeck(mode,targetMinutes=45,scopeAll=true){
         rawSlides.push(sl);
       }
 
-      // Any remaining important figures/tables/equations in this section get dedicated slides right inside the section!
       eqs.filter(eq=>!eq._used).forEach(eq=>{
         eq._used=true;
         const defs=symbolDefs(eq);
@@ -871,14 +857,12 @@ function buildLogicalDeck(mode,targetMinutes=45,scopeAll=true){
     });
   });
 
-  // Reset _used flags
   docs.forEach(d=>{
     (d.doc?.figs||[]).forEach(x=>delete x._used);
     (d.doc?.tabs||[]).forEach(x=>delete x._used);
     (d.doc?.eqs||[]).forEach(x=>delete x._used);
   });
 
-  // Time-Budget Sampling if rawSlides exceeds targetMinutes budget
   let finalDeck=rawSlides;
   if(rawSlides.length>maxSlides){
     const keep=[rawSlides[0]];
@@ -963,7 +947,6 @@ async function ocRenderPage(n){
 
 async function ocRenderSlide(){
  const s=OC.slides[OC.idx];if(!s)return;
- // Switch active library document automatically if multi-file class crosses to next file!
  if(typeof s.docIdx==='number'&&s.docIdx!==LIBACT&&LIB[s.docIdx]){await activateDoc(s.docIdx,true);ocSyncDocSel()}
  const e=LIBACT>=0?LIB[LIBACT]:null,th=(e&&e.theme)||'chalk';
  $('ocBoard').className='';if(th==='dark')$('ocBoard').classList.add('theme-dark');if(th==='light')$('ocBoard').classList.add('theme-light');
@@ -982,7 +965,6 @@ async function ocRenderSlide(){
  OC.page=s.page||OC.page;if(OC.showSrc)setTimeout(()=>ocRenderPage(OC.page),20);
 }
 
-// Live Synced Bullet Highlighting while speaking!
 function highlightActiveBullet(phraseIdx,totalPhrases){
  const lis=[...document.querySelectorAll('#ocSlideBody li[data-b]')];
  lis.forEach(li=>li.classList.remove('active-pt'));
@@ -1014,7 +996,6 @@ function ocNext(){if(OC.idx<OC.slides.length-1){stopSpeech();OC.idx++;ocRenderSl
 function ocPrev(){if(OC.idx>0){stopSpeech();OC.idx--;ocRenderSlide().then(ocSpeak)}}
 function ocExit(){clearInterval(OC.timerInt);stopSpeech();if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});$('ocOverlay').classList.remove('on','max')}
 
-// 1-Tap Classroom Interactive Actions (Explain Simply / Math / Example / Quiz)
 async function ocQuickAction(action){
  const s=OC.slides[OC.idx];if(!s)return;
  const wasAuto=$('ocAutoPlay').checked;
@@ -1141,121 +1122,3 @@ $('btnTabs').onclick=()=>{if(!S.doc||!(S.doc.tabs||[]).length)return toast('No t
 </script>
 </body>
 </html>
-```
-
----
-
-### Part 2: Step-by-Step Cloudflare Setup (New Gmail Account, Zero Data Retention, Zero External API Keys)
-
-Using **Cloudflare Workers AI** on your new Gmail account means:
-- **No external OpenAI/Gemini API key required** (and no KV needed!).
-- **Zero data retention & no training** on your PDF snippets.
-- **Free tier included** (10,000 AI neurons/day).
-
-#### Step 1: Create Your New Cloudflare Account
-1. Open an **Incognito / Private window** (or log out of your WhatsGARRF Cloudflare account) so you don't accidentally mix accounts.
-2. Go to **`https://dash.cloudflare.com/sign-up`**.
-3. Sign up using your **new Gmail address** and verify your email.
-
-#### Step 2: Create the Worker
-1. In the left sidebar of your new Cloudflare Dashboard, click **Compute (Workers)** → **Workers & Pages**.
-2. Click **Create** → **Create Worker** (or **Start with Hello World!**).
-3. Name it **`prof-anna-ai`** and click **Deploy**.
-4. Click **Edit code**.
-
-#### Step 3: Paste the Complete `worker.js` Code
-Delete the sample code in `worker.js`, paste this complete code, and click **Deploy** (top-right):
-
-```javascript
-function corsHeaders() {
-  return {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-  };
-}
-
-function jsonResp(obj, status = 200) {
-  return new Response(JSON.stringify(obj), {
-    status,
-    headers: { "Content-Type": "application/json", ...corsHeaders() },
-  });
-}
-
-export default {
-  async fetch(request, env) {
-    if (request.method === "OPTIONS") {
-      return new Response(null, { headers: corsHeaders() });
-    }
-
-    if (request.method === "GET") {
-      return new Response("Prof. GARRF-Anna AI Worker (Zero-Retention Mode) is live.", {
-        headers: { "Content-Type": "text/plain", ...corsHeaders() },
-      });
-    }
-
-    if (request.method !== "POST") {
-      return jsonResp({ ok: false, error: "Method not allowed" }, 405);
-    }
-
-    try {
-      if (!env.AI) {
-        return jsonResp({ ok: false, error: "AI binding missing. Add Workers AI binding named AI in Settings -> Bindings." }, 500);
-      }
-
-      const body = await request.json();
-      const mode = String(body.mode || "qa");
-      const level = body.level === "pg" ? "Postgraduate / Research" : "Undergraduate";
-      const question = String(body.question || "").slice(0, 800);
-      const slideTitle = String(body.slideTitle || "").slice(0, 180);
-      const context = String(body.context || "").slice(0, 6000);
-      const history = Array.isArray(body.history) ? body.history.slice(-3) : [];
-
-      const taskInstructions = {
-        qa: "Answer the student's question directly and clearly like a helpful live professor. Cite page numbers like (p. 4) from the context.",
-        simplify: "Explain this concept in simple everyday words with one relatable analogy.",
-        math: "Walk through the equation, symbols, units, and physical cause-and-effect step by step. Use $...$ for math expressions.",
-        example: "Give one practical real-world engineering or industry example based on this material.",
-        quiz: "Ask 1 short conceptual question (with options A, B, C) based on the context, then give the correct answer and 1-line explanation at the bottom.",
-      };
-
-      const messages = [
-        {
-          role: "system",
-          content:
-            `You are Prof. GARRF-Anna, a warm, crystal-clear classroom professor at GARRF. ` +
-            `Audience level: ${level}. ` +
-            `STRICT GROUNDING: Answer ONLY from the provided Context. If the answer is not in the context, honestly say so. ` +
-            `Task: ${taskInstructions[mode] || taskInstructions.qa} ` +
-            `Keep your answer concise (4-7 sentences) so it sounds natural when spoken aloud.`,
-        },
-      ];
-
-      history.forEach((h) => {
-        if (h.q && h.a) {
-          messages.push({ role: "user", content: String(h.q).slice(0, 300) });
-          messages.push({ role: "assistant", content: String(h.a).slice(0, 500) });
-        }
-      });
-
-      messages.push({
-        role: "user",
-        content:
-          (slideTitle ? `Current Slide: ${slideTitle}\n` : "") +
-          `Context from uploaded material:\n${context}\n\n` +
-          (question ? `Student Question: ${question}` : `Please complete the task for this slide.`),
-      });
-
-      const aiRes = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
-        messages,
-        max_tokens: 420,
-        temperature: 0.3,
-      });
-
-      const answer = String(aiRes?.response || "").trim();
-      return jsonResp({ ok: true, answer });
-    } catch (err) {
-      return jsonResp({ ok: false, error: err.message }, 500);
-    }
-  },
-};
