@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="description" content="WhatsGARRF Global Phone — PWA & Secure Gateway Edition." />
-  <title>WhatsGARRF Global Phone</title>
+  <meta name="description" content="WhatsGARRF Global Phone — Live P2P Voice Edition." />
+  <title>WhatsGARRF Global Phone — Live P2P</title>
 
   <!-- PWA & MOBILE HOME SCREEN APP TAGS -->
   <link rel="icon" type="image/jpeg" href="https://garrf.in/images/logo.jpeg" />
@@ -13,6 +13,9 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="WhatsGARRF" />
   <meta name="theme-color" content="#09101a" />
+
+  <!-- PEERJS LIBRARY FOR LIVE WEB-RTC CALLS -->
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 
   <!-- SELF-CONTAINED PWA MANIFEST DATA URI -->
   <link rel="manifest" href="data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22WhatsGARRF%20Global%20Phone%22%2C%22short_name%22%3A%22WhatsGARRF%22%2C%22start_url%22%3A%22.%2Findex.html%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23050b14%22%2C%22theme_color%22%3A%22%2309101a%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fgarrf.in%2Fimages%2Flogo.jpeg%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fjpeg%22%7D%5D%7D" />
@@ -134,12 +137,12 @@
       padding: 6px 16px;
       background: rgba(0,0,0,0.3);
       border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-      font-size: 10.5px;
-      color: var(--pink-neon);
+      font-size: 10px;
+      color: #34d399;
       font-weight: 800;
       letter-spacing: 0.5px;
       flex-shrink: 0;
-      text-shadow: 0 0 8px rgba(236, 72, 153, 0.3);
+      text-shadow: 0 0 8px rgba(52, 211, 153, 0.4);
     }
 
     .keypad-body {
@@ -196,3 +199,853 @@
     .dial-key.country-btn span { color: #f8fafc; }
 
     .dial-key.tag-btn {
+      background: linear-gradient(135deg, rgba(147, 51, 234, 0.25), rgba(15, 28, 45, 0.9));
+      border: 1px solid rgba(168, 85, 247, 0.4);
+    }
+    .dial-key.tag-btn strong { color: #f472b6; font-size: 16px; }
+    .dial-key.tag-btn span { color: #c084fc; }
+
+    .action-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 2px;
+    }
+    .call-btn {
+      flex: 1;
+      background: linear-gradient(135deg, #0ea5e9, #ec4899);
+      color: #ffffff;
+      border: none;
+      border-radius: 24px;
+      padding: 11px;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      box-shadow: 0 6px 20px rgba(236, 72, 153, 0.4);
+      transition: all 0.2s;
+    }
+    .call-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+    .call-btn.active-calling {
+      background: linear-gradient(135deg, #10b981, #059669) !important;
+      box-shadow: 0 0 30px rgba(16, 185, 129, 0.9) !important;
+      animation: pulseGreen 1.5s infinite;
+    }
+    @keyframes pulseGreen {
+      0% { box-shadow: 0 0 15px rgba(16, 185, 129, 0.6); }
+      50% { box-shadow: 0 0 35px rgba(16, 185, 129, 1); }
+      100% { box-shadow: 0 0 15px rgba(16, 185, 129, 0.6); }
+    }
+
+    .sub-action-row {
+      display: flex;
+      gap: 5px;
+    }
+    .sub-btn {
+      flex: 1;
+      background: rgba(15, 28, 45, 0.8);
+      border: 1px solid rgba(236, 72, 153, 0.25);
+      color: #e2e8f0;
+      border-radius: 12px;
+      padding: 7px 1px;
+      font-size: 9.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.2s;
+      text-align: center;
+    }
+    .sub-btn:hover { border-color: var(--pink-neon); color: var(--pink-neon); }
+
+    .secure-badge-box {
+      margin: 4px 14px;
+      background: rgba(15, 28, 45, 0.9);
+      border: 1px solid rgba(236, 72, 153, 0.3);
+      border-radius: 14px;
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .secure-badge-box svg { width: 14px; height: 14px; fill: var(--pink-neon); flex-shrink: 0; }
+    .secure-badge-text h4 { font-size: 9.5px; font-weight: 800; color: var(--pink-neon); }
+    .secure-badge-text p { font-size: 8px; color: var(--text-muted); font-weight: 600; }
+
+    .phone-footer {
+      background: #03070d;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 6px 10px;
+      text-align: center;
+      font-size: 8.5px;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+    .phone-footer strong { color: var(--pink-neon); font-weight: 700; }
+
+    .active-call-overlay {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at center, #0f233c 0%, #03070d 100%);
+      z-index: 100;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 40px 20px;
+    }
+    .active-call-overlay.active { display: flex; }
+    .call-caller-info { text-align: center; margin-top: 30px; }
+    .call-avatar-lg {
+      width: 95px;
+      height: 95px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #0ea5e9, #ec4899);
+      display: grid;
+      place-items: center;
+      font-size: 38px;
+      color: #fff;
+      margin: 0 auto 16px;
+      box-shadow: 0 0 45px rgba(236, 72, 153, 0.7);
+      overflow: hidden;
+    }
+    .call-avatar-lg img { width: 100%; height: 100%; object-fit: cover; }
+    .call-caller-info h2 { font-size: 21px; font-weight: 800; color: #fff; }
+    .call-caller-info p { font-size: 13.5px; color: #22d3ee; margin-top: 4px; font-family: monospace; font-weight: 800; }
+    .call-status-timer { font-size: 13.5px; color: #f472b6; margin-top: 10px; font-weight: 800; }
+    
+    .end-call-btn {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: #fff;
+      border: none;
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      font-size: 28px;
+      box-shadow: 0 8px 25px rgba(239, 68, 68, 0.8);
+      transition: all 0.2s;
+      margin-bottom: 35px;
+    }
+    .end-call-btn:hover { filter: brightness(1.15); transform: scale(1.08); }
+
+    .modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(3, 7, 13, 0.95);
+      backdrop-filter: blur(8px);
+      display: none;
+      flex-direction: column;
+      z-index: 50;
+      border-radius: 38px;
+      overflow: hidden;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal-header {
+      background: #0f1c2e;
+      padding: 12px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(236, 72, 153, 0.3);
+    }
+    .modal-header h3 { font-size: 13px; font-weight: 800; color: #fff; }
+    .close-modal { background: none; border: none; color: #fff; font-size: 16px; cursor: pointer; padding: 4px; }
+    .directory-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+    .dir-card {
+      background: #0f1c2e;
+      padding: 9px 14px;
+      border-radius: 12px;
+      cursor: pointer;
+      border: 1px solid rgba(255,255,255,0.06);
+      transition: 0.15s;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .dir-card:hover { border-color: #f472b6; background: rgba(236, 72, 153, 0.1); }
+    .dir-card-name { font-size: 11.5px; font-weight: 800; color: #f8fafc; }
+    .dir-card-role { font-size: 9.5px; color: var(--text-muted); font-weight: 600; }
+    .dir-card-phone { font-size: 10px; color: #22d3ee; font-family: monospace; margin-top: 2px; font-weight: 700; }
+
+    .allot-form-box { padding: 18px; display: flex; flex-direction: column; gap: 9px; overflow-y: auto; max-height: 80vh; }
+    .allot-form-box label { font-size: 11px; color: #f472b6; font-weight: 700; }
+    .allot-form-box input {
+      background: #03070d;
+      border: 1px solid rgba(34, 211, 238, 0.4);
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 12.5px;
+      outline: none;
+    }
+    .allot-form-box input:focus { border-color: #f472b6; box-shadow: 0 0 10px rgba(236, 72, 153, 0.4); }
+  </style>
+</head>
+<body>
+
+<div class="phone-shell">
+  <header class="phone-header">
+    <img class="logo-img" src="https://garrf.in/images/logo.jpeg" onerror="this.onerror=null;this.src='images/logo.jpeg';" alt="GARRF Logo" title="Click for Moderator Admin" onclick="openAdminGeneratorModal()" />
+    <div class="header-titles">
+      <h1>Gopalkrishna Advanced Rural Research Foundation</h1>
+      <p>WhatsGARRF Live P2P Voice</p>
+    </div>
+  </header>
+
+  <div class="dial-screen">
+    <div class="dial-number" id="dialInput"></div>
+    <div class="dial-name" id="dialName"></div>
+  </div>
+
+  <div class="view-toggle-bar">
+    <span id="p2pStatusIndicator">🟡 Initializing Live P2P Network...</span>
+  </div>
+
+  <div class="keypad-body">
+    <div class="keypad-grid">
+      <button class="dial-key" onclick="appendInput('1')"><strong>1</strong><span>—</span></button>
+      <button class="dial-key" onclick="appendInput('2')"><strong>2</strong><span>ABC</span></button>
+      <button class="dial-key" onclick="appendInput('3')"><strong>3</strong><span>DEF</span></button>
+      
+      <button class="dial-key" onclick="appendInput('4')"><strong>4</strong><span>GHI</span></button>
+      <button class="dial-key" onclick="appendInput('5')"><strong>5</strong><span>JKL</span></button>
+      <button class="dial-key" onclick="appendInput('6')"><strong>6</strong><span>MNO</span></button>
+
+      <button class="dial-key" onclick="appendInput('7')"><strong>7</strong><span>PQRS</span></button>
+      <button class="dial-key" onclick="appendInput('8')"><strong>8</strong><span>TUV</span></button>
+      <button class="dial-key" onclick="appendInput('9')"><strong>9</strong><span>WXYZ</span></button>
+
+      <button class="dial-key" onclick="appendInput('0')"><strong>0</strong><span>+</span></button>
+      <button class="dial-key country-btn" onclick="appendInput('+1 ')"><strong>+1</strong><span>USA</span></button>
+      <button class="dial-key country-btn" onclick="appendInput('+91 ')"><strong>+91</strong><span>INDIA</span></button>
+
+      <button class="dial-key country-btn" onclick="appendInput('+65 ')"><strong>+65</strong><span>SG</span></button>
+      <button class="dial-key tag-btn" onclick="appendInput('GARRF ')"><strong>GARRF</strong><span>TAG</span></button>
+      <button class="dial-key tag-btn" onclick="appendInput('IISc ')"><strong>IISc</strong><span>TAG</span></button>
+
+      <button class="dial-key tag-btn" onclick="appendInput('NTU ')"><strong>NTU</strong><span>TAG</span></button>
+    </div>
+
+    <div class="action-row">
+      <button class="call-btn" id="callConnectBtn" onclick="initiateLiveCall()">
+        <span>📹📞</span> LIVE CALL / CONNECT
+      </button>
+    </div>
+
+    <div class="sub-action-row">
+      <button class="sub-btn" onclick="openDirectoryModal()">📇 CONTACTS</button>
+      <button class="sub-btn" onclick="openProfileModal()">👤 PROFILE</button>
+      <button class="sub-btn" id="installAppBtn" style="background: rgba(14,165,233,0.3); border-color:#0ea5e9; color:#38bdf8;" onclick="triggerInstallApp()">📲 SAVE</button>
+      <button class="sub-btn" style="background: rgba(16,185,129,0.3); border-color:#10b981; color:#34d399;" onclick="shareViaWhatsApp()">📤 WA</button>
+      <button class="sub-btn" onclick="resetDial()">RST</button>
+      <button class="sub-btn" onclick="clearLastChar()">CLR</button>
+    </div>
+  </div>
+
+  <div class="active-call-overlay" id="activeCallOverlay">
+    <div class="call-caller-info">
+      <div class="call-avatar-lg" id="callAvatarIconContainer">
+        <div id="callAvatarSymbol" style="font-size:38px; color:#fff;">📞</div>
+      </div>
+      <h2 id="activeCallName">Connecting Live...</h2>
+      <p id="activeCallPhone"></p>
+      <div class="call-status-timer" id="callTimer">Establishing P2P Audio...</div>
+    </div>
+    <button class="end-call-btn" onclick="endLiveCall()" title="End Call / Hang Up">📴</button>
+  </div>
+
+  <div class="secure-badge-box">
+    <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
+    <div class="secure-badge-text">
+      <h4>WhatsGARRF SECURED P2P</h4>
+      <p>Live Encrypted WebRTC Voice Channel Active.</p>
+    </div>
+  </div>
+
+  <footer class="phone-footer">
+    Copyright © Dr. Annamdas Venu Gopal Madhav 2026 — Proprietary Product of <strong>GARRF</strong>
+  </footer>
+
+  <!-- CONTACTS DIRECTORY MODAL -->
+  <div class="modal-backdrop" id="contactsModal">
+    <div class="modal-header">
+      <h3 id="contactsModalTitle">📇 113-Number Pool Directory</h3>
+      <button class="close-modal" onclick="closeDirectoryModal()">✕</button>
+    </div>
+    <div style="padding: 7px 14px; background: #0f1c2e; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(236, 72, 153, 0.3);">
+      <span style="font-size: 10px; color: #22d3ee; font-weight: 700;">💡 Tap unallotted extensions to claim them.</span>
+      <button class="sub-btn" style="flex: unset; padding: 4px 10px; font-size: 10px; background: #0ea5e9; color:#fff;" onclick="promptUserUnlock()">🔑 Enter OTP</button>
+    </div>
+    <div class="directory-list" id="directoryListContainer"></div>
+  </div>
+
+  <div class="modal-backdrop" id="adminGeneratorModal">
+    <div class="modal-header">
+      <h3>🔐 Moderator One-Time OTP Generator</h3>
+      <button class="close-modal" onclick="closeAdminGeneratorModal()">✕</button>
+    </div>
+    <div class="allot-form-box">
+      <p style="font-size: 11.5px; color: #f472b6; line-height: 1.4;">
+        Enter Master Passcode (1976) to generate a 4-character OTP for re-allotment.
+      </p>
+      <label>Master Passcode</label>
+      <input type="password" id="adminMasterPin" placeholder="Enter 1976" />
+      <button class="call-btn" style="margin-top:8px;" onclick="generateOneTimeOTP()">⚡ Generate 1-Time OTP</button>
+      
+      <div id="generatedOtpDisplay" style="margin-top: 12px; text-align: center; display: none;">
+        <span style="font-size: 11px; color: #94a3b8;">Active One-Time Passcode:</span>
+        <div id="activeOtpCodeText" style="font-size: 28px; font-weight: 800; color: #f472b6; font-family: monospace; letter-spacing: 3px; margin: 4px 0;"></div>
+        <p style="font-size: 9.5px; color: #ef4444;">⚠️ Valid for 1 use only!</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROFILE SETUP & EDIT MODAL -->
+  <div class="modal-backdrop" id="profileModal">
+    <div class="modal-header">
+      <h3>👤 Device Profile &amp; Picture Update</h3>
+      <button class="close-modal" onclick="closeProfileModal()">✕</button>
+    </div>
+    <div class="allot-form-box">
+      <p style="font-size: 11.5px; color: #f472b6; line-height: 1.4;">
+        Your Name &amp; Extension Number are securely locked. You can update your <strong>Profile Picture</strong> anytime!
+      </p>
+      <label>Your Extension Number (Locked)</label>
+      <input type="text" id="profilePhoneInput" readonly style="color: #22d3ee; font-family: monospace; opacity: 0.8; cursor: not-allowed;" />
+      
+      <label>Full Name (Locked)</label>
+      <input type="text" id="profileNameInput" readonly style="opacity: 0.8; cursor: not-allowed;" />
+      
+      <label>Role / Institution / Language *</label>
+      <input type="text" id="profileRoleInput" placeholder="e.g., Founder & CEO / GARRF" />
+
+      <label>📁 Upload New Profile Picture</label>
+      <input type="file" id="profileAvatarFile" accept="image/*" style="background:#03070d; border:1px solid rgba(34,211,238,0.4); color:#fff; padding:8px; border-radius:12px; font-size:12px;" />
+      <div id="avatarPreviewStatus" style="font-size: 10px; color: #38bdf8; font-weight: 700;"></div>
+
+      <button class="call-btn" style="margin-top: 8px;" onclick="saveProfileModal()">💾 Save &amp; Update Profile</button>
+      
+      <div id="profileStatusDisplay" style="margin-top: 6px; font-size: 11px; color: #10b981; text-align: center; font-weight: 700;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const NEW_USER_PASSCODE = "6791"; 
+const MASTER_ADMIN_PIN  = "1976"; 
+
+// PEERJS NETWORK SETUP
+let peer = null;
+let localStream = null;
+let currentCall = null;
+let callTimerInterval = null;
+let callSeconds = 0;
+
+function sanitizePeerId(phoneNum) {
+  return 'wg_' + phoneNum.toLowerCase().replace(/[^a-z0-9]/g, '_');
+}
+
+function initPeerNetwork() {
+  const myAllocatedNumber = localStorage.getItem("wg_my_allocated_number");
+  if (!myAllocatedNumber) {
+    document.getElementById("p2pStatusIndicator").textContent = "🟡 No Extension Claimed (Open Contacts to Claim)";
+    return;
+  }
+
+  const peerId = sanitizePeerId(myAllocatedNumber);
+  document.getElementById("p2pStatusIndicator").textContent = `Connecting P2P as ${myAllocatedNumber}...`;
+
+  peer = new Peer(peerId, {
+    debug: 2
+  });
+
+  peer.on('open', (id) => {
+    document.getElementById("p2pStatusIndicator").textContent = `🟢 P2P Live Active (${myAllocatedNumber})`;
+  });
+
+  peer.on('error', (err) => {
+    console.error("PeerJS error:", err);
+    if (err.type === 'unavailable-id') {
+      document.getElementById("p2pStatusIndicator").textContent = `⚠️ Extension already active in another tab`;
+    } else {
+      document.getElementById("p2pStatusIndicator").textContent = `❌ P2P Error: ${err.type}`;
+    }
+  });
+
+  // Handle incoming live calls
+  peer.on('call', async (incomingCall) => {
+    try {
+      localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    } catch (e) {
+      alert("Microphone permission is required to answer incoming calls.");
+      return;
+    }
+
+    incomingCall.answer(localStream);
+    currentCall = incomingCall;
+
+    const callerContact = contactsDatabase.find(c => sanitizePeerId(c.phone) === incomingCall.peer);
+    const callerName = callerContact ? callerContact.name : incomingCall.peer;
+
+    showActiveCallOverlay(callerName, callerContact ? callerContact.phone : incomingCall.peer);
+    startRingTone();
+
+    incomingCall.on('stream', (remoteStream) => {
+      playRemoteAudioStream(remoteStream);
+    });
+
+    incomingCall.on('close', () => {
+      endLiveCall();
+    });
+  });
+}
+
+function playRemoteAudioStream(stream) {
+  let audioPlayer = document.getElementById("p2pAudioPlayer");
+  if (!audioPlayer) {
+    audioPlayer = document.createElement("audio");
+    audioPlayer.id = "p2pAudioPlayer";
+    audioPlayer.autoplay = true;
+    document.body.appendChild(audioPlayer);
+  }
+  audioPlayer.srcObject = stream;
+}
+
+let audioCtx = null;
+function getAudioContext() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+  return audioCtx;
+}
+
+function playKeyTone(char) {
+  try {
+    const ctx = getAudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const baseFreq = 400 + (char.charCodeAt(0) * 15) % 600;
+    osc.frequency.setValueAtTime(baseFreq, ctx.currentTime);
+    osc.type = 'sine';
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.12);
+  } catch (e) {}
+}
+
+let ringInterval = null;
+function startRingTone() {
+  try {
+    const ctx = getAudioContext();
+    const playRing = () => {
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc1.frequency.value = 440;
+      osc2.frequency.value = 480;
+      gain.gain.setValueAtTime(0.1, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.2);
+      osc1.connect(gain);
+      osc2.connect(gain);
+      gain.connect(ctx.destination);
+      osc1.start();
+      osc2.start();
+      osc1.stop(ctx.currentTime + 1.2);
+      osc2.stop(ctx.currentTime + 1.2);
+    };
+    playRing();
+    ringInterval = setInterval(playRing, 3000);
+  } catch (e) {}
+}
+
+function stopRingTone() {
+  if (ringInterval) {
+    clearInterval(ringInterval);
+    ringInterval = null;
+  }
+}
+
+function generateFull113Pool() {
+  const pool = [];
+  for (let i = 0; i < 113; i++) {
+    const numStr = String(i).padStart(4, '0');
+    const phone = `+91 GARRF ${numStr}`;
+    let status = "unallotted";
+    let name = "Guest (to be allotted)";
+
+    if (i === 0) { 
+      name = "Prakruthi (24/7 Admin)"; 
+      status = "allotted"; 
+    } else if (i === 1) { 
+      name = "Dr. Annamdas Venu Gopal Madhav (Founder & CEO)"; 
+      status = "reserved"; 
+    }
+
+    const item = { phone, name, status };
+    if (i === 0) item.link = "https://garrf.in/ai_assistants/prakruthi.html";
+    pool.push(item);
+  }
+
+  pool.push({ phone: "+65 NTU 84826323", name: "Dr. Annamdas Venu Gopal Madhav (Founder & CEO - SG)", status: "reserved" });
+  pool.push({ phone: "+65 NTU 0010", name: "Reserved (+65 NTU 0010)", status: "reserved" });
+  pool.push({ phone: "+65 NTU 0012", name: "Reserved (+65 NTU 0012)", status: "reserved" });
+  pool.push({ phone: "+65 IISc 0020", name: "Reserved (+65 IISc 0020)", status: "reserved" });
+
+  return pool;
+}
+
+let contactsDatabase = JSON.parse(localStorage.getItem("wg_contacts_db")) || generateFull113Pool();
+
+let currentDial = "";
+let currentName = "";
+let tempAvatarBase64 = localStorage.getItem("wg_my_avatar") || "";
+
+document.getElementById('profileAvatarFile').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function(event) {
+      tempAvatarBase64 = event.target.result;
+      document.getElementById('avatarPreviewStatus').textContent = "✓ New picture loaded ready to save";
+    };
+    reader.readAsDataURL(file);
+  }
+});
+
+function updateDisplay() {
+  document.getElementById("dialInput").textContent = currentDial;
+  document.getElementById("dialName").textContent = currentName;
+}
+
+function appendInput(val) {
+  playKeyTone(val);
+  currentDial += val;
+  matchContact();
+  updateDisplay();
+}
+
+function resetDial() {
+  playKeyTone('R');
+  currentDial = "";
+  currentName = "";
+  updateDisplay();
+}
+
+function clearLastChar() {
+  playKeyTone('C');
+  currentDial = currentDial.trim();
+  currentDial = currentDial.slice(0, -1);
+  matchContact();
+  updateDisplay();
+}
+
+function matchContact() {
+  const cleaned = currentDial.replace(/\s+/g, ' ').trim();
+  const found = contactsDatabase.find(c => c.phone.replace(/\s+/g, ' ').trim() === cleaned);
+  if (found) {
+    currentName = found.name;
+  } else {
+    currentName = "";
+  }
+}
+
+async function initiateLiveCall() {
+  playKeyTone('Call');
+  const cleaned = currentDial.replace(/\s+/g, ' ').trim();
+  if (!cleaned) {
+    alert("Please enter or select a valid number to call.");
+    return;
+  }
+
+  const myNumber = localStorage.getItem("wg_my_allocated_number");
+  if (!myNumber) {
+    alert("Please claim your extension number first in the Contacts list before making a call.");
+    return;
+  }
+
+  const contact = contactsDatabase.find(c => c.phone.replace(/\s+/g, ' ').trim() === cleaned);
+  if (contact && cleaned === "+91 GARRF 0000" && contact.link) {
+    window.open(contact.link, '_blank');
+    return;
+  }
+
+  const targetPeerId = sanitizePeerId(cleaned);
+  if (targetPeerId === sanitizePeerId(myNumber)) {
+    alert("You cannot call your own extension.");
+    return;
+  }
+
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+  } catch (e) {
+    alert("Microphone permission denied. Cannot place live voice call.");
+    return;
+  }
+
+  showActiveCallOverlay(contact ? contact.name : cleaned, cleaned);
+  startRingTone();
+
+  const outgoingCall = peer.call(targetPeerId, localStream);
+  currentCall = outgoingCall;
+
+  outgoingCall.on('stream', (remoteStream) => {
+    stopRingTone();
+    playRemoteAudioStream(remoteStream);
+  });
+
+  outgoingCall.on('close', () => {
+    endLiveCall();
+  });
+
+  outgoingCall.on('error', (err) => {
+    alert("Call failed: Target extension is offline or unavailable.");
+    endLiveCall();
+  });
+}
+
+function showActiveCallOverlay(name, phone) {
+  const callBtn = document.getElementById("callConnectBtn");
+  callBtn.classList.add("active-calling");
+
+  document.getElementById("activeCallName").textContent = name;
+  document.getElementById("activeCallPhone").textContent = phone;
+  document.getElementById("activeCallOverlay").classList.add("active");
+
+  const contact = contactsDatabase.find(c => c.phone.replace(/\s+/g, ' ').trim() === phone.replace(/\s+/g, ' ').trim());
+  const avatarContainer = document.getElementById("callAvatarIconContainer");
+  if (contact && contact.avatar) {
+    avatarContainer.innerHTML = `<img src="${contact.avatar}" alt="Avatar" />`;
+  } else {
+    avatarContainer.innerHTML = `<div style="font-size:38px; color:#fff;">📞</div>`;
+  }
+
+  callSeconds = 0;
+  document.getElementById("callTimer").textContent = "Connecting Live (Ringing)...";
+  callTimerInterval = setInterval(() => {
+    callSeconds++;
+    if (callSeconds === 3) stopRingTone();
+    const mins = Math.floor(callSeconds / 60).toString().padStart(2, '0');
+    const secs = (callSeconds % 60).toString().padStart(2, '0');
+    document.getElementById("callTimer").textContent = callSeconds < 3 ? "Connecting Live (Ringing)..." : `Live P2P Call — ${mins}:${secs}`;
+  }, 1000);
+}
+
+function endLiveCall() {
+  stopRingTone();
+  clearInterval(callTimerInterval);
+  if (currentCall) {
+    try { currentCall.close(); } catch(e){}
+    currentCall = null;
+  }
+  if (localStream) {
+    localStream.getTracks().forEach(track => track.stop());
+    localStream = null;
+  }
+  document.getElementById("activeCallOverlay").classList.remove("active");
+  document.getElementById("callConnectBtn").classList.remove("active-calling");
+}
+
+function handleContactClick(phone) {
+  const contact = contactsDatabase.find(c => c.phone.replace(/\s+/g, ' ').trim() === phone.replace(/\s+/g, ' ').trim());
+  if (!contact) return;
+
+  if (contact.status === "reserved" || contact.status === "allotted") {
+    const pin = prompt(`🔒 This number (${phone}) is reserved or already allocated.\nEnter Master Passcode to override:`);
+    if (pin !== MASTER_ADMIN_PIN && pin !== "GARRF") {
+      alert("❌ Invalid Passcode. Access denied.");
+      return;
+    }
+  } else if (contact.status === "unallotted") {
+    const pin = prompt(`🔑 Claiming a new number (${phone}) requires the access passcode provided by the Administrator.\nEnter Passcode:`);
+    if (pin !== NEW_USER_PASSCODE) {
+      alert("❌ Invalid Passcode. Please ask the Administrator for the correct passcode.");
+      return;
+    }
+  }
+
+  if (confirm(`Do you want to take this number (${phone})? OK take it.`)) {
+    const userName = prompt("Enter your Full Name:") || "Guest";
+    const userRole = prompt("Enter your Role / Organization:") || "Innovator";
+    const fullName = `${userName} (${userRole})`;
+
+    contact.name = fullName;
+    contact.status = "allotted";
+    if (tempAvatarBase64) contact.avatar = tempAvatarBase64;
+
+    localStorage.setItem("wg_contacts_db", JSON.stringify(contactsDatabase));
+    localStorage.setItem("wg_my_allocated_number", phone);
+    localStorage.setItem("wg_my_name", userName);
+    localStorage.setItem("wg_my_role", userRole);
+    if (tempAvatarBase64) localStorage.setItem("wg_my_avatar", tempAvatarBase64);
+
+    currentDial = phone;
+    currentName = fullName;
+    updateDisplay();
+    closeDirectoryModal();
+    alert(`✅ Success! Number ${phone} is now claimed and locked to this device. Initializing P2P network...`);
+    
+    // Re-init peer network with new number
+    if (peer) peer.destroy();
+    initPeerNetwork();
+  }
+}
+
+function openProfileModal() {
+  const currentNum = localStorage.getItem("wg_my_allocated_number") || "Not Claimed Yet";
+  const savedName = localStorage.getItem("wg_my_name") || "Guest";
+  const savedRole = localStorage.getItem("wg_my_role") || "Innovator";
+
+  document.getElementById("profilePhoneInput").value = currentNum;
+  document.getElementById("profileNameInput").value = savedName;
+  document.getElementById("profileRoleInput").value = savedRole;
+  document.getElementById("avatarPreviewStatus").textContent = "";
+
+  document.getElementById("profileModal").classList.add("open");
+}
+
+function closeProfileModal() {
+  document.getElementById("profileModal").classList.remove("open");
+}
+
+function saveProfileModal() {
+  const phone = localStorage.getItem("wg_my_allocated_number");
+  const name = localStorage.getItem("wg_my_name");
+  const role = document.getElementById("profileRoleInput").value.trim();
+
+  if (!phone) {
+    alert("Please claim your number first by tapping an unallotted number in the Contacts list.");
+    return;
+  }
+
+  const fullName = `${name} (${role})`;
+  localStorage.setItem("wg_my_role", role);
+  if (tempAvatarBase64) localStorage.setItem("wg_my_avatar", tempAvatarBase64);
+
+  const existingIdx = contactsDatabase.findIndex(c => c.phone.replace(/\s+/g, ' ').trim() === phone.replace(/\s+/g, ' ').trim());
+  if (existingIdx >= 0) {
+    contactsDatabase[existingIdx].name = fullName;
+    contactsDatabase[existingIdx].status = "allotted";
+    if (tempAvatarBase64) contactsDatabase[existingIdx].avatar = tempAvatarBase64;
+  }
+
+  localStorage.setItem("wg_contacts_db", JSON.stringify(contactsDatabase));
+
+  document.getElementById("profileStatusDisplay").textContent = "✅ Profile updated successfully!";
+  setTimeout(() => {
+    closeProfileModal();
+    updateDisplay();
+  }, 1000);
+}
+
+function openAdminGeneratorModal() {
+  document.getElementById("adminMasterPin").value = "";
+  document.getElementById("generatedOtpDisplay").style.display = "none";
+  document.getElementById("adminGeneratorModal").classList.add("open");
+}
+
+function closeAdminGeneratorModal() {
+  document.getElementById("adminGeneratorModal").classList.remove("open");
+}
+
+function generateOneTimeOTP() {
+  const pin = document.getElementById("adminMasterPin").value.trim();
+  if (pin !== MASTER_ADMIN_PIN && pin !== "GARRF") {
+    alert("❌ Invalid Master Passcode.");
+    return;
+  }
+
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let otp = "";
+  for (let i = 0; i < 4; i++) {
+    otp += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+
+  localStorage.setItem("wg_active_otp", otp);
+  document.getElementById("activeOtpCodeText").textContent = otp;
+  document.getElementById("generatedOtpDisplay").style.display = "block";
+}
+
+function promptUserUnlock() {
+  const userOtp = prompt("Enter the 1-Time Passcode (OTP) given to you by the moderator:");
+  if (!userOtp) return;
+
+  const activeOtp = localStorage.getItem("wg_active_otp");
+  if (activeOtp && userOtp.trim().toUpperCase() === activeOtp.toUpperCase()) {
+    localStorage.removeItem("wg_active_otp");
+    localStorage.removeItem("wg_my_allocated_number");
+    localStorage.removeItem("wg_my_name");
+    alert("🔓 Success! Device lock cleared. You can now claim an unallotted number.");
+    closeDirectoryModal();
+  } else {
+    alert("❌ Invalid or expired One-Time Passcode.");
+  }
+}
+
+function openDirectoryModal() {
+  const container = document.getElementById("directoryListContainer");
+  container.innerHTML = "";
+  contactsDatabase.forEach(c => {
+    const div = document.createElement("div");
+    div.className = "dir-card";
+    
+    let actionBtnHtml = "";
+    if (c.status === "unallotted") {
+      actionBtnHtml = `<button class="sub-btn" style="padding:4px 8px; font-size:9px; background:#0ea5e9; color:#fff;" onclick="event.stopPropagation(); handleContactClick('${c.phone}')">Take</button>`;
+    } else {
+      actionBtnHtml = `<button class="sub-btn" style="padding:4px 8px; font-size:9px; background:rgba(239,68,68,0.3); color:#fca5a5;" onclick="event.stopPropagation(); handleContactClick('${c.phone}')">🔒 Take</button>`;
+    }
+
+    div.innerHTML = `
+      <div>
+        <div class="dir-card-name">${c.name}</div>
+        <div class="dir-card-phone">${c.phone}</div>
+        <div class="dir-card-role">Status: ${c.status.toUpperCase()}</div>
+      </div>
+      <div>${actionBtnHtml}</div>
+    `;
+    div.onclick = () => {
+      handleContactClick(c.phone);
+    };
+    container.appendChild(div);
+  });
+  document.getElementById("contactsModal").classList.add("open");
+}
+
+function closeDirectoryModal() {
+  document.getElementById("contactsModal").classList.remove("open");
+}
+
+function triggerInstallApp() {
+  alert("📲 To save on your phone:\n\n• Android Chrome: Tap menu (⋮) -> 'Add to Home screen'\n• iPhone Safari: Tap Share ([↑]) -> 'Add to Home Screen'");
+}
+
+function shareViaWhatsApp() {
+  const appUrl = window.location.href;
+  const text = encodeURIComponent(`Check out WhatsGARRF Live P2P Phone: ${appUrl}`);
+  window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
+}
+
+updateDisplay();
+// Start PeerJS network connection on load
+initPeerNetwork();
+</script>
+</body>
+</html>
