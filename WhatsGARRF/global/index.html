@@ -4,9 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="description" content="WhatsGARRF Global Phone — Live P2P Voice Edition." />
-  <title>WhatsGARRF Global Phone — Live P2P</title>
+  <title>WhatsGARRF Global Phone</title>
 
-  <!-- PWA & MOBILE HOME SCREEN APP TAGS -->
   <link rel="icon" type="image/jpeg" href="https://garrf.in/images/logo.jpeg" />
   <link rel="apple-touch-icon" href="https://garrf.in/images/logo.jpeg" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -17,7 +16,6 @@
   <!-- PEERJS LIBRARY FOR LIVE WEB-RTC CALLS -->
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 
-  <!-- SELF-CONTAINED PWA MANIFEST DATA URI -->
   <link rel="manifest" href="data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22WhatsGARRF%20Global%20Phone%22%2C%22short_name%22%3A%22WhatsGARRF%22%2C%22start_url%22%3A%22.%2Findex.html%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23050b14%22%2C%22theme_color%22%3A%22%2309101a%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fgarrf.in%2Fimages%2Flogo.jpeg%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fjpeg%22%7D%5D%7D" />
 
   <style>
@@ -397,7 +395,7 @@
 
 <div class="phone-shell">
   <header class="phone-header">
-    <img class="logo-img" src="https://garrf.in/images/logo.jpeg" onerror="this.onerror=null;this.src='images/logo.jpeg';" alt="GARRF Logo" title="Click for Moderator Admin" onclick="openAdminGeneratorModal()" />
+    <img class="logo-img" id="headerLogoImg" src="https://garrf.in/images/logo.jpeg" onerror="this.onerror=null;this.src='https://garrf.in/images/logo.jpeg';" alt="GARRF Logo" title="Click for Moderator Admin" onclick="openAdminGeneratorModal()" />
     <div class="header-titles">
       <h1>Gopalkrishna Advanced Rural Research Foundation</h1>
       <p>WhatsGARRF Live P2P Voice</p>
@@ -546,12 +544,17 @@
 const NEW_USER_PASSCODE = "6791"; 
 const MASTER_ADMIN_PIN  = "1976"; 
 
-// PEERJS NETWORK SETUP
 let peer = null;
 let localStream = null;
 let currentCall = null;
 let callTimerInterval = null;
 let callSeconds = 0;
+let tempAvatarBase64 = localStorage.getItem("wg_my_avatar") || "";
+
+// Initialize header logo with saved avatar if available
+if (tempAvatarBase64) {
+  document.getElementById("headerLogoImg").src = tempAvatarBase64;
+}
 
 function sanitizePeerId(phoneNum) {
   return 'wg_' + phoneNum.toLowerCase().replace(/[^a-z0-9]/g, '_');
@@ -567,9 +570,7 @@ function initPeerNetwork() {
   const peerId = sanitizePeerId(myAllocatedNumber);
   document.getElementById("p2pStatusIndicator").textContent = `Connecting P2P as ${myAllocatedNumber}...`;
 
-  peer = new Peer(peerId, {
-    debug: 2
-  });
+  peer = new Peer(peerId, { debug: 1 });
 
   peer.on('open', (id) => {
     document.getElementById("p2pStatusIndicator").textContent = `🟢 P2P Live Active (${myAllocatedNumber})`;
@@ -578,18 +579,17 @@ function initPeerNetwork() {
   peer.on('error', (err) => {
     console.error("PeerJS error:", err);
     if (err.type === 'unavailable-id') {
-      document.getElementById("p2pStatusIndicator").textContent = `⚠️ Extension already active in another tab`;
+      document.getElementById("p2pStatusIndicator").textContent = `⚠️ Extension active in another tab`;
     } else {
       document.getElementById("p2pStatusIndicator").textContent = `❌ P2P Error: ${err.type}`;
     }
   });
 
-  // Handle incoming live calls
   peer.on('call', async (incomingCall) => {
     try {
       localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
     } catch (e) {
-      alert("Microphone permission is required to answer incoming calls.");
+      alert("Microphone permission required to answer incoming call.");
       return;
     }
 
@@ -716,15 +716,35 @@ let contactsDatabase = JSON.parse(localStorage.getItem("wg_contacts_db")) || gen
 
 let currentDial = "";
 let currentName = "";
-let tempAvatarBase64 = localStorage.getItem("wg_my_avatar") || "";
 
+// Image Compression & Downsizing for LocalStorage Safety
 document.getElementById('profileAvatarFile').addEventListener('change', function(e) {
   const file = e.target.files[0];
   if (file) {
     const reader = new FileReader();
     reader.onload = function(event) {
-      tempAvatarBase64 = event.target.result;
-      document.getElementById('avatarPreviewStatus').textContent = "✓ New picture loaded ready to save";
+      const img = new Image();
+      img.onload = function() {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 150;
+        const MAX_HEIGHT = 150;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+        } else {
+          if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        tempAvatarBase64 = canvas.toDataURL('image/jpeg', 0.85);
+        document.getElementById('avatarPreviewStatus').textContent = "✓ Picture compressed & ready to save";
+      };
+      img.src = event.target.result;
     };
     reader.readAsDataURL(file);
   }
@@ -894,15 +914,17 @@ function handleContactClick(phone) {
     localStorage.setItem("wg_my_allocated_number", phone);
     localStorage.setItem("wg_my_name", userName);
     localStorage.setItem("wg_my_role", userRole);
-    if (tempAvatarBase64) localStorage.setItem("wg_my_avatar", tempAvatarBase64);
+    if (tempAvatarBase64) {
+      localStorage.setItem("wg_my_avatar", tempAvatarBase64);
+      document.getElementById("headerLogoImg").src = tempAvatarBase64;
+    }
 
     currentDial = phone;
     currentName = fullName;
     updateDisplay();
     closeDirectoryModal();
-    alert(`✅ Success! Number ${phone} is now claimed and locked to this device. Initializing P2P network...`);
+    alert(`✅ Success! Number ${phone} claimed. Initializing P2P network...`);
     
-    // Re-init peer network with new number
     if (peer) peer.destroy();
     initPeerNetwork();
   }
@@ -937,13 +959,18 @@ function saveProfileModal() {
 
   const fullName = `${name} (${role})`;
   localStorage.setItem("wg_my_role", role);
-  if (tempAvatarBase64) localStorage.setItem("wg_my_avatar", tempAvatarBase64);
+  if (tempAvatarBase64) {
+    localStorage.setItem("wg_my_avatar", tempAvatarBase64);
+    document.getElementById("headerLogoImg").src = tempAvatarBase64;
+  }
 
   const existingIdx = contactsDatabase.findIndex(c => c.phone.replace(/\s+/g, ' ').trim() === phone.replace(/\s+/g, ' ').trim());
   if (existingIdx >= 0) {
     contactsDatabase[existingIdx].name = fullName;
     contactsDatabase[existingIdx].status = "allotted";
-    if (tempAvatarBase64) contactsDatabase[existingIdx].avatar = tempAvatarBase64;
+    if (tempAvatarBase64) {
+      contactsDatabase[existingIdx].avatar = tempAvatarBase64;
+    }
   }
 
   localStorage.setItem("wg_contacts_db", JSON.stringify(contactsDatabase));
@@ -1034,7 +1061,7 @@ function closeDirectoryModal() {
 }
 
 function triggerInstallApp() {
-  alert("📲 To save on your phone:\n\n• Android Chrome: Tap menu (⋮) -> 'Add to Home screen'\n• iPhone Safari: Tap Share ([↑]) -> 'Add to Home Screen'");
+  alert("📲 To save on your mobile home screen:\n\n1. Open this link in **Google Chrome** (Android) or **Safari** (iPhone) — NOT inside WhatsApp.\n2. Tap your browser menu (⋮ or Share icon).\n3. Select **'Add to Home Screen'**.");
 }
 
 function shareViaWhatsApp() {
@@ -1044,7 +1071,6 @@ function shareViaWhatsApp() {
 }
 
 updateDisplay();
-// Start PeerJS network connection on load
 initPeerNetwork();
 </script>
 </body>
