@@ -208,7 +208,6 @@
       display: flex;
       flex-direction: column;
       gap: 12px;
-      /* Right-side wallpaper: back.png in the same folder with dark overlay */
       background-color: #060c12;
       background-image:
         linear-gradient(rgba(5, 11, 16, 0.78), rgba(5, 11, 16, 0.84)),
@@ -793,7 +792,8 @@ const REGISTER_PASSCODE = "6791";
 const MASTER_ADMIN_PIN  = "1976";
 const TWO_HOURS_MS      = 2 * 60 * 60 * 1000;
 const REG_DEADLINE_MS   = new Date("2026-11-27T23:59:59+05:30").getTime();
-const WORKER_URL        = "https://whatsgarrf-telegram.venuannamdas1976.workers.dev";
+const WORKER_URL        = "https://whatsgarrf.venuannamdas1976.workers.dev";
+const DESK_WORKER_URL   = "https://whatsgarrf-telegram.venuannamdas1976.workers.dev";
 const VAPID_PUBLIC_KEY  = ""; // Populated in Step 4 (Cloudflare Worker VAPID setup)
 const ONESIGNAL_APP_ID  = "";
 
@@ -1018,7 +1018,6 @@ async function syncContactsFromJSON(forceManual = false) {
   const syncLbl = document.getElementById("syncStatusLabel");
   const lastSync = Number(safeGet(localStorage, "wg_contacts_last_sync", "0"));
 
-  // Always load ./contacts.json when online so Master Directory stays up to date
   let updatedList = null;
   try {
     const res = await fetch(`./contacts.json?t=${Date.now()}`, { cache: "no-store" });
@@ -1029,7 +1028,6 @@ async function syncContactsFromJSON(forceManual = false) {
     }
   } catch (_) {}
 
-  // Only poll Worker /taken-list every 2 hrs (8am–6pm IST) unless manually triggered
   let workerTakenMap = {};
   const shouldPollWorker = isRegWindowOpen() && (forceManual || lastSync === 0 || (isISTDaytime() && (Date.now() - lastSync) >= TWO_HOURS_MS));
   if (shouldPollWorker) {
@@ -1296,7 +1294,7 @@ function retryPeerNetwork() { if (peer) { try { peer.destroy(); } catch (_) {} p
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") {
     if (peer && !peer.destroyed && peer.disconnected) try { peer.reconnect(); } catch (_) {}
-    acquireWakeLock(); flushOfflineOutbox(); syncContactsFromJSON(false);
+    acquireWakeLock(); flushOfflineOutbox(); syncContactsFromJSON(false); checkOfficialDeskReplies(true);
   }
 });
 window.addEventListener("online", () => { retryPeerNetwork(); flushOfflineOutbox(); });
@@ -1364,7 +1362,7 @@ async function startCallForThread(threadKey, withVideo = false) {
   if (!ensureContactAccess(threadKey)) return;
 
   if (desk && desk.deskId === "prakruthi") {
-    try { fetch(`${WORKER_URL}/dial`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: getSenderDisplayName(), contact: getSenderContactTag(), garrfId: getSenderContactTag(), dialedNumber: "+91 GARRF 0000", desk: "prakruthi" }) }); } catch (_) {}
+    try { fetch(`${DESK_WORKER_URL}/dial`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: getSenderDisplayName(), contact: getSenderContactTag(), garrfId: getSenderContactTag(), dialedNumber: "+91 GARRF 0000", desk: "prakruthi" }) }); } catch (_) {}
     if (c && c.link && confirm("Prakruthi (Call & Chat): Open 24/7 Voice Portal? (Cancel to try direct P2P call)")) { window.open(c.link, '_blank'); return; }
   }
   if (!peer || peer.destroyed || !peer.open) { initPeerNetwork(); showToast("Connecting P2P... tap Call again in 2s."); return; }
@@ -1539,7 +1537,7 @@ async function queueAndSendMessage(threadKey, text, isAutoMissed = false, fileOb
 
   if (desk) {
     try {
-      const res = await fetch(`${WORKER_URL}/chat`, {
+      const res = await fetch(`${DESK_WORKER_URL}/chat`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sessionId: SESSION_ID, garrfId: senderNum, name: senderLabel, contact: senderNum, desk: desk.deskId, text: `[To ${c ? c.name : desk.deskId}] ${fullText}${fileObj ? ` (File: ${fileObj.name})` : ""}` })
       });
@@ -1562,10 +1560,10 @@ async function queueAndSendMessage(threadKey, text, isAutoMissed = false, fileOb
   saveChatState();
 }
 
-async function checkOfficialDeskReplies() {
+async function checkOfficialDeskReplies(silent = false) {
   try {
-    const res = await fetch(`${WORKER_URL}/poll?sessionId=${encodeURIComponent(SESSION_ID)}`);
-    if (!res.ok) { showToast("No new reply yet."); return; }
+    const res = await fetch(`${DESK_WORKER_URL}/poll?sessionId=${encodeURIComponent(SESSION_ID)}`);
+    if (!res.ok) { if (!silent) showToast("No new reply yet."); return; }
     const data = await res.json(); let added = 0;
     if (data.ok && Array.isArray(data.messages)) {
       data.messages.forEach(m => {
@@ -1575,13 +1573,24 @@ async function checkOfficialDeskReplies() {
         const c = findContact(tp);
         if (!chatHistories[tp]) chatHistories[tp] = [];
         chatHistories[tp].push({ dir: "in", sender: `${c ? c.name : "Official Desk"} • Reply`, text: m.text, liveReply: true, time: getTimeNow() });
+        if (activeThreadKey !== tp) unreadCounts[tp] = (unreadCounts[tp] || 0) + 1;
       });
     }
-    if (added > 0) { safeSet(localStorage, "wg_seen_desk_ids", JSON.stringify([...seenDeskReplies].slice(-100))); saveChatState(); renderMessages(); showToast(`✅ ${added} new reply received!`); }
-    else showToast("Checked — no new reply yet.");
-  } catch (_) { showToast("Could not check right now."); }
+    if (added > 0) {
+      safeSet(localStorage, "wg_seen_desk_ids", JSON.stringify([...seenDeskReplies].slice(-100)));
+      saveChatState(); renderSidebarList(); renderMessages(); playMusicalKeyTone('M');
+      showToast(`✅ ${added} new reply received!`);
+    } else if (!silent) {
+      showToast("Checked — no new reply yet.");
+    }
+  } catch (_) { if (!silent) showToast("Could not check right now."); }
 }
-document.getElementById("checkReplyBtn").onclick = checkOfficialDeskReplies;
+document.getElementById("checkReplyBtn").onclick = () => checkOfficialDeskReplies(false);
+setInterval(() => {
+  if (document.visibilityState === "visible" && getOfficialDesk(activeThreadKey)) {
+    checkOfficialDeskReplies(true);
+  }
+}, 10000);
 
 function updateOutgoingStatus(storeKey, msgId, statusLabel) {
   const item = (chatHistories[storeKey] || []).find(m => m.id === msgId);
@@ -2220,8 +2229,6 @@ let openedFromWake = false;
   } catch (_) {}
 })();
 
-// Strictly disable Contacts (Master), Recent, Favorite, Groups & Keypad for Visitors.
-// Keep Featured (5) action buttons clickable so trying to contact Featured prompts Visitor details.
 function updateActionButtonsState() {
   const reg = isRegistered();
 
@@ -2253,7 +2260,6 @@ function updateActionButtonsState() {
   });
 }
 
-// Prompt Visitor Details immediately if they tap the message box before entering details
 const msgInputEl = document.getElementById("msgInput");
 ["focus", "click"].forEach(evt => {
   msgInputEl.addEventListener(evt, () => {
@@ -2264,7 +2270,6 @@ const msgInputEl = document.getElementById("msgInput");
   });
 });
 
-// Keep controls synchronized whenever profile or active contact changes
 const originalUpdateVisitorBadge = updateVisitorBadge;
 updateVisitorBadge = function() {
   originalUpdateVisitorBadge();
@@ -2277,11 +2282,12 @@ selectThread = function(key, openMobile = false) {
   updateActionButtonsState();
 };
 
-// Init: show Featured (5) only, with Master/Groups disabled
+// Init
 selectThread(activeThreadKey, false);
 updateActionButtonsState();
 initPeerNetwork();
 syncContactsFromJSON(false);
+setTimeout(() => checkOfficialDeskReplies(true), 1500);
 setInterval(() => syncContactsFromJSON(false), TWO_HOURS_MS);
 </script>
 </body>
