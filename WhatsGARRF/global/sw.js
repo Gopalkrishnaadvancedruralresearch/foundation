@@ -1,4 +1,4 @@
-const CACHE_NAME = "whatsgarrf-mvp-v1";
+const CACHE_NAME = "whatsgarrf-mvp-v2";
 const APP_SHELL = ["./", "./manifest.json"];
 
 self.addEventListener("install", (event) => {
