@@ -1417,8 +1417,31 @@ function initPeerNetwork() {
     host: '0.peerjs.com', port: 443, path: '/', secure: true, pingInterval: 5000, debug: 1,
     config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }, { urls: 'stun:global.stun.twilio.com:3478' }] }
   });
-  peer.on('open', () => { clearTimeout(p2pTimeout); statusEl.textContent = isRegistered() ? `🟢 P2P Live (${MY_NUMBER})` : `🟢 Live (${visitorProfile.name})`; flushOfflineOutbox(); registerPushSubscription(); });
-  peer.on('disconnected', () => { statusEl.textContent = "🟡 Reconnecting P2P..."; setTimeout(() => { if (peer && !peer.destroyed && peer.disconnected) try { peer.reconnect(); } catch (_) {} }, 1500); });
+  let reconnectWatchdog = null;
+  peer.on('open', () => {
+    clearTimeout(p2pTimeout);
+    clearTimeout(reconnectWatchdog);
+    statusEl.textContent = isRegistered() ? `🟢 P2P Live (${MY_NUMBER})` : `🟢 Live (${visitorProfile.name})`;
+    flushOfflineOutbox();
+    registerPushSubscription();
+  });
+  peer.on('disconnected', () => {
+    statusEl.innerHTML = `🟡 Reconnecting P2P... — <u style="cursor:pointer" onclick="retryPeerNetwork()">Retry</u>`;
+    clearTimeout(reconnectWatchdog);
+    setTimeout(() => {
+      if (!peer || peer.destroyed) return;
+      try {
+        if (peer.disconnected) peer.reconnect();
+      } catch (_) {
+        retryPeerNetwork();
+      }
+    }, 1200);
+    reconnectWatchdog = setTimeout(() => {
+      if (peer && !peer.open) {
+        retryPeerNetwork();
+      }
+    }, 6500);
+  });
   peer.on('error', (err) => {
     clearTimeout(p2pTimeout);
     if (err.type === 'unavailable-id') statusEl.textContent = `⚠️ ${label} active elsewhere`;
@@ -2567,13 +2590,32 @@ let openedFromWake = false;
   try {
     const params = new URLSearchParams(window.location.search);
     const wakeFrom = params.get("fromPhone");
+    const wakeAction = params.get("wgAction") || "";
+    const wakeVideo = params.get("hasVideo") === "1";
     if (wakeFrom) {
       openedFromWake = true;
       activeThreadKey = normPhone(wakeFrom);
       setTimeout(() => {
         selectThread(activeThreadKey, true);
         showToast(`🔔 Woke up for ${params.get("fromName") || wakeFrom}`);
-      }, 350);
+        if (wakeAction === "accept_call" && !activeRoomId) {
+          startCallForThread(activeThreadKey, wakeVideo);
+        }
+      }, 450);
+    }
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.addEventListener("message", (event) => {
+        const msg = event.data;
+        if (!msg || typeof msg !== "object") return;
+        if (msg.type === "WG_WAKE_INCOMING" && msg.fromPhone) {
+          activeThreadKey = normPhone(msg.fromPhone);
+          selectThread(activeThreadKey, true);
+          showToast(`🔔 Incoming alert from ${msg.fromName || msg.fromPhone}`);
+          if (msg.action === "accept_call" && !activeRoomId) {
+            startCallForThread(activeThreadKey, Boolean(msg.hasVideo));
+          }
+        }
+      });
     }
   } catch (_) {}
 })();
