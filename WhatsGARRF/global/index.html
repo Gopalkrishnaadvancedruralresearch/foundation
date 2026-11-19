@@ -365,7 +365,7 @@
     <span id="installBannerText"><strong>Save WhatsGARRF on your Home Screen</strong> to receive wake-up call alerts, video &amp; chat anytime!</span>
   </div>
   <div class="install-banner-actions">
-    <button type="button" class="install-cta-btn" id="installAppBtn">📲 Save Icon</button>
+    <button type="button" class="install-cta-btn" id="installAppBtn">📲 Install App</button>
     <button type="button" class="install-close-btn" id="dismissInstallBtn">✕</button>
   </div>
 </div>
@@ -815,22 +815,27 @@
     </div>
 
     <div class="help-guide-item">
-      <strong>4) Save WhatsGARRF Icon to Home Screen:</strong><br>
-      Tap <strong>⭐ Save Icon</strong> at the top-left of the sidebar (or <strong>Add to Home screen / Install app</strong> in your browser menu) so WhatsGARRF runs as a standalone app.
+      <strong>4) Opening from WhatsApp, Email, or Social Media (Copy Link &amp; Open in Chrome):</strong><br>
+      If you received the WhatsGARRF link via <strong>WhatsApp, Email, or any social platform</strong>, <strong>copy the link</strong> and <strong>open it in Google Chrome</strong> (instead of staying inside an in-app preview browser). On a phone, tap the <strong>three dots (⋮)</strong> in Chrome and choose <strong>Add to Home screen</strong> or <strong>Install app</strong>.
     </div>
 
     <div class="help-guide-item">
-      <strong>5) Keep Awake &amp; Enable Alerts:</strong><br>
-      Tap <strong>🔋 Awake</strong> and <strong>🔔 Alerts</strong> on the left panel status bar to keep your screen awake during calls and receive wake-up notifications.
+      <strong>5) Install on Desktop / Computer Screen &amp; Keep Active:</strong><br>
+      On a <strong>Desktop / Laptop</strong> in Chrome or Edge, click the <strong>Install icon</strong> in the address bar (or open the <strong>three dots (⋮) menu &gt; Cast, save, and share &gt; Install page as app</strong> / <strong>Create shortcut</strong> and check <em>Open as window</em>). This puts WhatsGARRF on your desktop/start screen in its own window so it stays handy and active.
     </div>
 
     <div class="help-guide-item">
-      <strong>6) Obtain Passcode for Registration:</strong><br>
+      <strong>6) Keep Notifications Active for Calls &amp; Tap 🔋 Awake / 🔔 Alerts:</strong><br>
+      Make sure <strong>browser and OS notifications remain allowed/active</strong> for incoming call alerts, and tap <strong>🔋 Awake</strong> and <strong>🔔 Alerts</strong> on the left panel status bar so your device stays ready for calls.
+    </div>
+
+    <div class="help-guide-item">
+      <strong>7) Obtain Passcode for Registration:</strong><br>
       A Passcode is required for an <strong>Allotted Number</strong>, or when registering on a <strong>New Device / Re-Registering after Deleting Desktop/Browser History</strong>. Please remember your Passcode—if required, contact <strong>AI Prakruthi</strong> or Founder <strong>Dr. Annamdas Venu Gopal Madhav</strong>.
     </div>
 
     <div class="help-guide-item">
-      <strong>7) Obtain OTP for Unallotted / New Number:</strong><br>
+      <strong>8) Obtain OTP for Unallotted / New Number:</strong><br>
       If you are claiming an <strong>Unallotted / New Number</strong>, you will need a special <strong>One-Time PIN (OTP)</strong>. Call the <strong>Founder (Dr. Annamdas Venu Gopal Madhav)</strong> to get this special one-time PIN valid for <strong>5 minutes</strong>. <em>Note: Most Visitors and Registered users don't need an OTP.</em>
     </div>
 
@@ -1254,39 +1259,63 @@ let deferredInstallPrompt = null;
 const installBannerEl = document.getElementById("installBanner");
 const ua = navigator.userAgent || "", isMobile = /Android|iPhone|iPad|iPod/i.test(ua), isWA = /WhatsApp/i.test(ua);
 const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
-if (isWA) { document.getElementById("installBannerText").innerHTML = "<strong>Opened inside WhatsApp!</strong> Tap <strong>Save Icon</strong> to open in Chrome/Safari &amp; add icon."; installBannerEl.classList.add("show"); }
+if (isWA) { document.getElementById("installBannerText").innerHTML = "<strong>Opened inside WhatsApp!</strong> Copy link or open in Chrome/Safari &amp; add icon."; installBannerEl.classList.add("show"); }
 else if (isMobile && !isStandalone && !safeGet(localStorage, "wg_hide_install_banner")) installBannerEl.classList.add("show");
-window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); deferredInstallPrompt = e; if (!isStandalone && !safeGet(localStorage, "wg_hide_install_banner")) installBannerEl.classList.add("show"); });
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  if (!isStandalone && !safeGet(localStorage, "wg_hide_install_banner")) {
+    if (!isMobile) {
+      document.getElementById("installBannerText").innerHTML = "<strong>Install WhatsGARRF on Desktop</strong> for quick access &amp; call notifications.";
+    }
+    installBannerEl.classList.add("show");
+  }
+});
 document.getElementById("dismissInstallBtn").onclick = () => { installBannerEl.classList.remove("show"); safeSet(localStorage, "wg_hide_install_banner", "1"); };
 document.getElementById("installAppBtn").onclick = async () => {
-  if (deferredInstallPrompt && !isWA) { deferredInstallPrompt.prompt(); const r = await deferredInstallPrompt.userChoice; deferredInstallPrompt = null; if (r.outcome === "accepted") installBannerEl.classList.remove("show"); }
-  else openSaveOrBookmarkModal();
+  if (deferredInstallPrompt && !isWA) {
+    deferredInstallPrompt.prompt();
+    const r = await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    if (r.outcome === "accepted") {
+      installBannerEl.classList.remove("show");
+      showToast("✅ WhatsGARRF installed!");
+    }
+  } else openSaveOrBookmarkModal();
 };
 
-let wakeLockObj = null, wakeWanted = false, bgKeepAliveSource = null, bgKeepAliveGain = null;
-async function acquireWakeLock() {
+let wakeLockObj = null, wakeWanted = safeGet(localStorage, "wg_wake_pref", "on") !== "off", alertsWanted = safeGet(localStorage, "wg_alerts_pref", "on") !== "off", bgKeepAliveSource = null, bgKeepAliveGain = null;
+function syncWakeButtonUI(activeNow = false) {
   const btn = document.getElementById("wakeToggleBtn");
-  if ((!wakeWanted && !activeRoomId) || !('wakeLock' in navigator)) return;
+  if (!btn) return;
+  if (wakeWanted || activeNow) {
+    btn.classList.add("active");
+    btn.textContent = "🔋 Awake ON";
+  } else {
+    btn.classList.remove("active");
+    btn.textContent = "🔋 Awake";
+  }
+}
+async function acquireWakeLock() {
+  if ((!wakeWanted && !activeRoomId) || !('wakeLock' in navigator)) {
+    syncWakeButtonUI(false);
+    return;
+  }
+  syncWakeButtonUI(true);
   try {
     if (wakeLockObj && !wakeLockObj.released) return;
     wakeLockObj = await navigator.wakeLock.request('screen');
     wakeLockObj.addEventListener('release', () => {
-      if (!wakeWanted && !activeRoomId) {
-        btn.classList.remove("active");
-        btn.textContent = "🔋 Awake";
-      }
+      if (!wakeWanted && !activeRoomId) syncWakeButtonUI(false);
     });
-    btn.classList.add("active");
-    btn.textContent = "🔋 Awake ON";
+    syncWakeButtonUI(true);
   } catch (_) {}
 }
 async function releaseAutoWakeLockIfIdle() {
   if (!wakeWanted && !activeRoomId && wakeLockObj) {
     try { await wakeLockObj.release(); } catch (_) {}
     wakeLockObj = null;
-    const btn = document.getElementById("wakeToggleBtn");
-    btn.classList.remove("active");
-    btn.textContent = "🔋 Awake";
+    syncWakeButtonUI(false);
   }
 }
 function startBackgroundAudioKeepAlive() {
@@ -1324,25 +1353,87 @@ function stopBackgroundAudioKeepAlive() {
     if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
   } catch (_) {}
 }
+function syncAlertsButtonUI() {
+  const btn = document.getElementById("enableAlertsBtn");
+  if (!btn) return;
+  const permGranted = ('Notification' in window) && Notification.permission === 'granted';
+  if (alertsWanted && permGranted) {
+    btn.classList.add("active");
+    btn.textContent = "🔔 On";
+  } else if (alertsWanted) {
+    btn.classList.add("active");
+    btn.textContent = "🔔 Alerts ON";
+  } else {
+    btn.classList.remove("active");
+    btn.textContent = "🔔 Alerts";
+  }
+}
+async function enableAlertsDefaultOrPrompt() {
+  if (!alertsWanted || !('Notification' in window)) { syncAlertsButtonUI(); return; }
+  if (Notification.permission === 'granted') {
+    syncAlertsButtonUI();
+    await registerPushSubscription();
+  } else if (Notification.permission === 'default') {
+    try {
+      const res = await Notification.requestPermission();
+      if (res === 'granted') await registerPushSubscription();
+    } catch (_) {}
+    syncAlertsButtonUI();
+  } else {
+    syncAlertsButtonUI();
+  }
+}
 document.getElementById("wakeToggleBtn").onclick = async () => {
-  const btn = document.getElementById("wakeToggleBtn");
   if (!('wakeLock' in navigator)) { showToast("Keep Awake works in Chrome / Edge / Android."); return; }
-  if (wakeWanted) { wakeWanted = false; if (wakeLockObj) try { await wakeLockObj.release(); } catch (_) {} wakeLockObj = null; btn.classList.remove("active"); btn.textContent = "🔋 Awake"; }
-  else { wakeWanted = true; await acquireWakeLock(); }
+  if (wakeWanted) {
+    wakeWanted = false;
+    safeSet(localStorage, "wg_wake_pref", "off");
+    if (wakeLockObj) try { await wakeLockObj.release(); } catch (_) {}
+    wakeLockObj = null;
+    syncWakeButtonUI(false);
+    showToast("🔋 Keep Awake turned OFF.");
+  } else {
+    wakeWanted = true;
+    safeSet(localStorage, "wg_wake_pref", "on");
+    await acquireWakeLock();
+    showToast("🔋 Keep Awake turned ON.");
+  }
 };
 document.getElementById("enableAlertsBtn").onclick = async () => {
   getAudioContext();
   if (!('Notification' in window)) { showToast("Save to Home Screen first."); return; }
-  if (await Notification.requestPermission() === 'granted') {
-    document.getElementById("enableAlertsBtn").classList.add("active");
-    document.getElementById("enableAlertsBtn").textContent = "🔔 On";
+  if (alertsWanted && Notification.permission === 'granted') {
+    alertsWanted = false;
+    safeSet(localStorage, "wg_alerts_pref", "off");
+    syncAlertsButtonUI();
+    showToast("🔕 Alerts muted (tap again to turn back ON).");
+    return;
+  }
+  alertsWanted = true;
+  safeSet(localStorage, "wg_alerts_pref", "on");
+  if (Notification.permission === 'granted') {
+    syncAlertsButtonUI();
+    await registerPushSubscription();
+    showToast("✅ Wake-up call & chat alerts ON!");
+  } else if (await Notification.requestPermission() === 'granted') {
+    syncAlertsButtonUI();
     await registerPushSubscription();
     showToast("✅ Wake-up call & chat alerts enabled!");
+  } else {
+    syncAlertsButtonUI();
+    showToast("⚠️ Please allow Notifications in your browser settings.");
   }
 };
-if ('Notification' in window && Notification.permission === 'granted') { document.getElementById("enableAlertsBtn").classList.add("active"); document.getElementById("enableAlertsBtn").textContent = "🔔 On"; }
+syncWakeButtonUI(false);
+syncAlertsButtonUI();
+acquireWakeLock();
+enableAlertsDefaultOrPrompt();
+document.addEventListener("pointerdown", () => {
+  if (wakeWanted && (!wakeLockObj || wakeLockObj.released)) acquireWakeLock();
+  if (alertsWanted && ('Notification' in window) && Notification.permission === 'default') enableAlertsDefaultOrPrompt();
+}, { once: true });
 function showBrowserNotification(title, body) {
-  if ('Notification' in window && Notification.permission === 'granted') {
+  if (alertsWanted && 'Notification' in window && Notification.permission === 'granted') {
     if (navigator.serviceWorker && navigator.serviceWorker.controller) {
       navigator.serviceWorker.ready.then(reg => reg.showNotification(title, { body, icon: 'https://garrf.in/images/logo.jpeg', badge: 'https://garrf.in/images/logo.jpeg', vibrate: [400, 150, 400, 150, 400], requireInteraction: true, data: { url: window.location.href } }));
     } else new Notification(title, { body, icon: 'https://garrf.in/images/logo.jpeg' });
@@ -2526,7 +2617,7 @@ function openSaveOrBookmarkModal() {
   else if (isWA && isIOS) stepsBox.innerHTML = `<strong>⚠️ Inside WhatsApp on iPhone:</strong><br>1. Tap the <strong>Safari / Compass icon</strong> (bottom-right).<br>2. Tap <strong>Share (⬆)</strong> → <strong>Add to Home Screen</strong>.`;
   else if (isIOS) stepsBox.innerHTML = `<strong>On iPhone / iPad (Safari):</strong><br>1. Tap <strong>Share ⬆</strong> → <strong>Add to Home Screen</strong> → <strong>Add</strong>.`;
   else if (isAndroid) stepsBox.innerHTML = `<strong>On Android (Chrome):</strong><br>1. Tap <strong>⋮</strong> (top-right) → <strong>Install app</strong> or <strong>Add to Home screen</strong>.`;
-  else stepsBox.innerHTML = `<strong>On Desktop Computer:</strong><br>Press <strong>${isMac ? "Cmd (⌘) + D" : "Ctrl + D"}</strong> to bookmark, or click <strong>⋮ → Cast, save, and share → Install page as app</strong>.`;
+  else stepsBox.innerHTML = `<strong>On Desktop Computer (Chrome / Edge):</strong><br>1. Click the <strong>Install</strong> icon in the address bar, or open <strong>⋮ &gt; Cast, save, and share &gt; Install page as app</strong> (or <strong>Create shortcut</strong> &gt; check <strong>Open as window</strong>).<br>2. Allow <strong>Notifications</strong> so call alerts stay active. You can also press <strong>${isMac ? "Cmd (⌘) + D" : "Ctrl + D"}</strong> to bookmark.`;
   if (navigator.clipboard) navigator.clipboard.writeText(pageUrl).catch(() => {});
   bookmarkModal.classList.add("open");
 }
