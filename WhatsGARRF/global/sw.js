@@ -50,7 +50,7 @@ self.addEventListener("push", (event) => {
     data = { title: "WhatsGARRF Alert", body: event.data ? event.data.text() : "Incoming notification" };
   }
 
-  const isCall = data.kind === "call";
+  const isCall = data.kind === "call" || data.type === "call";
   const fromName = data.fromName || data.fromPhone || "WhatsGARRF User";
   const title = data.title || (isCall
     ? `📞 Incoming ${data.hasVideo ? "Video" : "Voice"} Call from ${fromName}`
@@ -65,7 +65,7 @@ self.addEventListener("push", (event) => {
   if (data.fromPhone) qs.set("fromPhone", data.fromPhone);
   if (data.fromName) qs.set("fromName", data.fromName);
   if (data.roomId) qs.set("roomId", data.roomId);
-  if (data.hasVideo) qs.set("video", "1");
+  if (data.hasVideo) qs.set("hasVideo", "1");
 
   const targetUrl = `${scopeUrl}?${qs.toString()}`;
 
@@ -80,10 +80,10 @@ self.addEventListener("push", (event) => {
     data: { url: targetUrl, ...data },
     actions: isCall
       ? [
-          { action: "answer", title: "📞 Open & Answer" },
+          { action: "accept_call", title: "📞 Open & Answer" },
           { action: "dismiss", title: "Dismiss" }
         ]
-      : [{ action: "open", title: "💬 Open Chat" }]
+      : [{ action: "open_chat", title: "💬 Open Chat" }]
   };
 
   event.waitUntil(self.registration.showNotification(title, options));
@@ -95,15 +95,27 @@ self.addEventListener("notificationclick", (event) => {
   if (event.action === "dismiss") return;
 
   const data = event.notification.data || {};
-  const targetUrl = data.url || self.registration.scope || "./";
+  const baseUrlStr = data.url || self.registration.scope || "./";
+  const urlObj = new URL(baseUrlStr, self.location.origin);
+  if (event.action === "accept_call") {
+    urlObj.searchParams.set("wgAction", "accept_call");
+  }
+  const targetUrl = urlObj.toString();
 
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
         if ("focus" in client) {
           client.focus();
-          client.postMessage({ type: "wg-wake-open", ...data });
-          return;
+          client.postMessage({
+            type: "WG_WAKE_INCOMING",
+            fromPhone: data.fromPhone || "",
+            fromName: data.fromName || "",
+            roomId: data.roomId || "",
+            hasVideo: Boolean(data.hasVideo),
+            action: event.action || ""
+          });
+          return client;
         }
       }
       if (self.clients.openWindow) {
