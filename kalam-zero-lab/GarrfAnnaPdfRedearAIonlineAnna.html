@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Prof. GARRF-Anna v51 — AI Live Classroom Studio</title>
+<title>Prof. GARRF-Anna v53 — AI Live Classroom Studio</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
@@ -42,13 +42,26 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-templat
 #right{overflow:auto;background:var(--bg)}.sec{padding:8px 12px;border-bottom:1px solid var(--line)}.row{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
 .chip{font-size:12px;padding:3px 9px;border-radius:999px}
 
-/* PRE-CLASS MINI CLASSROOM BOARD */
-#preStage{position:relative;flex:1;min-height:240px;display:flex;flex-direction:column;background:radial-gradient(circle at 38% 35%,var(--wall1),var(--wall2) 78%);padding:12px 14px 24px;overflow:hidden}
+/* WORD-BY-WORD CHALK HIGHLIGHT */
+.w-tok{display:inline;border-radius:4px;padding:0 1px;transition:background .12s,color .12s}
+.w-tok.spoken{color:#fff}
+.w-tok.active-word{background:rgba(253,224,71,.34);color:#fde047;text-shadow:0 0 8px rgba(253,224,71,.55)}
+
+/* CLEAN LIP-ONLY ANIMATION RIG ON CARICATURE */
+.anna-rig{position:relative;width:100%;display:inline-block;line-height:0;user-select:none}
+.anna-rig img.anna-base,.anna-rig svg{width:100%;height:auto;display:block;object-fit:contain}
+.anna-lip-clip{position:absolute;left:calc(var(--lip-x,57.5%) - 5.5%);top:calc(var(--lip-y,17.2%) - 1.2%);width:11%;height:2.4%;overflow:hidden;border-radius:50%;pointer-events:none;transform-origin:50% 45%;transition:transform .07s ease-out;will-change:transform}
+.anna-lip-clip img{position:absolute;left:0;top:0;width:calc(100% / 0.11);height:calc(100% / 0.024);max-width:none;max-height:none;transform:translate(calc(-1 * (var(--lip-x,57.5%) - 5.5%) / 0.11 * 1%), calc(-1 * (var(--lip-y,17.2%) - 1.2%) / 0.024 * 1%))}
+.anna-mouth-opening{position:absolute;left:var(--lip-x,57.5%);top:calc(var(--lip-y,17.2%) + 0.15%);width:6.8%;height:1.25%;transform:translate(-50%,0) scaleY(0);border-radius:0 0 50% 50%;background:radial-gradient(ellipse at 50% 35%,rgba(52,12,12,.88) 0%,rgba(136,34,34,.55) 68%,transparent 100%);pointer-events:none;transition:transform .065s ease-out;will-change:transform}
+
+/* PRE-CLASS MINI CLASSROOM BOARD WITH DEDICATED RIGHT LANE */
+#preStage{position:relative;flex:1;min-height:245px;display:flex;flex-direction:column;background:radial-gradient(circle at 38% 35%,var(--wall1),var(--wall2) 78%);padding:12px 14px 26px;overflow:hidden}
 #preStage::after{content:'';position:absolute;left:0;right:0;bottom:0;height:26px;background:linear-gradient(180deg,var(--floor1),var(--floor2));border-top:2px solid #352015;z-index:0}
-#board{position:relative;z-index:1;padding:14px 120px 18px 18px;flex:1;min-height:190px;overflow-y:auto;background:radial-gradient(ellipse at 40% 35%,#245c47 0%,var(--chalk) 72%,#15372a 100%);border:9px solid var(--oak2);outline:2px solid var(--oak1);border-radius:6px;box-shadow:0 8px 22px rgba(0,0,0,.38),inset 0 0 24px rgba(0,0,0,.35);font-family:'Patrick Hand',Inter,sans-serif}
-#preTeacher{position:absolute;right:8px;bottom:8px;width:112px;max-height:88%;z-index:2;pointer-events:none;display:flex;flex-direction:column;align-items:center;filter:drop-shadow(0 6px 8px rgba(0,0,0,.42))}
-#preTeacher img,#preTeacher svg{width:100%;height:auto;max-height:185px;object-fit:contain;display:block}
-#preUploadBtn{position:absolute;left:14px;bottom:32px;z-index:3;font-size:11px;padding:3px 8px;background:rgba(15,23,42,.85);border:1px solid #fbbf24;color:#fde68a;border-radius:999px}
+#board{position:relative;z-index:1;padding:14px 136px 20px 18px;flex:1;min-height:195px;overflow-y:auto;background:radial-gradient(ellipse at 40% 35%,#245c47 0%,var(--chalk) 72%,#15372a 100%);border:9px solid var(--oak2);outline:2px solid var(--oak1);border-radius:6px;box-shadow:0 8px 22px rgba(0,0,0,.38),inset 0 0 24px rgba(0,0,0,.35);font-family:'Patrick Hand',Inter,sans-serif}
+#preTeacher{position:absolute;right:10px;top:14px;width:124px;z-index:2;pointer-events:none;display:flex;flex-direction:column;align-items:center;filter:drop-shadow(0 6px 10px rgba(0,0,0,.44));transition:transform .42s cubic-bezier(.22,.8,.32,1);will-change:transform}
+#preTeacher .anna-rig img.anna-base,#preTeacher .anna-rig svg{max-height:220px}
+#preTeacher.idle .anna-rig{animation:teacherBreathe 3.8s ease-in-out infinite}
+#preTeacher.talking .anna-rig{animation:teacherTeach .68s ease-in-out infinite alternate}
 #bTitle{color:#fde68a;font-size:22px;margin-bottom:6px;text-shadow:0 1px 2px #0006}.sbody{font-size:19px;line-height:1.45;color:#f8fafc}#bStep ul{margin:4px 0;padding-left:1.3em}#bStep li{margin-bottom:10px;font-size:19px;line-height:1.42}#bStep li::marker{color:#6ee7b7}
 .cutimg{display:block;max-width:100%;max-height:46vh;object-fit:contain;margin:8px auto;background:#fff;border:3px solid #fbbf24;border-radius:6px}
 .note{color:var(--mut);font-size:12px}#sum{margin:8px 12px;padding:10px;border:1px solid #065f46;background:#06281f;border-radius:8px;display:none}
@@ -77,13 +90,13 @@ dialog{background:var(--panel);color:var(--ink);border:1px solid var(--acc);bord
 #ocFloor{position:absolute;left:0;right:0;bottom:0;height:56px;background:repeating-linear-gradient(90deg,rgba(0,0,0,.06) 0 2px,transparent 2px 110px),linear-gradient(180deg,var(--floor1) 0%,var(--floor2) 100%);border-top:3px solid #352015;box-shadow:inset 0 4px 12px rgba(0,0,0,.35);z-index:1}
 #ocBookStack{position:absolute;left:18px;bottom:42px;z-index:2;display:flex;flex-direction:column;align-items:flex-start;pointer-events:none;opacity:.92}
 .bk{height:11px;border-radius:2px 4px 4px 2px;box-shadow:0 2px 3px rgba(0,0,0,.35);border-left:4px solid rgba(255,255,255,.35);margin-top:-1px}
-#ocStageRow{position:relative;z-index:3;flex:1;min-height:0;display:flex;align-items:stretch;gap:6px}
+#ocStageRow{position:relative;z-index:3;flex:1;min-height:0;display:flex;align-items:stretch;gap:8px}
 
 /* OAK-FRAMED BOARD + CHALK TRAY */
 #ocBoardWrap{position:relative;flex:1;min-width:0;display:flex;flex-direction:column;border-radius:8px;padding:11px;background:linear-gradient(145deg,var(--oak1),var(--oak2));box-shadow:0 14px 32px rgba(0,0,0,.45),inset 0 2px 3px rgba(255,255,255,.22)}
 #ocBoardWrap.theme-dark{background:linear-gradient(145deg,#475569,#1e293b)}
 #ocBoardWrap.theme-light{background:linear-gradient(145deg,#cbd5e1,#94a3b8)}
-#ocBoard{position:relative;flex:1;min-width:0;min-height:0;overflow:auto;padding:16px 22px 12px;background:radial-gradient(ellipse at 35% 30%,#245b46 0%,var(--chalk) 72%,#133326 100%);border-radius:4px;box-shadow:inset 0 0 26px rgba(0,0,0,.42);display:flex;flex-direction:column;color:#f8fafc}
+#ocBoard{position:relative;flex:1;min-width:0;min-height:0;overflow:auto;padding:16px 24px 14px;background:radial-gradient(ellipse at 35% 30%,#245b46 0%,var(--chalk) 72%,#133326 100%);border-radius:4px;box-shadow:inset 0 0 26px rgba(0,0,0,.42);display:flex;flex-direction:column;color:#f8fafc}
 #ocBoardWrap.theme-dark #ocBoard{background:radial-gradient(ellipse at 35% 30%,#1e293b 0%,#0f172a 78%);color:#f1f5f9}
 #ocBoardWrap.theme-light #ocBoard{background:#f8fafc;color:#0f172a;box-shadow:inset 0 0 12px rgba(0,0,0,.08)}
 #ocBoardWrap.theme-light #ocSlideTitle{color:#065f46;text-shadow:none}
@@ -106,12 +119,13 @@ dialog{background:var(--panel);color:var(--ink);border:1px solid var(--acc);bord
 #ocBoardWrap.theme-light .oc-interact-row{border-top-color:rgba(15,23,42,.15)}
 #ocTipBox{margin-top:10px;padding:9px 13px;background:rgba(251,191,36,.14);border:1px solid rgba(251,191,36,.38);border-left:5px solid #fbbf24;border-radius:8px;font-size:15px;color:#fef3c7}
 
-/* CARICATURE TEACHER ACTOR + WALK-IN / TALKING / LISTENING ANIMATIONS */
-#ocTeacherStage{position:relative;width:235px;flex:none;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;z-index:6;pointer-events:none;margin-left:-34px;margin-bottom:-20px}
-#ocMain:not(.no-src) #ocTeacherStage{width:165px;margin-left:-26px}
+/* CARICATURE TEACHER ACTOR + TOP-TO-BOTTOM LINE/WORD GLIDE */
+#ocTeacherStage{position:relative;width:265px;flex:none;display:flex;flex-direction:column;justify-content:flex-start;align-items:center;z-index:6;pointer-events:none;margin-left:-34px;padding-top:8px}
+#ocMain:not(.no-src) #ocTeacherStage{width:190px;margin-left:-24px}
+#ocTeacherMover{position:relative;width:100%;display:flex;flex-direction:column;align-items:center;transition:transform .44s cubic-bezier(.22,.8,.32,1);will-change:transform}
 #ocTeacherActor{position:relative;width:100%;display:flex;justify-content:center;align-items:flex-end;transform-origin:55% 95%;will-change:transform}
-#ocTeacherActor img,#ocTeacherActor svg{width:100%;max-height:66vh;height:auto;object-fit:contain;filter:drop-shadow(0 8px 14px rgba(0,0,0,.38))}
-#ocMain:not(.no-src) #ocTeacherActor img,#ocMain:not(.no-src) #ocTeacherActor svg{max-height:46vh}
+#ocTeacherActor .anna-rig img.anna-base,#ocTeacherActor .anna-rig svg{width:100%;max-height:54vh;height:auto;object-fit:contain;filter:drop-shadow(0 8px 14px rgba(0,0,0,.38))}
+#ocMain:not(.no-src) #ocTeacherActor .anna-rig img.anna-base,#ocMain:not(.no-src) #ocTeacherActor .anna-rig svg{max-height:40vh}
 #ocTeacherShadow{width:58%;height:14px;border-radius:50%;background:radial-gradient(ellipse,rgba(0,0,0,.45),transparent 70%);margin-top:-10px;transition:transform .25s,opacity .25s}
 
 /* Entrance Walk-In */
@@ -148,7 +162,7 @@ dialog{background:var(--panel);color:var(--ink);border:1px solid var(--acc);bord
 #exBar{height:8px;background:#1e293b;border-radius:4px;overflow:hidden;margin:6px 0}#exBar>i{display:block;height:100%;width:0;background:#10b981}
 .plan-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}.plan-btn{padding:11px;text-align:left;border:1px solid #334155;border-radius:10px;background:#0d1526}.plan-btn:hover{border-color:#10b981;background:#06281f}.plan-btn b{display:block;color:#34d399;font-size:13.5px}.plan-btn small{color:#94a3b8;font-size:11.5px;font-weight:400}
 .ai-badge{font-size:11px;padding:2px 8px;border-radius:999px;background:#064e3b;color:#a7f3d0;border:1px solid #10b981}
-@media(max-width:900px){main,#ocMain,#stBody,.st-grid,.slide-grid.has-img,.plan-grid{grid-template-columns:1fr}#left{height:58vh}#ocPdfSide{max-height:32vh}#ocQA{width:92%}#ocTeacherStage{width:125px!important;margin-left:-14px!important}#preTeacher{width:84px}#board{padding-right:86px}}
+@media(max-width:900px){main,#ocMain,#stBody,.st-grid,.slide-grid.has-img,.plan-grid{grid-template-columns:1fr}#left{height:58vh}#ocPdfSide{max-height:32vh}#ocQA{width:92%}#ocTeacherStage{width:135px!important;margin-left:-14px!important}#preTeacher{width:92px}#board{padding-right:98px}}
 </style>
 </head>
 <body>
@@ -231,8 +245,7 @@ dialog{background:var(--panel);color:var(--ink);border:1px solid var(--acc);bord
   <div id="ctl"><button id="bPrev">◀ Previous</button><button id="bNext" class="pri">Continue ▶</button><button id="bRep">↻ Repeat</button><button id="bSay">🔊 Speak</button><button id="bPause">⏸ Pause</button><button id="bStop">⏹ Stop</button><button id="bSum">📝 Summary</button></div>
   <div id="preStage">
    <div id="board"><div id="bTitle">Welcome, I am Prof. GARRF-Anna</div><div id="bStep"><div class="sbody">Upload one or more files on the left, then click <b>🎓 Live Class (UG)</b> or <b>📚 Live Class (PG)</b> to watch me walk into the Green Board classroom and teach live!</div></div></div>
-   <div id="preTeacher"></div>
-   <button id="preUploadBtn" onclick="$('teacherFileInput').click()" title="Load your caricature PNG/JPG once (auto-removes white background &amp; saves offline)">👤 Load Prof. Anna Portrait</button>
+   <div id="preTeacher" class="idle"></div>
   </div>
   <div id="sum"><h4>Summary</h4><div id="sumTxt"></div><button onclick="navigator.clipboard.writeText($('sumTxt').textContent).then(()=>toast('Copied'))" style="margin-top:6px">Copy</button></div>
   <div class="sec"><div id="vstat" class="note"></div><div class="ask"><select id="scope"><option value="all">All files</option><option value="cur">Active file</option></select><input id="q" type="text" placeholder="Ask any question across uploaded files…"><button id="qGo" class="pri">Ask AI</button><button id="bMic" title="Ask by Voice">🎤</button></div></div>
@@ -299,8 +312,10 @@ dialog{background:var(--panel);color:var(--ink);border:1px solid var(--acc);bord
      <div id="ocChalkTray"><span class="chalk-stick"></span><span class="chalk-stick yel"></span><span class="chalk-duster"></span></div>
     </div>
     <div id="ocTeacherStage" class="offscreen">
-     <div id="ocTeacherActor"></div>
-     <div id="ocTeacherShadow"></div>
+     <div id="ocTeacherMover">
+      <div id="ocTeacherActor"></div>
+      <div id="ocTeacherShadow"></div>
+     </div>
     </div>
    </div>
   </div>
@@ -343,9 +358,14 @@ dialog{background:var(--panel);color:var(--ink);border:1px solid var(--acc);bord
 
 <dialog id="dlg"><form method="dialog"><h3 style="margin-top:0;color:#34d399">⚙ AI &amp; Classroom Avatar Settings</h3>
  <div style="padding:10px;background:#06281f;border:1px solid #065f46;border-radius:8px;margin-bottom:10px">
-  <b style="color:#fde68a">👤 Prof. Anna Caricature Cutout</b>
-  <p class="note" style="margin:4px 0 8px">Upload your caricature PNG/JPG once. The studio automatically removes the white background cleanly and stores the transparent cutout offline for Live Class &amp; MP4 exports.</p>
-  <div class="row"><button type="button" class="pri" onclick="$('teacherFileInput').click()">📁 Choose Portrait Image</button><button type="button" id="resetTeacherBtn">↺ Reset Default Avatar</button><span id="teacherImgStatus" class="note"></span></div>
+  <b style="color:#fde68a">👤 Prof. Anna Portrait (<code>anna.png</code>)</b>
+  <p class="note" style="margin:4px 0 8px">Defaults to <code>anna.png</code> in the same folder as this HTML. You can also load a custom portrait image here once (auto-removes white background &amp; caches offline).</p>
+  <div class="row"><button type="button" class="pri" onclick="$('teacherFileInput').click()">📁 Change Photo</button><button type="button" id="resetTeacherBtn">↺ Reset to anna.png</button><span id="teacherImgStatus" class="note"></span></div>
+  <div class="row" style="margin-top:8px;font-size:12px">
+   <span style="color:#a7f3d0">👄 Lip Position on Caricature:</span>
+   <label>X% <input id="lipXRange" type="range" min="45" max="70" step="0.5" value="57.5" style="width:75px"></label>
+   <label>Y% <input id="lipYRange" type="range" min="10" max="26" step="0.5" value="17.2" style="width:75px"></label>
+  </div>
  </div>
  <p class="note">Pre-connected to your zero-retention <b>Cloudflare AI Worker</b>. You can also switch to <b>Local Ollama</b> (100% offline on PC) or clear the Worker URL for offline RAG only.</p>
  <label class="note">Cloudflare AI Worker URL:</label><input id="cfgUrl" type="text" placeholder="https://garrfclass.annamdas-ntu.workers.dev/">
@@ -357,7 +377,7 @@ dialog{background:var(--panel);color:var(--ink);border:1px solid var(--acc);bord
 <dialog id="helpDlg"><div style="padding:10px">
  <div class="row" style="justify-content:space-between"><h3 style="margin:0;color:#34d399">❓ Help</h3><button onclick="$('helpDlg').close()">✕</button></div>
  <ul style="font-size:13px;line-height:1.6">
-  <li><b>Your Caricature Teacher</b>: Click <b>👤 Load Prof. Anna Portrait</b> on the welcome board (or place <code>prof-anna.png</code> beside this HTML). White backgrounds are automatically keyed out cleanly and saved offline!</li>
+  <li><b>Prof. Anna Portrait (<code>anna.png</code>)</b>: Keep <code>anna.png</code> in the same folder as this HTML file. Prof. Anna moves smoothly from top line to bottom line on the right side of the board as words highlight, with subtle lip movement right on the lips while speaking.</li>
   <li><b>Live Classroom &amp; Honest Timing</b>: Upload PDFs, Word `.docx`, or handwritten notes. Click <b>Live Class (UG/PG)</b>, pick <b>30 / 45 / 60 / Full</b> min—Prof. Anna walks into the classroom and teaches at the Green Board.</li>
   <li><b>Live Doubts (Type or 🎤 Voice)</b>: Raise your hand anytime inside the classroom! Prof. Anna pauses, listens, answers with AI + page citations, and resumes when you click <b>▶ Resume Class</b>.</li>
  </ul>
@@ -402,39 +422,37 @@ const StudioDB={
 function stripDoc(doc){if(!doc)return null;return{title:doc.title||'',sections:(doc.sections||[]).map(s=>({name:s.name,depth:s.depth||1,page:s.page,text:s.text})),figs:(doc.figs||[]).map(f=>({n:f.n,page:f.page,text:f.text,x:f.x,y:f.y,w:f.w,h:f.h,dataUrl:f.dataUrl||''})),tabs:(doc.tabs||[]).map(t=>({n:t.n,page:t.page,text:t.text,x:t.x,y:t.y,w:t.w,h:t.h,dataUrl:t.dataUrl||''})),eqs:(doc.eqs||[]).map(e=>({n:e.n,page:e.page,text:e.text,rect:e.rect,lo:e.lo,hi:e.hi})),sents:doc.sents||[]}}
 
 // ============================================================
-// PROF. ANNA CARICATURE CUTOUT + SMART WHITE-BG REMOVAL ENGINE
+// PROF. ANNA (anna.png) + LIP-ONLY ANIMATION + LINE GLIDE ENGINE
 // ============================================================
-const TEACHER={dataUrl:'',imgEl:null};
+const TEACHER={src:'anna.png',dataUrl:'',imgEl:null,lipX:57.5,lipY:17.2};
+try{
+  const lx=localStorage.getItem('garrf_lip_x'),ly=localStorage.getItem('garrf_lip_y');
+  if(lx)TEACHER.lipX=+lx;if(ly)TEACHER.lipY=+ly;
+}catch(e){}
+
 const FALLBACK_TEACHER_SVG=`<svg viewBox="0 0 260 520" xmlns="http://www.w3.org/2000/svg">
   <g stroke="#1f2937" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round">
-    <!-- Pointer Stick pointing up-left to Green Board -->
     <line x1="12" y1="62" x2="74" y2="148" stroke="#111827" stroke-width="4.5"/>
     <circle cx="11" cy="61" r="4.5" fill="#d1d5db" stroke="#111827" stroke-width="1.5"/>
-    <!-- Right Arm holding pointer -->
     <path d="M105 148 Q75 186 58 150 L48 162 Q68 208 112 178 Z" fill="#93c5fd"/>
     <ellipse cx="47" cy="148" rx="13" ry="11" fill="#e6a77e"/>
-    <!-- Navy Trousers & Black Dress Shoes -->
     <path d="M108 258 L194 258 L206 474 L165 474 L152 332 L138 474 L96 474 Z" fill="#2c3852"/>
     <path d="M95 474 Q66 485 68 497 L132 497 Q138 485 135 474 Z" fill="#18181b"/>
     <path d="M164 474 Q158 488 162 501 L208 501 Q212 486 205 474 Z" fill="#18181b"/>
-    <!-- Light Blue Shirt + Pocket Pens + Belt -->
     <path d="M102 128 Q152 118 202 128 L200 256 L104 256 Z" fill="#93c5fd"/>
     <rect x="104" y="248" width="96" height="14" fill="#18181b"/>
     <rect x="128" y="248" width="14" height="14" fill="#d4d4d8" rx="2"/>
     <rect x="160" y="160" width="28" height="32" rx="2" fill="#82b8f9"/>
     <line x1="168" y1="146" x2="168" y2="166" stroke="#111827" stroke-width="3.5"/>
     <line x1="176" y1="148" x2="176" y2="166" stroke="#d97706" stroke-width="3.5"/>
-    <!-- Left Arm Open Gesture -->
     <path d="M196 136 Q236 168 216 205 L190 198 Q206 175 186 160 Z" fill="#93c5fd"/>
     <ellipse cx="186" cy="196" rx="14" ry="10" fill="#e6a77e" transform="rotate(-18 186 196)"/>
-    <!-- Head, Salt-and-Pepper Beard, Glasses & Tilak -->
     <ellipse cx="152" cy="72" rx="44" ry="48" fill="#e6a77e"/>
     <path d="M108 66 Q106 20 152 16 Q198 20 196 66 Q186 38 152 38 Q118 38 108 66 Z" fill="#374151"/>
     <path d="M110 74 Q112 116 152 120 Q192 116 194 74 Q182 96 152 96 Q122 96 110 74 Z" fill="#4b5563"/>
     <path d="M134 86 Q152 80 170 86" stroke="#1f2937" stroke-width="4" fill="none"/>
     <path d="M138 97 Q152 104 166 97" stroke="#9a3412" stroke-width="2.5" fill="none"/>
     <circle cx="152" cy="48" r="2.6" fill="#dc2626" stroke="none"/>
-    <!-- Glasses -->
     <g fill="rgba(219,234,254,0.35)" stroke="#111827" stroke-width="3">
       <rect x="118" y="58" width="28" height="18" rx="4"/>
       <rect x="158" y="58" width="28" height="18" rx="4"/>
@@ -473,28 +491,39 @@ function removeWhiteBgToDataUrl(img){
   return c.toDataURL('image/png');
 }
 
+function buildTeacherRigHtml(src){
+  const style=`--lip-x:${TEACHER.lipX}%;--lip-y:${TEACHER.lipY}%`;
+  if(!src)return`<div class="anna-rig" style="${style}">${FALLBACK_TEACHER_SVG}<span class="anna-mouth-opening"></span></div>`;
+  return`<div class="anna-rig" style="${style}"><img class="anna-base" src="${src}" alt="Prof. Anna" onerror="handleTeacherImgError(this)"><span class="anna-mouth-opening"></span><span class="anna-lip-clip"><img src="${src}" alt="" onerror="this.parentElement.remove()"></span></div>`;
+}
+
+window.handleTeacherImgError=function(img){
+  if(img.dataset.fellBack)return;
+  img.dataset.fellBack='1';
+  TEACHER.src='';TEACHER.dataUrl='';
+  renderTeacherSprites();
+};
+
+function renderTeacherSprites(){
+  const activeSrc=TEACHER.dataUrl||TEACHER.src;
+  const html=buildTeacherRigHtml(activeSrc);
+  $('preTeacher').innerHTML=html;
+  $('ocTeacherActor').innerHTML=html;
+  if($('teacherImgStatus'))$('teacherImgStatus').textContent=TEACHER.dataUrl?'✔ Custom portrait cached offline':(TEACHER.src?'✔ Using anna.png from folder':'Using vector fallback');
+}
+
 async function applyTeacherDataUrl(dataUrl,persist=false){
   TEACHER.dataUrl=dataUrl||'';
   if(dataUrl){
     TEACHER.imgEl=await new Promise(res=>{const im=new Image();im.onload=()=>res(im);im.onerror=()=>res(null);im.src=dataUrl});
   }else{
-    const svgBlob=new Blob([FALLBACK_TEACHER_SVG],{type:'image/svg+xml'});
-    const u=URL.createObjectURL(svgBlob);
-    TEACHER.imgEl=await new Promise(res=>{const im=new Image();im.onload=()=>{URL.revokeObjectURL(u);res(im)};im.onerror=()=>res(null);im.src=u});
+    TEACHER.imgEl=await new Promise(res=>{const im=new Image();im.onload=()=>res(im);im.onerror=()=>res(null);im.src='anna.png'});
   }
   renderTeacherSprites();
   if(persist){
     if(dataUrl)await StudioDB.saveAsset('teacher_png',dataUrl);
     else await StudioDB.delAsset('teacher_png');
   }
-}
-
-function renderTeacherSprites(){
-  const html=TEACHER.dataUrl?`<img src="${TEACHER.dataUrl}" alt="Prof. Anna">`:FALLBACK_TEACHER_SVG;
-  $('preTeacher').innerHTML=html;
-  $('ocTeacherActor').innerHTML=html;
-  $('preUploadBtn').textContent=TEACHER.dataUrl?'👤 Change Photo':'👤 Load Prof. Anna Portrait';
-  if($('teacherImgStatus'))$('teacherImgStatus').textContent=TEACHER.dataUrl?'✔ Custom cutout saved offline':'Using default vector portrait';
 }
 
 $('teacherFileInput').onchange=async e=>{
@@ -504,26 +533,115 @@ $('teacherFileInput').onchange=async e=>{
   const im=await new Promise(res=>{const x=new Image();x.onload=()=>res(x);x.src=rawUrl});
   const cutUrl=removeWhiteBgToDataUrl(im);
   await applyTeacherDataUrl(cutUrl,true);
-  toast('Prof. Anna portrait ready & saved offline!');
+  toast('Prof. Anna portrait updated!');
 };
-$('resetTeacherBtn').onclick=async()=>{await applyTeacherDataUrl('',true);toast('Restored default portrait')};
+$('resetTeacherBtn').onclick=async()=>{TEACHER.src='anna.png';await applyTeacherDataUrl('',true);toast('Reset to anna.png')};
+$('lipXRange').oninput=$('lipYRange').oninput=()=>{
+  TEACHER.lipX=+$('lipXRange').value;TEACHER.lipY=+$('lipYRange').value;
+  try{localStorage.setItem('garrf_lip_x',TEACHER.lipX);localStorage.setItem('garrf_lip_y',TEACHER.lipY)}catch(e){}
+  document.querySelectorAll('.anna-rig').forEach(r=>{r.style.setProperty('--lip-x',TEACHER.lipX+'%');r.style.setProperty('--lip-y',TEACHER.lipY+'%')});
+};
 
 (async function initTeacher(){
+  $('lipXRange').value=TEACHER.lipX;$('lipYRange').value=TEACHER.lipY;
   const saved=await StudioDB.loadAsset('teacher_png');
   if(saved){await applyTeacherDataUrl(saved,false);return}
-  await applyTeacherDataUrl('',false);
-  // Also auto-check for prof-anna.png / teacher.png next to the HTML if served via HTTP(S)
-  if(location.protocol.startsWith('http')){
-    for(const fname of ['prof-anna.png','prof-anna.jpg','teacher.png']){
-      try{
-        const im=await new Promise((res,rej)=>{const x=new Image();x.crossOrigin='anonymous';x.onload=()=>res(x);x.onerror=rej;x.src=fname});
-        const cut=removeWhiteBgToDataUrl(im);
-        await applyTeacherDataUrl(cut,true);
-        break;
-      }catch(e){}
+  TEACHER.src='anna.png';
+  renderTeacherSprites();
+  try{
+    const im=await new Promise((res,rej)=>{const x=new Image();if(location.protocol.startsWith('http'))x.crossOrigin='anonymous';x.onload=()=>res(x);x.onerror=rej;x.src='anna.png'});
+    TEACHER.imgEl=im;
+    if(location.protocol.startsWith('http')){
+      try{const cut=removeWhiteBgToDataUrl(im);await applyTeacherDataUrl(cut,false)}catch(e){}
+    }
+  }catch(e){}
+})();
+
+// LIP-ONLY SYLLABLE ANIMATION CONTROLLER
+let lipTimer=null,lipPhase=0;
+function setLipOpen(amt){
+  const open=Math.max(0,Math.min(1,amt));
+  const lipShift=(open*1.8).toFixed(2);
+  const mouthScale=(open*1.15).toFixed(2);
+  document.querySelectorAll('.anna-lip-clip').forEach(c=>c.style.transform=`translateY(${lipShift}px)`);
+  document.querySelectorAll('.anna-mouth-opening').forEach(m=>m.style.transform=`translate(-50%,0) scaleY(${open>0.04?mouthScale:0})`);
+}
+function pulseLipOnce(){
+  setLipOpen(0.68+Math.random()*0.32);
+  clearTimeout(pulseLipOnce._t);
+  pulseLipOnce._t=setTimeout(()=>setLipOpen(0.14),110);
+}
+function startLipAnimation(){
+  clearInterval(lipTimer);
+  lipTimer=setInterval(()=>{
+    lipPhase+=0.88;
+    const wave=Math.max(0,Math.sin(lipPhase)*0.6+Math.sin(lipPhase*2.1)*0.4);
+    setLipOpen(wave);
+  },95);
+}
+function stopLipAnimation(){
+  clearInterval(lipTimer);lipTimer=null;
+  setLipOpen(0);
+}
+
+// TOP-TO-BOTTOM LINE & WORD GLIDE ACROSS PRE-CLASS BOARD AND LIVE CLASSROOM BOARD
+function wrapWordsHtml(text,baseIdx=0){
+  let idx=baseIdx;
+  const html=esc(text).replace(/\S+/g,m=>`<span class="w-tok" data-w="${idx++}">${m}</span>`);
+  return{html,nextIdx:idx};
+}
+
+function moveTeacherToElement(targetEl,inLiveClass,wordProgress=0){
+  if(!targetEl)return;
+  const swayX=Math.round(Math.sin(wordProgress*Math.PI*2)*4);
+  if(inLiveClass){
+    const stage=$('ocStage'),mover=$('ocTeacherMover');
+    if(!stage||!mover)return;
+    const sr=stage.getBoundingClientRect(),tr=targetEl.getBoundingClientRect();
+    if(!sr.height||!tr.height)return;
+    const targetCenterY=(tr.top+tr.height*0.5)-sr.top;
+    const desiredTop=targetCenterY-(mover.offsetHeight*0.26);
+    const maxDown=Math.max(0,sr.height-mover.offsetHeight-22);
+    const clampedY=Math.max(-4,Math.min(maxDown,desiredTop));
+    mover.style.transform=`translate(${swayX}px, ${Math.round(clampedY)}px)`;
+  }else{
+    const stage=$('preStage'),pt=$('preTeacher');
+    if(!stage||!pt)return;
+    const sr=stage.getBoundingClientRect(),tr=targetEl.getBoundingClientRect();
+    if(!sr.height||!tr.height)return;
+    const targetCenterY=(tr.top+tr.height*0.5)-sr.top;
+    const desiredTop=targetCenterY-(pt.offsetHeight*0.26);
+    const maxDown=Math.max(0,sr.height-pt.offsetHeight-14);
+    const clampedY=Math.max(-4,Math.min(maxDown,desiredTop));
+    pt.style.transform=`translate(${Math.round(swayX*0.6)}px, ${Math.round(clampedY)}px)`;
+  }
+}
+
+function resetTeacherPosition(){
+  if($('ocTeacherMover'))$('ocTeacherMover').style.transform='translate(0px, 0px)';
+  if($('preTeacher'))$('preTeacher').style.transform='translate(0px, 0px)';
+}
+
+function highlightWordAt(containerSel,wordIdx,inLiveClass,totalWords){
+  const box=document.querySelector(containerSel);
+  if(!box)return;
+  const words=[...box.querySelectorAll('.w-tok')];
+  if(!words.length)return;
+  const clamped=Math.max(0,Math.min(words.length-1,wordIdx));
+  words.forEach((w,i)=>{
+    w.classList.toggle('active-word',i===clamped);
+    w.classList.toggle('spoken',i<clamped);
+  });
+  const activeWordEl=words[clamped];
+  const scroller=inLiveClass?$('ocBoard'):$('board');
+  if(scroller&&activeWordEl){
+    const sRect=scroller.getBoundingClientRect(),wRect=activeWordEl.getBoundingClientRect();
+    if(wRect.bottom>sRect.bottom-36||wRect.top<sRect.top+24){
+      activeWordEl.scrollIntoView({block:'center',behavior:'smooth'});
     }
   }
-})();
+  moveTeacherToElement(activeWordEl,inLiveClass,clamped/Math.max(1,totalWords||words.length));
+}
 
 function playSoftBell(){
   try{
@@ -537,12 +655,20 @@ function playSoftBell(){
 }
 
 function setTeacherState(st){
-  const el=$('ocTeacherStage');if(!el)return;
-  el.classList.remove('offscreen','walk-in','idle','talking','listening');
-  if(st)el.classList.add(st);
+  const el=$('ocTeacherStage');
+  if(el){
+    el.classList.remove('offscreen','walk-in','idle','talking','listening');
+    if(st)el.classList.add(st);
+  }
+  const pre=$('preTeacher');
+  if(pre){
+    pre.classList.remove('idle','talking');
+    pre.classList.add(st==='talking'?'talking':'idle');
+  }
 }
 
 function triggerTeacherEntrance(){
+  resetTeacherPosition();
   const el=$('ocTeacherStage');if(!el)return;
   el.classList.remove('walk-in','idle','talking','listening');
   el.classList.add('offscreen');
@@ -571,7 +697,7 @@ function splitSentences(t){t=cleanText(t).replace(/([A-Za-z])-\s+([a-z])/g,'$1-$
 const normHead=t=>String(t||'').toLowerCase().replace(/\d+/g,'#').replace(/[^a-z#\s]/g,' ').replace(/\s+/g,' ').trim();
 function runningHeads(pages){const cnt={},keys=Object.keys(pages||{});keys.forEach(pn=>{const seen=new Set();((pages[pn]||{}).blocks||[]).forEach(b=>{const t=(b.text||'').trim();if(t.length>=6&&t.length<=120)seen.add(normHead(t))});seen.forEach(k=>{cnt[k]=(cnt[k]||0)+1})});const need=keys.length>=4?2:99,out=new Set();Object.keys(cnt).forEach(k=>{if(cnt[k]>=need)out.add(k)});return out}
 
-function isEquationSoup(t){if(!t)return false;const words=(t.match(/\b[A-Za-z]{3,}\b/g)||[]).length,ops=(t.match(/[=+\-–≈¼\[\]∑∫∂]/g)||[]).length;if(words>=5)return false;return ops>=3&&words<=3}
+function isEquationSoup(t){if(!t)return false;const words=(t.match(/\b[A-Za-z]{3,}\b/g)||[]).length,ops=(t.match(/[=+\-–≈¼\[\]∑∫∂∇±×]/g)||[]).length;if(words>=5)return false;return ops>=3&&words<=3}
 function isTableDumpText(s){const t=String(s||''),nums=(t.match(/\b\d+(?:\.\d+)?\b/g)||[]).length,dig=(t.match(/\d/g)||[]).length,letC=(t.match(/[A-Za-z]/g)||[]).length;return (dig>30&&dig>letC*0.7)||(nums>=9&&(t.match(/[.!?]/g)||[]).length<=1)}
 function isAuthorOrMeta(s,docTitle){
  const t=(s||'').trim();if(!t||t.length<10)return true;
@@ -824,10 +950,10 @@ async function activateDoc(i,force){const e=LIB[i];if(!e||(!force&&LIBACT===i))r
 async function removeDoc(i){const e=LIB[i];if(!e)return;LIB.splice(i,1);StudioDB.del(e.id);kbRebuild();if(!LIB.length){LIBACT=-1;resetUI();renderLib()}else await activateDoc(Math.min(i,LIB.length-1),true)}
 function clearDoc(){if(LIBACT>=0)removeDoc(LIBACT);else resetUI()}
 function clearAllDocs(){LIB.length=0;LIBACT=-1;StudioDB.clear();kbRebuild();resetUI();renderLib()}
-function finalizeUI(t){$('title').value=t;S.doc.title=t;$('hdrCourse').textContent=shorten(t,55);$('empty').style.display='none';const secs=(S.doc.sections||[]).map((s,idx)=>'<button class="chip" onclick="jumpSec('+idx+')">'+esc(shorten(s.name,26))+'</button>').join(''),figs=(S.doc.figs||[]).map((f,idx)=>'<button class="chip" onclick="jumpMedia(\'figs\','+idx+')">📈 Fig '+esc(f.n)+'</button>').join(''),tabs=(S.doc.tabs||[]).map((tb,idx)=>'<button class="chip" onclick="jumpMedia(\'tabs\','+idx+')">📊 Table '+esc(tb.n)+'</button>').join('');$('nav').innerHTML=(secs+figs+tabs)||'<span class="note">Ready</span>';setStatus(totalPages()+'p · '+(S.doc.figs?.length||0)+' fig · '+(S.doc.tabs?.length||0)+' tab · '+(S.doc.eqs?.length||0)+' eq');$('bTitle').textContent='Course: '+t;$('bStep').innerHTML='<div class="sbody">Ready! Click <b>🎓 Live Class (UG)</b> or <b>📚 Live Class (PG)</b> so I can walk into the Green Board classroom and teach live!</div>';['btnUG','btnPG','btnStudio','btnExport','btnFigs','btnTabs'].forEach(id=>$(id).disabled=false)}
+function finalizeUI(t){$('title').value=t;S.doc.title=t;$('hdrCourse').textContent=shorten(t,55);$('empty').style.display='none';const secs=(S.doc.sections||[]).map((s,idx)=>'<button class="chip" onclick="jumpSec('+idx+')">'+esc(shorten(s.name,26))+'</button>').join(''),figs=(S.doc.figs||[]).map((f,idx)=>'<button class="chip" onclick="jumpMedia(\'figs\','+idx+')">📈 Fig '+esc(f.n)+'</button>').join(''),tabs=(S.doc.tabs||[]).map((tb,idx)=>'<button class="chip" onclick="jumpMedia(\'tabs\','+idx+')">📊 Table '+esc(tb.n)+'</button>').join('');$('nav').innerHTML=(secs+figs+tabs)||'<span class="note">Ready</span>';setStatus(totalPages()+'p · '+(S.doc.figs?.length||0)+' fig · '+(S.doc.tabs?.length||0)+' tab · '+(S.doc.eqs?.length||0)+' eq');$('bTitle').textContent='Course: '+t;$('bStep').innerHTML='<div class="sbody">Ready! Click <b>🎓 Live Class (UG)</b> or <b>📚 Live Class (PG)</b> so I can walk into the Green Board classroom and teach live!</div>';['btnUG','btnPG','btnStudio','btnExport','btnFigs','btnTabs'].forEach(id=>$(id).disabled=false);resetTeacherPosition()}
 async function jumpSec(idx){const s=S.doc.sections[idx];if(!s)return;await showPage(s.page);openTarget(await buildStepsForBlock(s.block||{type:'heading',text:s.name,page:s.page,x:20,y:40,w:200,h:20}))}
 async function jumpMedia(k,idx){const b=S.doc[k][idx];if(!b)return;await showPage(b.page);openTarget(await buildStepsForBlock(b))}
-function resetUI(){stopSpeech();ocExit();stClose();S.pdf=null;S.doc=null;$('wrap').style.display='none';$('empty').style.display='block';$('title').value='';$('hdrCourse').textContent='AI Live Classroom Studio';setStatus('Ready');['btnUG','btnPG','btnStudio','btnExport','btnFigs','btnTabs'].forEach(id=>$(id).disabled=true)}
+function resetUI(){stopSpeech();ocExit();stClose();S.pdf=null;S.doc=null;$('wrap').style.display='none';$('empty').style.display='block';$('title').value='';$('hdrCourse').textContent='AI Live Classroom Studio';setStatus('Ready');['btnUG','btnPG','btnStudio','btnExport','btnFigs','btnTabs'].forEach(id=>$(id).disabled=true);resetTeacherPosition()}
 
 // ============================================================
 // HYBRID AI ENGINE (Cloudflare Workers AI -> Local Ollama -> Offline RAG)
@@ -874,9 +1000,9 @@ RULES:
 }
 
 // ============================================================
-// NATURAL VOICE ENGINE + SYNCED CHALKBOARD BULLET HIGHLIGHTING
+// NATURAL VOICE ENGINE + WORD-BY-WORD CHALK TRACKING + LIP SYNC
 // ============================================================
-let voices=[],speakTok=0,keepAlive=null,liveAudio=null;
+let voices=[],speakTok=0,keepAlive=null,liveAudio=null,wordTick=null;
 const FEM=/(neerja|heera|veena|swara|kalpana|aditi|raveena|priya|aria|jenny|michelle|ana\b|zira|hazel|susan|libby|sonia|maisie|natasha|catherine|karen|samantha|allison|ava|serena|kate|martha|fiona|moira|tessa|victoria|female|woman|emma|olivia|amy|joanna|ivy|kendra|kimberly|salli|google uk english female)/i;
 const MAL=/(prabhat|ravi|rishi|hemant|madhur|wayne|guy|davis|david|mark|ryan|thomas|george|james|alfred|daniel|oliver|arthur|alex|tom\b|evan|fred|aaron|gordon|brian|matthew|joey|justin|male\b|man\b|google uk english male)/i;
 const LANGS={IN:['en-IN'],SG:['en-SG'],US:['en-US'],GB:['en-GB']},FALL={IN:['en-GB','en-AU','en-US'],SG:['en-IN','en-GB','en-AU','en-US'],US:['en-GB'],GB:['en-AU','en-US']};
@@ -888,34 +1014,126 @@ if('speechSynthesis' in window){loadVoices();speechSynthesis.onvoiceschanged=loa
 $('accent').onchange=$('gender').onchange=()=>{loadVoices();try{localStorage.setItem('garrfVoice',JSON.stringify({a:$('accent').value,g:$('gender').value}))}catch(e){}};
 const spoken=t=>cleanText(t).replace(/\$\$?([^$]+)\$\$?/g,'$1').replace(/[α-ωΑ-Ω]/g,c=>' '+(GRN[c]||'')+' ').replace(/\(\s*(?:[A-Za-z][^)]*\b\d{4}[a-z]?)\s*\)/g,'').replace(/\b([A-Z][a-z]+)\s+et al\.?/g,'$1 and colleagues').replace(/\be\.g\.,?/gi,'for example,').replace(/\bi\.e\.,?/gi,'that is,').replace(/\bFigs?\.\s*/g,'Figure ').replace(/\bEqs?\.\s*/g,'Equation ').replace(/\bvs\.?/gi,'versus').replace(/\bcf\.\s*/g,'compare ').replace(/\betc\./g,'etcetera').replace(/≥/g,' greater than or equal to ').replace(/≤/g,' less than or equal to ').replace(/±/g,' plus or minus ').replace(/×/g,' times ').replace(/≈/g,' approximately ').replace(/%/g,' percent').replace(/→/g,' leads to ').replace(/\s*[–—]\s*/g,', ').replace(/\s+/g,' ').trim();
 
-function stopSpeech(){speakTok++;OC.run++;clearInterval(keepAlive);clearTimeout(OC.advT);if(liveAudio){try{liveAudio.pause();liveAudio=null}catch(e){}}if('speechSynthesis' in window)speechSynthesis.cancel();$('ocProf').classList.remove('talking');if(!$('ocTeacherStage').classList.contains('walk-in')&&!$('ocTeacherStage').classList.contains('offscreen'))setTeacherState('idle');document.querySelectorAll('#ocSlideBody li.active-pt').forEach(el=>el.classList.remove('active-pt'))}
+function stopSpeech(){
+  speakTok++;OC.run++;
+  clearInterval(keepAlive);clearInterval(wordTick);clearTimeout(OC.advT);
+  stopLipAnimation();
+  if(liveAudio){try{liveAudio.pause();liveAudio=null}catch(e){}}
+  if('speechSynthesis' in window)speechSynthesis.cancel();
+  $('ocProf').classList.remove('talking');
+  if(!$('ocTeacherStage').classList.contains('walk-in')&&!$('ocTeacherStage').classList.contains('offscreen'))setTeacherState('idle');
+  document.querySelectorAll('#ocSlideBody li.active-pt').forEach(el=>el.classList.remove('active-pt'));
+  document.querySelectorAll('.w-tok.active-word').forEach(el=>el.classList.remove('active-word'));
+}
 
-async function speakPhrases(text,onDone,onPhrase){
+async function speakPhrases(text,onDone,onPhrase,onWord){
  const clean=spoken(text);if(!clean){setTimeout(()=>onDone&&onDone(),1500);return}
  stopSpeech();const tok=++speakTok;
- const setTalk=on=>{if($('ocTeacherStage').classList.contains('walk-in')||$('ocTeacherStage').classList.contains('offscreen'))return;setTeacherState(on?'talking':'idle')};
- if($('useNeuralLive').checked){try{$('vstat').textContent='🎙 Loading Neural Voice…';if(onPhrase)onPhrase(clean,0);const tts=await getKokoro(m=>{$('vstat').textContent=m});if(tok!==speakTok)return;const v=$('gender').value==='M'?($('accent').value==='GB'?'bm_george':'am_michael'):($('accent').value==='GB'?'bf_emma':'af_heart'),au=await tts.generate(clean,{voice:v});if(tok!==speakTok)return;const url=URL.createObjectURL(au.toBlob());liveAudio=new Audio(url);liveAudio.playbackRate=+$('rate').value;$('ocProf').classList.add('talking');setTalk(true);$('vstat').textContent='🔊 Neural Voice Speaking…';liveAudio.onended=()=>{URL.revokeObjectURL(url);$('ocProf').classList.remove('talking');setTalk(false);if(tok===speakTok){$('vstat').textContent='✔ Finished';onDone&&onDone()}};liveAudio.play();return}catch(e){toast('Neural Voice fallback: '+e.message)}}
+ const setTalk=on=>{
+   if(on)startLipAnimation();else stopLipAnimation();
+   if($('ocTeacherStage').classList.contains('walk-in')||$('ocTeacherStage').classList.contains('offscreen'))return;
+   setTeacherState(on?'talking':'idle');
+ };
+ const totalWords=Math.max(1,(clean.match(/\S+/g)||[]).length);
+
+ if($('useNeuralLive').checked){
+   try{
+     $('vstat').textContent='🎙 Loading Neural Voice…';if(onPhrase)onPhrase(clean,0);
+     const tts=await getKokoro(m=>{$('vstat').textContent=m});if(tok!==speakTok)return;
+     const v=$('gender').value==='M'?($('accent').value==='GB'?'bm_george':'am_michael'):($('accent').value==='GB'?'bf_emma':'af_heart');
+     const au=await tts.generate(clean,{voice:v});if(tok!==speakTok)return;
+     const url=URL.createObjectURL(au.toBlob());liveAudio=new Audio(url);liveAudio.playbackRate=+$('rate').value;
+     $('ocProf').classList.add('talking');setTalk(true);$('vstat').textContent='🔊 Neural Voice Speaking…';
+     if(onWord){
+       wordTick=setInterval(()=>{
+         if(!liveAudio||!liveAudio.duration||tok!==speakTok)return;
+         const wIdx=Math.min(totalWords-1,Math.floor((liveAudio.currentTime/liveAudio.duration)*totalWords));
+         onWord(wIdx,totalWords);
+       },120);
+     }
+     liveAudio.onended=()=>{clearInterval(wordTick);URL.revokeObjectURL(url);$('ocProf').classList.remove('talking');setTalk(false);if(tok===speakTok){$('vstat').textContent='✔ Finished';onDone&&onDone()}};
+     liveAudio.play();return;
+   }catch(e){toast('Neural Voice fallback: '+e.message)}
+ }
+
  if(!('speechSynthesis' in window)){setTimeout(()=>onDone&&onDone(),2200);return}
  const parts=splitSentences(clean),sel=voices[+$('voice').value],g=$('gender').value,{matched}=pickVoices(),basePitch=matched?1:(g==='M'?0.92:1.04),rate=+$('rate').value;
- let i=0,useV=sel,retried=false;keepAlive=setInterval(()=>{if(speechSynthesis.speaking&&!speechSynthesis.paused){speechSynthesis.pause();speechSynthesis.resume()}},11000);
- function next(){if(tok!==speakTok)return;if(i>=parts.length){clearInterval(keepAlive);$('vstat').textContent='✔ Finished';setTalk(false);return onDone&&onDone()}
-  const idxNow=i,raw=parts[i++],u=new SpeechSynthesisUtterance(raw);if(useV){u.voice=useV;u.lang=useV.lang}else u.lang=({IN:'en-IN',SG:'en-SG',US:'en-US',GB:'en-GB'})[$('accent').value]||'en-IN';
+ let i=0,wordsSoFar=0,useV=sel,retried=false;
+ keepAlive=setInterval(()=>{if(speechSynthesis.speaking&&!speechSynthesis.paused){speechSynthesis.pause();speechSynthesis.resume()}},11000);
+
+ function next(){
+  if(tok!==speakTok)return;
+  clearInterval(wordTick);
+  if(i>=parts.length){clearInterval(keepAlive);$('vstat').textContent='✔ Finished';setTalk(false);return onDone&&onDone()}
+  const idxNow=i,raw=parts[i++],partWords=(raw.match(/\S+/g)||[]).length,baseWord=wordsSoFar;
+  wordsSoFar+=partWords;
+  const u=new SpeechSynthesisUtterance(raw);
+  if(useV){u.voice=useV;u.lang=useV.lang}else u.lang=({IN:'en-IN',SG:'en-SG',US:'en-US',GB:'en-GB'})[$('accent').value]||'en-IN';
   u.rate=rate;u.pitch=basePitch;
-  let started=false,done=false;const wd=setTimeout(()=>{if(!started&&!done&&tok===speakTok&&!retried){retried=true;useV=null;speechSynthesis.cancel();i--;setTimeout(next,80)}},3000),wd2=setTimeout(()=>{if(!done&&tok===speakTok){done=true;$('ocProf').classList.remove('talking');setTalk(false);next()}},Math.max(7000,raw.length*115));
-  u.onstart=()=>{started=true;clearTimeout(wd);$('vstat').textContent='🔊 Speaking…';$('ocProf').classList.add('talking');setTalk(true);if(onPhrase)onPhrase(raw,idxNow)};
-  u.onend=()=>{clearTimeout(wd);clearTimeout(wd2);if(done||tok!==speakTok)return;done=true;$('ocProf').classList.remove('talking');setTimeout(next,50)};
-  u.onerror=e=>{clearTimeout(wd);clearTimeout(wd2);if(done||tok!==speakTok||e.error==='interrupted'||e.error==='canceled')return;done=true;$('ocProf').classList.remove('talking');next()};
-  speechSynthesis.speak(u)}
+
+  let started=false,done=false,gotBoundary=false,localWord=0;
+  const wd=setTimeout(()=>{if(!started&&!done&&tok===speakTok&&!retried){retried=true;useV=null;speechSynthesis.cancel();i--;wordsSoFar=baseWord;setTimeout(next,80)}},3000);
+  const wd2=setTimeout(()=>{if(!done&&tok===speakTok){done=true;clearInterval(wordTick);$('ocProf').classList.remove('talking');setTalk(false);next()}},Math.max(7000,raw.length*115));
+
+  u.onstart=()=>{
+    started=true;clearTimeout(wd);$('vstat').textContent='🔊 Speaking…';$('ocProf').classList.add('talking');setTalk(true);
+    if(onPhrase)onPhrase(raw,idxNow);
+    if(onWord)onWord(baseWord,totalWords);
+    const msPerWord=Math.max(150,Math.round(330/rate));
+    wordTick=setInterval(()=>{
+      if(gotBoundary||done||tok!==speakTok||speechSynthesis.paused)return;
+      localWord=Math.min(partWords-1,localWord+1);
+      if(onWord)onWord(baseWord+localWord,totalWords);
+    },msPerWord);
+  };
+
+  u.onboundary=ev=>{
+    if(ev.name==='word'&&tok===speakTok){
+      gotBoundary=true;
+      pulseLipOnce();
+      const before=raw.slice(0,ev.charIndex);
+      const wOff=(before.match(/\S+/g)||[]).length;
+      if(onWord)onWord(Math.min(totalWords-1,baseWord+wOff),totalWords);
+    }
+  };
+
+  u.onend=()=>{clearTimeout(wd);clearTimeout(wd2);clearInterval(wordTick);if(done||tok!==speakTok)return;done=true;$('ocProf').classList.remove('talking');setTimeout(next,50)};
+  u.onerror=e=>{clearTimeout(wd);clearTimeout(wd2);clearInterval(wordTick);if(done||tok!==speakTok||e.error==='interrupted'||e.error==='canceled')return;done=true;$('ocProf').classList.remove('talking');next()};
+  speechSynthesis.speak(u);
+ }
  next();
 }
 
 function openTarget(t){stopSpeech();S.sel=t.rect?{page:t.page,rect:t.rect}:null;draw();S.lesson={target:t,steps:t.steps||[{text:'Ready'}],idx:0,lastBlock:t.lastBlock||null};$('bTitle').textContent=t.title;renderStep()}
-function renderStep(){const L=S.lesson;if(!L)return;let h='<ul>';for(let i=0;i<=L.idx;i++){const st=L.steps[i],cur=i===L.idx;h+='<li style="'+(cur?'color:#fde047':'color:#e2e8f0;opacity:.92')+'">'+esc(st.text)+(st.img?'<img class="cutimg" src="'+st.img+'">':'')+'</li>'}const pos=L.lastBlock?findBlockIndex(L.lastBlock):null,canCont=L.idx<L.steps.length-1||!!(pos&&nextReadableAfter(pos.p,pos.i));h+='</ul><div class="note" style="margin-top:8px;color:#cbd5e1">Step '+(L.idx+1)+' of '+L.steps.length+(canCont?' — press <b>Continue ▶</b> for next point.':' — ✔ End of document.')+'</div>';$('bStep').innerHTML=h;renderMathIn($('bStep'));$('bPrev').disabled=L.idx===0;$('bNext').disabled=!canCont;const bd=$('board');setTimeout(()=>bd.scrollTo({top:bd.scrollHeight,behavior:'smooth'}),40);const curSay=L.steps[L.idx].say||L.steps[L.idx].text;if($('autoRead').checked&&curSay)speakPhrases(curSay)}
+function renderStep(){
+  const L=S.lesson;if(!L)return;
+  let h='<ul>',wIdx=0;
+  for(let i=0;i<=L.idx;i++){
+    const st=L.steps[i],cur=i===L.idx;
+    if(cur){
+      const w=wrapWordsHtml(st.text,0);
+      wIdx=w.nextIdx;
+      h+='<li id="preActiveLi" style="color:#fde047">'+w.html+(st.img?'<img class="cutimg" src="'+st.img+'">':'')+'</li>';
+    }else{
+      h+='<li style="color:#e2e8f0;opacity:.88">'+esc(st.text)+(st.img?'<img class="cutimg" src="'+st.img+'">':'')+'</li>';
+    }
+  }
+  const pos=L.lastBlock?findBlockIndex(L.lastBlock):null,canCont=L.idx<L.steps.length-1||!!(pos&&nextReadableAfter(pos.p,pos.i));
+  h+='</ul><div class="note" style="margin-top:8px;color:#cbd5e1">Step '+(L.idx+1)+' of '+L.steps.length+(canCont?' — press <b>Continue ▶</b> for next point.':' — ✔ End of document.')+'</div>';
+  $('bStep').innerHTML=h;renderMathIn($('bStep'));
+  $('bPrev').disabled=L.idx===0;$('bNext').disabled=!canCont;
+  const activeLi=$('preActiveLi');
+  if(activeLi)setTimeout(()=>moveTeacherToElement(activeLi,false,0),50);
+  const curSay=L.steps[L.idx].say||L.steps[L.idx].text;
+  if($('autoRead').checked&&curSay){
+    speakPhrases(curSay,null,null,(wordIdx,tot)=>highlightWordAt('#preActiveLi',wordIdx,false,tot));
+  }
+}
 $('bTest').onclick=()=>speakPhrases('Hello, I am Professor Garrf Anna. Welcome to our Green Board classroom.');
 $('bPrev').onclick=()=>{if(S.lesson&&S.lesson.idx>0){S.lesson.idx--;renderStep()}};
 $('bNext').onclick=async()=>{const L=S.lesson;if(!L)return;if(L.idx<L.steps.length-1){L.idx++;renderStep();return}if(L.lastBlock){const pos=findBlockIndex(L.lastBlock),nxt=pos?nextReadableAfter(pos.p,pos.i):null;if(nxt){const res=await buildStepsForBlock(nxt);if(res.steps&&res.steps.length){L.steps.push(...res.steps);L.lastBlock=res.lastBlock||nxt;L.idx++;if(res.rect){S.sel={page:res.page,rect:res.rect};if(res.page!==S.page)await showPage(res.page);else draw()}renderStep();return}}}$('bNext').disabled=true;toast('End of document.')};
-$('bRep').onclick=()=>{if(S.lesson)speakPhrases(S.lesson.steps[S.lesson.idx].say||S.lesson.steps[S.lesson.idx].text)};$('bSay').onclick=$('bRep').onclick;$('bStop').onclick=stopSpeech;
-$('bPause').onclick=()=>{if(liveAudio){if(liveAudio.paused)liveAudio.play();else liveAudio.pause()}else if(speechSynthesis.paused)speechSynthesis.resume();else speechSynthesis.pause()};
+$('bRep').onclick=()=>{if(S.lesson)speakPhrases(S.lesson.steps[S.lesson.idx].say||S.lesson.steps[S.lesson.idx].text,null,null,(w,t)=>highlightWordAt('#preActiveLi',w,false,t))};$('bSay').onclick=$('bRep').onclick;$('bStop').onclick=stopSpeech;
+$('bPause').onclick=()=>{if(liveAudio){if(liveAudio.paused){liveAudio.play();startLipAnimation()}else{liveAudio.pause();stopLipAnimation()}}else if(speechSynthesis.paused){speechSynthesis.resume();startLipAnimation()}else{speechSynthesis.pause();stopLipAnimation()}};
 $('bSum').onclick=()=>{if(!S.lesson)return;$('sum').style.display='block';$('sumTxt').textContent=extractive(S.lesson.steps.map(s=>s.text).join(' '),4)};
 
 async function answerQuestion(q,inClass){
@@ -1165,7 +1383,7 @@ function startTimedClass(minutes,scopeAll){
   OC.slides=buildLogicalDeck(pendingClassMode,minutes,scopeAll);
   OC.idx=0;
   OC.paused=false;
-  OC.showSrc=false; // Start in clean full classroom focus with Green Board + Teacher
+  OC.showSrc=false;
   $('ocMain').classList.add('no-src');
   $('ocSourceBtn').textContent='📄 Show Source';
   $('ocOverlay').classList.remove('max');
@@ -1218,9 +1436,25 @@ async function ocRenderSlide(){
  if(!img&&s.media)img=await smartMediaCrop(s.media)||'';
  if(!img&&s.cropRect)img=await cropPageRegion(s.cropRect.page||s.page||1,s.cropRect,6,2.0);
  if(img)s._cachedImg=img;
- $('ocSlideBody').innerHTML='<div class="slide-grid'+(img?' has-img':'')+'"><ul>'+(s.bullets||[]).map((b,i)=>'<li data-b="'+i+'">'+esc(b)+'</li>').join('')+'</ul>'+(img?'<img class="cutimg" src="'+img+'">':'')+'</div>';
+
+ let wIdx=0;
+ const bulletsHtml=(s.bullets||[]).map((b,i)=>{
+   const w=wrapWordsHtml(b,wIdx);wIdx=w.nextIdx;
+   return`<li data-b="${i}">${w.html}</li>`;
+ }).join('');
+ $('ocSlideBody').innerHTML='<div class="slide-grid'+(img?' has-img':'')+'"><ul>'+bulletsHtml+'</ul>'+(img?'<img class="cutimg" src="'+img+'">':'')+'</div>';
  renderMathIn($('ocSlideBody'));
- if(s.tip){$('ocTipBox').style.display='block';$('ocTipBox').innerHTML='<b>💡</b> '+esc(s.tip);renderMathIn($('ocTipBox'))}else $('ocTipBox').style.display='none';
+
+ if(s.tip){
+   const wTip=wrapWordsHtml(s.tip,wIdx);
+   $('ocTipBox').style.display='block';
+   $('ocTipBox').innerHTML='<b>💡</b> '+wTip.html;
+   renderMathIn($('ocTipBox'));
+ }else $('ocTipBox').style.display='none';
+
+ const firstLine=$('ocSlideBody').querySelector('li')||$('ocSlideTitle');
+ if(firstLine)setTimeout(()=>moveTeacherToElement(firstLine,true,0),40);
+
  $('ocCaption').textContent='🔊 Press Explain or Next ▶ to hear this slide.';
  OC.page=s.page||OC.page;if(OC.showSrc)setTimeout(()=>ocRenderPage(OC.page),20);
 }
@@ -1237,10 +1471,12 @@ function ocSpeak(){
  const s=OC.slides[OC.idx];if(!s)return;stopSpeech();OC.paused=false;$('ocPause').textContent='⏸ Pause';
  const run=++OC.run,txt=s.narration||((s.bullets||[]).join(' ')+(s.tip?' '+s.tip:''));
  const totalP=Math.max(1,splitSentences(spoken(txt)).length);
+ const boardWordCount=Math.max(1,document.querySelectorAll('#ocBoard .w-tok').length);
  $('ocStatus').textContent=$('ocAutoPlay').checked?'Auto-Playing…':'Speaking…';
  speakPhrases(txt,()=>{
   if(run!==OC.run)return;
   document.querySelectorAll('#ocSlideBody li.active-pt').forEach(el=>el.classList.remove('active-pt'));
+  document.querySelectorAll('#ocBoard .w-tok.active-word').forEach(el=>el.classList.remove('active-word'));
   $('ocCaption').textContent='✔ Slide finished — press Next ▶ or Continue ▶';
   if($('ocAutoPlay').checked&&!OC.paused){
     if(OC.idx<OC.slides.length-1){$('ocStatus').textContent='Next slide…';OC.advT=setTimeout(()=>{if(run===OC.run&&$('ocAutoPlay').checked&&!OC.paused){OC.idx++;ocRenderSlide().then(ocSpeak)}},850)}
@@ -1249,6 +1485,14 @@ function ocSpeak(){
  },(ph,pIdx)=>{
   $('ocCaption').textContent='🔊 '+ph;
   highlightActiveBullet(pIdx,totalP);
+ },(wIdx,totSpokenW)=>{
+  const mappedWord=Math.min(boardWordCount-1,Math.floor((wIdx/Math.max(1,totSpokenW))*boardWordCount));
+  highlightWordAt('#ocBoard',mappedWord,true,boardWordCount);
+  const activeW=document.querySelector('#ocBoard .w-tok.active-word');
+  const parentLi=activeW?activeW.closest('li[data-b]'):null;
+  if(parentLi){
+    document.querySelectorAll('#ocSlideBody li[data-b]').forEach(li=>li.classList.toggle('active-pt',li===parentLi));
+  }
  });
 }
 
@@ -1290,7 +1534,7 @@ $('btnPG').onclick=()=>promptTimePlan('pg');
 $('ocStart').onclick=ocSpeak;$('ocNext').onclick=ocNext;$('ocPrev').onclick=ocPrev;$('ocExit').onclick=ocExit;
 $('ocContinueBtn').onclick=()=>{if($('ocAutoPlay').checked)toast('Auto-Play is active! Use ⏸ Pause to stop, or Next ▶ to skip.',2500);else ocNext()};
 $('ocAutoPlay').onchange=()=>{ocSyncAutoUI();if($('ocAutoPlay').checked){OC.paused=false;$('ocPause').textContent='⏸ Pause';ocSpeak()}else{clearTimeout(OC.advT);$('ocStatus').textContent='Auto-Play off'}};
-$('ocPause').onclick=()=>{if(!OC.paused){OC.paused=true;clearTimeout(OC.advT);if(liveAudio)liveAudio.pause();else if(speechSynthesis.speaking)speechSynthesis.pause();$('ocPause').textContent='▶ Resume';$('ocStatus').textContent='Paused'}else{OC.paused=false;$('ocPause').textContent='⏸ Pause';if(liveAudio&&liveAudio.paused)liveAudio.play();else if(speechSynthesis.paused)speechSynthesis.resume();else ocSpeak()}};
+$('ocPause').onclick=()=>{if(!OC.paused){OC.paused=true;clearTimeout(OC.advT);stopLipAnimation();if(liveAudio)liveAudio.pause();else if(speechSynthesis.speaking)speechSynthesis.pause();$('ocPause').textContent='▶ Resume';$('ocStatus').textContent='Paused'}else{OC.paused=false;$('ocPause').textContent='⏸ Pause';startLipAnimation();if(liveAudio&&liveAudio.paused)liveAudio.play();else if(speechSynthesis.paused)speechSynthesis.resume();else ocSpeak()}};
 $('ocMaxBtn').onclick=()=>{const ov=$('ocOverlay'),on=ov.classList.toggle('max');$('ocMaxBtn').textContent=on?'🗗':'⛶';if(on&&ov.requestFullscreen)ov.requestFullscreen().catch(()=>{});else if(!on&&document.fullscreenElement)document.exitFullscreen().catch(()=>{});setTimeout(()=>{if(OC.showSrc)ocRenderPage(OC.page)},120)};
 document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&$('ocOverlay').classList.contains('max')){$('ocOverlay').classList.remove('max');$('ocMaxBtn').textContent='⛶';setTimeout(()=>{if(OC.showSrc)ocRenderPage(OC.page)},120)}});
 $('ocSourceBtn').onclick=()=>{OC.showSrc=!OC.showSrc;$('ocMain').classList.toggle('no-src',!OC.showSrc);$('ocSourceBtn').textContent=OC.showSrc?'📄 Hide Source':'📄 Show Source';if(OC.showSrc)setTimeout(()=>ocRenderPage(OC.page),60)};
@@ -1339,9 +1583,7 @@ let kokoroTTS=null;
 async function getKokoro(cb){if(kokoroTTS)return kokoroTTS;if(cb)cb('Loading Kokoro-82M Neural Voice (~85MB cached once)…');const m=await import('https://cdn.jsdelivr.net/npm/kokoro-js@1.2.1/dist/kokoro.web.js');kokoroTTS=await m.KokoroTTS.from_pretrained('onnx-community/Kokoro-82M-v1.0-ONNX',{dtype:'q8',device:'wasm'});return kokoroTTS}
 function wrapLines(ctx,text,maxW){const words=String(text||'').split(/\s+/),lines=[];let cur='';words.forEach(w=>{const t=cur?cur+' '+w:w;if(ctx.measureText(t).width>maxW&&cur){lines.push(cur);cur=w}else cur=t});if(cur)lines.push(cur);return lines}
 
-// CLASSROOM STAGE CANVAS RENDERER FOR MP4 / WEBM VIDEO EXPORT
 function drawSlideFrame(ctx,W,H,s,idx,tot,theme,imgEl,capText){
- // 1. Cream Classroom Wall & Walnut Floor
  const wg=ctx.createRadialGradient(W*0.38,H*0.35,40,W*0.45,H*0.45,W*0.8);
  wg.addColorStop(0,'#f6efe0');wg.addColorStop(1,'#e2d3b3');
  ctx.fillStyle=wg;ctx.fillRect(0,0,W,H);
@@ -1350,17 +1592,14 @@ function drawSlideFrame(ctx,W,H,s,idx,tot,theme,imgEl,capText){
  ctx.fillStyle=fg;ctx.fillRect(0,H-78,W,78);
  ctx.fillStyle='#352015';ctx.fillRect(0,H-80,W,3);
 
- // 2. Oak-Framed Green Chalkboard (or Dark/Light Board)
  const bx=34,by=28,bw=930,bh=596;
  ctx.fillStyle=theme==='light'?'#94a3b8':theme==='dark'?'#334155':'#7b4c24';
  ctx.fillRect(bx-10,by-10,bw+20,bh+20);
  ctx.fillStyle=theme==='light'?'#f8fafc':theme==='dark'?'#0f172a':'#1e4d3b';
  ctx.fillRect(bx,by,bw,bh);
- // Chalk tray
  ctx.fillStyle='#5c3818';ctx.fillRect(bx+180,by+bh+6,bw-360,10);
  ctx.fillStyle='#10b981';ctx.fillRect(bx,by,bw*((idx+1)/tot),5);
 
- // 3. Slide Title, Meta, Bullets, Figure & Tip
  ctx.fillStyle=theme==='light'?'#065f46':'#fde68a';ctx.font='bold 28px Inter,sans-serif';
  ctx.fillText(shorten(s.title||'Slide',54),bx+28,by+48);
  ctx.fillStyle=theme==='light'?'#0284c7':'#7dd3fc';ctx.font='15px Inter,sans-serif';
@@ -1384,15 +1623,13 @@ function drawSlideFrame(ctx,W,H,s,idx,tot,theme,imgEl,capText){
   ctx.drawImage(imgEl,ix+(iw-dw)/2,iy+(ih-dh)/2,dw,dh);
  }
 
- // 4. Prof. Anna Standing on Right Side of Floor Pointing at Board
- if(TEACHER.imgEl){
-  const th=555,tw=Math.round((TEACHER.imgEl.width/Math.max(1,TEACHER.imgEl.height))*th);
+ if(TEACHER.imgEl&&TEACHER.imgEl.complete&&TEACHER.imgEl.naturalWidth){
+  const th=555,tw=Math.round((TEACHER.imgEl.naturalWidth/Math.max(1,TEACHER.imgEl.naturalHeight))*th);
   const tx=W-tw-16,ty=H-th-24;
   ctx.fillStyle='rgba(0,0,0,0.35)';ctx.beginPath();ctx.ellipse(tx+tw*0.56,H-24,tw*0.32,10,0,0,Math.PI*2);ctx.fill();
   ctx.drawImage(TEACHER.imgEl,tx,ty,tw,th);
  }
 
- // 5. Bottom Caption Strip
  if(capText){
   ctx.fillStyle='rgba(2,6,23,.84)';ctx.fillRect(0,H-64,W,64);
   ctx.fillStyle='#fde68a';ctx.font='18px Inter,sans-serif';
@@ -1419,8 +1656,9 @@ $('exRunVideo').onclick=async()=>{
 };
 $('exRunHtml').onclick=async()=>{const deck=buildClassSlides($('exDeck').value);for(const s of deck){if(!s.customImg&&!s._cachedImg){if(s.eqReg)s._cachedImg=await cropEquationBlock(s.eqReg)||'';else if(s.media)s._cachedImg=await smartMediaCrop(s.media)||'';else if(s.cropRect)s._cachedImg=await cropPageRegion(s.cropRect.page||s.page||1,s.cropRect,6,1.6)}}
  const p=JSON.stringify(deck.map(s=>({t:s.title,b:s.bullets,tip:s.tip||'',n:s.narration||'',img:s.customImg||s._cachedImg||''})));
- const teacherMarkup=TEACHER.dataUrl?`<img src="${TEACHER.dataUrl}" alt="Prof. Anna">`:FALLBACK_TEACHER_SVG;
- const h='<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(S.doc.title)+'</title><style>body{margin:0;background:radial-gradient(circle at 38% 35%,#f6efe0,#e7dac1 78%);color:#f8fafc;font:18px/1.6 system-ui;display:flex;flex-direction:column;height:100vh;overflow:hidden}header{padding:10px 16px;background:#0f172a;display:flex;gap:10px;align-items:center}main{flex:1;position:relative;padding:18px 22px 46px;display:flex;align-items:stretch;min-height:0}.floor{position:absolute;left:0;right:0;bottom:0;height:48px;background:linear-gradient(180deg,#6b4835,#462d20);border-top:3px solid #352015}.board{flex:1;background:#1e4d3b;border:10px solid #6d421e;border-radius:8px;padding:18px 24px;overflow:auto;box-shadow:0 12px 28px #0006;z-index:2}.teacher{width:210px;display:flex;align-items:flex-end;z-index:3;margin-left:-24px;animation:walk 1.5s ease-out}.teacher img,.teacher svg{width:100%;max-height:70vh;object-fit:contain}@keyframes walk{from{transform:translateX(130%);opacity:0}to{transform:translateX(0);opacity:1}}.tip{padding:11px;background:rgba(251,191,36,.16);border-left:4px solid #fbbf24;border-radius:6px;margin-top:14px;color:#fef3c7}img.fig{max-width:100%;max-height:44vh;border:2px solid #fbbf24;border-radius:8px;background:#fff;margin-top:8px}button{padding:7px 13px;border-radius:8px;border:0;background:#10b981;font-weight:700;cursor:pointer}@media(max-width:800px){.teacher{width:110px}}</style></head><body><header><b style="flex:1;color:#34d399">'+esc(S.doc.title)+'</b><button onclick="go(-1)">◀ Prev</button><span id="ix"></span><button onclick="go(1)">Next ▶</button><button onclick="sp()">🔊 Explain</button></header><main><div class="floor"></div><div class="board" id="m"></div><div class="teacher">'+teacherMarkup+'</div></main><script>const D='+p+';const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\\"":"&quot;"}[c]));let i=0;function show(){const s=D[i];document.getElementById("ix").textContent=(i+1)+"/"+D.length;document.getElementById("m").innerHTML="<h2 style=color:#fde68a;margin-top:0>"+esc(s.t)+"</h2><ul>"+(s.b||[]).map(x=>"<li>"+esc(x)+"</li>").join("")+"</ul>"+(s.img?"<img class=fig src=\\""+s.img+"\\">":"")+(s.tip?"<div class=tip><b>💡</b> "+esc(s.tip)+"</div>":"")}function go(d){i=Math.max(0,Math.min(D.length-1,i+d));show()}function sp(){if("speechSynthesis"in window){speechSynthesis.cancel();speechSynthesis.speak(new SpeechSynthesisUtterance(D[i].n))}}show();<\/script></body></html>';
+ const activeSrc=TEACHER.dataUrl||TEACHER.src||'anna.png';
+ const teacherMarkup=`<img class="anna-base" src="${activeSrc}" alt="Prof. Anna">`;
+ const h='<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(S.doc.title)+'</title><style>body{margin:0;background:radial-gradient(circle at 38% 35%,#f6efe0,#e7dac1 78%);color:#f8fafc;font:18px/1.6 system-ui;display:flex;flex-direction:column;height:100vh;overflow:hidden}header{padding:10px 16px;background:#0f172a;display:flex;gap:10px;align-items:center}main{flex:1;position:relative;padding:18px 22px 46px;display:flex;align-items:stretch;min-height:0}.floor{position:absolute;left:0;right:0;bottom:0;height:48px;background:linear-gradient(180deg,#6b4835,#462d20);border-top:3px solid #352015}.board{flex:1;background:#1e4d3b;border:10px solid #6d421e;border-radius:8px;padding:18px 24px;overflow:auto;box-shadow:0 12px 28px #0006;z-index:2}.teacher{width:230px;display:flex;align-items:flex-start;z-index:3;margin-left:-24px;transition:transform .4s ease}.teacher img{width:100%;max-height:68vh;object-fit:contain}.tip{padding:11px;background:rgba(251,191,36,.16);border-left:4px solid #fbbf24;border-radius:6px;margin-top:14px;color:#fef3c7}img.fig{max-width:100%;max-height:44vh;border:2px solid #fbbf24;border-radius:8px;background:#fff;margin-top:8px}button{padding:7px 13px;border-radius:8px;border:0;background:#10b981;font-weight:700;cursor:pointer}@media(max-width:800px){.teacher{width:115px}}</style></head><body><header><b style="flex:1;color:#34d399">'+esc(S.doc.title)+'</b><button onclick="go(-1)">◀ Prev</button><span id="ix"></span><button onclick="go(1)">Next ▶</button><button onclick="sp()">🔊 Explain</button></header><main><div class="floor"></div><div class="board" id="m"></div><div class="teacher" id="tc">'+teacherMarkup+'</div></main><script>const D='+p+';const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\\"":"&quot;"}[c]));let i=0;function show(){const s=D[i];document.getElementById("ix").textContent=(i+1)+"/"+D.length;document.getElementById("m").innerHTML="<h2 style=color:#fde68a;margin-top:0>"+esc(s.t)+"</h2><ul>"+(s.b||[]).map(x=>"<li>"+esc(x)+"</li>").join("")+"</ul>"+(s.img?"<img class=fig src=\\""+s.img+"\\">":"")+(s.tip?"<div class=tip><b>💡</b> "+esc(s.tip)+"</div>":"");document.getElementById("tc").style.transform="translateY(0px)"}function go(d){i=Math.max(0,Math.min(D.length-1,i+d));show()}function sp(){if("speechSynthesis"in window){speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(D[i].n);let step=0;u.onboundary=()=>{step+=14;document.getElementById("tc").style.transform="translateY("+Math.min(180,step)+"px)"};speechSynthesis.speak(u)}}show();<\/script></body></html>';
  dlBlob(new Blob([h],{type:'text/html'}),safeName(S.doc.title)+'_lesson.html')};
 $('exRunMd').onclick=()=>{const d=buildClassSlides($('exDeck').value);dlBlob(new Blob(['# '+S.doc.title+'\n\n'+d.map((s,i)=>'## '+(i+1)+'. '+s.title+'\n'+(s.bullets||[]).map(b=>'- '+b).join('\n')+(s.tip?'\n\n**Takeaway:** '+s.tip:'')).join('\n\n')],{type:'text/markdown'}),safeName(S.doc.title)+'.md')};
 $('exRunCsv').onclick=()=>{const d=buildClassSlides($('exDeck').value);dlBlob(new Blob([d.filter(s=>s.bullets&&s.bullets.length).map(s=>'"'+s.title.replace(/"/g,'""')+'","'+(s.tip||s.bullets.join(' | ')).replace(/"/g,'""')+'"').join('\n')],{type:'text/csv'}),safeName(S.doc.title)+'_cards.csv')};
