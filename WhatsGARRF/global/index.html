@@ -2677,34 +2677,41 @@ if (SpeechRec) {
 } else micBtn.onclick = () => showToast("Voice dictation works in Chrome / Edge / Android.");
 
 let openedFromWake = false;
+let pendingWakeMeta = null;
+function applyWakeAlertState(info) {
+  if (!info || !info.fromPhone) return;
+  openedFromWake = true;
+  pendingWakeMeta = info;
+  activeThreadKey = normPhone(info.fromPhone);
+  setTimeout(() => {
+    selectThread(activeThreadKey, true);
+    showToast(`🔔 Woke up for ${info.fromName || info.fromPhone} — listening for call...`);
+    if (peer && !peer.destroyed && peer.disconnected) {
+      try { peer.reconnect(); } catch (_) { retryPeerNetwork(); }
+    } else if (!peer || peer.destroyed) {
+      initPeerNetwork();
+    }
+  }, 300);
+}
 (function handleWakeUrlParams() {
   try {
     const params = new URLSearchParams(window.location.search);
     const wakeFrom = params.get("fromPhone");
-    const wakeAction = params.get("wgAction") || "";
-    const wakeVideo = params.get("hasVideo") === "1";
     if (wakeFrom) {
-      openedFromWake = true;
-      activeThreadKey = normPhone(wakeFrom);
-      setTimeout(() => {
-        selectThread(activeThreadKey, true);
-        showToast(`🔔 Woke up for ${params.get("fromName") || wakeFrom}`);
-        if (wakeAction === "accept_call" && !activeRoomId) {
-          startCallForThread(activeThreadKey, wakeVideo);
-        }
-      }, 450);
+      applyWakeAlertState({
+        fromPhone: wakeFrom,
+        fromName: params.get("fromName") || "",
+        roomId: params.get("roomId") || "",
+        hasVideo: params.get("hasVideo") === "1",
+        action: params.get("wgAction") || ""
+      });
     }
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.addEventListener("message", (event) => {
         const msg = event.data;
         if (!msg || typeof msg !== "object") return;
         if (msg.type === "WG_WAKE_INCOMING" && msg.fromPhone) {
-          activeThreadKey = normPhone(msg.fromPhone);
-          selectThread(activeThreadKey, true);
-          showToast(`🔔 Incoming alert from ${msg.fromName || msg.fromPhone}`);
-          if (msg.action === "accept_call" && !activeRoomId) {
-            startCallForThread(activeThreadKey, Boolean(msg.hasVideo));
-          }
+          applyWakeAlertState(msg);
         }
       });
     }
