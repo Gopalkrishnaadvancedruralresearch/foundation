@@ -824,6 +824,43 @@
     }
 
 
+    .otp-status-banner {
+      background: rgba(0, 168, 132, 0.14);
+      border: 1px solid rgba(0, 168, 132, 0.45);
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin: 10px 0;
+      font-size: 12.5px;
+      line-height: 1.45;
+      color: #a7f3d0;
+    }
+    .otp-timer-pill {
+      display: inline-block;
+      margin-top: 6px;
+      padding: 3px 9px;
+      border-radius: 12px;
+      background: #064e3b;
+      border: 1px solid #34d399;
+      color: #ffffff;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .otp-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-top: 10px;
+    }
+    .otp-row input {
+      flex: 1;
+      text-transform: uppercase;
+      letter-spacing: 4px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-weight: 700;
+      text-align: center;
+    }
+
     /* MODALS */
     .modal-backdrop {
       position: fixed;
@@ -1129,6 +1166,31 @@
   </div>
 </div>
 
+
+
+<!-- BREVO 10-MINUTE EMAIL OTP VERIFICATION MODAL (ANTI-SPAM) -->
+<div class="modal-backdrop" id="emailOtpModal">
+  <div class="modal">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <h3>✉️ Verify Your Email (10-Minute Code)</h3>
+      <button type="button" class="icon-btn" id="closeEmailOtpModal">✕</button>
+    </div>
+    <p>To prevent spam and deliver your Virtual Lab password or live faculty reply safely, we send a <strong>4-character code</strong> from <strong>contact@garrf.in (Do Not Reply)</strong>.</p>
+    <label for="otpEmailInput">Your Email Address *</label>
+    <input type="email" id="otpEmailInput" placeholder="e.g., name@college.edu" autocomplete="email" />
+    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+      <button type="button" class="action-btn primary" id="sendOtpBtn">📨 Send 10-Min Code</button>
+      <span id="otpCountdownPill" class="otp-timer-pill" style="display:none;">Expires in 10:00</span>
+    </div>
+    <div class="otp-status-banner" id="otpSentBanner" style="display:none;"></div>
+    <label for="otpCodeInput">Enter 4-Character Code from Your Email *</label>
+    <div class="otp-row">
+      <input type="text" id="otpCodeInput" maxlength="4" placeholder="A7K2" autocomplete="one-time-code" />
+      <button type="button" class="action-btn primary" id="verifyOtpBtn">✅ Verify Code</button>
+    </div>
+    <div class="form-error" id="otpFormError"></div>
+  </div>
+</div>
 
 <div class="toast" id="toastMsg"></div>
 
@@ -2274,6 +2336,8 @@ let SESSION_ID = getOrCreateSession("wg_session_id", () => "wg_" + Date.now() + 
 let GARRF_ID = getOrCreateSession("wg_garrf_id", () => "+91 GARRF " + Math.floor(1000 + Math.random() * 8999));
 let VISITOR_NAME = safeGet(localStorage, "wg_visitor_name") || "";
 let VISITOR_CONTACT = safeGet(localStorage, "wg_visitor_contact") || "";
+let VERIFIED_EMAIL = safeGet(sessionStorage, "wg_verified_email") || "";
+let VERIFY_TOKEN = safeGet(sessionStorage, "wg_verify_token") || "";
 let hasSentChatInSession = safeGet(sessionStorage, "wg_has_chatted") === "1";
 
 let seenBotIds = new Set();
@@ -2296,8 +2360,9 @@ function updateVisitorBadge() {
 
   if (isProfileFilled()) {
     strip.classList.remove("pending-profile");
-    badgeText.innerHTML = `👤 <strong>${VISITOR_NAME.replace(/</g, "&lt;")}</strong> • ${GARRF_ID}`;
-    quickBtn.textContent = "Edit Card";
+    const verBadge = VERIFIED_EMAIL ? ` • ✅ Verified` : ``;
+    badgeText.innerHTML = `👤 <strong>${VISITOR_NAME.replace(/</g, "&lt;")}</strong> • ${GARRF_ID}${verBadge}`;
+    quickBtn.textContent = VERIFIED_EMAIL ? "Edit Card" : "Verify Email";
     hdrCardBtn.textContent = `👤 ${VISITOR_NAME.split(" ")[0]}`;
   } else {
     strip.classList.add("pending-profile");
@@ -2453,7 +2518,8 @@ async function workerChat(staff, text) {
         sessionId: SESSION_ID,
         garrfId: GARRF_ID,
         name: VISITOR_NAME,
-        contact: VISITOR_CONTACT,
+        contact: VERIFIED_EMAIL || VISITOR_CONTACT,
+        verifyToken: VERIFY_TOKEN,
         desk: staff.id,
         text: taggedText
       })
@@ -2714,17 +2780,40 @@ function handleUserSend(text) {
   }
 
   const staff = STAFF_DIRECTORY.find(s => s.id === activeStaffId);
-  appendMessage(activeStaffId, { dir: "out", sender: VISITOR_NAME, text: clean });
-  workerChat(staff, clean);
+  const deliverChatMessage = () => {
+    appendMessage(activeStaffId, { dir: "out", sender: VISITOR_NAME, text: clean });
+    workerChat(staff, clean);
 
-  const kbReply = buildKnowledgeBaseReply(staff, VISITOR_NAME, clean);
-  const reply = kbReply || buildHumanOfflineReply(staff, VISITOR_NAME, clean);
-  appendMessage(activeStaffId, {
-    dir: "in",
-    sender: staff.name,
-    text: reply.text,
-    links: reply.links
-  });
+    const kbReply = buildKnowledgeBaseReply(staff, VISITOR_NAME, clean);
+    const reply = kbReply || buildHumanOfflineReply(staff, VISITOR_NAME, clean);
+    appendMessage(activeStaffId, {
+      dir: "in",
+      sender: staff.name,
+      text: reply.text,
+      links: reply.links
+    });
+  };
+
+  if (!VERIFY_TOKEN) {
+    openEmailOtpModal(
+      () => deliverChatMessage(),
+      () => {
+        // Offline / unverified fallback: local KB still works without Worker alert
+        appendMessage(activeStaffId, { dir: "out", sender: VISITOR_NAME, text: clean });
+        const kbReply = buildKnowledgeBaseReply(staff, VISITOR_NAME, clean);
+        const reply = kbReply || buildHumanOfflineReply(staff, VISITOR_NAME, clean);
+        appendMessage(activeStaffId, {
+          dir: "in",
+          sender: staff.name,
+          text: reply.text + "\n\nℹ️ *Email verification was skipped—local AI assistant replied, and live Telegram alert was not sent.*",
+          links: reply.links
+        });
+      }
+    );
+    return;
+  }
+
+  deliverChatMessage();
 }
 
 // ============================================================
@@ -2770,6 +2859,8 @@ document.getElementById("endWipeBtn").onclick = async () => {
   GARRF_ID = getOrCreateSession("wg_garrf_id", () => "+91 GARRF " + Math.floor(1000 + Math.random() * 8999));
   VISITOR_NAME = "";
   VISITOR_CONTACT = "";
+  VERIFIED_EMAIL = "";
+  VERIFY_TOKEN = "";
   hasSentChatInSession = false;
   seenBotIds = new Set();
 
@@ -2965,16 +3056,26 @@ document.getElementById("submitCallReqBtn").onclick = async () => {
     return;
   }
   const details = document.getElementById("callVisitorDetail").value.trim() || "Visitor requested Free Virtual Lab Password via 24/7 Voice Call keypad.";
-  await workerChat(prakruthiObj, `📞 VIRTUAL LAB PASSWORD REQUEST: ${details}`);
-  callModal.classList.remove("open");
-  selectStaff("prakruthi");
-  appendMessage("prakruthi", { dir: "out", sender: VISITOR_NAME, text: details });
-  appendMessage("prakruthi", {
-    dir: "in",
-    sender: "Prakruthi (24/7 available on Call)",
-    text: `Thank you, ${VISITOR_NAME}! I've logged your Virtual Lab password request and will send your password shortly. Meanwhile, you can also explore:`,
-    links: LINK_BUNDLES.prakruthi
-  });
+  const submitLabReq = async () => {
+    const taggedDetails = VERIFIED_EMAIL ? `${details} [Verified: ${VERIFIED_EMAIL}]` : details;
+    await workerChat(prakruthiObj, `📞 VIRTUAL LAB PASSWORD REQUEST: ${taggedDetails}`);
+    callModal.classList.remove("open");
+    selectStaff("prakruthi");
+    appendMessage("prakruthi", { dir: "out", sender: VISITOR_NAME, text: taggedDetails });
+    appendMessage("prakruthi", {
+      dir: "in",
+      sender: "Prakruthi (24/7 available on Call)",
+      text: `Thank you, ${VISITOR_NAME}! I've logged your Virtual Lab password request and will send your password shortly to ${VERIFIED_EMAIL || VISITOR_CONTACT}. Meanwhile, you can also explore:`,
+      links: LINK_BUNDLES.prakruthi
+    });
+  };
+
+  if (!VERIFY_TOKEN) {
+    callModal.classList.remove("open");
+    openEmailOtpModal(() => { submitLabReq(); });
+    return;
+  }
+  await submitLabReq();
 
 };
 
@@ -2995,6 +3096,181 @@ logoLightboxModal.addEventListener("click", (e) => {
   if (e.target === logoLightboxModal) closeLogoLightbox();
 });
 
+
+
+// ============================================================
+// 11. BREVO 10-MINUTE EMAIL OTP VERIFICATION (/send-otp & /verify-otp)
+// ============================================================
+const emailOtpModal = document.getElementById("emailOtpModal");
+const otpEmailInput = document.getElementById("otpEmailInput");
+const otpCodeInput = document.getElementById("otpCodeInput");
+const otpSentBanner = document.getElementById("otpSentBanner");
+const otpFormError = document.getElementById("otpFormError");
+const otpCountdownPill = document.getElementById("otpCountdownPill");
+const sendOtpBtn = document.getElementById("sendOtpBtn");
+const verifyOtpBtn = document.getElementById("verifyOtpBtn");
+
+let otpCountdownTimer = null;
+let onOtpSuccessCb = null;
+let onOtpCancelCb = null;
+
+function startOtpCountdown(seconds = 600) {
+  clearInterval(otpCountdownTimer);
+  let remaining = seconds;
+  otpCountdownPill.style.display = "inline-block";
+
+  const renderTick = () => {
+    const mins = Math.floor(remaining / 60);
+    const secs = remaining % 60;
+    otpCountdownPill.textContent = `Expires in ${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+    if (remaining <= 0) {
+      clearInterval(otpCountdownTimer);
+      otpCountdownPill.textContent = "Code Expired — Resend";
+    }
+    remaining--;
+  };
+  renderTick();
+  otpCountdownTimer = setInterval(renderTick, 1000);
+}
+
+function openEmailOtpModal(onSuccess = null, onCancel = null) {
+  onOtpSuccessCb = onSuccess;
+  onOtpCancelCb = onCancel;
+  otpEmailInput.value = VERIFIED_EMAIL || (VISITOR_CONTACT.includes("@") ? VISITOR_CONTACT : "");
+  otpCodeInput.value = "";
+  otpFormError.style.display = "none";
+  emailOtpModal.classList.add("open");
+}
+
+document.getElementById("closeEmailOtpModal").onclick = () => {
+  emailOtpModal.classList.remove("open");
+  const cancelCb = onOtpCancelCb;
+  onOtpSuccessCb = null;
+  onOtpCancelCb = null;
+  if (typeof cancelCb === "function") cancelCb();
+};
+
+// Also allow clicking "Verify Email" in the top visitor strip
+document.getElementById("editProfileQuickBtn").onclick = () => {
+  if (isProfileFilled() && !VERIFY_TOKEN) {
+    openEmailOtpModal();
+  } else {
+    openProfileModal(false);
+  }
+};
+
+sendOtpBtn.onclick = async () => {
+  const email = otpEmailInput.value.trim().toLowerCase();
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    otpFormError.textContent = "Please enter a valid email address.";
+    otpFormError.style.display = "block";
+    return;
+  }
+
+  otpFormError.style.display = "none";
+  sendOtpBtn.disabled = true;
+  sendOtpBtn.textContent = "Sending...";
+
+  try {
+    const res = await fetch(`${WORKER_URL}/send-otp`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        name: VISITOR_NAME || "Visitor",
+        sessionId: SESSION_ID
+      })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) {
+      otpFormError.textContent = data.error || "Could not send code right now. Please try again.";
+      otpFormError.style.display = "block";
+    } else {
+      otpSentBanner.innerHTML =
+        `✅ 4-character verification code sent to <strong>${email}</strong> from <strong>contact@garrf.in (Do Not Reply)</strong>. Check Inbox/Spam and enter it within 10 minutes.`;
+      otpSentBanner.style.display = "block";
+      startOtpCountdown(data.expiresInSec || 600);
+      otpCodeInput.focus();
+      showToast("📨 10-minute verification code sent to your email!");
+    }
+  } catch (err) {
+    otpFormError.textContent = "Network error reaching verification server. Check your connection.";
+    otpFormError.style.display = "block";
+  } finally {
+    sendOtpBtn.disabled = false;
+    sendOtpBtn.textContent = "📨 Send 10-Min Code";
+  }
+};
+
+verifyOtpBtn.onclick = async () => {
+  const email = otpEmailInput.value.trim().toLowerCase();
+  const code = otpCodeInput.value.trim().toUpperCase();
+
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    otpFormError.textContent = "Please enter your email address.";
+    otpFormError.style.display = "block";
+    return;
+  }
+  if (code.length !== 4) {
+    otpFormError.textContent = "Please enter the exact 4-character code from your email.";
+    otpFormError.style.display = "block";
+    return;
+  }
+
+  otpFormError.style.display = "none";
+  verifyOtpBtn.disabled = true;
+  verifyOtpBtn.textContent = "Verifying...";
+
+  try {
+    const res = await fetch(`${WORKER_URL}/verify-otp`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        code,
+        sessionId: SESSION_ID
+      })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) {
+      otpFormError.textContent = data.error || "Invalid or expired code.";
+      otpFormError.style.display = "block";
+    } else {
+      clearInterval(otpCountdownTimer);
+      VERIFIED_EMAIL = data.email;
+      VERIFY_TOKEN = data.verifyToken;
+      safeSet(sessionStorage, "wg_verified_email", VERIFIED_EMAIL);
+      safeSet(sessionStorage, "wg_verify_token", VERIFY_TOKEN);
+
+      if (!VISITOR_CONTACT.includes("@")) {
+        VISITOR_CONTACT = VERIFIED_EMAIL;
+        safeSet(localStorage, "wg_visitor_contact", VISITOR_CONTACT);
+      }
+
+      updateVisitorBadge();
+      emailOtpModal.classList.remove("open");
+      showToast(`✅ Email ${VERIFIED_EMAIL} verified!`);
+
+      const successCb = onOtpSuccessCb;
+      onOtpSuccessCb = null;
+      onOtpCancelCb = null;
+      if (typeof successCb === "function") successCb();
+    }
+  } catch (err) {
+    otpFormError.textContent = "Network error while verifying code.";
+    otpFormError.style.display = "block";
+  } finally {
+    verifyOtpBtn.disabled = false;
+    verifyOtpBtn.textContent = "✅ Verify Code";
+  }
+};
+
+otpCodeInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    verifyOtpBtn.click();
+  }
+});
 
 // Init
 const urlBot = new URLSearchParams(location.search).get("bot");
