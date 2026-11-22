@@ -861,6 +861,71 @@
       text-align: center;
     }
 
+    .chat-pane.locked-unverified {
+      position: relative;
+    }
+    .chat-lock-overlay {
+      display: none;
+      position: absolute;
+      inset: 0;
+      z-index: 25;
+      background: rgba(11, 20, 26, 0.84);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      text-align: center;
+    }
+    .chat-pane.locked-unverified .chat-lock-overlay {
+      display: flex;
+    }
+    .chat-lock-card {
+      max-width: 440px;
+      width: 100%;
+      background: #111b21;
+      border: 1px solid rgba(0, 168, 132, 0.45);
+      border-radius: 18px;
+      padding: 22px 20px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.72);
+    }
+    .chat-lock-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      background: rgba(245, 158, 11, 0.16);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      color: #fde68a;
+      font-size: 11.5px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .chat-lock-card h3 {
+      font-size: 18px;
+      color: #f8fafc;
+      margin-bottom: 8px;
+    }
+    .chat-lock-card p {
+      font-size: 13px;
+      color: #cbd5e1;
+      line-height: 1.55;
+      margin-bottom: 16px;
+    }
+    .chat-lock-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+    }
+    .chat-pane.locked-unverified .quick-chips,
+    .chat-pane.locked-unverified .composer,
+    .chat-pane.locked-unverified .chat-header-actions {
+      pointer-events: none;
+      opacity: 0.45;
+    }
+
     /* MODALS */
     .modal-backdrop {
       position: fixed;
@@ -1091,6 +1156,18 @@
     <div class="info-banner">
       <span>💬 <strong>Chatting needs NO password</strong>. 🔐 Virtual Labs on <strong>GARRF.in</strong> use <strong>Call 24/7 Admin Staff</strong> (<a href="https://garrf.in/ai_assistants/prakruthi.html" target="_blank" rel="noopener">Voice Portal</a>).</span>
       <span>📚 <a href="https://garrf.in/" target="_blank" rel="noopener">garrf.in</a> • <a href="https://garrf.in/kalam-zero-lab/" target="_blank" rel="noopener">Kalam Zero Lab</a></span>
+    </div>
+
+        <div class="chat-lock-overlay" id="chatLockOverlay" aria-live="polite">
+      <div class="chat-lock-card">
+        <div class="chat-lock-badge">🔒 Chat Locked Until Email Verified</div>
+        <h3>Verify Your Email to Unlock Chat</h3>
+        <p>You can browse the <strong>GARRF AI Staff Directory</strong> on the left freely. To chat with any AI bot or request lab access on the right, complete your <strong>10-minute email verification</strong> first.</p>
+        <div class="chat-lock-actions">
+          <button type="button" class="action-btn primary" id="unlockStartVerifyBtn">✉️ Fill Card &amp; Verify Email</button>
+          <button type="button" class="action-btn" id="unlockDirectOtpBtn">🔑 Enter / Send 10-Min Code</button>
+        </div>
+      </div>
     </div>
 
     <div class="messages" id="messagesBox"></div>
@@ -2779,41 +2856,28 @@ function handleUserSend(text) {
     return;
   }
 
-  const staff = STAFF_DIRECTORY.find(s => s.id === activeStaffId);
-  const deliverChatMessage = () => {
-    appendMessage(activeStaffId, { dir: "out", sender: VISITOR_NAME, text: clean });
-    workerChat(staff, clean);
-
-    const kbReply = buildKnowledgeBaseReply(staff, VISITOR_NAME, clean);
-    const reply = kbReply || buildHumanOfflineReply(staff, VISITOR_NAME, clean);
-    appendMessage(activeStaffId, {
-      dir: "in",
-      sender: staff.name,
-      text: reply.text,
-      links: reply.links
+  if (!isEmailVerifiedSession()) {
+    pendingMessageToSend = clean;
+    openEmailOtpModal(() => {
+      const queued = pendingMessageToSend;
+      pendingMessageToSend = null;
+      if (queued) handleUserSend(queued);
     });
-  };
-
-  if (!VERIFY_TOKEN) {
-    openEmailOtpModal(
-      () => deliverChatMessage(),
-      () => {
-        // Offline / unverified fallback: local KB still works without Worker alert
-        appendMessage(activeStaffId, { dir: "out", sender: VISITOR_NAME, text: clean });
-        const kbReply = buildKnowledgeBaseReply(staff, VISITOR_NAME, clean);
-        const reply = kbReply || buildHumanOfflineReply(staff, VISITOR_NAME, clean);
-        appendMessage(activeStaffId, {
-          dir: "in",
-          sender: staff.name,
-          text: reply.text + "\n\nℹ️ *Email verification was skipped—local AI assistant replied, and live Telegram alert was not sent.*",
-          links: reply.links
-        });
-      }
-    );
     return;
   }
 
-  deliverChatMessage();
+  const staff = STAFF_DIRECTORY.find(s => s.id === activeStaffId);
+  appendMessage(activeStaffId, { dir: "out", sender: VISITOR_NAME, text: clean });
+  workerChat(staff, clean);
+
+  const kbReply = buildKnowledgeBaseReply(staff, VISITOR_NAME, clean);
+  const reply = kbReply || buildHumanOfflineReply(staff, VISITOR_NAME, clean);
+  appendMessage(activeStaffId, {
+    dir: "in",
+    sender: staff.name,
+    text: reply.text,
+    links: reply.links
+  });
 }
 
 // ============================================================
@@ -2865,6 +2929,7 @@ document.getElementById("endWipeBtn").onclick = async () => {
   seenBotIds = new Set();
 
   updateVisitorBadge();
+  syncChatLockState();
   selectStaff(activeStaffId, false);
   showToast("🔒 Session ended & wiped from this phone.");
 };
@@ -2910,6 +2975,20 @@ function saveVisitorCard() {
   safeSet(localStorage, "wg_visitor_contact", VISITOR_CONTACT);
   updateVisitorBadge();
   profileModal.classList.remove("open");
+
+  syncChatLockState();
+  if (!isEmailVerifiedSession()) {
+    showToast(`Card saved for ${VISITOR_NAME}. Please verify your email to unlock chat.`);
+    openEmailOtpModal(() => {
+      const queued = pendingMessageToSend;
+      pendingMessageToSend = null;
+      if (queued) {
+        document.getElementById("msgInput").value = "";
+        handleUserSend(queued);
+      }
+    });
+    return;
+  }
 
   if (pendingMessageToSend) {
     const queued = pendingMessageToSend;
@@ -3098,6 +3177,44 @@ logoLightboxModal.addEventListener("click", (e) => {
 
 
 
+
+function isEmailVerifiedSession() {
+  return Boolean(VERIFY_TOKEN && VERIFIED_EMAIL);
+}
+
+function syncChatLockState() {
+  const chatPaneEl = document.querySelector(".chat-pane");
+  const msgInputEl = document.getElementById("msgInput");
+  const sendBtnEl = document.querySelector(".send-btn");
+  const micBtnEl = document.getElementById("micBtn");
+  const verified = isEmailVerifiedSession();
+
+  if (chatPaneEl) {
+    chatPaneEl.classList.toggle("locked-unverified", !verified);
+  }
+  if (msgInputEl) {
+    msgInputEl.disabled = !verified;
+    msgInputEl.placeholder = verified
+      ? "Write a message or tap a quick topic above..."
+      : "🔒 Verify your email in the right panel to start chatting...";
+  }
+  if (sendBtnEl) sendBtnEl.disabled = !verified;
+  if (micBtnEl) micBtnEl.disabled = !verified;
+}
+
+function promptVerificationGate(afterVerifiedCb = null) {
+  if (isEmailVerifiedSession()) {
+    if (typeof afterVerifiedCb === "function") afterVerifiedCb();
+    return;
+  }
+  syncChatLockState();
+  if (!isProfileFilled()) {
+    openProfileModal(true);
+  } else {
+    openEmailOtpModal(afterVerifiedCb);
+  }
+}
+
 // ============================================================
 // 11. BREVO 10-MINUTE EMAIL OTP VERIFICATION (/send-otp & /verify-otp)
 // ============================================================
@@ -3248,6 +3365,7 @@ verifyOtpBtn.onclick = async () => {
       }
 
       updateVisitorBadge();
+      syncChatLockState();
       emailOtpModal.classList.remove("open");
       showToast(`✅ Email ${VERIFIED_EMAIL} verified!`);
 
@@ -3272,10 +3390,20 @@ otpCodeInput.addEventListener("keydown", (e) => {
   }
 });
 
+
+document.getElementById("unlockStartVerifyBtn").onclick = () => {
+  if (!isProfileFilled()) openProfileModal(true);
+  else openEmailOtpModal();
+};
+document.getElementById("unlockDirectOtpBtn").onclick = () => {
+  openEmailOtpModal();
+};
+
 // Init
 const urlBot = new URLSearchParams(location.search).get("bot");
 const initialBot = STAFF_DIRECTORY.some(s => s.id === urlBot) ? urlBot : "prakruthi";
 selectStaff(initialBot, false);
+syncChatLockState();
 </script>
 </body>
 </html>
