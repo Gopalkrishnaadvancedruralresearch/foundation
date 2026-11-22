@@ -501,6 +501,11 @@
       display: flex;
       flex-direction: column;
       gap: 12px;
+      background-color: rgba(11, 20, 26, 0.78);
+      background-image: linear-gradient(rgba(11, 20, 26, 0.72), rgba(11, 20, 26, 0.78)), url("back.png");
+      background-repeat: repeat;
+      background-position: top left;
+      background-size: auto;
     }
 
     .msg {
@@ -759,6 +764,41 @@
     }
     .toast.show { display: block; }
 
+    .clickable-logo {
+      cursor: zoom-in;
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+    }
+    .clickable-logo:hover {
+      transform: scale(1.06);
+      box-shadow: 0 0 0 2px rgba(94, 234, 212, 0.65);
+    }
+    .logo-lightbox-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      width: 100%;
+      max-width: 420px;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.78);
+    }
+    .logo-lightbox-img {
+      width: 240px;
+      height: 240px;
+      max-width: 100%;
+      object-fit: cover;
+      border-radius: 18px;
+      border: 2px solid rgba(94, 234, 212, 0.45);
+      margin: 12px auto 14px;
+      display: block;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+    }
+    .logo-lightbox-caption {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
     /* MODALS */
     .modal-backdrop {
       position: fixed;
@@ -924,7 +964,7 @@
   <aside class="sidebar">
     <div class="brand-bar">
       <div class="brand-left">
-        <div class="brand-logo">
+        <div class="brand-logo clickable-logo" id="sidebarLogoTrigger" title="Click to view enlarged logo">
           <img src="wg.jpeg" alt="WhatsGARRF Logo" />
         </div>
         <div class="brand-title">
@@ -1005,7 +1045,7 @@
 
 <!-- POWERED BY STRIP JUST ABOVE FOOTER -->
 <div class="powered-strip">
-  <img class="powered-logo" src="wg.jpeg" alt="WhatsGARRF Logo" />
+  <img class="powered-logo clickable-logo" id="footerLogoTrigger" src="wg.jpeg" alt="WhatsGARRF Logo" title="Click to view enlarged logo" />
   <span>Powered by <strong>GopalKrishna Advanced Rural Research Foundation (GARRF)</strong></span>
   <span class="flag-group" aria-label="India and Singapore">
     <svg class="flag-icon" viewBox="0 0 900 600" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="India Flag">
@@ -1044,6 +1084,25 @@
 <footer class="wg-footer">
   <strong>Copyright © Dr. Annamdas Venu Gopal Madhav 2026</strong> — Proprietary Product of GARRF.
 </footer>
+
+
+<!-- ENLARGED LOGO LIGHTBOX MODAL -->
+<div class="modal-backdrop" id="logoLightboxModal">
+  <div class="logo-lightbox-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <h3>🖼️ WhatsGARRF &amp; GARRF Logo</h3>
+      <button type="button" class="icon-btn" id="closeLogoLightbox">✕</button>
+    </div>
+    <img class="logo-lightbox-img" src="wg.jpeg" alt="Enlarged WhatsGARRF Logo" />
+    <div class="logo-lightbox-caption">
+      <strong>GopalKrishna Advanced Rural Research Foundation (GARRF)</strong><br />
+      Unified Teaching &amp; Non-Teaching AI Staff Directory • wg.jpeg
+    </div>
+    <div class="modal-actions" style="justify-content:center;">
+      <button type="button" class="action-btn primary" id="doneLogoLightbox">Close View</button>
+    </div>
+  </div>
+</div>
 
 <div class="toast" id="toastMsg"></div>
 
@@ -1916,6 +1975,238 @@ const REPLY_TEMPLATES = {
 
 let replyRotationCounter = 0;
 
+// ============================================================
+// 4B. KNOWLEDGE-BASE INTELLIGENCE ENGINE (garrf_knowledge_base.json)
+// ============================================================
+let GARRF_KB = null;
+
+async function loadGarrfKnowledgeBase() {
+  const candidates = ["./garrf_knowledge_base.json", "garrf_knowledge_base.json", "./garrf_knowledge_base_2.json"];
+  for (const path of candidates) {
+    try {
+      const resp = await fetch(path, { cache: "no-cache" });
+      if (resp.ok) {
+        GARRF_KB = await resp.json();
+        return GARRF_KB;
+      }
+    } catch (_) {}
+  }
+  return null;
+}
+loadGarrfKnowledgeBase();
+
+function normalizeBotKey(idOrName) {
+  return String(idOrName || "")
+    .toLowerCase()
+    .replace(/^(prof\.?|dr\.?|ai)\s*/g, "")
+    .replace(/[^a-z0-9]/g, "");
+}
+
+function tokenizeQuery(q) {
+  const stop = new Set(["the","and","for","with","from","that","this","what","who","how","where","when","why","are","is","was","were","can","could","would","should","you","your","tell","me","about","give","show","get","my","in","on","of","to","a","an","it","do","does","i"]);
+  return q
+    .toLowerCase()
+    .replace(/[^a-z0-9\s+-]/g, " ")
+    .split(/\s+/)
+    .filter(w => w.length > 1 && !stop.has(w));
+}
+
+function collectRelevantLinksFromKB(kb, queryText, staff, matchedLabObj) {
+  const links = [];
+  const seenUrls = new Set();
+  const addLink = (label, url, extra = {}) => {
+    if (!url || url === "#" || seenUrls.has(url)) return;
+    seenUrls.add(url);
+    links.push({ label, url, ...extra });
+  };
+
+  if (matchedLabObj) {
+    if (matchedLabObj.hub) addLink(`${matchedLabObj.name} Hub`, matchedLabObj.hub);
+    if (Array.isArray(matchedLabObj.highlights)) {
+      matchedLabObj.highlights.slice(0, 3).forEach(h => addLink(h.name, h.url));
+    }
+    if (Array.isArray(matchedLabObj.experiments)) {
+      matchedLabObj.experiments.slice(0, 4).forEach(ex => addLink(ex.name, ex.url));
+    }
+  }
+
+  const qLower = queryText.toLowerCase();
+  if (/quantum|krishna|gita|bhagavad/i.test(qLower) && kb?.kalam_zero_lab?.labs) {
+    const qLab = kb.kalam_zero_lab.labs.find(l => l.id === "quantum_ai");
+    if (qLab) {
+      addLink("Krishna Meets Quantum AI", "https://garrf.in/kalam-zero-lab/krish.html");
+      (qLab.experiments || []).slice(0, 3).forEach(ex => addLink(ex.name, ex.url));
+    }
+  }
+
+  if (/product|service|partner|collaborat|hospital|iit|nit|university|discount|train|intern|proposal|rural|pochampally|nalgonda/i.test(qLower) && kb?.website_map) {
+    addLink("GARRF Services", kb.website_map.services || "https://garrf.in/services.html");
+    addLink("GARRF Products", kb.website_map.aisia_products || "https://sites.google.com/view/aisia/products");
+    addLink("Kalam Zero Lab (Free Virtual Labs)", kb.website_map.kalam_zero_lab || "https://garrf.in/kalam-zero-lab/");
+  }
+
+  if (!links.length) {
+    const fallbackBundle = LINK_BUNDLES[staff.linkBundle] || LINK_BUNDLES.general;
+    fallbackBundle.forEach(item => addLink(item.label, item.url, item.pwd ? { pwd: true } : {}));
+  } else {
+    addLink("Get Free Lab Password (Call 24/7 Admin)", "https://garrf.in/ai_assistants/prakruthi.html", { pwd: true });
+  }
+
+  return links.slice(0, 6);
+}
+
+function buildKnowledgeBaseReply(staff, visitorName, query) {
+  const kb = GARRF_KB;
+  if (!kb) return null;
+
+  const qLower = query.toLowerCase().trim();
+  const tokens = tokenizeQuery(query);
+  const normStaffId = normalizeBotKey(staff.id);
+  const kbBot = Array.isArray(kb.bots)
+    ? kb.bots.find(b => normalizeBotKey(b.id) === normStaffId || normalizeBotKey(b.name) === normStaffId)
+    : null;
+
+  const parts = [];
+  let matchedLab = null;
+
+  // 0. Polite greetings: Hi, Hello, Namaste, Vanakkam, etc.
+  if (/^(hi|hello|hey|namaste|namaskaram|vanakkam|good\s+(morning|afternoon|evening)|greetings)[!.\s]*$/i.test(qLower)) {
+    const isAnna = normStaffId === "garrfanna";
+    const salutation = isAnna ? "Namaste & Vanakkam" : "Namaste";
+    const intro = kbBot?.sample_answer
+      ? kbBot.sample_answer
+      : `I'm **${staff.name}** (${staff.shortRole}).`;
+    parts.push(`${salutation}, ${visitorName}! ${intro} How may I politely assist you today with GARRF's 330+ free virtual laboratory experiments (600–800 trials) or 20+ best products?`);
+  }
+
+  // 1. Identity / Who are you / What do you do?
+  if (/\b(who are you|your role|what do you do|introduce yourself|about you)\b/i.test(qLower) && kbBot) {
+    const identityLine = kbBot.sample_answer || `${kbBot.role_summary || ""} ${kbBot.detailed_role || ""}`.trim();
+    parts.push(`Hi ${visitorName}! ${identityLine} (I am an AI assistant of GARRF, not a human.)`);
+  }
+
+  // 2. Krishna Meets Quantum AI / Bhagavad Gita / Spiritual Quantum AI
+  if (/\b(krishna|bhagavad gita|gita|arjuna|arjun.*gita|spiritual.*quantum|quantum.*spiritual)\b/i.test(qLower)) {
+    const qBot = Array.isArray(kb.bots) ? kb.bots.find(b => b.id === "krishna_quantum_ai") : null;
+    if (qBot?.detailed_role) {
+      parts.push(`**Krishna Meets Quantum AI:** ${qBot.detailed_role}`);
+    }
+  }
+
+  // 3. Rural roots / Nalgonda / Pochampally / Bharat rural mission
+  if (/\b(nalgonda|pochampally|bhoodan|village|rural|bharat|bus|farmer|crops|yield)\b/i.test(qLower) && kb.organization?.rural_roots_and_mission_story) {
+    const r = kb.organization.rural_roots_and_mission_story;
+    parts.push(`**Rural Bharat Mission:** ${r.founder_village_origin} ${r.why_garrf_exists} ${r.call_to_action}`);
+  }
+
+  // 4. Products, Services, Pricing/Discount, Free Virtual Labs, Internships & Collaborations
+  if (/\b(product|service|offer|benefit|free|cost|price|charge|discount|train|internship|project|partner|collaborat|hospital|iit|nit|university|faculty|proposal|30|20)\b/i.test(qLower)) {
+    const ps = kb.products_and_services_overview || {};
+    const pCol = kb.organization?.partnerships_and_collaborations || {};
+    const lines = [];
+    if (ps.free_virtual_labs) lines.push(`• **Free Virtual Labs:** ${ps.free_virtual_labs}`);
+    if (Array.isArray(ps.proprietary_projects_discounted) && ps.proprietary_projects_discounted.length) {
+      lines.push(`• **Proprietary Projects (Discounted Charges):** ${ps.proprietary_projects_discounted.join("; ")}.`);
+    }
+    if (Array.isArray(ps.trainings_and_internships) && ps.trainings_and_internships.length) {
+      lines.push(`• **Trainings & Internships:** ${ps.trainings_and_internships.join("; ")}.`);
+    }
+    if (pCol.global_backing) {
+      lines.push(`• **Global & Bot Collaboration:** ${pCol.global_backing}`);
+    }
+    if (lines.length) {
+      parts.push(`Hi ${visitorName}, here is how GARRF supports learners and partners:\n${lines.join("\n")}`);
+    }
+  }
+
+  // 5. Match Kalam Zero Lab domains & experiments
+  if (Array.isArray(kb.kalam_zero_lab?.labs)) {
+    let bestLabScore = 0;
+    for (const lab of kb.kalam_zero_lab.labs) {
+      let score = 0;
+      const labHay = `${lab.name} ${lab.focus || ""} ${lab.id}`.toLowerCase();
+      for (const t of tokens) {
+        if (labHay.includes(t)) score += 3;
+      }
+      if (Array.isArray(lab.experiments)) {
+        for (const ex of lab.experiments) {
+          const exHay = (ex.name || "").toLowerCase();
+          for (const t of tokens) {
+            if (exHay.includes(t)) score += 2;
+          }
+        }
+      }
+      if (score > bestLabScore) {
+        bestLabScore = score;
+        matchedLab = lab;
+      }
+    }
+    if (matchedLab && bestLabScore >= 4) {
+      const wipNote = matchedLab.status === "work_in_progress"
+        ? ` Note: This module is currently a **work in progress**—contact Founder/CEO Dr. Annamdas Venu Gopal Madhav (founder@garrf.in) or Prakruthi for more details.`
+        : "";
+      const expNames = (matchedLab.experiments || []).slice(0, 5).map(e => e.name).join(", ");
+      parts.push(`**${matchedLab.icon || "🔬"} ${matchedLab.name}:** ${matchedLab.focus}${wipNote}${expNames ? ` Key modules include: ${expNames}.` : ""}`);
+    }
+  }
+
+  // 6. Score FAQ entries
+  if (Array.isArray(kb.faq)) {
+    let bestFaq = null;
+    let bestFaqScore = 0;
+    for (const item of kb.faq) {
+      const faqHay = `${item.q} ${item.a}`.toLowerCase();
+      let score = 0;
+      for (const t of tokens) {
+        if (item.q.toLowerCase().includes(t)) score += 3;
+        else if (faqHay.includes(t)) score += 1.5;
+      }
+      if (score > bestFaqScore) {
+        bestFaqScore = score;
+        bestFaq = item;
+      }
+    }
+    if (bestFaq && bestFaqScore >= 4.5 && !parts.some(p => p.includes(bestFaq.a.slice(0, 35)))) {
+      parts.push(`**${bestFaq.q}**\n${bestFaq.a}`);
+    }
+  }
+
+  // 7. Bot-specific keyword & role match
+  if (!parts.length && kbBot) {
+    const botHay = `${kbBot.name} ${kbBot.title || ""} ${kbBot.role_summary || ""} ${kbBot.detailed_role || ""} ${(kbBot.keywords || []).join(" ")}`.toLowerCase();
+    const botHits = tokens.filter(t => botHay.includes(t));
+    if (botHits.length >= 1) {
+      const summary = kbBot.detailed_role || kbBot.role_summary || kbBot.sample_answer || "";
+      parts.push(`Hi ${visitorName}! As **${kbBot.name}** (${kbBot.title || staff.shortRole}): ${summary}`);
+    }
+  }
+
+  // 8. Check routing_guide if no direct answer found
+  if (!parts.length && Array.isArray(kb.routing_guide?.rules)) {
+    for (const rule of kb.routing_guide.rules) {
+      const rTokens = tokenizeQuery(rule.if_topic || "");
+      const overlap = rTokens.filter(rt => tokens.includes(rt));
+      if (overlap.length >= 2) {
+        const contactStr = rule.contact ? ` (${rule.contact})` : "";
+        parts.push(`Hi ${visitorName}! For **${rule.if_topic}**, the best guide at GARRF is **${rule.route_to}**${contactStr}.`);
+        break;
+      }
+    }
+  }
+
+  if (!parts.length) return null;
+
+  const extraContactNote = /work in progress|todo|coming soon|not available/i.test(parts.join(" "))
+    ? "\n\nFor work-in-progress modules or custom details, you can also reach Founder/CEO **Dr. Annamdas Venu Gopal Madhav** at **founder@garrf.in** or ask **Prakruthi**."
+    : "";
+
+  return {
+    text: parts.join("\n\n") + extraContactNote,
+    links: collectRelevantLinksFromKB(kb, query, staff, matchedLab)
+  };
+}
+
+
 function buildHumanOfflineReply(staff, visitorName, query) {
   const pool = REPLY_TEMPLATES[staff.styleGroup] || REPLY_TEMPLATES.teacher;
   const idx = (replyRotationCounter + staff.id.length) % pool.length;
@@ -2388,7 +2679,8 @@ function handleUserSend(text) {
   appendMessage(activeStaffId, { dir: "out", sender: VISITOR_NAME, text: clean });
   workerChat(staff, clean);
 
-  const reply = buildHumanOfflineReply(staff, VISITOR_NAME, clean);
+  const kbReply = buildKnowledgeBaseReply(staff, VISITOR_NAME, clean);
+  const reply = kbReply || buildHumanOfflineReply(staff, VISITOR_NAME, clean);
   appendMessage(activeStaffId, {
     dir: "in",
     sender: staff.name,
@@ -2646,6 +2938,23 @@ document.getElementById("submitCallReqBtn").onclick = async () => {
     links: LINK_BUNDLES.prakruthi
   });
 };
+
+
+// Enlarged Logo Lightbox on Click
+const logoLightboxModal = document.getElementById("logoLightboxModal");
+function openLogoLightbox() {
+  logoLightboxModal.classList.add("open");
+}
+function closeLogoLightbox() {
+  logoLightboxModal.classList.remove("open");
+}
+document.getElementById("sidebarLogoTrigger").onclick = openLogoLightbox;
+document.getElementById("footerLogoTrigger").onclick = openLogoLightbox;
+document.getElementById("closeLogoLightbox").onclick = closeLogoLightbox;
+document.getElementById("doneLogoLightbox").onclick = closeLogoLightbox;
+logoLightboxModal.addEventListener("click", (e) => {
+  if (e.target === logoLightboxModal) closeLogoLightbox();
+});
 
 // Init
 const urlBot = new URLSearchParams(location.search).get("bot");
