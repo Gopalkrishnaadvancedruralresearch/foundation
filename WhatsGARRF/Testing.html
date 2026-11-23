@@ -306,6 +306,7 @@
     }
     .contact-item:hover { background: var(--bg-hover); }
     .contact-item.active { background: var(--bg-active); border-left: 3px solid var(--accent); }
+    .contact-item.upcoming-contact { opacity: 0.78; }
 
     .avatar {
       width: 45px;
@@ -736,6 +737,26 @@
       transition: 0.2s;
     }
     .chip:hover { border-color: var(--accent); color: #5eead4; }
+
+    /* COMING SOON DISABLED CHAT STATE */
+    .chat-pane.upcoming-disabled .quick-chips,
+    .chat-pane.upcoming-disabled .composer {
+      opacity: 0.42;
+      pointer-events: none;
+    }
+    .chat-pane.upcoming-disabled #manualCheckBtn {
+      opacity: 0.42;
+      pointer-events: none;
+    }
+    .upcoming-notice-bar {
+      background: rgba(245, 158, 11, 0.14);
+      border-top: 1px solid rgba(245, 158, 11, 0.35);
+      color: #fde68a;
+      padding: 8px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+    }
 
     /* COMPOSER */
     .composer {
@@ -1229,6 +1250,10 @@
 
     <div class="messages" id="messagesBox"></div>
 
+    <div class="upcoming-notice-bar" id="upcomingNoticeBar" style="display:none;">
+      ⏳ Coming Soon — Chat is disabled because this AI staff member has not joined yet. You can still open any live lab link above.
+    </div>
+
     <div class="quick-chips" id="quickChips"></div>
 
     <form class="composer" id="chatForm">
@@ -1555,7 +1580,7 @@ const LINK_BUNDLES = {
 };
 
 // ============================================================
-// 3. UNIFIED GARRF STAFF DIRECTORY
+// 3. UNIFIED GARRF STAFF DIRECTORY (CONFIRMED FEMALE VOICES & COMING SOON LOCK)
 // ============================================================
 const STAFF_DIRECTORY = [
   {
@@ -2060,7 +2085,7 @@ const STAFF_DIRECTORY = [
     ]
   },
 
-  // UPCOMING STAFF
+  // UPCOMING STAFF (NOT YET JOINED — CHAT DISABLED)
   {
     id: "kaveri",
     name: "Dr. Kaveri AI",
@@ -2076,7 +2101,7 @@ const STAFF_DIRECTORY = [
     voiceLang: "en-IN",
     status: "Coming Soon",
     labUrl: "https://garrf.in/kalam-zero-lab/dronewelcomeclub.html",
-    welcome: "Hi! I'm **Dr. Kaveri AI**—I'm currently onboarding our Satellite Technology & CubeSat modules, while our Flying Virtual Drone Club is already live for you to try!",
+    welcome: "⏳ **Dr. Kaveri AI** has **not joined live chat yet** (currently onboarding Satellite Technology & CubeSat modules). Live chat is disabled for Coming Soon contacts—you can still open our live Flying Virtual Drone Club link below.",
     sampleQuestions: [
       "Can I fly the Virtual Drone Simulator today?",
       "What is planned in Satellite Technology?"
@@ -2097,7 +2122,7 @@ const STAFF_DIRECTORY = [
     voiceLang: "en-IN",
     status: "Coming Soon",
     labUrl: "https://garrf.in/kalam-zero-lab/utm.html",
-    welcome: "Hello! I'm **Prof. Bhaskar AI**. I'm upgrading my Mechanical & Metallurgy modules right now, while UTM, Car Crash Velocity, Torsion, and X-Ray NDT labs are already open!",
+    welcome: "⏳ **Prof. Bhaskar AI** has **not joined live chat yet** (Mechanical & Metallurgy modules are being prepared). Chat is disabled for Coming Soon contacts—explore live UTM & Mechanical labs below.",
     sampleQuestions: [
       "Which Mechanical labs are already live?",
       "Tell me about the Car Crash & X-Ray NDT labs"
@@ -2118,7 +2143,7 @@ const STAFF_DIRECTORY = [
     voiceLang: "en-IN",
     status: "Coming Soon",
     labUrl: "https://garrf.in/kalam-zero-lab/agriestimate.html",
-    welcome: "Namaste! I'm **Narmada AI**, joining soon for GARRF's Rural Innovation & Women Empowerment divisions. Meanwhile, try our Crops & Yield (AP & TG) estimator!",
+    welcome: "⏳ **Narmada AI** has **not joined live chat yet** for Rural Innovation & Women Empowerment. Chat is disabled for Coming Soon contacts—feel free to open our live Crops & Yield estimator below.",
     sampleQuestions: [
       "Try Know Your Land & Yield (AP & TG)",
       "Tell me about GARRF's Rural & Women Empowerment centres"
@@ -2139,13 +2164,17 @@ const STAFF_DIRECTORY = [
     voiceLang: "en-IN",
     status: "Coming Soon",
     labUrl: "https://www.linkedin.com/company/gopalkrishnaadvancedruralresearchfoundation/",
-    welcome: "Hi! I'm **Vikram AI**, preparing to coordinate Joint GARRF–University 1STEP to Job Centres so students step out one step closer to a job!",
+    welcome: "⏳ **Vikram AI** has **not joined live chat yet** for 1STEP to Job placement coordination. Chat is disabled for Coming Soon contacts—check out the live GARRF links below.",
     sampleQuestions: [
       "Explain the 1STEP to Job Joint Centre model",
       "Where is GARRF's official LinkedIn?"
     ]
   }
 ];
+
+function isUpcomingStaff(staff) {
+  return Boolean(staff && Array.isArray(staff.categories) && staff.categories.includes("upcoming"));
+}
 
 // ============================================================
 // 4. SENSIBLE SMART REPLY ENGINE (GREETINGS + DIRECT QUESTIONS + KB)
@@ -2198,8 +2227,8 @@ function extractGreetingPrefix(rawQuery, staff, visitorName) {
   else if (/good\s*morning/i.test(match[0])) salutation = `Good morning, ${visitorName}!`;
   else if (/good\s*afternoon/i.test(match[0])) salutation = `Good afternoon, ${visitorName}!`;
   else if (/good\s*evening/i.test(match[0])) salutation = `Good evening, ${visitorName}!`;
-  else if (/how\s+are\s+you/i.test(match[0])) salutation = `I'm doing great, ${visitorName}—thank you for asking!`;
-  else salutation = `Hello ${visitorName}!`;
+  else if (/how\s+are\s+you/i.test(match[0])) salutation = `I'm doing wonderfully, ${visitorName}—thank you so much for asking!`;
+  else salutation = `Namaste ${visitorName}!`;
 
   return { hasGreeting: true, greetingLine: salutation, remainder };
 }
@@ -2267,7 +2296,6 @@ function buildKnowledgeBaseReply(staff, visitorName, query) {
   const parts = [];
   let matchedLab = null;
 
-  // Pure greeting (e.g., "Hi", "Hello", "Namaste")
   if (hasGreeting && (!remainder || remainder.length <= 2)) {
     const intro = kbBot?.sample_answer
       ? kbBot.sample_answer
@@ -2402,17 +2430,15 @@ function buildSensibleSmartReply(staff, visitorName, query) {
   const { hasGreeting, greetingLine, remainder } = extractGreetingPrefix(query, staff, visitorName);
   const effectiveQuery = remainder || query;
   const q = effectiveQuery.toLowerCase().trim();
-  const opener = hasGreeting ? `${greetingLine} ` : `Hi ${visitorName}! `;
+  const opener = hasGreeting ? `${greetingLine} ` : `Namaste ${visitorName}! `;
 
-  // 1. Pure greeting ("hi", "hello", "namaste", etc.)
   if (hasGreeting && (!remainder || remainder.length <= 2)) {
     return {
-      text: `${greetingLine} I'm **${staff.name}** (${staff.shortRole}).\n\nI'm right here—what would you like to explore today? Ask me any direct question about GARRF's **330+ free virtual laboratories**, **free Virtual Lab passwords**, **1STEP to Job**, **internships**, or **research**, or tap one of the quick questions below!`,
+      text: `${greetingLine} I'm **${staff.name}** (${staff.shortRole}).\n\nI'm right here with you—what would you like to explore today? Ask me any direct question about GARRF's **330+ free virtual laboratories**, **free Virtual Lab passwords**, **1STEP to Job**, **internships**, or **research**, or tap one of the quick questions below!`,
       links: LINK_BUNDLES[staff.linkBundle] || LINK_BUNDLES.general
     };
   }
 
-  // 2. Gratitude / Closing
   if (/^(thanks|thank you|thx|ok thanks|got it|great|awesome|bye|goodbye|see you)[!.\s]*$/i.test(q)) {
     return {
       text: `You're most welcome, ${visitorName}! Whenever you have another question or want to try any experiment on **Kalam Zero Lab**, just message me right here.`,
@@ -2420,7 +2446,6 @@ function buildSensibleSmartReply(staff, visitorName, query) {
     };
   }
 
-  // 3. Virtual Lab Password / Login / Unlock
   if (/\b(password|passcode|unlock|access key|otp|login|credential|enter.*lab)\b/i.test(q)) {
     const callHint = staff.id === "prakruthi"
       ? "tap **Voice Call Prakruthi** at the top (or press Key **7**)"
@@ -2431,7 +2456,6 @@ function buildSensibleSmartReply(staff, visitorName, query) {
     };
   }
 
-  // 4. GARRF's 5 Divisions / Overview / About GARRF
   if (/\b(5 division|five division|about garrf|what is garrf|map of garrf|ecosystem)\b/i.test(q)) {
     return {
       text: `${opener}**GopalKrishna Advanced Rural Research Foundation (GARRF)** is a Section 8 non-profit built around **5 core divisions**:\n• **1. Virtual AISIA Lab** (Artificial Intelligence & Structural Integrity Analytics)\n• **2. Dr. A.P.J. Abdul Kalam Research Centre** (*Kalam Zero Lab* — 330+ free virtual experiments)\n• **3. 1STEP to Job Joint Centres** (bridging universities & industry)\n• **4. Rural STEM & Agri-Innovation** (empowering rural schools, farmers & women)\n• **5. Global Academic & Industry R&D** (India–Singapore collaborative engineering)`,
@@ -2439,7 +2463,6 @@ function buildSensibleSmartReply(staff, visitorName, query) {
     };
   }
 
-  // 5. 1STEP to Job / University Partnerships / Placements / Industry
   if (/\b(1step|one step|job|placement|partner|university|college|mou|collaborat|sponsor)\b/i.test(q)) {
     return {
       text: `${opener}Under GARRF's **1STEP to Job** initiative, we establish Joint GARRF–University Centres where students build verified **"Proof of Work"** portfolios using 330+ virtual experiments, AI mentors, and real industry problem statements—so graduates step out one step closer to employment.\n\nColleges, faculty, and industry partners can connect directly via **Founder Desk** or **founder@garrf.in**.`,
@@ -2447,7 +2470,6 @@ function buildSensibleSmartReply(staff, visitorName, query) {
     };
   }
 
-  // 6. Founder / NTU Singapore / IISc Bangalore / Dr. Kalam / Yashokirti Award
   if (/\b(founder|venu|annamdas|ntu|singapore|iisc|bangalore|bengaluru|kalam|yashokirti|gate|air 8|shantanu|soh)\b/i.test(q)) {
     return {
       text: `${opener}GARRF was founded by **Dr. Venu Gopal Madhav Annamdas** (Ph.D. in Piezoelectric SHM from **NTU Singapore** under Prof. Soh Chee Kiong; M.E. from **IISc Bangalore** with GATE AIR 8; **Er. Avinash Shirode Yashokirti Awardee 2026**; inspired by walking behind **Dr. A.P.J. Abdul Kalam** at NTU in 2007) alongside Co-Founder **Annamdas Shantanu Vasudev Krishna**.\n\nExplore his convocation, awards, and international advisors in the links below:`,
@@ -2455,7 +2477,6 @@ function buildSensibleSmartReply(staff, visitorName, query) {
     };
   }
 
-  // 7. Internships / 200-Hour Projects / B.Tech / M.Tech / Ph.D.
   if (/\b(intern|internship|200|project|b\.?tech|m\.?tech|ph\.?d|student|thesis|proposal)\b/i.test(q)) {
     return {
       text: `${opener}GARRF supports **B.Tech, M.Tech, and Ph.D. students** with free access to **330+ virtual experiments** on Kalam Zero Lab, structured **200-hour global-standard projects** (mentored by **AI Maa**), and research internships across SHM, AI, Robotics, Civil, and Electronics.\n\nShare your branch, year, and topic here—our team will review it and reply!`,
@@ -2463,7 +2484,6 @@ function buildSensibleSmartReply(staff, visitorName, query) {
     };
   }
 
-  // 8. SHM / PZT / EMI / 3D Solver / FFT / Lamb Waves
   if (/\b(shm|pzt|emi|impedance|lamb|3d|fft|crack|strain|burj|rms|mapd|sensor)\b/i.test(q)) {
     return {
       text: `${opener}In **Structural Health Monitoring (SHM)**, GARRF provides interactive simulators for **Fundamental PZT EMI signatures**, the **3D EMI Solver (NTU Singapore)**, **IISc/IIT-level Advanced EMI**, **Masters SHM Suite**, **Complete FFT Signal Suite**, and **Burj Khalifa EMI SHM**—all running directly in your browser at ₹0 cost.`,
@@ -2471,7 +2491,6 @@ function buildSensibleSmartReply(staff, visitorName, query) {
     };
   }
 
-  // 9. Robotics / Humanoids / Arduino / Drone / Kids 20 Robots
   if (/\b(robot|humanoid|arduino|pid|drone|chitti|servo|fanuc|kids|20 robot|charan)\b/i.test(q)) {
     return {
       text: `${opener}Jump straight into GARRF's **Robotics & Humanoid Labs**: test the **World's First EMI Clinic for Humanoids**, build circuits in **Arduino Robotics Studio**, tune **PID controllers**, fly the **Virtual Drone Club**, or explore **Kids World: 20 Robots Club**!`,
@@ -2479,7 +2498,6 @@ function buildSensibleSmartReply(staff, visitorName, query) {
     };
   }
 
-  // 10. Quantum AI / Krishna / God Particle
   if (/\b(quantum|krishna|emr|god particle|road estimator)\b/i.test(q)) {
     return {
       text: `${opener}Explore **Krishna Meets Quantum AI**, **Quantum AI + EMI**, **Quantum AI + EMR**, the **God Particle Simulator**, and the **Quantum AI Road Estimator** inside Kalam Zero Lab using the links below:`,
@@ -2487,7 +2505,6 @@ function buildSensibleSmartReply(staff, visitorName, query) {
     };
   }
 
-  // 11. Electronics / Semiconductor / Civil / Mechanical / Agri
   if (/\b(electronic|semiconductor|circuit|chamundi|civil|beam|brick|utm|mechanical|agri|crop|yield)\b/i.test(q)) {
     const bundle = /\b(civil|beam|brick|utm|mechanical)\b/i.test(q) ? LINK_BUNDLES.civil : LINK_BUNDLES.electronics;
     return {
@@ -2496,7 +2513,6 @@ function buildSensibleSmartReply(staff, visitorName, query) {
     };
   }
 
-  // 12. Appointment / Live Faculty Follow-up / General Specific Question
   return {
     text: `${opener}I've received your question as **${staff.name}** (${staff.shortRole}) and logged it for our GARRF team.\n\nWhile a faculty coordinator reviews any custom follow-up (tap **🔄 Check Reply** anytime), you can immediately explore our **330+ free virtual laboratories**, **research tools**, or request a **free Virtual Lab password** using the links below:`,
     links: LINK_BUNDLES[staff.linkBundle] || LINK_BUNDLES.general
@@ -2560,7 +2576,7 @@ function updateVisitorBadge() {
 updateVisitorBadge();
 
 // ============================================================
-// 6. STRICTLY ENGLISH / INDIAN ENGLISH VOICE ENGINE
+// 6. SWEET, WARM INDIAN ENGLISH VOICE ENGINE + SOFT CHIME
 // ============================================================
 let availableVoices = [];
 function loadVoices() {
@@ -2576,35 +2592,63 @@ function normLang(lang) {
   return String(lang || "").replace(/_/g, "-").toLowerCase();
 }
 
-function scoreEnglishVoice(v, staff) {
+function playSoftIndianChime(isFemale = true) {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const now = ctx.currentTime;
+    // Gentle Sa - Pa / melodic Indian warm bell tones
+    const notes = isFemale ? [523.25, 659.25, 783.99] : [392.0, 493.88, 587.33];
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(freq, now + i * 0.08);
+      gain.gain.setValueAtTime(0.0001, now + i * 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.035, now + i * 0.08 + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.08 + 0.36);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + i * 0.08);
+      osc.stop(now + i * 0.08 + 0.4);
+    });
+    setTimeout(() => { ctx.close().catch(() => {}); }, 800);
+  } catch (_) {}
+}
+
+function scoreSweetIndianVoice(v, staff) {
   const name = v.name.toLowerCase();
   const lang = normLang(v.lang);
   let score = 0;
 
-  if (name.includes("natural") || name.includes("online") || name.includes("neural")) score += 35;
-  if (name.includes("google")) score += 25;
+  if (name.includes("natural") || name.includes("online") || name.includes("neural")) score += 45;
+  if (name.includes("google")) score += 30;
 
-  if (lang.startsWith(staff.voiceLang.toLowerCase())) score += 40;
-  else if (lang.startsWith("en-in")) score += 35;
-  else if (lang.startsWith("en-sg") || lang.startsWith("en-gb")) score += 20;
-  else if (lang.startsWith("en-au") || lang.startsWith("en-us")) score += 10;
+  // Strongly favor Indian English, then Commonwealth/Singapore/UK English for natural warm cadence
+  if (lang.startsWith("en-in")) score += 55;
+  else if (lang.startsWith(staff.voiceLang.toLowerCase())) score += 42;
+  else if (lang.startsWith("en-sg") || lang.startsWith("en-gb")) score += 28;
+  else if (lang.startsWith("en-au") || lang.startsWith("en-nz")) score += 16;
+  else if (lang.startsWith("en-us")) score += 4;
 
-  const femaleKeywords = ["neerja", "heera", "aditi", "raveena", "veena", "lekha", "aria", "jenny", "sonia", "libby", "samantha", "karen", "female", "woman", "en-in-x-enc", "en-in-x-ene"];
-  const maleKeywords = ["prabhat", "ravi", "ryan", "george", "daniel", "male", "en-in-x-end", "en-in-x-ena"];
+  const sweetFemaleNames = ["neerja", "heera", "aditi", "raveena", "veena", "lekha", "priya", "kavya", "ananya", "aria", "sonia", "libby", "samantha", "female", "woman", "en-in-x-enc", "en-in-x-ene"];
+  const warmMaleNames = ["prabhat", "ravi", "arjun", "vikram", "ryan", "george", "daniel", "male", "en-in-x-end", "en-in-x-ena"];
 
   if (staff.voiceGender === "female") {
-    if (femaleKeywords.some(k => name.includes(k))) score += 25;
-    if (maleKeywords.some(k => name.includes(k))) score -= 25;
+    if (sweetFemaleNames.some(k => name.includes(k))) score += 35;
+    if (warmMaleNames.some(k => name.includes(k))) score -= 35;
   } else {
-    if (maleKeywords.some(k => name.includes(k))) score += 25;
-    if (femaleKeywords.some(k => name.includes(k))) score -= 25;
+    if (warmMaleNames.some(k => name.includes(k))) score += 35;
+    if (sweetFemaleNames.some(k => name.includes(k))) score -= 35;
   }
 
-  if (name.includes("david") || name.includes("mark") || name.includes("zira")) score -= 12;
+  // Penalize harsh/robotic desktop defaults
+  if (name.includes("david") || name.includes("mark") || name.includes("zira") || name.includes("espeak")) score -= 25;
   return score;
 }
 
-function pickNaturalEnglishVoice(staff) {
+function pickSweetEnglishVoice(staff) {
   if (!availableVoices.length) loadVoices();
   if (!availableVoices.length) return null;
 
@@ -2614,18 +2658,22 @@ function pickNaturalEnglishVoice(staff) {
   });
   if (!englishVoices.length) return null;
 
-  let pool = englishVoices.filter(v => normLang(v.lang).startsWith(staff.voiceLang.toLowerCase()));
-  if (!pool.length) pool = englishVoices.filter(v => normLang(v.lang).startsWith("en-in"));
+  let pool = englishVoices.filter(v => normLang(v.lang).startsWith("en-in"));
+  if (!pool.length) pool = englishVoices.filter(v => normLang(v.lang).startsWith(staff.voiceLang.toLowerCase()));
+  if (!pool.length) pool = englishVoices.filter(v => /^(en-gb|en-sg|en-au)/.test(normLang(v.lang)));
   if (!pool.length) pool = englishVoices;
 
-  const sorted = [...pool].sort((a, b) => scoreEnglishVoice(b, staff) - scoreEnglishVoice(a, staff));
+  const sorted = [...pool].sort((a, b) => scoreSweetIndianVoice(b, staff) - scoreSweetIndianVoice(a, staff));
   return sorted[0];
 }
 
 let activePlayingEl = null;
+let stopSpeechSequence = false;
+
 function speakOnClick(text, staff, vnBoxEl = null) {
   if (!("speechSynthesis" in window)) return;
   const wasSamePlaying = vnBoxEl && vnBoxEl.classList.contains("playing");
+  stopSpeechSequence = true;
   window.speechSynthesis.cancel();
   if (activePlayingEl) {
     activePlayingEl.classList.remove("playing");
@@ -2634,17 +2682,18 @@ function speakOnClick(text, staff, vnBoxEl = null) {
   }
   if (wasSamePlaying) { activePlayingEl = null; return; }
 
-  const clean = text.replace(/https?:\/\/\S+/g, "").replace(/[*_#`]/g, "");
-  const utter = new SpeechSynthesisUtterance(clean);
-  const chosen = pickNaturalEnglishVoice(staff);
-  if (chosen) {
-    utter.voice = chosen;
-    utter.lang = normLang(chosen.lang).startsWith("en") ? chosen.lang.replace(/_/g, "-") : "en-IN";
-  } else {
-    utter.lang = "en-IN";
-  }
-  utter.pitch = staff.voiceGender === "female" ? 1.03 : 0.99;
-  utter.rate = 0.98;
+  const clean = text
+    .replace(/https?:\/\/\S+/g, "")
+    .replace(/[*_#`⏳🔒🔐📞🌿•]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!clean) return;
+
+  // Split into natural breathing phrases so speech sounds warm, unhurried, and human
+  const phrases = clean
+    .split(/(?<=[.!?])\s+|(?<=,\s+)/)
+    .map(s => s.trim())
+    .filter(Boolean);
 
   if (vnBoxEl) {
     vnBoxEl.classList.add("playing");
@@ -2652,6 +2701,11 @@ function speakOnClick(text, staff, vnBoxEl = null) {
     if (btn) btn.textContent = "⏹";
     activePlayingEl = vnBoxEl;
   }
+
+  playSoftIndianChime(staff.voiceGender === "female");
+  stopSpeechSequence = false;
+
+  const chosen = pickSweetEnglishVoice(staff);
   const cleanup = () => {
     if (vnBoxEl) {
       vnBoxEl.classList.remove("playing");
@@ -2660,9 +2714,37 @@ function speakOnClick(text, staff, vnBoxEl = null) {
     }
     if (activePlayingEl === vnBoxEl) activePlayingEl = null;
   };
-  utter.onend = cleanup;
-  utter.onerror = cleanup;
-  window.speechSynthesis.speak(utter);
+
+  let idx = 0;
+  const speakNextPhrase = () => {
+    if (stopSpeechSequence || idx >= phrases.length) {
+      cleanup();
+      return;
+    }
+    const utter = new SpeechSynthesisUtterance(phrases[idx++]);
+    if (chosen) {
+      utter.voice = chosen;
+      utter.lang = normLang(chosen.lang).startsWith("en") ? chosen.lang.replace(/_/g, "-") : "en-IN";
+    } else {
+      utter.lang = "en-IN";
+    }
+    // Gentle, pleasant Indian cadence
+    utter.pitch = staff.voiceGender === "female" ? 1.05 : 0.96;
+    utter.rate = 0.93;
+    utter.volume = 0.96;
+
+    utter.onend = () => {
+      if (stopSpeechSequence) { cleanup(); return; }
+      setTimeout(speakNextPhrase, 95);
+    };
+    utter.onerror = () => {
+      if (stopSpeechSequence) { cleanup(); return; }
+      speakNextPhrase();
+    };
+    window.speechSynthesis.speak(utter);
+  };
+
+  setTimeout(speakNextPhrase, 180);
 }
 
 // ============================================================
@@ -2685,6 +2767,7 @@ async function workerDial(staff) {
 }
 
 async function workerChat(staff, text) {
+  if (isUpcomingStaff(staff)) return;
   hasSentChatInSession = true;
   safeSet(sessionStorage, "wg_has_chatted", "1");
   lastActivityTs = Date.now();
@@ -2725,15 +2808,18 @@ async function pollWorkerReplies(forceManual = false) {
       added = true;
       lastActivityTs = Date.now();
 
-      const targetDesk = STAFF_DIRECTORY.some(s => s.id === m.desk) ? m.desk : activeStaffId;
-      const staff = STAFF_DIRECTORY.find(s => s.id === targetDesk) || STAFF_DIRECTORY[0];
-      ensureWelcome(staff);
+      const candidateDesk = STAFF_DIRECTORY.some(s => s.id === m.desk) ? m.desk : activeStaffId;
+      const staff = STAFF_DIRECTORY.find(s => s.id === candidateDesk) || STAFF_DIRECTORY[0];
+      const targetDesk = isUpcomingStaff(staff) ? "prakruthi" : candidateDesk;
+      const destStaff = STAFF_DIRECTORY.find(s => s.id === targetDesk) || STAFF_DIRECTORY[0];
+
+      ensureWelcome(destStaff);
       if (targetDesk !== activeStaffId) {
         unreadCounts[targetDesk] = (unreadCounts[targetDesk] || 0) + 1;
       }
       appendMessage(targetDesk, {
         dir: "in",
-        sender: `${staff.name} • Live Reply`,
+        sender: `${destStaff.name} • Live Reply`,
         text: m.text,
         liveReply: true,
         highlightNew: true
@@ -2811,24 +2897,24 @@ function renderDirectory() {
   contactListEl.innerHTML = "";
 
   for (const staff of filtered) {
-    const isUpcoming = staff.categories.includes("upcoming");
+    const upcoming = isUpcomingStaff(staff);
     const unread = unreadCounts[staff.id] || 0;
     const div = document.createElement("div");
-    div.className = `contact-item ${staff.id === activeStaffId ? "active" : ""}`;
+    div.className = `contact-item ${staff.id === activeStaffId ? "active" : ""} ${upcoming ? "upcoming-contact" : ""}`;
     div.innerHTML = `
       <div class="avatar" style="background:${staff.gradient}">
         ${staff.initial}
-        <span class="status-dot ${isUpcoming ? "upcoming" : ""}"></span>
+        <span class="status-dot ${upcoming ? "upcoming" : ""}"></span>
       </div>
       <div class="contact-meta">
         <div class="contact-top">
-          <span class="contact-name">${staff.name}${unread ? `<span class="unread-pill">${unread}</span>` : ""}</span>
-          <span class="contact-badge ${isUpcoming ? "upcoming" : ""}">${staff.status}</span>
+          <span class="contact-name">${staff.name}${unread && !upcoming ? `<span class="unread-pill">${unread}</span>` : ""}</span>
+          <span class="contact-badge ${upcoming ? "upcoming" : ""}">${upcoming ? "Coming Soon • Chat Off" : staff.status}</span>
         </div>
         <div class="contact-role">${staff.shortRole}</div>
         <div class="contact-phone-row">
           <span class="contact-phone">${staff.phone}</span>
-          <span class="contact-dept">${staff.deptLabel}</span>
+          <span class="contact-dept">${upcoming ? "Not Joined Yet" : staff.deptLabel}</span>
         </div>
       </div>
     `;
@@ -2898,8 +2984,8 @@ function renderMessages() {
         const greenCls = (l.specialGreen || isSpecialUrl(l.url, l.label)) ? " special-green-box" : "";
         return `<a class="explore-link-row${greenCls}" href="${l.url}" target="_blank" rel="noopener">🔗 ${l.label} ↗</a>`;
       }).join("");
-      const showHumanoidClinicBox = staff.id === "chitti" || staff.id === "charandas" || staff.id === "semilab" ||
-        /humanoid|emi clinic|kids|drone|robot|shm|master/i.test(m.text || "");
+      const showHumanoidClinicBox = !isUpcomingStaff(staff) && (staff.id === "chitti" || staff.id === "charandas" || staff.id === "semilab" ||
+        /humanoid|emi clinic|kids|drone|robot|shm|master/i.test(m.text || ""));
       const clinicNote = showHumanoidClinicBox
         ? `<div class="special-green-callout">🌿 <strong>World's First EMI Clinic for Humanoids &amp; Special Labs:</strong> <a href="https://garrf.in/kalam-zero-lab/humanoid_worldfirstemi.html" target="_blank" rel="noopener">Open EMI Clinic for Humanoids ↗</a> • Kids World, Drones, Robots, EMI SHM &amp; Master SHM Suite</div>`
         : "";
@@ -2942,18 +3028,43 @@ function renderMessages() {
   });
 }
 
+function syncUpcomingChatState(staff) {
+  const chatPaneEl = document.querySelector(".chat-pane");
+  const noticeBar = document.getElementById("upcomingNoticeBar");
+  const msgInputEl = document.getElementById("msgInput");
+  const sendBtnEl = document.querySelector(".send-btn");
+  const micBtnEl = document.getElementById("micBtn");
+  const upcoming = isUpcomingStaff(staff);
+
+  if (chatPaneEl) chatPaneEl.classList.toggle("upcoming-disabled", upcoming);
+  if (noticeBar) noticeBar.style.display = upcoming ? "block" : "none";
+
+  if (upcoming) {
+    if (msgInputEl) {
+      msgInputEl.disabled = true;
+      msgInputEl.placeholder = `⏳ ${staff.name} has not joined yet — chat disabled`;
+    }
+    if (sendBtnEl) sendBtnEl.disabled = true;
+    if (micBtnEl) micBtnEl.disabled = true;
+  } else {
+    syncChatLockState();
+  }
+}
+
 function selectStaff(id, openMobile = false) {
   activeStaffId = id;
   unreadCounts[id] = 0;
   const staff = STAFF_DIRECTORY.find(s => s.id === id);
   ensureWelcome(staff);
 
-  const isUpcoming = staff.categories.includes("upcoming");
+  const upcoming = isUpcomingStaff(staff);
   const hdrAv = document.getElementById("hdrAvatar");
-  hdrAv.innerHTML = `${staff.initial}<span class="status-dot ${isUpcoming ? "upcoming" : ""}"></span>`;
+  hdrAv.innerHTML = `${staff.initial}<span class="status-dot ${upcoming ? "upcoming" : ""}"></span>`;
   hdrAv.style.background = staff.gradient;
   document.getElementById("hdrName").textContent = staff.name;
-  document.getElementById("hdrRole").textContent = `${staff.deptLabel} • ${staff.shortRole} • ${staff.phone}`;
+  document.getElementById("hdrRole").textContent = upcoming
+    ? `${staff.deptLabel} • Not Joined Yet • ${staff.phone}`
+    : `${staff.deptLabel} • ${staff.shortRole} • ${staff.phone}`;
   document.getElementById("hdrLabLink").href = staff.labUrl;
 
   document.getElementById("callPrakruthiBtn").textContent =
@@ -2965,10 +3076,18 @@ function selectStaff(id, openMobile = false) {
     btn.type = "button";
     btn.className = "chip";
     btn.textContent = q;
-    btn.onclick = () => handleUserSend(q);
+    btn.disabled = upcoming;
+    btn.onclick = () => {
+      if (upcoming) {
+        showToast(`⏳ ${staff.name} has not joined yet. Chat is disabled.`);
+        return;
+      }
+      handleUserSend(q);
+    };
     quickChipsEl.appendChild(btn);
   });
 
+  syncUpcomingChatState(staff);
   renderDirectory();
   renderMessages();
   if (openMobile) appEl.classList.add("mobile-chat-open");
@@ -2977,6 +3096,13 @@ function selectStaff(id, openMobile = false) {
 function handleUserSend(text) {
   const clean = text.trim();
   if (!clean) return;
+
+  const targetStaffId = activeStaffId;
+  const staff = STAFF_DIRECTORY.find(s => s.id === targetStaffId);
+  if (isUpcomingStaff(staff)) {
+    showToast(`⏳ ${staff.name} has not joined yet — chat is disabled for Coming Soon contacts.`);
+    return;
+  }
 
   if (!isProfileFilled()) {
     pendingMessageToSend = clean;
@@ -2994,15 +3120,12 @@ function handleUserSend(text) {
     return;
   }
 
-  const targetStaffId = activeStaffId;
-  const staff = STAFF_DIRECTORY.find(s => s.id === targetStaffId);
   appendMessage(targetStaffId, { dir: "out", sender: VISITOR_NAME, text: clean });
   workerChat(staff, clean);
 
   const kbReply = buildKnowledgeBaseReply(staff, VISITOR_NAME, clean);
   const reply = kbReply || buildSensibleSmartReply(staff, VISITOR_NAME, clean);
 
-  // Brief natural beat so user sees their sent message, then reply rises from bottom up in a green box
   setTimeout(() => {
     appendMessage(targetStaffId, {
       dir: "in",
@@ -3018,6 +3141,11 @@ function handleUserSend(text) {
 // 9. END & WIPE CONFIDENTIAL CHAT + MANUAL CHECK REPLY
 // ============================================================
 document.getElementById("manualCheckBtn").onclick = async () => {
+  const staff = STAFF_DIRECTORY.find(s => s.id === activeStaffId);
+  if (isUpcomingStaff(staff)) {
+    showToast(`⏳ ${staff.name} has not joined yet.`);
+    return;
+  }
   if (!hasSentChatInSession) {
     showToast("Send a message first, then tap Check Reply anytime.");
     return;
@@ -3033,6 +3161,7 @@ document.getElementById("endWipeBtn").onclick = async () => {
     return;
   }
   if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; }
+  stopSpeechSequence = true;
   if ("speechSynthesis" in window) window.speechSynthesis.cancel();
 
   const oldSessionId = SESSION_ID;
@@ -3111,6 +3240,9 @@ function saveVisitorCard() {
   profileModal.classList.remove("open");
 
   syncChatLockState();
+  const currentStaff = STAFF_DIRECTORY.find(s => s.id === activeStaffId);
+  if (currentStaff) syncUpcomingChatState(currentStaff);
+
   if (!isEmailVerifiedSession()) {
     showToast(`Card saved for ${VISITOR_NAME}. Please verify your email to unlock chat.`);
     openEmailOtpModal(() => {
@@ -3239,7 +3371,7 @@ const KEY_PROMPTS = {
   "5": "Visitor Desk: Welcome to GARRF! Explore all 5 divisions and White Papers at https://garrf.in/ .",
   "6": "Industry Partner Desk: Connect via https://www.linkedin.com/company/gopalkrishnaadvancedruralresearchfoundation/ or venuannamdas1976@gmail.com .",
   "7": "Virtual Lab Password Request: Enter your Name, Email & Virtual Lab Name below and tap Submit Request to get your free password for GARRF.in laboratories.",
-  "8": "GARRF Staff Directory: Chat freely with all 26 Teaching & Non-Teaching AI Staff right inside WhatsGARRF (no password required to chat).",
+  "8": "GARRF Staff Directory: Chat freely with all active Teaching & Non-Teaching AI Staff right inside WhatsGARRF (no password required to chat).",
   "9": "Main Menu: 1 Student, 2 Faculty, 3 Freelancer, 4 Founder, 5 Visitor, 6 Industry, 7 Virtual Lab Password, 8 Staff."
 };
 
@@ -3249,6 +3381,7 @@ function openPrakruthiCallModal() {
 }
 document.getElementById("callPrakruthiBtn").onclick = openPrakruthiCallModal;
 document.getElementById("closeCallModal").onclick = () => {
+  stopSpeechSequence = true;
   if ("speechSynthesis" in window) window.speechSynthesis.cancel();
   callModal.classList.remove("open");
 };
@@ -3497,6 +3630,8 @@ verifyOtpBtn.onclick = async () => {
 
       updateVisitorBadge();
       syncChatLockState();
+      const currentStaff = STAFF_DIRECTORY.find(s => s.id === activeStaffId);
+      if (currentStaff) syncUpcomingChatState(currentStaff);
       emailOtpModal.classList.remove("open");
       showToast(`✅ Email ${VERIFIED_EMAIL} verified!`);
 
@@ -3534,6 +3669,8 @@ const urlBot = new URLSearchParams(location.search).get("bot");
 const initialBot = STAFF_DIRECTORY.some(s => s.id === urlBot) ? urlBot : "prakruthi";
 selectStaff(initialBot, false);
 syncChatLockState();
+const bootStaff = STAFF_DIRECTORY.find(s => s.id === initialBot);
+if (bootStaff) syncUpcomingChatState(bootStaff);
 </script>
 </body>
 </html>
