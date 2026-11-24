@@ -1906,16 +1906,56 @@ async function answerQuestion(q,inClass){
    else throw new Error('No active GARRF Worker URL or Gemini Search configuration is available. Use Founder’s Access or Teachers’ Access.');
   }catch(err){const failed='Online research could not be completed: '+err.message+'. I have not invented an answer.';if(inClass){$('ocQABody').innerHTML='<div style="white-space:pre-wrap">'+esc(failed)+'</div>';setTeacherState('idle')}else $('bStep').innerHTML='<div class="sbody">'+esc(failed)+'</div>';if(!hasEvidence||comparisonEvidenceMissing)return;}
  }
- if(onlineResults.length){
-  const onlineAudit=await auditRetrievedEvidence(q,task,onlineResults.map(r=>({c:{docTitle:r.title,p:r.url||'online',sec:'Online research',text:r.snippet}})),'online_search_results');
-  if(!onlineAudit.ok||!onlineAudit.sufficient){
-   const msg='Online search returned candidate results, but the independent evidence audit could not verify that they answer the question. I will not present an unsupported answer.\\n\\n'+(onlineAudit.reason||'Insufficient verified online evidence.')+
-    ((onlineAudit.missing||[]).length?'\\n\\nStill missing: '+onlineAudit.missing.join('; '):'');
-   showEvidenceGap(q,inClass,msg);return;
+let onlineAuditStatus = "not_run";
+
+ if (onlineResults.length) {
+  const onlineAudit = await auditRetrievedEvidence(
+    q,
+    task,
+    onlineResults.map(r => ({
+      c: {
+        docTitle: r.title,
+        p: r.url || "online",
+        sec: "Online research",
+        text: r.snippet
+      }
+    })),
+    "online_search_results"
+  );
+
+  if (!onlineAudit.ok || !onlineAudit.sufficient) {
+    onlineAuditStatus = "FAILED";
+
+    // IMPORTANT:
+    // Keep candidate results. Do not suppress the answer.
+    sourceContext +=
+      "\n\nUNVERIFIED ONLINE SEARCH RESULTS:\n" +
+      onlineResults.map((r, i) =>
+        `[CANDIDATE ${i + 1}] ${r.title}\n` +
+        `Snippet: ${r.snippet}\n` +
+        `URL: ${r.url}`
+      ).join("\n\n") +
+      "\n\nWARNING: These search results did NOT pass " +
+      "the independent evidence audit. Treat them as " +
+      "leads, not verified facts. Assess source quality, " +
+      "identify uncertainty, and do not invent missing facts.";
+
+  } else {
+    onlineAuditStatus = "PASSED";
+
+    const accepted = onlineAudit.accepted_ids
+      .map(id => onlineResults[id - 1])
+      .filter(Boolean);
+
+    onlineResults = accepted;
+
+    sourceContext +=
+      "\n\nONLINE SEARCH RESULTS (AUDIT PASSED):\n" +
+      onlineResults.map((r, i) =>
+        `[AUDITED ONLINE ${i + 1}] ${r.title}\n` +
+        `${r.snippet}\nURL: ${r.url}`
+      ).join("\n\n");
   }
-  const accepted=onlineAudit.accepted_ids.map(id=>onlineResults[id-1]).filter(Boolean);
-  onlineResults=accepted;
-  sourceContext+='\\n\\nONLINE SEARCH RESULTS (independently audited; not uploaded course material):\\n'+onlineResults.map((r,i)=>`[AUDITED ONLINE ${i+1}] ${r.title}\\n${r.snippet}\\nURL: ${r.url}`).join('\\n\\n')+'\\nOnly these accepted external results may support online claims.';
  }
  if(useGeminiSearch){
   const research=await callBestAI({
@@ -1929,13 +1969,38 @@ async function answerQuestion(q,inClass){
    showEvidenceGap(q,inClass,'Google Search grounding did not return research material. No answer has been generated. Check the Gemini configuration or configure the GARRF Search Worker.');
    return;
   }
-  const groundedAudit=await auditRetrievedEvidence(q,task,[{c:{docTitle:'Gemini Google Search grounded research',p:'grounded web sources',sec:'External research',text:research.text}}],'gemini_google_search_grounding');
-  if(!groundedAudit.ok||!groundedAudit.sufficient){
-   showEvidenceGap(q,inClass,'Google Search returned material, but the independent evidence auditor could not verify that it answers the question.\\n\\n'+(groundedAudit.reason||'Insufficient grounded evidence.'));
-   return;
+  const groundedAudit = await auditRetrievedEvidence(
+    q,
+    task,
+    [{
+      c: {
+        docTitle: "Gemini Google Search grounded research",
+        p: "grounded web sources",
+        sec: "External research",
+        text: research.text
+      }
+    }],
+    "gemini_google_search_grounding"
+  );
+
+  if (!groundedAudit.ok || !groundedAudit.sufficient) {
+    onlineAuditStatus = "FAILED";
+
+    sourceContext +=
+      "\n\nUNVERIFIED GEMINI GOOGLE SEARCH RESEARCH:\n" +
+      research.text +
+      "\n\nWARNING: Independent evidence audit failed. " +
+      "This research has not been independently verified. " +
+      "Use it cautiously and identify unsupported claims.";
+  } else {
+    onlineAuditStatus = "PASSED";
+
+    sourceContext +=
+      "\n\nGEMINI GOOGLE SEARCH RESEARCH (AUDIT PASSED):\n" +
+      research.text;
   }
-  sourceContext+='\\n\\nONLINE RESEARCH — GOOGLE SEARCH GROUNDING (permission granted; independently audited):\\n'+research.text;
-  useGeminiSearch=false;
+
+  useGeminiSearch = false;
  }
  const taskInstructions={
   compare:'COMPARATIVE RESEARCH MODE. Build a side-by-side evidence matrix. Identify each person’s verified papers, role (author/co-author/acknowledged person/cited researcher), research problem, method, instrumentation/materials, experiments, results, contribution and limitations. For every cell cite document and page. Do not treat acknowledgements as research contributions. Do not assume the same-name person is the same individual. If evidence for either person is missing, mark NOT ESTABLISHED and do not force a comparison. End with a balanced synthesis and evidence gaps.',
@@ -1957,10 +2022,48 @@ let visualBlock=null,visualImages=[];
   visualBlock=(list||[]).find(x=>num&&String(x.n||'').includes(num))||(list||[]).find(x=>{const z=(x.text||x.caption||'').toLowerCase();return toks(q).some(t=>t.length>3&&z.includes(t))})||(list||[])[0]||null;
   if(visualBlock){try{const crop=await smartMediaCrop(visualBlock);if(crop)visualImages.push(crop)}catch(e){}}
  }
-  const promptTask=(taskInstructions[task.type]||taskInstructions.explain)+'\\nMANDATORY EVIDENCE GATE: Only the passages explicitly marked VERIFIED EVIDENCE have passed an independent AI evidence audit. Use only those passages for claims attributed to uploaded materials. Do not use rejected or unaudited passages. If verified evidence does not cover every essential part of the question, state the precise gap and do not fill it with guesses. Acknowledgements, thanks, references, citations, author lists and incidental name matches do not establish research contribution. For comparisons, attribute each contribution only where direct evidence supports it. Clearly label any general explanation separately from uploaded-source facts. Use online sources only after the student grants permission. Format equations in LaTeX, tables in Markdown, and references consistently.';
+ const promptTask =
+  (taskInstructions[task.type] || taskInstructions.explain) +
+  '\n\nEVIDENCE AND TRANSPARENCY POLICY:' +
+  '\n1. Use uploaded material that passed the independent audit as verified repository evidence.' +
+  '\n2. Online search results that failed or did not complete the audit may still be used as candidate leads.' +
+  '\n3. Never describe unaudited candidate results as verified facts.' +
+  '\n4. Prefer claims supported by identifiable source URLs.' +
+  '\n5. Distinguish confirmed information, plausible information and unknown information.' +
+  '\n6. If sources disagree, explain the disagreement.' +
+  '\n7. Do not invent names, dates, positions, publications, calculations or citations.' +
+  '\n8. If evidence is incomplete, provide the useful answer that can responsibly be given and explicitly state its limitations.' +
+  '\n9. A failed audit is not proof that an answer is false, but it must never be represented as a successful audit.' +
+  '\n10. Clearly distinguish uploaded-source facts from external research.' +
+  '\nFormat equations in LaTeX, tables in Markdown, and references consistently.';
  let res=await callBestAI({mode:'qa',level:OC.mode||'ug',indianStyle:inClass?OC.indianStyle:true,enrichMode:'strict',question:q,slideTitle:OC.slides?.[OC.idx]?.title||S.doc?.title||'Course Knowledge Base',context:sourceContext||'No sufficiently relevant uploaded source material was found.',images:visualImages,allowWebSearch:useGeminiSearch,taskDescription:promptTask+' Answer the exact student request with structured, evidence-led reasoning.'});
  let ans=res&&res.text?res.text:((hasEvidence)?verifiedHits.slice(0,5).map(h=>`(${h.c.docTitle}, p.${h.c.p}) ${plainify(h.c.text)}`).join('\n\n'):'The uploaded repository does not contain sufficient direct evidence to answer this question.');
- if(onlineResults.length){const citations=onlineResults.filter(r=>r.url).map(r=>`${r.title}: ${r.url}`).join('\n');if(citations)ans+='\n\nOnline sources checked:\n'+citations}
+ if (onlineResults.length) {
+  const citations = onlineResults
+    .filter(r => r.url)
+    .map(r => `${r.title}: ${r.url}`)
+    .join("\n");
+
+  if (citations) {
+    ans += "\n\nOnline sources checked:\n" + citations;
+  }
+ }
+
+ if (onlineAuditStatus === "FAILED") {
+  ans +=
+    "\n\n⚠️ GARRF INDEPENDENT EVIDENCE AUDIT FAILED\n\n" +
+    "The available search results did not pass independent " +
+    "evidence verification, or the audit could not be completed. " +
+    "The answer above is provided for your consideration, " +
+    "not as independently verified information.\n\n" +
+    "Please review the source links and decide whether you " +
+    "wish to accept this result.";
+ } else if (onlineAuditStatus === "PASSED") {
+  ans +=
+    "\n\n✓ GARRF INDEPENDENT EVIDENCE AUDIT PASSED\n\n" +
+    "The independent audit accepted the candidate evidence. " +
+    "Please consult the cited sources for details.";
+ }
  if(!hasEvidence&& (onlineResults.length||useGeminiSearch))ans='ONLINE RESEARCH (permission granted)\n\n'+ans;
  if(inClass){setTeacherPose('open');$('ocQABody').innerHTML='<div style="white-space:pre-wrap">'+esc(ans)+'</div>';if(visualBlock){try{const im=visualImages[0]||await smartMediaCrop(visualBlock);if(im)$('ocQABody').innerHTML+='<div style="margin-top:10px"><b>Source '+task.type+' · p.'+esc(visualBlock.page||'?')+'</b><br><img alt="Retrieved source '+task.type+'" src="'+im+'" style="max-width:100%;max-height:420px;object-fit:contain;background:#fff;border:1px solid #64748b;border-radius:6px"></div>'}catch(e){}}renderMathIn($('ocQABody'));$('ocQAResume').dataset.wasAuto=wasAuto?'1':'0';speakPhrases(ans)}else if(LIB.length&&S.doc){if(visualBlock){try{const built=await buildStepsForBlock(visualBlock);if(built&&built.steps){built.steps.push({text:ans,say:ans});openTarget(built)}else showQuestionAnswer(q,ans,false)}catch(e){showQuestionAnswer(q,ans,false)}}else showQuestionAnswer(q,ans,false)}else{$('bTitle').textContent='Answer: '+q;$('bStep').innerHTML='<div class="sbody" style="white-space:pre-wrap">'+esc(ans)+'</div>';renderMathIn($('bStep'))}
  QA_HISTORY.push({q,a:ans,time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),task:task.type});
