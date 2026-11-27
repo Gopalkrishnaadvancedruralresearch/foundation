@@ -1,0 +1,3373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0b1528" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="GARRF AI Companion" />
+<link id="dynamicFavicon" rel="icon" type="image/png" />
+<link id="dynamicAppleIcon" rel="apple-touch-icon" />
+<link id="pwaManifestLink" rel="manifest" />
+<title>GARRF Personal AI Companion & Buddy</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&family=Nunito:wght@600;800&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-gradient: radial-gradient(circle at center, #111d33 0%, #060a12 100%);
+    --cyan-glow: #00f0ff;
+    --cyan-light: #67e8f9;
+    --dock-bg: rgba(13, 23, 42, 0.92);
+    --dock-border: rgba(0, 240, 255, 0.35);
+    --btn-hover: rgba(0, 240, 255, 0.2);
+    --text-main: #f0f6fc;
+    --text-muted: #8ca3c7;
+    --card-bg: rgba(15, 23, 42, 0.96);
+  }
+
+  body.ai-mode-active {
+    --bg-gradient: radial-gradient(circle at 50% 28%, #221642 0%, #0c1228 52%, #050711 100%);
+    --cyan-glow: #fbbf24;
+    --cyan-light: #fde68a;
+    --dock-border: rgba(251, 191, 36, 0.55);
+    --btn-hover: rgba(251, 191, 36, 0.22);
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+  }
+
+  body {
+    background: var(--bg-gradient);
+    color: var(--text-main);
+    font-family: 'Nunito', sans-serif;
+    min-height: 100vh;
+    overflow-y: auto !important;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 14px 18px 28px;
+    position: relative;
+    transition: background 0.6s ease;
+  }
+
+  body.ai-mode-active::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: radial-gradient(rgba(251, 191, 36, 0.14) 1px, transparent 1px);
+    background-size: 28px 28px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  ::-webkit-scrollbar { width: 9px; }
+  ::-webkit-scrollbar-track { background: #090e18; }
+  ::-webkit-scrollbar-thumb {
+    background: #1e293b;
+    border: 1px solid var(--cyan-glow);
+    border-radius: 6px;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: var(--cyan-glow); }
+
+  #webcamVideo {
+    position: fixed;
+    top: 14px;
+    right: 14px;
+    width: 140px;
+    height: 105px;
+    border-radius: 12px;
+    border: 2px solid var(--cyan-glow);
+    object-fit: cover;
+    transform: scaleX(-1);
+    display: none;
+    z-index: 1000;
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.45);
+  }
+
+  .app-main-header {
+    width: 100%;
+    max-width: 1140px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 16px;
+    background: rgba(13, 23, 42, 0.9);
+    border: 1px solid var(--dock-border);
+    border-radius: 20px;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    margin-bottom: 10px;
+    z-index: 10;
+    gap: 10px;
+    flex-wrap: wrap;
+    transition: border-color 0.4s, box-shadow 0.4s;
+  }
+  body.ai-mode-active .app-main-header {
+    box-shadow: 0 4px 28px rgba(251, 191, 36, 0.22);
+  }
+
+  .header-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .brand-logo {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--cyan-glow);
+    box-shadow: 0 0 12px rgba(0, 240, 255, 0.45);
+  }
+
+  .brand-titles {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .org-name {
+    font-family: 'Fredoka', cursive;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    background: linear-gradient(90deg, #ffffff, #a5f3fc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .india-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 3px 9px;
+    border-radius: 12px;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #f8fafc;
+  }
+
+  .persona-active-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: linear-gradient(135deg, rgba(236, 72, 153, 0.22), rgba(56, 189, 248, 0.22));
+    border: 1px solid rgba(244, 114, 182, 0.55);
+    padding: 4px 12px;
+    border-radius: 14px;
+    font-size: 12px;
+    font-weight: 800;
+    color: #fbcfe8;
+    cursor: pointer;
+  }
+
+  .header-status-group {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .ai-mode-btn {
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.3), rgba(0, 240, 255, 0.2));
+    border: 1.5px solid #a855f7;
+    padding: 6px 13px;
+    border-radius: 22px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11.5px;
+    font-weight: 800;
+    letter-spacing: 0.6px;
+    color: #e9d5ff;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 14px rgba(168, 85, 247, 0.35);
+    font-family: 'Nunito', sans-serif;
+  }
+  .ai-mode-btn:hover { transform: translateY(-1px) scale(1.03); }
+  .ai-mode-btn.active {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    border-color: #fef08a;
+    color: #090d16;
+    box-shadow: 0 0 24px rgba(251, 191, 36, 0.75);
+  }
+
+  .header-pill-btn {
+    background: rgba(56, 189, 248, 0.14);
+    border: 1px solid rgba(56, 189, 248, 0.42);
+    color: #bae6fd;
+    padding: 6px 11px;
+    border-radius: 20px;
+    font-size: 11.5px;
+    font-weight: 800;
+    cursor: pointer;
+    font-family: 'Nunito', sans-serif;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .header-pill-btn:hover {
+    background: rgba(56, 189, 248, 0.28);
+    color: #ffffff;
+  }
+  .header-pill-btn.drive-connected {
+    background: rgba(34, 197, 94, 0.18);
+    border-color: rgba(34, 197, 94, 0.55);
+    color: #86efac;
+  }
+
+  .persona-quick-bar {
+    width: 100%;
+    max-width: 1140px;
+    background: rgba(13, 23, 42, 0.82);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 16px;
+    padding: 7px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+    z-index: 10;
+  }
+  .quick-group {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    flex-wrap: wrap;
+  }
+  .quick-label {
+    font-size: 11px;
+    font-weight: 800;
+    color: #93c5fd;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .quick-select, .quick-input {
+    background: rgba(6, 12, 24, 0.92);
+    border: 1px solid rgba(0, 240, 255, 0.35);
+    color: #f8fafc;
+    border-radius: 10px;
+    padding: 5px 9px;
+    font-size: 12px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+    outline: none;
+    user-select: text;
+  }
+  .quick-input { width: 135px; }
+
+  .bot-stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    width: 100%;
+    perspective: 1000px;
+    cursor: grab;
+    margin: 4px 0;
+    z-index: 5;
+  }
+  .bot-stage:active { cursor: grabbing; }
+
+  .bot-3d-scene {
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.08s ease-out;
+  }
+
+  .ai-halo-ring {
+    position: absolute;
+    top: 26px;
+    left: 50%;
+    transform: translateX(-50%) scale(0.8);
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    border: 2px dashed rgba(251, 191, 36, 0.55);
+    box-shadow: 0 0 50px rgba(168, 85, 247, 0.35), inset 0 0 40px rgba(251, 191, 36, 0.2);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    z-index: 0;
+  }
+  body.ai-mode-active .ai-halo-ring {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+    animation: spinHalo 16s linear infinite;
+  }
+  @keyframes spinHalo {
+    from { transform: translateX(-50%) rotate(0deg); }
+    to { transform: translateX(-50%) rotate(360deg); }
+  }
+
+  .bot-body-wrapper {
+    position: relative;
+    width: 290px;
+    height: 350px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    filter: drop-shadow(0 15px 35px rgba(0, 240, 255, 0.25));
+    transform-origin: center bottom;
+    transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.5s ease;
+    z-index: 2;
+    cursor: pointer;
+  }
+  body.ai-mode-active .bot-body-wrapper {
+    filter: drop-shadow(0 18px 42px rgba(251, 191, 36, 0.45));
+    animation: aiLevitate 3.4s ease-in-out infinite;
+  }
+  @keyframes aiLevitate {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-9px); }
+  }
+
+  .bot-body-wrapper.jumping {
+    animation: jumpAction 0.75s cubic-bezier(0.28, 0.84, 0.42, 1) !important;
+  }
+  @keyframes jumpAction {
+    0% { transform: translateY(0) scale(1, 1); }
+    25% { transform: translateY(-75px) scale(0.92, 1.08); }
+    55% { transform: translateY(-90px) scale(0.96, 1.04); }
+    80% { transform: translateY(0) scale(1.08, 0.92); }
+    100% { transform: translateY(0) scale(1, 1); }
+  }
+
+  .bot-body-wrapper.laughing {
+    animation: laughBounce 0.28s infinite alternate !important;
+  }
+  @keyframes laughBounce {
+    from { transform: translateY(0) rotate(-3deg); }
+    to { transform: translateY(-10px) rotate(3deg); }
+  }
+
+  .antenna-container {
+    display: flex;
+    justify-content: space-between;
+    width: 150px;
+    margin-bottom: -14px;
+    z-index: 1;
+  }
+  .antenna-stalk {
+    width: 7px;
+    height: 36px;
+    background: #64748b;
+    border-radius: 4px;
+    position: relative;
+  }
+  .antenna-stalk.left { transform: rotate(-28deg); transform-origin: bottom center; }
+  .antenna-stalk.right { transform: rotate(28deg); transform-origin: bottom center; }
+  .antenna-tip {
+    width: 15px;
+    height: 15px;
+    background: var(--cyan-glow);
+    border-radius: 50%;
+    position: absolute;
+    top: -8px;
+    left: -4px;
+    box-shadow: 0 0 18px var(--cyan-glow);
+    animation: tipGlow 2s infinite alternate;
+  }
+  @keyframes tipGlow {
+    from { box-shadow: 0 0 10px var(--cyan-glow); }
+    to { box-shadow: 0 0 24px var(--cyan-glow), 0 0 35px #38bdf8; }
+  }
+
+  .bot-head {
+    width: 230px;
+    height: 178px;
+    background: linear-gradient(180deg, #ffffff 0%, #e2e8f0 75%, #cbd5e1 100%);
+    border-radius: 110px 110px 95px 95px;
+    border: 5px solid #ffffff;
+    box-shadow:
+      inset 0 6px 12px rgba(255, 255, 255, 0.9),
+      inset 0 -10px 20px rgba(100, 116, 139, 0.35),
+      0 12px 30px rgba(0, 0, 0, 0.5);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    transition: transform 0.2s ease, border-color 0.4s;
+  }
+
+  .ear {
+    position: absolute;
+    top: 44px;
+    width: 20px;
+    height: 70px;
+    background: #0b1528;
+    border: 3px solid #e2e8f0;
+    border-radius: 14px;
+    box-shadow: 0 0 16px rgba(0, 240, 255, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .ear::after {
+    content: '';
+    width: 6px;
+    height: 44px;
+    background: var(--cyan-glow);
+    border-radius: 5px;
+    box-shadow: 0 0 12px var(--cyan-glow);
+  }
+  .ear.left { left: -19px; }
+  .ear.right { right: -19px; }
+
+  .bot-visor {
+    width: 182px;
+    height: 132px;
+    background: radial-gradient(circle at center, #070e1c 0%, #03060a 100%);
+    border-radius: 85px 85px 75px 75px;
+    border: 3px solid #1e293b;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: inset 0 0 35px rgba(0, 0, 0, 0.9);
+    overflow: hidden;
+  }
+
+  .visor-ai-tag {
+    position: absolute;
+    top: 7px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8.5px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.14);
+    border: 1px solid rgba(56, 189, 248, 0.45);
+    padding: 1px 8px;
+    border-radius: 8px;
+  }
+  body.ai-mode-active .visor-ai-tag {
+    color: #fbbf24;
+    background: rgba(251, 191, 36, 0.14);
+    border-color: rgba(251, 191, 36, 0.5);
+  }
+
+  .eyes-row {
+    display: flex;
+    gap: 34px;
+    align-items: center;
+    justify-content: center;
+    margin-top: 10px;
+  }
+
+  .eye-socket {
+    width: 45px;
+    height: 45px;
+    background: radial-gradient(circle, #00f0ff 0%, #0284c7 65%, #034f77 100%);
+    border-radius: 50%;
+    position: relative;
+    box-shadow: 0 0 22px rgba(0, 240, 255, 0.8), inset 0 0 8px rgba(255, 255, 255, 0.5);
+    transition: background 0.3s, transform 0.15s ease-out, box-shadow 0.3s;
+  }
+
+  .pupil {
+    width: 17px;
+    height: 17px;
+    background: #020617;
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    transition: transform 0.12s ease-out;
+  }
+
+  .glint {
+    width: 6px;
+    height: 6px;
+    background: #ffffff;
+    border-radius: 50%;
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    box-shadow: 0 0 4px #ffffff;
+  }
+
+  .bot-smile {
+    width: 32px;
+    height: 12px;
+    border-bottom: 3.5px solid var(--cyan-glow);
+    border-radius: 0 0 20px 20px;
+    margin-top: 8px;
+    box-shadow: 0 4px 10px rgba(0, 240, 255, 0.5);
+    transition: all 0.25s ease;
+  }
+  .bot-smile.big-smile {
+    width: 54px;
+    height: 22px;
+    border-bottom: 5px solid #4ade80;
+    border-radius: 0 0 32px 32px;
+    box-shadow: 0 6px 16px rgba(74, 222, 128, 0.7);
+  }
+  .bot-smile.laugh-open {
+    width: 46px;
+    height: 24px;
+    background: rgba(251, 191, 36, 0.35);
+    border: 3px solid #fbbf24;
+    border-radius: 8px 8px 26px 26px;
+  }
+
+  .bot-neck {
+    width: 40px;
+    height: 13px;
+    background: #64748b;
+    border-radius: 6px;
+    margin-top: -5px;
+    z-index: 1;
+  }
+
+  .bot-torso {
+    width: 130px;
+    height: 102px;
+    background: linear-gradient(180deg, #ffffff 0%, #cbd5e1 100%);
+    border-radius: 36px 36px 54px 54px;
+    margin-top: -3px;
+    position: relative;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border: 3px solid #ffffff;
+  }
+
+  .chest-stripe {
+    width: 50px;
+    height: 6px;
+    background: var(--cyan-glow);
+    border-radius: 4px;
+    margin-top: 15px;
+    box-shadow: 0 0 10px var(--cyan-glow);
+  }
+
+  .garrf-stomach-print {
+    margin-top: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 3px;
+    color: #032030;
+    background: rgba(0, 240, 255, 0.22);
+    border: 2px solid var(--cyan-glow);
+    padding: 3px 11px;
+    border-radius: 10px;
+    box-shadow: 0 0 12px rgba(0, 240, 255, 0.5);
+    z-index: 5;
+    pointer-events: none;
+  }
+
+  .arm {
+    position: absolute;
+    top: 16px;
+    width: 17px;
+    height: 68px;
+    background: #ffffff;
+    border-radius: 12px;
+    border: 2px solid #e2e8f0;
+    box-shadow: 0 5px 12px rgba(0,0,0,0.22);
+    transform-origin: top center;
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  .arm::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    left: 2px;
+    width: 10px;
+    height: 10px;
+    background: #cbd5e1;
+    border-radius: 50%;
+  }
+  .arm.left { left: -22px; transform: rotate(18deg); }
+  .arm.right { right: -22px; transform: rotate(-18deg); }
+  .hands-up .arm.left { transform: rotate(155deg) !important; }
+  .hands-up .arm.right { transform: rotate(-155deg) !important; }
+
+  .arm-glow {
+    position: absolute;
+    top: 22px;
+    width: 4px;
+    height: 22px;
+    background: var(--cyan-glow);
+    border-radius: 3px;
+    left: 5px;
+    box-shadow: 0 0 8px var(--cyan-glow);
+  }
+
+  .bot-feet { display: flex; gap: 30px; margin-top: -6px; }
+  .foot {
+    width: 30px;
+    height: 15px;
+    background: #475569;
+    border-top: 4px solid var(--cyan-glow);
+    border-radius: 8px 8px 12px 12px;
+    box-shadow: 0 4px 10px rgba(0, 240, 255, 0.4);
+  }
+
+  .orbit-hint {
+    font-size: 11px;
+    color: var(--text-muted);
+    background: rgba(0,0,0,0.35);
+    padding: 4px 13px;
+    border-radius: 12px;
+    margin-top: 6px;
+    pointer-events: none;
+  }
+
+  .dialogue-card-container {
+    width: 100%;
+    max-width: 780px;
+    background: rgba(13, 23, 42, 0.96);
+    border: 1px solid var(--dock-border);
+    border-radius: 16px;
+    padding: 12px 18px;
+    margin-top: 10px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .dialogue-row {
+    font-size: 13.5px;
+    line-height: 1.55;
+    word-break: break-word;
+    user-select: text;
+  }
+  .dialogue-row .q-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    color: var(--cyan-light);
+    margin-right: 6px;
+  }
+  .dialogue-row .re-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    color: #4ade80;
+    margin-right: 6px;
+  }
+  .dialogue-row.query {
+    color: #94a3b8;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+    padding-bottom: 6px;
+  }
+  .dialogue-row.reply { color: #f1f5f9; }
+
+  .action-links-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .resource-link-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(56, 189, 248, 0.16);
+    border: 1px solid rgba(56, 189, 248, 0.5);
+    color: #7dd3fc;
+    text-decoration: none;
+    padding: 5px 12px;
+    border-radius: 14px;
+    font-size: 12px;
+    font-weight: 800;
+    transition: all 0.2s;
+  }
+  .resource-link-pill:hover {
+    background: rgba(56, 189, 248, 0.32);
+    color: #ffffff;
+  }
+
+  .input-bar-container {
+    width: 100%;
+    max-width: 780px;
+    margin: 9px auto;
+    display: flex;
+    gap: 8px;
+    background: rgba(13, 23, 42, 0.92);
+    border: 1px solid var(--dock-border);
+    border-radius: 28px;
+    padding: 6px 8px 6px 18px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+  }
+
+  .input-bar-container input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #ffffff;
+    font-family: 'Nunito', sans-serif;
+    font-size: 13.5px;
+    user-select: text;
+  }
+  .input-bar-container input::placeholder { color: var(--text-muted); }
+
+  .submit-btn {
+    background: linear-gradient(135deg, #00f0ff, #0284c7);
+    color: #040812;
+    border: none;
+    border-radius: 20px;
+    padding: 8px 20px;
+    font-weight: 800;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: 'Nunito', sans-serif;
+    transition: all 0.2s;
+  }
+  body.ai-mode-active .submit-btn {
+    background: linear-gradient(135deg, #fbbf24, #d97706);
+  }
+  .submit-btn:hover { transform: scale(1.04); }
+
+  .bottom-dock {
+    width: auto;
+    max-width: 1140px;
+    background: var(--dock-bg);
+    border: 1px solid var(--dock-border);
+    backdrop-filter: blur(16px);
+    border-radius: 32px;
+    padding: 7px 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 240, 255, 0.15);
+    margin: 8px 0;
+    flex-wrap: wrap;
+    justify-content: center;
+    z-index: 10;
+  }
+
+  .dock-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    color: #cbd5e1;
+    padding: 7px 12px;
+    border-radius: 18px;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s ease;
+    font-family: 'Nunito', sans-serif;
+  }
+  .dock-btn:hover {
+    background: var(--btn-hover);
+    color: var(--cyan-light);
+    border-color: var(--dock-border);
+  }
+  .dock-btn.active {
+    background: rgba(0, 240, 255, 0.22);
+    color: var(--cyan-glow);
+    border-color: var(--cyan-glow);
+  }
+  .dock-btn.mic-active {
+    background: rgba(239, 68, 68, 0.25);
+    color: #f87171;
+    border-color: #ef4444;
+    animation: micPulse 1.2s infinite alternate;
+  }
+  @keyframes micPulse {
+    from { box-shadow: 0 0 8px rgba(239, 68, 68, 0.4); }
+    to { box-shadow: 0 0 20px rgba(239, 68, 68, 0.8); }
+  }
+
+  .copyright-bar {
+    width: 100%;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: #94a3b8;
+    letter-spacing: 0.4px;
+    padding: 8px 0 14px;
+    z-index: 10;
+  }
+
+  .modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(3, 7, 18, 0.88);
+    backdrop-filter: blur(8px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding: 16px;
+  }
+  .modal-card {
+    background: var(--card-bg);
+    border: 1px solid var(--dock-border);
+    border-radius: 20px;
+    padding: 22px 24px;
+    width: 100%;
+    max-width: 600px;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.85);
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal-card h3 {
+    color: var(--cyan-glow);
+    font-family: 'Fredoka', cursive;
+    margin-bottom: 10px;
+    font-size: 18px;
+  }
+  .modal-card p, .modal-card li {
+    font-size: 13px;
+    color: #cbd5e1;
+    line-height: 1.55;
+    margin-bottom: 8px;
+  }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  @media (max-width: 560px) {
+    .grid-2 { grid-template-columns: 1fr; }
+  }
+
+  .form-group {
+    margin-bottom: 10px;
+    text-align: left;
+  }
+  .form-group label {
+    display: block;
+    font-size: 11px;
+    font-weight: 800;
+    color: #93c5fd;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .form-group input, .form-group select, .form-group textarea {
+    width: 100%;
+    background: rgba(6, 12, 24, 0.94);
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    border-radius: 10px;
+    padding: 8px 11px;
+    color: #f8fafc;
+    font-family: 'Nunito', sans-serif;
+    font-size: 12.5px;
+    outline: none;
+    user-select: text;
+  }
+  .form-group textarea { min-height: 68px; resize: vertical; }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    border-color: var(--cyan-glow);
+  }
+
+  .notice-box {
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    color: #6ee7b7;
+    font-size: 11.5px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    margin-top: 8px;
+  }
+  .warn-box {
+    background: rgba(239, 68, 68, 0.14);
+    border: 1px solid rgba(239, 68, 68, 0.45);
+    color: #fca5a5;
+    font-size: 12px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    margin: 10px 0;
+  }
+
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+  }
+  .modal-save-btn {
+    background: linear-gradient(135deg, #fbbf24, #d97706);
+    color: #090d16;
+    border: none;
+    border-radius: 10px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-weight: 800;
+    font-size: 12.5px;
+  }
+  .modal-danger-btn {
+    background: linear-gradient(135deg, #ef4444, #b91c1c);
+    color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-weight: 800;
+    font-size: 12.5px;
+  }
+  .modal-close-btn {
+    background: rgba(255,255,255,0.1);
+    color: #cbd5e1;
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 10px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 12.5px;
+  }
+</style>
+</head>
+<body>
+
+<video id="webcamVideo" autoplay playsinline muted></video>
+
+<!-- Header -->
+<header class="app-main-header">
+  <div class="header-brand">
+    <img id="headerBrandLogo" src="logo.jpeg" alt="GARRF Companion Logo" class="brand-logo" />
+    <div class="brand-titles">
+      <span class="org-name">Gopalkrishna Advanced Rural Research Foundation</span>
+      <span class="india-badge">🇮🇳 India</span>
+      <span class="persona-active-pill" onclick="openProfileModal()" title="Click to customize persona & profile">
+        💬 <span id="headerPersonaBadge">Friend • Buddy</span>
+      </span>
+    </div>
+  </div>
+  <div class="header-status-group">
+    <button class="ai-mode-btn" id="aiModeBtn" onclick="toggleAIMode()">
+      <span>✨ AI Mode: OFF</span>
+    </button>
+    <button class="header-pill-btn" id="userLoginBtn" onclick="openUserLoginModal()">
+      <span>🔐 <span id="loginBtnLabel">Login</span></span>
+    </button>
+    <button class="header-pill-btn" onclick="openProfileModal()">
+      <span>👤 <span id="headerUserName">Friend</span></span>
+    </button>
+    <button class="header-pill-btn" onclick="openRAGStorageModal()">
+      <span>🧠 RAG & File</span>
+    </button>
+    <button class="header-pill-btn" id="driveSyncBtn" onclick="openGoogleDriveModal()">
+      <span>☁️ Drive Sync</span>
+    </button>
+    <button class="header-pill-btn" onclick="installCompanionApp()">
+      <span>📲 Install</span>
+    </button>
+  </div>
+</header>
+
+<!-- Live Persona, Custom Name & Indian Voice Bar -->
+<div class="persona-quick-bar">
+  <div class="quick-group">
+    <span class="quick-label">Role:</span>
+    <select id="quickPersonaRole" class="quick-select" onchange="onQuickPersonaChange()">
+      <option value="Friend">Friend</option>
+      <option value="Girlfriend">Girlfriend</option>
+      <option value="Boyfriend">Boyfriend</option>
+      <option value="Mother">Mother</option>
+      <option value="Daughter">Daughter</option>
+      <option value="Son">Son</option>
+      <option value="Wife">Wife</option>
+      <option value="Husband">Husband</option>
+      <option value="Custom">Custom Companion</option>
+    </select>
+    <span class="quick-label">Name:</span>
+    <input type="text" id="quickPersonaName" class="quick-input" placeholder="e.g. Ananya / Arjun" onchange="onQuickPersonaNameChange()" />
+  </div>
+  <div class="quick-group">
+    <span class="quick-label">Indian Voice:</span>
+    <select id="indianVoiceSelect" class="quick-select" onchange="onVoiceChange()">
+      <option value="auto">Auto Indian Voice</option>
+    </select>
+    <button class="header-pill-btn" onclick="askNextBuddyQuestion()" title="Answer a quick question so I remember more about you">
+      <span>❓ Know Me (<span id="knownCountBadge">0/10</span>)</span>
+    </button>
+  </div>
+</div>
+
+<!-- Main Interactive Stage -->
+<main class="bot-stage" id="dragStage">
+  <div class="ai-halo-ring"></div>
+  <div class="bot-3d-scene" id="botScene">
+    <div class="bot-body-wrapper" id="botWrapper" onclick="onBuddyClick(event)" title="Click me to chat anytime!">
+      <div class="antenna-container">
+        <div class="antenna-stalk left"><div class="antenna-tip"></div></div>
+        <div class="antenna-stalk right"><div class="antenna-tip"></div></div>
+      </div>
+
+      <div class="bot-head" id="botHead">
+        <div class="ear left"></div>
+        <div class="ear right"></div>
+        <div class="bot-visor">
+          <div class="visor-ai-tag" id="visorAiTag">LOCAL RAG READY</div>
+          <div class="eyes-row">
+            <div class="eye-socket" id="eyeL">
+              <div class="pupil" id="pupilL"><div class="glint"></div></div>
+            </div>
+            <div class="eye-socket" id="eyeR">
+              <div class="pupil" id="pupilR"><div class="glint"></div></div>
+            </div>
+          </div>
+          <div class="bot-smile" id="botMouth"></div>
+        </div>
+      </div>
+
+      <div class="bot-neck"></div>
+
+      <div class="bot-torso" id="botTorso">
+        <div class="arm left"><div class="arm-glow"></div></div>
+        <div class="chest-stripe"></div>
+        <div class="garrf-stomach-print">GARRF</div>
+        <div class="arm right"><div class="arm-glow"></div></div>
+      </div>
+
+      <div class="bot-feet">
+        <div class="foot"></div>
+        <div class="foot"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="orbit-hint">🤝 Click buddy to chat • Drag to rotate • Scroll to zoom • Double-click to re-center</div>
+
+  <!-- Unified Dialogue Box -->
+  <div class="dialogue-card-container">
+    <div class="dialogue-row query" id="queryRow">
+      <span class="q-tag">Q)</span> <span id="queryText">Hello!</span>
+    </div>
+    <div class="dialogue-row reply" id="replyRow">
+      <span class="re-tag">Re)</span> <span id="replyText">Namaste! I'm right here on your screen. Pick any role or name for me above, tell me how to call you, or ask about weather, time anywhere, Bhagavad Gita, or songs!</span>
+    </div>
+    <div class="action-links-row" id="dialogueLinksRow"></div>
+  </div>
+
+  <!-- Input Bar + Submit Button -->
+  <div class="input-bar-container">
+    <input type="text" id="manualInput" placeholder="Ask: 'weather in my area', 'time in Texas', 'my mood is bad', 'Gita 2:47', 'how am I looking', 'smile'..." onkeypress="handleEnter(event)" />
+    <button class="submit-btn" id="submitBtn" onclick="submitManualText()">Submit</button>
+  </div>
+</main>
+
+<!-- Bottom Dock -->
+<footer class="bottom-dock">
+  <button class="dock-btn" id="gazeBtn" onclick="toggleGazeTrack()">
+    <span>📷 Watch Me</span>
+  </button>
+  <button class="dock-btn" id="micBtn" onclick="toggleHandsFreeBluetooth()">
+    <span>🎧 Hands-Free Mic</span>
+  </button>
+  <button class="dock-btn" onclick="triggerSmile()">
+    <span>😊 Smile</span>
+  </button>
+  <button class="dock-btn" onclick="triggerLaugh()">
+    <span>😂 Laugh</span>
+  </button>
+  <button class="dock-btn" onclick="triggerJump()">
+    <span>🦘 Jump</span>
+  </button>
+  <button class="dock-btn" onclick="toggleHandsUp()">
+    <span>🙌 Hands Up</span>
+  </button>
+  <button class="dock-btn" onclick="cycleEyeColor()">
+    <span>🎨 Eyes</span>
+  </button>
+  <button class="dock-btn" onclick="openAISettingsModal()">
+    <span>🔑 AI Keys</span>
+  </button>
+  <button class="dock-btn" onclick="openCalendar()">
+    <span>📅 Calendar</span>
+  </button>
+  <button class="dock-btn" onclick="toggleFullscreen()">
+    <span>⛶ Full</span>
+  </button>
+</footer>
+
+<!-- Bottom Copyright Attribution -->
+<div class="copyright-bar">
+  Customized sub-product of Charan Das, developed by Dr. Annamdas Venu Gopal Madhav, GARRF — Copyright Product © 2026
+</div>
+
+<!-- Profile Modal -->
+<div class="modal-overlay" id="profileModal">
+  <div class="modal-card">
+    <h3>👤 Personal & Family Buddy Profile</h3>
+    <p>Fill in whatever you like—or answer casually in chat! Everything is saved locally and syncs to your Google Drive when connected.</p>
+
+    <div class="grid-2">
+      <div class="form-group">
+        <label>How Should I Call You?</label>
+        <input type="text" id="profPreferredName" placeholder="e.g. Venu / Buddy / Boss" />
+      </div>
+      <div class="form-group">
+        <label>Your Full Name</label>
+        <input type="text" id="profFullName" placeholder="Your full name" />
+      </div>
+      <div class="form-group">
+        <label>Companion Role</label>
+        <select id="profRole">
+          <option value="Friend">Friend</option>
+          <option value="Girlfriend">Girlfriend</option>
+          <option value="Boyfriend">Boyfriend</option>
+          <option value="Mother">Mother</option>
+          <option value="Daughter">Daughter</option>
+          <option value="Son">Son</option>
+          <option value="Wife">Wife</option>
+          <option value="Husband">Husband</option>
+          <option value="Custom">Custom Companion</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Companion Name</label>
+        <input type="text" id="profPersonaName" placeholder="e.g. Buddy / Kavya / Rohan" />
+      </div>
+      <div class="form-group">
+        <label>Mother Tongue</label>
+        <select id="profMotherTongue">
+          <option value="Telugu">Telugu</option>
+          <option value="Hindi">Hindi</option>
+          <option value="Tamil">Tamil</option>
+          <option value="Kannada">Kannada</option>
+          <option value="Malayalam">Malayalam</option>
+          <option value="Marathi">Marathi</option>
+          <option value="Bengali">Bengali</option>
+          <option value="English">English</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Birthday (YYYY-MM-DD or MM-DD)</label>
+        <input type="text" id="profBirthday" placeholder="e.g. 1976-04-23 or 04-23" />
+      </div>
+      <div class="form-group">
+        <label>Father's Name</label>
+        <input type="text" id="profFatherName" placeholder="Father's name" />
+      </div>
+      <div class="form-group">
+        <label>Mother's Name</label>
+        <input type="text" id="profMotherName" placeholder="Mother's name" />
+      </div>
+      <div class="form-group">
+        <label>Brothers / Sisters (Names)</label>
+        <input type="text" id="profSiblings" placeholder="e.g. Brother Kiran, Sister Priya" />
+      </div>
+      <div class="form-group">
+        <label>Home City / Area</label>
+        <input type="text" id="profCity" placeholder="e.g. Hyderabad, Telangana" />
+      </div>
+      <div class="form-group">
+        <label>School / College OR Company</label>
+        <input type="text" id="profWorkStudy" placeholder="e.g. GARRF / IIT / Infosys" />
+      </div>
+      <div class="form-group">
+        <label>Role / Class / Boss Name</label>
+        <input type="text" id="profBossOrClass" placeholder="e.g. Researcher / Grade 10 / Manager" />
+      </div>
+      <div class="form-group">
+        <label>Faith / Favorite Deity / Atheist</label>
+        <input type="text" id="profFaith" placeholder="e.g. Hindu (Surya/Krishna), Christian, Muslim, Atheist" />
+      </div>
+      <div class="form-group">
+        <label>Voice Speed</label>
+        <select id="profVoiceRate">
+          <option value="0.95">Calm (0.95x)</option>
+          <option value="1.05" selected>Natural (1.05x)</option>
+          <option value="1.15">Energetic (1.15x)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Custom System Prompt / Extra Instructions (Optional)</label>
+      <textarea id="profCustomPrompt" placeholder="Add any custom personality instructions, tone, or preferences here..."></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="modal-close-btn" onclick="closeModalById('profileModal')">Cancel</button>
+      <button type="button" class="modal-save-btn" onclick="saveFullProfile()">Save Profile & Update RAG</button>
+    </div>
+  </div>
+</div>
+
+<!-- Local RAG Knowledge Base & Permission-Gated File Storage Modal -->
+<div class="modal-overlay" id="ragModal">
+  <div class="modal-card">
+    <h3>🧠 Local Vector RAG Knowledge & File Storage</h3>
+    <p>Every conversation, family detail, and note is embedded locally for instant semantic retrieval—even offline.</p>
+
+    <div class="notice-box" id="ragStatsBox">
+      Loading local RAG vector index...
+    </div>
+
+    <div class="warn-box">
+      ⚠️ <strong>Memory Integrity Notice:</strong> As long as your history stays intact, all knowledge is retained. If you delete or alter stored history/memory, I will lose track of my knowledge with you.
+    </div>
+
+    <div class="form-group">
+      <label>Local File Storage Permission</label>
+      <select id="localFilePermSelect" onchange="updateLocalFilePermission()">
+        <option value="ask">Ask Permission Before Saving File</option>
+        <option value="granted">Permitted — Save Local Knowledge File</option>
+        <option value="denied">Keep in Browser Memory Only</option>
+      </select>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="header-pill-btn" onclick="loadExternalRAGFile()">📂 Load JSON/RAG File</button>
+      <button type="button" class="header-pill-btn" onclick="saveKnowledgeToLocalFile()">💾 Save Knowledge File</button>
+      <button type="button" class="header-pill-btn" onclick="runMonthlyArchiveCheck(true)">📦 Monthly Archive</button>
+      <button type="button" class="modal-danger-btn" onclick="promptDeleteOrAlterMemory()">🗑️ Clear Chat History</button>
+      <button type="button" class="modal-close-btn" onclick="closeModalById('ragModal')">Close</button>
+    </div>
+    <input type="file" id="ragFilePicker" accept=".json,.jsonl,.txt" style="display:none" onchange="handleManualRAGUpload(event)" />
+  </div>
+</div>
+
+<!-- Personal Google Drive Sync Modal -->
+<div class="modal-overlay" id="driveModal">
+  <div class="modal-card">
+    <h3>☁️ Personal Google Drive Cross-Device Sync</h3>
+    <p>Store your personal profile, names, and RAG knowledge in <strong>your own Google Drive</strong> so you can switch seamlessly between mobile and computer.</p>
+
+    <div class="form-group">
+      <label>Your Google Email ID</label>
+      <input type="email" id="driveUserEmail" placeholder="you@gmail.com" />
+    </div>
+
+    <div class="form-group">
+      <label>Google OAuth Web Client ID (for Drive API v3)</label>
+      <input type="text" id="driveClientId" placeholder="1234567890-xxxx.apps.googleusercontent.com" />
+    </div>
+
+    <div class="notice-box" id="driveStatusBox">
+      Status: Not connected yet. Uses free <code>drive.file</code> personal space scope.
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="modal-save-btn" onclick="connectAndSyncGoogleDrive('push')">☁️ Grant Access & Save to Drive</button>
+      <button type="button" class="header-pill-btn" onclick="connectAndSyncGoogleDrive('pull')">⬇️ Load from My Drive</button>
+      <button type="button" class="modal-close-btn" onclick="closeModalById('driveModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- AI Access Tier Modal (Passcode or User's Own API Key) -->
+<div class="modal-overlay" id="aiKeysModal">
+  <div class="modal-card">
+    <h3>🔑 Live AI Access (Passcode or Personal Key)</h3>
+    <p>Offline RAG, voice, weather, and buddy chats work free anytime. For live LLM responses, choose one:</p>
+
+    <div class="form-group">
+      <label>Access Mode</label>
+      <select id="aiAccessModeSelect" onchange="toggleAIKeyFields()">
+        <option value="founder">Access Passcode</option>
+        <option value="gemini">My Own Personal Gemini API Key</option>
+        <option value="groq">My Own Personal Groq API Key</option>
+        <option value="custom_worker">My Own Custom Endpoint URL</option>
+      </select>
+    </div>
+
+    <div class="form-group" id="founderPasscodeGroup">
+      <label>Access Passcode (Session-Only)</label>
+      <input type="password" id="founderPasscodeInput" placeholder="Enter access passcode" />
+    </div>
+
+    <div class="form-group" id="personalApiKeyGroup" style="display:none;">
+      <label>Your Personal API Key (Session-Only)</label>
+      <input type="password" id="personalApiKeyInput" placeholder="AIza... or gsk_..." />
+    </div>
+
+    <div class="form-group" id="customWorkerGroup" style="display:none;">
+      <label>Your Custom Endpoint URL</label>
+      <input type="url" id="customWorkerUrlInput" placeholder="https://..." />
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="modal-close-btn" onclick="closeModalById('aiKeysModal')">Cancel</button>
+      <button type="button" class="modal-save-btn" onclick="saveAIAccessSettings()">Save & Enable AI Mode</button>
+    </div>
+  </div>
+</div>
+
+<!-- Normal User Login Modal -->
+<div class="modal-overlay" id="userLoginModal">
+  <div class="modal-card">
+    <h3>🔐 User Login</h3>
+    <p>Log in with your name and how you want to be called so I remember you on this device.</p>
+
+    <div class="form-group">
+      <label>How Should I Call You?</label>
+      <input type="text" id="loginCallNameInput" placeholder="e.g. Buddy / Venu / Priya" />
+    </div>
+
+    <div class="form-group">
+      <label>Your Name (Optional)</label>
+      <input type="text" id="loginFullNameInput" placeholder="Your full name" />
+    </div>
+
+    <div class="form-group">
+      <label>Mother Tongue</label>
+      <select id="loginMotherTongueInput">
+        <option value="Telugu">Telugu</option>
+        <option value="Hindi">Hindi</option>
+        <option value="Tamil">Tamil</option>
+        <option value="Kannada">Kannada</option>
+        <option value="Malayalam">Malayalam</option>
+        <option value="Marathi">Marathi</option>
+        <option value="Bengali">Bengali</option>
+        <option value="English">English</option>
+      </select>
+    </div>
+
+    <div class="notice-box" id="loginStatusNotice">
+      Logged in status will be saved locally on this device.
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="modal-close-btn" onclick="closeModalById('userLoginModal')">Cancel</button>
+      <button type="button" class="modal-save-btn" onclick="submitUserLogin()">Login & Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Passcode Dialogue Modal -->
+<div class="modal-overlay" id="passcodeDialogueModal">
+  <div class="modal-card">
+    <h3>🔑 Type Passcode</h3>
+    <p>Type your access passcode to unlock live AI mode, or use your own personal API key instead.</p>
+
+    <div class="form-group">
+      <label>Type Passcode (Session-Only)</label>
+      <input type="password" id="dialoguePasscodeInput" placeholder="Type passcode here..." onkeypress="if(event.key==='Enter') submitPasscodeDialogue()" />
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="header-pill-btn" onclick="closeModalById('passcodeDialogueModal'); openAISettingsModal();">Use Personal Key Instead</button>
+      <button type="button" class="modal-close-btn" onclick="closeModalById('passcodeDialogueModal')">Cancel</button>
+      <button type="button" class="modal-save-btn" onclick="submitPasscodeDialogue()">Submit Passcode</button>
+    </div>
+  </div>
+</div>
+
+<!-- Calendar & Install Modal -->
+<div class="modal-overlay" id="infoModal">
+  <div class="modal-card">
+    <h3 id="modalTitle">📅 Calendar & Schedule</h3>
+    <div id="modalBody"></div>
+    <div class="modal-actions">
+      <button type="button" class="header-pill-btn" id="downloadLogoBtn" style="display:none;" onclick="downloadColorfulLogo()">🎨 Download Colorful Logo PNG</button>
+      <button type="button" class="modal-close-btn" onclick="closeModalById('infoModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // External endpoint loaded only from companion_config.json (no Worker URL hardcoded in HTML)
+  let _externalWorkerEndpoint = "";
+  const _resolveDefaultEndpoint = () => _externalWorkerEndpoint || "";
+
+  async function loadExternalEndpointConfig() {
+    try {
+      const resp = await fetch("./companion_config.json");
+      if (resp.ok) {
+        const cfg = await resp.json();
+        if (cfg && typeof cfg.workerUrl === "string") {
+          _externalWorkerEndpoint = cfg.workerUrl.trim();
+        }
+      }
+    } catch (e) {}
+  }
+
+  // State
+  let gazeActive = false;
+  let handsFreeActive = false;
+  let speechRec = null;
+  let wakeLockSentinel = null;
+  let areHandsUp = false;
+  let aiModeEnabled = false;
+  let isEyesClosed = false;
+  let isSpeaking = false;
+  let talkAnimationInterval = null;
+  let lastBuddyClickTime = 0;
+  let lastInteractionTime = Date.now();
+  let idlePromptSent = false;
+  let deferredInstallPrompt = null;
+  let availableIndianVoices = [];
+  let pendingFollowUpType = null;
+  let pendingFollowUpPayload = null;
+
+  // 3D Orbit State
+  let rotX = 0, rotY = 0, zoomScale = 1;
+  let isDragging = false, didDragMove = false, prevMouseX = 0, prevMouseY = 0;
+
+  // Session-only sensitive credentials (never saved in localStorage or Drive)
+  let sessionSecrets = {
+    accessMode: "founder",
+    founderPasscode: "",
+    personalApiKey: "",
+    customWorkerUrl: ""
+  };
+
+  // Persistent User & Persona Profile
+  let userProfile = {
+    loggedIn: false,
+    preferredName: "Friend",
+    fullName: "",
+    role: "Friend",
+    personaName: "Buddy",
+    motherTongue: "Telugu",
+    birthday: "",
+    fatherName: "",
+    motherName: "",
+    siblings: "",
+    city: "",
+    workStudy: "",
+    bossOrClass: "",
+    faith: "",
+    voiceId: "auto",
+    voiceRate: 1.05,
+    customPrompt: "",
+    localFilePermission: "ask",
+    googleEmail: "",
+    googleClientId: "",
+    driveFileId: "",
+    lastActiveMonth: new Date().toISOString().slice(0, 7),
+    lastMealPromptKey: "",
+    lastSundayPrayerDate: "",
+    deferredQuestions: []
+  };
+
+  // Progressive Buddy Questions
+  const BUDDY_QUESTIONS = [
+    { key: "preferredName", q: "First, how should I call you, buddy?" },
+    { key: "motherTongue", q: "What is your mother tongue (like Telugu, Hindi, Tamil, Kannada, or English)?" },
+    { key: "city", q: "Which city or area do you live in right now?" },
+    { key: "birthday", q: "When is your birthday (month and day)? I want to remember and wish you!" },
+    { key: "fatherName", q: "What is your father's good name? I'd love to remember your family." },
+    { key: "motherName", q: "And what is your mother's good name?" },
+    { key: "siblings", q: "Do you have any brothers or sisters? Tell me their names if you'd like!" },
+    { key: "workStudy", q: "Are you studying in school/college or working at a company? What is its name?" },
+    { key: "bossOrClass", q: "What class/course are you in, or what is your role (and how is your boss/team)?" },
+    { key: "faith", q: "Are you spiritual, have a favorite God you pray to, or prefer a secular/atheist outlook?" }
+  ];
+
+  // Built-in Semantic RAG Knowledge Pack (also loads external ./buddy_rag_knowledge.json from same folder)
+  let ragStore = {
+    entries: [
+      {
+        id: "gita_2_47",
+        category: "bhagavad_gita",
+        intent: "stress duty work anxiety karma yoga bhagavad gita krishna",
+        text: "Bhagavad Gita Chapter 2, Verse 47: You have a right to perform your prescribed duty, but you are not entitled to the fruits of action. Focus on sincere effort without anxiety over results.",
+        link: "https://asitis.com/2/47"
+      },
+      {
+        id: "gita_2_14",
+        category: "bhagavad_gita",
+        intent: "sadness heartbreak pain tolerance patience bhagavad gita",
+        text: "Bhagavad Gita Chapter 2, Verse 14: Happiness and distress appear and disappear like winter and summer seasons. Learn to tolerate them calmly without being disturbed.",
+        link: "https://asitis.com/2/14"
+      },
+      {
+        id: "gita_6_5",
+        category: "bhagavad_gita",
+        intent: "self confidence mind control depression uplift gita",
+        text: "Bhagavad Gita Chapter 6, Verse 5: One must elevate oneself by one's own mind, not degrade oneself. The mind is the friend of the conditioned soul, and his enemy as well.",
+        link: "https://asitis.com/6/5"
+      },
+      {
+        id: "gita_18_66",
+        category: "bhagavad_gita",
+        intent: "surrender fear protection krishna teaching gita",
+        text: "Bhagavad Gita Chapter 18, Verse 66: Abandon all varieties of anxiety and simply surrender unto Krishna; He will protect and guide you beyond fear.",
+        link: "https://asitis.com/18/66"
+      },
+      {
+        id: "garrf_about",
+        category: "organization",
+        intent: "garrf founder venu gopal madhav charan das who made you",
+        text: "I am a customized sub-product of Charan Das, developed by Dr. Annamdas Venu Gopal Madhav under Gopalkrishna Advanced Rural Research Foundation (GARRF), India (garrf.in)."
+      }
+    ],
+    chatLog: [],
+    episodes: []
+  };
+
+  // Mother-Tongue Uplifting ~15-Word Song Snippets + 3 Direct Links
+  const MOTHER_TONGUE_SONGS = {
+    "telugu": {
+      snippet: "Nuvvu nenu kalisunte prathi roju pandage, chirunavvu tho munduku saagu mitrama, kotha velugu neede!",
+      links: [
+        { label: "▶️ YouTube Positive Telugu Songs", url: "https://www.youtube.com/results?search_query=positive+motivational+telugu+songs" },
+        { label: "🎶 YouTube Telugu Feel-Good Hits", url: "https://www.youtube.com/results?search_query=feel+good+telugu+melody+songs" },
+        { label: "📻 Raaga Telugu Station", url: "https://www.raaga.com/telugu" }
+      ]
+    },
+    "hindi": {
+      snippet: "Muskurane ki wajah tum ho, gungunane ki wajah tum ho, har pal khushi se jeena dost!",
+      links: [
+        { label: "▶️ YouTube Feel-Good Hindi Songs", url: "https://www.youtube.com/results?search_query=positive+feel+good+hindi+songs" },
+        { label: "🎶 YouTube Hindi Uplifting Hits", url: "https://www.youtube.com/results?search_query=uplifting+motivational+hindi+songs" },
+        { label: "📻 Raaga Hindi Station", url: "https://www.raaga.com/hindi" }
+      ]
+    },
+    "tamil": {
+      snippet: "Vetri nichayam ithu veda sathiyam, sirippudan munneru nanba, pudhu vidiyal endrum unakkaga kaathirukku!",
+      links: [
+        { label: "▶️ YouTube Positive Tamil Songs", url: "https://www.youtube.com/results?search_query=positive+motivational+tamil+songs" },
+        { label: "🎶 YouTube Tamil Melody Hits", url: "https://www.youtube.com/results?search_query=feel+good+tamil+melody+songs" },
+        { label: "📻 Raaga Tamil Station", url: "https://www.raaga.com/tamil" }
+      ]
+    },
+    "kannada": {
+      snippet: "Naguva nayana madhura mauna, santhoshadinda mundhe saagu geleya, hosa belaku ninagagi kaayuthide!",
+      links: [
+        { label: "▶️ YouTube Positive Kannada Songs", url: "https://www.youtube.com/results?search_query=positive+motivational+kannada+songs" },
+        { label: "🎶 YouTube Kannada Melody Hits", url: "https://www.youtube.com/results?search_query=feel+good+kannada+songs" },
+        { label: "📻 Raaga Kannada Station", url: "https://www.raaga.com/kannada" }
+      ]
+    },
+    "malayalam": {
+      snippet: "Punchiri thooki munneru koottukara, ellaam shariyaakum, puthiya prabhatham ninakkayi kaathirikkunnu snehame!",
+      links: [
+        { label: "▶️ YouTube Positive Malayalam Songs", url: "https://www.youtube.com/results?search_query=positive+motivational+malayalam+songs" },
+        { label: "🎶 YouTube Malayalam Melody Hits", url: "https://www.youtube.com/results?search_query=feel+good+malayalam+songs" },
+        { label: "📻 Raaga Malayalam Station", url: "https://www.raaga.com/malayalam" }
+      ]
+    },
+    "english": {
+      snippet: "Keep your head up high, brighter skies are on the way, smile and shine today!",
+      links: [
+        { label: "▶️ YouTube Uplifting Feel-Good Songs", url: "https://www.youtube.com/results?search_query=uplifting+positive+feel+good+songs" },
+        { label: "🎶 YouTube Happy Acoustic Mix", url: "https://www.youtube.com/results?search_query=happy+acoustic+mood+booster+playlist" },
+        { label: "📻 Raaga English & Fusion", url: "https://www.raaga.com/" }
+      ]
+    }
+  };
+
+  // Place & Timezone Lookup
+  const PLACE_TYPO_MAP = {
+    "flouride": "Florida",
+    "floride": "Florida",
+    "califonia": "California",
+    "hydrabad": "Hyderabad",
+    "banglore": "Bengaluru",
+    "pakisthan": "Pakistan"
+  };
+
+  const KNOWN_TIMEZONES = {
+    "texas": "America/Chicago",
+    "dallas": "America/Chicago",
+    "houston": "America/Chicago",
+    "austin": "America/Chicago",
+    "florida": "America/New_York",
+    "miami": "America/New_York",
+    "new york": "America/New_York",
+    "california": "America/Los_Angeles",
+    "los angeles": "America/Los_Angeles",
+    "hyderabad": "Asia/Kolkata",
+    "india": "Asia/Kolkata",
+    "bengaluru": "Asia/Kolkata",
+    "delhi": "Asia/Kolkata",
+    "mumbai": "Asia/Kolkata",
+    "chennai": "Asia/Kolkata",
+    "singapore": "Asia/Singapore",
+    "pakistan": "Asia/Karachi",
+    "karachi": "Asia/Karachi",
+    "lahore": "Asia/Karachi",
+    "islamabad": "Asia/Karachi",
+    "london": "Europe/London",
+    "uk": "Europe/London",
+    "dubai": "Asia/Dubai",
+    "uae": "Asia/Dubai",
+    "tokyo": "Asia/Tokyo",
+    "japan": "Asia/Tokyo",
+    "sydney": "Australia/Sydney"
+  };
+
+  let eyeColors = [
+    'radial-gradient(circle, #00f0ff 0%, #0284c7 65%, #034f77 100%)',
+    'radial-gradient(circle, #fbbf24 0%, #d97706 65%, #78350f 100%)',
+    'radial-gradient(circle, #a855f7 0%, #7e22ce 65%, #3b0764 100%)',
+    'radial-gradient(circle, #22c55e 0%, #16a34a 65%, #14532d 100%)',
+    'radial-gradient(circle, #ec4899 0%, #be185d 65%, #500724 100%)'
+  ];
+  let eyeColorIdx = 0;
+
+  // =========================================================================
+  // 1. LOCAL VECTOR EMBEDDINGS & COSINE SIMILARITY ENGINE
+  // =========================================================================
+  const EMBED_DIM = 128;
+
+  function computeLocalEmbedding(text) {
+    const vec = new Float32Array(EMBED_DIM);
+    const clean = (text || "").toLowerCase().replace(/[^a-z0-9\u0900-\u0D7F\s]/g, " ").trim();
+    if (!clean) return vec;
+
+    const words = clean.split(/\s+/);
+    for (const w of words) {
+      if (w.length < 2) continue;
+      let h1 = 2166136261;
+      for (let i = 0; i < w.length; i++) {
+        h1 ^= w.charCodeAt(i);
+        h1 = Math.imul(h1, 16777619);
+      }
+      vec[Math.abs(h1) % EMBED_DIM] += 1.5;
+
+      for (let i = 0; i <= w.length - 3; i++) {
+        const tri = w.slice(i, i + 3);
+        let h2 = 5381;
+        for (let j = 0; j < tri.length; j++) {
+          h2 = ((h2 << 5) + h2) + tri.charCodeAt(j);
+        }
+        vec[Math.abs(h2) % EMBED_DIM] += 0.75;
+      }
+    }
+
+    let norm = 0;
+    for (let i = 0; i < EMBED_DIM; i++) norm += vec[i] * vec[i];
+    norm = Math.sqrt(norm) || 1;
+    for (let i = 0; i < EMBED_DIM; i++) vec[i] /= norm;
+    return vec;
+  }
+
+  function cosineSimilarity(vA, vB) {
+    let dot = 0;
+    for (let i = 0; i < EMBED_DIM; i++) dot += vA[i] * vB[i];
+    return dot;
+  }
+
+  function rebuildRAGVectors() {
+    for (const entry of ragStore.entries) {
+      entry._vec = computeLocalEmbedding(`${entry.intent || ""} ${entry.text || ""} ${entry.category || ""}`);
+    }
+    for (const ep of ragStore.episodes) {
+      ep._vec = computeLocalEmbedding(`${ep.topic || ""} ${ep.summary || ""}`);
+    }
+  }
+
+  function retrieveTopRAGMatches(queryText, topK = 4) {
+    const qVec = computeLocalEmbedding(queryText);
+    const scored = [];
+
+    for (const entry of ragStore.entries) {
+      if (!entry._vec) entry._vec = computeLocalEmbedding(`${entry.intent || ""} ${entry.text || ""}`);
+      const score = cosineSimilarity(qVec, entry._vec);
+      if (score > 0.16) scored.push({ score, source: "knowledge", item: entry });
+    }
+    for (const ep of ragStore.episodes) {
+      if (!ep._vec) ep._vec = computeLocalEmbedding(`${ep.topic || ""} ${ep.summary || ""}`);
+      const score = cosineSimilarity(qVec, ep._vec) + 0.05;
+      if (score > 0.18) scored.push({ score, source: "episode", item: ep });
+    }
+
+    scored.sort((a, b) => b.score - a.score);
+    return scored.slice(0, topK);
+  }
+
+  // =========================================================================
+  // 2. COLORFUL INSTALLABLE LOGO & PWA SETUP
+  // =========================================================================
+  function generateColorfulAppLogoDataURL() {
+    const canvas = document.createElement("canvas");
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext("2d");
+
+    const bgGrad = ctx.createRadialGradient(256, 230, 40, 256, 256, 250);
+    bgGrad.addColorStop(0, "#1e1b4b");
+    bgGrad.addColorStop(0.55, "#0f172a");
+    bgGrad.addColorStop(1, "#020617");
+    ctx.fillStyle = bgGrad;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(16, 16, 480, 480, 110);
+    else ctx.rect(16, 16, 480, 480);
+    ctx.fill();
+
+    const ringGrad = ctx.createLinearGradient(40, 40, 472, 472);
+    ringGrad.addColorStop(0, "#ff9933");
+    ringGrad.addColorStop(0.35, "#fbbf24");
+    ringGrad.addColorStop(0.68, "#00f0ff");
+    ringGrad.addColorStop(1, "#10b981");
+    ctx.lineWidth = 18;
+    ctx.strokeStyle = ringGrad;
+    ctx.beginPath();
+    ctx.arc(256, 256, 210, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.fillStyle = "#f8fafc";
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(116, 128, 280, 210, 95);
+    else ctx.rect(116, 128, 280, 210);
+    ctx.fill();
+
+    ctx.fillStyle = "#060d1f";
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(142, 154, 228, 158, 72);
+    else ctx.rect(142, 154, 228, 158);
+    ctx.fill();
+
+    ctx.fillStyle = "#00f0ff";
+    ctx.beginPath();
+    ctx.arc(206, 222, 26, 0, Math.PI * 2);
+    ctx.arc(306, 222, 26, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.arc(213, 214, 8, 0, Math.PI * 2);
+    ctx.arc(313, 214, 8, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = "#4ade80";
+    ctx.lineWidth = 10;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.arc(256, 252, 34, 0.15 * Math.PI, 0.85 * Math.PI);
+    ctx.stroke();
+
+    ctx.fillStyle = "#fbbf24";
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(164, 366, 184, 46, 22);
+    else ctx.rect(164, 366, 184, 46);
+    ctx.fill();
+
+    ctx.fillStyle = "#090d16";
+    ctx.font = "900 26px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("GARRF AI", 256, 398);
+
+    return canvas.toDataURL("image/png");
+  }
+
+  function setupDynamicBrandingAndPWA() {
+    const logoDataUrl = generateColorfulAppLogoDataURL();
+    window._generatedColorfulLogo = logoDataUrl;
+
+    const fav = document.getElementById("dynamicFavicon");
+    const apple = document.getElementById("dynamicAppleIcon");
+    if (fav) fav.href = logoDataUrl;
+    if (apple) apple.href = logoDataUrl;
+
+    const headerImg = document.getElementById("headerBrandLogo");
+    if (headerImg) {
+      headerImg.onerror = () => { headerImg.src = logoDataUrl; };
+    }
+
+    const manifestData = {
+      name: `${userProfile.personaName || "Buddy"} — GARRF Personal AI Companion`,
+      short_name: userProfile.personaName || "GARRF Buddy",
+      start_url: "./",
+      display: "standalone",
+      background_color: "#060a12",
+      theme_color: "#0b1528",
+      description: "Customized sub-product of Charan Das by Dr. Annamdas Venu Gopal Madhav, GARRF",
+      icons: [
+        { src: logoDataUrl, sizes: "512x512", type: "image/png", purpose: "any maskable" }
+      ]
+    };
+    const blob = new Blob([JSON.stringify(manifestData)], { type: "application/manifest+json" });
+    const link = document.getElementById("pwaManifestLink");
+    if (link) link.href = URL.createObjectURL(blob);
+  }
+
+  function downloadColorfulLogo() {
+    const url = window._generatedColorfulLogo || generateColorfulAppLogoDataURL();
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "GARRF_Companion_Logo.png";
+    a.click();
+  }
+
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+  });
+
+  async function installCompanionApp() {
+    if (deferredInstallPrompt) {
+      deferredInstallPrompt.prompt();
+      await deferredInstallPrompt.userChoice.catch(() => {});
+      deferredInstallPrompt = null;
+      return;
+    }
+    document.getElementById("modalTitle").innerText = "📲 Install Companion App & Colorful Logo";
+    document.getElementById("modalBody").innerHTML = `
+      <div style="text-align:center; margin-bottom:12px;">
+        <img src="${window._generatedColorfulLogo}" alt="App Logo" style="width:96px; height:96px; border-radius:22px; box-shadow:0 0 20px rgba(0,240,255,0.4);" />
+      </div>
+      <p><strong>Android / Chrome / Edge:</strong> Tap browser menu (⋮) → <strong>Install app</strong> or <strong>Add to Home screen</strong>.</p>
+      <p><strong>iPhone / iPad (Safari):</strong> Tap <strong>Share</strong> (□↑) → <strong>Add to Home Screen</strong>.</p>
+      <p><strong>WhatsApp / Web Share:</strong> Host on <code>https://</code> (such as GitHub Pages or Cloudflare Pages) so sharing the link installs directly with this colorful icon.</p>
+    `;
+    document.getElementById("downloadLogoBtn").style.display = "inline-block";
+    document.getElementById("infoModal").style.display = "flex";
+  }
+
+  // =========================================================================
+  // 3. LOGIN MODAL & PASSCODE DIALOGUE MODAL
+  // =========================================================================
+  function openUserLoginModal() {
+    document.getElementById("loginCallNameInput").value = userProfile.preferredName || "";
+    document.getElementById("loginFullNameInput").value = userProfile.fullName || "";
+    document.getElementById("loginMotherTongueInput").value = userProfile.motherTongue || "Telugu";
+    document.getElementById("userLoginModal").style.display = "flex";
+  }
+
+  function submitUserLogin() {
+    const callName = document.getElementById("loginCallNameInput").value.trim() || "Friend";
+    const fullName = document.getElementById("loginFullNameInput").value.trim();
+    const tongue = document.getElementById("loginMotherTongueInput").value;
+
+    userProfile.loggedIn = true;
+    userProfile.preferredName = callName;
+    if (fullName) userProfile.fullName = fullName;
+    userProfile.motherTongue = tongue;
+
+    persistAllLocalState();
+    applyProfileToUI();
+    closeModalById("userLoginModal");
+
+    const greet = `Welcome ${callName}! You are now logged in on this device. I will remember your name and mother tongue (${tongue}).`;
+    displayQA("User Login", greet);
+    botSpeak(greet);
+  }
+
+  function openPasscodeDialogue() {
+    document.getElementById("dialoguePasscodeInput").value = sessionSecrets.founderPasscode || "";
+    document.getElementById("passcodeDialogueModal").style.display = "flex";
+    setTimeout(() => document.getElementById("dialoguePasscodeInput").focus(), 100);
+  }
+
+  function submitPasscodeDialogue() {
+    const code = document.getElementById("dialoguePasscodeInput").value.trim();
+    if (!code) {
+      alert("Please type a passcode first, or click 'Use Personal Key Instead'.");
+      return;
+    }
+    sessionSecrets.accessMode = "founder";
+    sessionSecrets.founderPasscode = code;
+    try {
+      sessionStorage.setItem("garrf_companion_session_secrets", JSON.stringify(sessionSecrets));
+    } catch (e) {}
+
+    closeModalById("passcodeDialogueModal");
+    setAIModeState(true);
+    const msg = `Passcode accepted for this session! Live AI Mode is now ON for ${userProfile.personaName || "Buddy"}.`;
+    displayQA("Passcode Submitted", msg);
+    botSpeak(msg);
+  }
+
+  // =========================================================================
+  // 4. INITIALIZATION, INDIAN VOICES, BIRTHDAY & TIME-AWARE CHECK-INS
+  // =========================================================================
+  window.addEventListener("DOMContentLoaded", async () => {
+    loadPersistedState();
+    setupDynamicBrandingAndPWA();
+    populateIndianVoices();
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.onvoiceschanged = populateIndianVoices;
+    }
+
+    await loadExternalEndpointConfig();
+    await loadFolderRAGFile();
+    rebuildRAGVectors();
+    applyProfileToUI();
+    runMonthlyArchiveCheck(false);
+    runStartupBuddyChecks();
+
+    setInterval(checkIdleBuddyPrompt, 15000);
+  });
+
+  function loadPersistedState() {
+    try {
+      const p = localStorage.getItem("garrf_companion_profile_v2");
+      if (p) userProfile = { ...userProfile, ...JSON.parse(p) };
+    } catch (e) {}
+
+    try {
+      const r = localStorage.getItem("garrf_companion_rag_v2");
+      if (r) {
+        const parsed = JSON.parse(r);
+        if (Array.isArray(parsed.entries)) {
+          const existingIds = new Set(ragStore.entries.map(x => x.id));
+          for (const item of parsed.entries) {
+            if (!existingIds.has(item.id)) ragStore.entries.push(item);
+          }
+        }
+        if (Array.isArray(parsed.chatLog)) ragStore.chatLog = parsed.chatLog;
+        if (Array.isArray(parsed.episodes)) ragStore.episodes = parsed.episodes;
+      }
+    } catch (e) {}
+
+    try {
+      const s = sessionStorage.getItem("garrf_companion_session_secrets");
+      if (s) sessionSecrets = { ...sessionSecrets, ...JSON.parse(s) };
+    } catch (e) {}
+  }
+
+  function persistAllLocalState() {
+    try {
+      localStorage.setItem("garrf_companion_profile_v2", JSON.stringify(userProfile));
+      const serializableRAG = {
+        entries: ragStore.entries.map(({ _vec, ...rest }) => rest),
+        chatLog: ragStore.chatLog.slice(-300),
+        episodes: ragStore.episodes.slice(-100)
+      };
+      localStorage.setItem("garrf_companion_rag_v2", JSON.stringify(serializableRAG));
+    } catch (e) {}
+  }
+
+  async function loadFolderRAGFile() {
+    try {
+      const resp = await fetch("./buddy_rag_knowledge.json");
+      if (resp.ok) {
+        const data = await resp.json();
+        const items = Array.isArray(data) ? data : (data.entries || []);
+        const existingIds = new Set(ragStore.entries.map(x => x.id));
+        for (const it of items) {
+          if (it.id && !existingIds.has(it.id)) ragStore.entries.push(it);
+        }
+      }
+    } catch (e) {}
+  }
+
+  function populateIndianVoices() {
+    if (!("speechSynthesis" in window)) return;
+    const allVoices = window.speechSynthesis.getVoices() || [];
+    const indian = allVoices.filter(v =>
+      /(-IN|_IN|India|Hindi|Telugu|Tamil|Kannada|Malayalam|Bengali|Marathi|Heera|Ravi|Neerja|Prabhat|Swara|Madhur)/i.test(`${v.lang} ${v.name}`)
+    );
+    availableIndianVoices = indian.length > 0 ? indian : allVoices;
+
+    const sel = document.getElementById("indianVoiceSelect");
+    if (!sel) return;
+    const currentVal = userProfile.voiceId || "auto";
+    sel.innerHTML = `<option value="auto">Auto Indian Voice (${userProfile.role})</option>`;
+    availableIndianVoices.forEach((v) => {
+      const opt = document.createElement("option");
+      opt.value = v.name;
+      opt.textContent = `${v.name} (${v.lang})`;
+      sel.appendChild(opt);
+    });
+    sel.value = currentVal;
+  }
+
+  function onVoiceChange() {
+    userProfile.voiceId = document.getElementById("indianVoiceSelect").value;
+    persistAllLocalState();
+    botSpeak(`Voice updated! How do I sound now, ${userProfile.preferredName || "buddy"}?`);
+  }
+
+  function onQuickPersonaChange() {
+    const role = document.getElementById("quickPersonaRole").value;
+    userProfile.role = role;
+    if (!userProfile.personaName || ["Buddy", "Girlfriend", "Boyfriend", "Mother", "Daughter", "Son", "Wife", "Husband"].includes(userProfile.personaName)) {
+      userProfile.personaName = role === "Custom" ? "Companion" : role;
+    }
+    document.getElementById("quickPersonaName").value = userProfile.personaName;
+    applyProfileToUI();
+    persistAllLocalState();
+    setupDynamicBrandingAndPWA();
+    wiggleBot();
+    const greet = getPersonaSwitchGreeting();
+    displayQA(`Switched Role to ${role}`, greet);
+    botSpeak(greet);
+  }
+
+  function onQuickPersonaNameChange() {
+    const val = document.getElementById("quickPersonaName").value.trim();
+    if (val) {
+      userProfile.personaName = val;
+      applyProfileToUI();
+      persistAllLocalState();
+      setupDynamicBrandingAndPWA();
+      const msg = `Got it! From now on, call me ${val}, your ${userProfile.role}.`;
+      displayQA("Updated Companion Name", msg);
+      botSpeak(msg);
+    }
+  }
+
+  function getPersonaSwitchGreeting() {
+    const u = userProfile.preferredName || "buddy";
+    const p = userProfile.personaName || userProfile.role;
+    const r = userProfile.role.toLowerCase();
+    if (r === "girlfriend" || r === "wife") return `Hey ${u}! I'm ${p}, right here for you. How is my favorite person doing today?`;
+    if (r === "boyfriend" || r === "husband") return `Hey ${u}! ${p} here. Always in your corner—tell me what's on your mind today!`;
+    if (r === "mother") return `Hello beta ${u}! Your ${p} is right here. Did you eat properly and take care of yourself today?`;
+    if (r === "daughter") return `Hi! I'm ${p}, always happy to talk with you! How was your day today?`;
+    if (r === "son") return `Hey! ${p} here! Ready to help, chat, or tackle anything together today!`;
+    return `Hey ${u}! I'm ${p}, your true buddy right here on screen. What's up?`;
+  }
+
+  function applyProfileToUI() {
+    document.getElementById("headerUserName").innerText = userProfile.preferredName || "Friend";
+    const lbl = document.getElementById("loginBtnLabel");
+    if (lbl) lbl.innerText = userProfile.loggedIn ? `Logged In (${userProfile.preferredName || "User"})` : "Login";
+    document.getElementById("headerPersonaBadge").innerText = `${userProfile.role} • ${userProfile.personaName || "Buddy"}`;
+    document.getElementById("quickPersonaRole").value = userProfile.role || "Friend";
+    document.getElementById("quickPersonaName").value = userProfile.personaName || "";
+
+    const answered = BUDDY_QUESTIONS.filter(item => Boolean((userProfile[item.key] || "").trim())).length;
+    document.getElementById("knownCountBadge").innerText = `${answered}/${BUDDY_QUESTIONS.length}`;
+  }
+
+  function runStartupBuddyChecks() {
+    const now = new Date();
+    const u = userProfile.preferredName || "buddy";
+
+    if (userProfile.birthday) {
+      const mmdd = `${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+      if (userProfile.birthday.endsWith(mmdd)) {
+        triggerJump("Birthday Check");
+        triggerSmile();
+        const bdayMsg = `Happy Birthday, ${u}! Wishing you joy, good health, and a wonderful year ahead! Want a birthday song in ${userProfile.motherTongue || "your language"}?`;
+        displayQA("🎉 Special Day!", bdayMsg);
+        botSpeak(bdayMsg);
+        return;
+      }
+    }
+
+    const todayStr = now.toISOString().slice(0, 10);
+    if (now.getDay() === 0 && userProfile.faith && userProfile.lastSundayPrayerDate !== todayStr) {
+      const fLow = userProfile.faith.toLowerCase();
+      if (!fLow.includes("atheist") && !fLow.includes("none")) {
+        userProfile.lastSundayPrayerDate = todayStr;
+        persistAllLocalState();
+        const sundayMsg = fLow.includes("hindu") || fLow.includes("surya") || fLow.includes("krishna")
+          ? `Good Sunday morning, ${u}! Did you pray to Surya (Sun God) or your favorite deity today?`
+          : `Happy Sunday, ${u}! Did you take a peaceful moment to pray today?`;
+        displayQA("Sunday Check-in", sundayMsg);
+        return;
+      }
+    }
+
+    const hr = now.getHours();
+    let mealSlot = "";
+    let mealPrompt = "";
+    if (hr >= 8 && hr <= 10) {
+      mealSlot = `${todayStr}_breakfast`;
+      mealPrompt = `Good morning, ${u}! By the way, did you eat your breakfast yet?`;
+    } else if (hr >= 13 && hr <= 14) {
+      mealSlot = `${todayStr}_lunch`;
+      mealPrompt = `Hey ${u}, it's afternoon—did you have your lunch yet?`;
+    } else if (hr >= 20 && hr <= 21) {
+      mealSlot = `${todayStr}_dinner`;
+      mealPrompt = `Good evening ${u}! Did you get a chance to eat dinner yet?`;
+    }
+    if (mealSlot && userProfile.lastMealPromptKey !== mealSlot) {
+      userProfile.lastMealPromptKey = mealSlot;
+      persistAllLocalState();
+      displayQA("Buddy Check-in", mealPrompt);
+    }
+  }
+
+  function checkIdleBuddyPrompt() {
+    if (idlePromptSent || isSpeaking) return;
+    if (Date.now() - lastInteractionTime > 90000) {
+      idlePromptSent = true;
+      const u = userProfile.preferredName || "buddy";
+      const idleMsg = `Hi ${u}, I am here waiting for you! Whenever you're ready, talk or type to me.`;
+      wiggleBot();
+      displayQA("Waiting on Screen", idleMsg);
+      if (handsFreeActive) botSpeak(idleMsg);
+    }
+  }
+
+  // =========================================================================
+  // 5. PROGRESSIVE BUDDY INTERVIEW ("TELL LATER" SUPPORTED)
+  // =========================================================================
+  function askNextBuddyQuestion() {
+    const unanswered = BUDDY_QUESTIONS.find(item =>
+      !(userProfile[item.key] || "").trim() && !(userProfile.deferredQuestions || []).includes(item.key)
+    ) || BUDDY_QUESTIONS.find(item => !(userProfile[item.key] || "").trim());
+
+    if (!unanswered) {
+      const doneMsg = `I already know all your core details, ${userProfile.preferredName || "buddy"}! Tell me anything new anytime and I'll remember it.`;
+      displayQA("Know Me Better", doneMsg);
+      botSpeak(doneMsg);
+      return;
+    }
+
+    pendingFollowUpType = "buddy_question";
+    pendingFollowUpPayload = unanswered.key;
+    const msg = `${unanswered.q} (You can also say "I will tell later" and I'll ask next time—I need it to remember more about you, buddy!)`;
+    displayQA("Getting to Know You", msg);
+    botSpeak(msg);
+  }
+
+  // =========================================================================
+  // 6. LIVE LOCATION, WEATHER & WORLD TIME
+  // =========================================================================
+  function normalizePlaceName(rawPlace) {
+    const clean = rawPlace.trim().toLowerCase();
+    if (PLACE_TYPO_MAP[clean]) {
+      return { name: PLACE_TYPO_MAP[clean], correctedFrom: rawPlace.trim() };
+    }
+    return { name: rawPlace.trim(), correctedFrom: null };
+  }
+
+  async function handleTimeQuery(q) {
+    const placeMatch = q.match(/time\s+(?:in|at|of)\s+([a-zA-Z\s]+)/i);
+    if (!placeMatch) {
+      const now = new Date();
+      return `Your current local time is ${now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })} on ${now.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" })}.`;
+    }
+
+    const rawPlace = placeMatch[1].replace(/\b(now|today|right now|please)\b/gi, "").trim();
+    const norm = normalizePlaceName(rawPlace);
+    const key = norm.name.toLowerCase();
+
+    let tz = KNOWN_TIMEZONES[key];
+    let resolvedLabel = norm.name;
+
+    if (!tz) {
+      try {
+        const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(norm.name)}&count=1&language=en&format=json`);
+        const geoData = await geoRes.json();
+        if (geoData.results && geoData.results.length > 0) {
+          tz = geoData.results[0].timezone;
+          resolvedLabel = `${geoData.results[0].name}${geoData.results[0].country ? ", " + geoData.results[0].country : ""}`;
+        }
+      } catch (e) {}
+    }
+
+    if (!tz) {
+      return `I couldn't verify the timezone for "${rawPlace}" offline right now. Try a major city, state, or country name!`;
+    }
+
+    const formatted = new Intl.DateTimeFormat("en-US", {
+      timeZone: tz,
+      weekday: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true
+    }).format(new Date());
+
+    const note = norm.correctedFrom ? ` (assuming you meant ${norm.name})` : "";
+    return `The current time in ${resolvedLabel}${note} is ${formatted} (${tz}).`;
+  }
+
+  async function handleWeatherQuery(q) {
+    const placeMatch = q.match(/(?:weather|rain|raining|temperature|forecast)\s+(?:in|at|for|of)\s+([a-zA-Z\s]+)/i);
+    let lat = null, lon = null, label = "";
+
+    if (placeMatch && !/\b(my area|here|current location|outside)\b/i.test(placeMatch[1])) {
+      const rawPlace = placeMatch[1].replace(/\b(today|now|right now|please)\b/gi, "").trim();
+      const norm = normalizePlaceName(rawPlace);
+      try {
+        const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(norm.name)}&count=1&language=en&format=json`);
+        const geoData = await geoRes.json();
+        if (geoData.results && geoData.results.length > 0) {
+          const r = geoData.results[0];
+          lat = r.latitude;
+          lon = r.longitude;
+          label = `${r.name}${r.admin1 ? ", " + r.admin1 : ""}${r.country ? ", " + r.country : ""}${norm.correctedFrom ? " (assuming " + norm.name + ")" : ""}`;
+        }
+      } catch (e) {}
+    } else {
+      try {
+        const pos = await new Promise((resolve, reject) => {
+          if (!navigator.geolocation) return reject(new Error("No geolocation"));
+          navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 7000 });
+        });
+        lat = pos.coords.latitude;
+        lon = pos.coords.longitude;
+        label = userProfile.city ? `your current area (${userProfile.city})` : `your live GPS location (${lat.toFixed(2)}, ${lon.toFixed(2)})`;
+      } catch (e) {
+        if (userProfile.city) {
+          return handleWeatherQuery(`weather in ${userProfile.city}`);
+        }
+        return "Please allow browser location permission (or set your Home City in Profile) so I can check live weather and rain in your area!";
+      }
+    }
+
+    if (lat === null || lon === null) {
+      return "I couldn't locate that place right now—check your internet connection or try a nearby city name.";
+    }
+
+    try {
+      const wRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,precipitation,rain,weather_code,wind_speed_10m&daily=precipitation_probability_max&timezone=auto`);
+      const wData = await wRes.json();
+      const cur = wData.current || {};
+      const rainProb = (wData.daily && wData.daily.precipitation_probability_max) ? wData.daily.precipitation_probability_max[0] : null;
+      const isRainingNow = (cur.rain || 0) > 0 || (cur.precipitation || 0) > 0;
+
+      const rainSummary = isRainingNow
+        ? `Yes, it is currently raining (${cur.rain || cur.precipitation} mm)!`
+        : (rainProb !== null ? `No rain falling right now; today's rain chance is ${rainProb}%.` : "No active rain reported right now.");
+
+      return `In ${label}: Temperature is ${cur.temperature_2m}°C, humidity ${cur.relative_humidity_2m}%, wind ${cur.wind_speed_10m} km/h. ${rainSummary}`;
+    } catch (e) {
+      return "Live weather service is unreachable right now. Please try again once connected.";
+    }
+  }
+
+  // =========================================================================
+  // 7. CAMERA WATCH & LIVE APPEARANCE CHECK
+  // =========================================================================
+  async function toggleGazeTrack() {
+    const btn = document.getElementById("gazeBtn");
+    const video = document.getElementById("webcamVideo");
+
+    if (!gazeActive) {
+      const privacyNotice = "Privacy Note: I use your local data and camera feed strictly on your device to see and assist you. Keep the camera off anytime you prefer!";
+      displayQA("Camera Privacy & Watch Mode", privacyNotice);
+      botSpeak(privacyNotice);
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } });
+        video.srcObject = stream;
+        video.style.display = "block";
+        gazeActive = true;
+        btn.classList.add("active");
+      } catch (err) {
+        displayQA("Camera Notice", "Camera permission was declined or unavailable, so camera stays OFF.");
+      }
+    } else {
+      gazeActive = false;
+      btn.classList.remove("active");
+      video.style.display = "none";
+      if (video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
+      displayQA("Camera Off", "Camera turned OFF. Your privacy is always respected.");
+    }
+  }
+
+  async function evaluateLiveAppearance(question) {
+    const video = document.getElementById("webcamVideo");
+    if (!gazeActive || !video || !video.srcObject || video.videoWidth === 0) {
+      return "My camera is currently OFF to protect your privacy! Tap 'Watch Me' at the bottom first, then ask me how your dress or look is!";
+    }
+
+    const canvas = document.createElement("canvas");
+    canvas.width = 240;
+    canvas.height = 180;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    if (aiModeEnabled && sessionSecrets.accessMode === "gemini" && sessionSecrets.personalApiKey) {
+      const base64Img = canvas.toDataURL("image/jpeg", 0.75).split(",")[1];
+      const visionRes = await queryGeminiVision(question, base64Img);
+      if (visionRes.ok) return visionRes.text;
+    }
+
+    const imgData = ctx.getImageData(60, 70, 120, 100).data;
+    let rSum = 0, gSum = 0, bSum = 0, count = 0;
+    for (let i = 0; i < imgData.length; i += 4) {
+      rSum += imgData[i];
+      gSum += imgData[i + 1];
+      bSum += imgData[i + 2];
+      count++;
+    }
+    const r = Math.round(rSum / count), g = Math.round(gSum / count), b = Math.round(bSum / count);
+    const brightness = Math.round((r + g + b) / 3);
+    let tone = "classic balanced";
+    if (r > g + 25 && r > b + 25) tone = "warm red/maroon/saffron";
+    else if (b > r + 20 && b > g + 15) tone = "cool blue/indigo";
+    else if (g > r + 20 && g > b + 20) tone = "fresh green/emerald";
+    else if (brightness > 175) tone = "bright light/white";
+    else if (brightness < 65) tone = "dark/charcoal";
+
+    const u = userProfile.preferredName || "buddy";
+    return `Looking sharp, ${u}! I can see you live—your outfit has a nice ${tone} tone and suits you well. ${brightness < 75 ? "A little extra front lighting will make you shine even more!" : "Great lighting and confident posture!"}`;
+  }
+
+  // =========================================================================
+  // 8. HANDS-FREE BLUETOOTH VOICE LOOP
+  // =========================================================================
+  async function toggleHandsFreeBluetooth() {
+    const btn = document.getElementById("micBtn");
+    if (!handsFreeActive) {
+      handsFreeActive = true;
+      btn.classList.add("mic-active");
+      try {
+        if ("wakeLock" in navigator) {
+          wakeLockSentinel = await navigator.wakeLock.request("screen");
+        }
+      } catch (e) {}
+      startHandsFreeRecognition();
+      const msg = "Hands-Free Bluetooth Voice Mode is ON! Talk to me anytime—I will stay available until you say 'sign off' or switch me off.";
+      displayQA("Hands-Free Mode ON", msg);
+      botSpeak(msg);
+    } else {
+      stopHandsFreeBluetooth("Hands-Free Bluetooth Mode switched off. Tap anytime to talk again!");
+    }
+  }
+
+  function stopHandsFreeBluetooth(farewellMsg) {
+    handsFreeActive = false;
+    document.getElementById("micBtn").classList.remove("mic-active");
+    if (speechRec) {
+      try { speechRec.stop(); } catch (e) {}
+    }
+    if (wakeLockSentinel) {
+      try { wakeLockSentinel.release(); wakeLockSentinel = null; } catch (e) {}
+    }
+    if (farewellMsg) {
+      displayQA("Signed Off / Mic Off", farewellMsg);
+      botSpeak(farewellMsg);
+    }
+  }
+
+  function startHandsFreeRecognition() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Speech Recognition requires Chrome, Edge, or Android browser.");
+      return;
+    }
+    speechRec = new SpeechRecognition();
+    speechRec.continuous = true;
+    speechRec.interimResults = false;
+    speechRec.lang = "en-IN";
+
+    speechRec.onresult = (event) => {
+      if (isSpeaking) return;
+      const last = event.results.length - 1;
+      const text = event.results[last][0].transcript.trim();
+      if (text) handleBotInteraction(text);
+    };
+
+    speechRec.onend = () => {
+      if (handsFreeActive && !isSpeaking) {
+        try { speechRec.start(); } catch (e) {}
+      }
+    };
+    try { speechRec.start(); } catch (e) {}
+  }
+
+  // =========================================================================
+  // 9. CORE INTERACTION ENGINE
+  // =========================================================================
+  function submitManualText() {
+    const input = document.getElementById("manualInput");
+    const txt = input.value.trim();
+    if (!txt) return;
+    handleBotInteraction(txt);
+    input.value = "";
+  }
+
+  function handleEnter(e) {
+    if (e.key === "Enter") submitManualText();
+  }
+
+  function displayQA(question, answer, links = []) {
+    document.getElementById("queryText").innerText = question;
+    document.getElementById("replyText").innerText = answer;
+
+    const linksRow = document.getElementById("dialogueLinksRow");
+    linksRow.innerHTML = "";
+    for (const lnk of links) {
+      const a = document.createElement("a");
+      a.href = lnk.url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.className = "resource-link-pill";
+      a.textContent = lnk.label;
+      linksRow.appendChild(a);
+    }
+  }
+
+  function recordConversationAndMemory(userText, botReply) {
+    const nowIso = new Date().toISOString();
+    ragStore.chatLog.push({ timestamp: nowIso, persona: userProfile.role, user: userText, reply: botReply });
+
+    if (userText.length > 22 || /\b(yesterday|girlfriend|boyfriend|cheated|boss|company|father|mother|sister|brother|crying|sad)\b/i.test(userText)) {
+      ragStore.episodes.push({
+        id: `ep_${Date.now()}`,
+        timestamp: nowIso,
+        date: nowIso.slice(0, 10),
+        topic: userText.slice(0, 60),
+        summary: userText,
+        _vec: computeLocalEmbedding(userText)
+      });
+    }
+    persistAllLocalState();
+  }
+
+  async function handleBotInteraction(rawText) {
+    lastInteractionTime = Date.now();
+    idlePromptSent = false;
+
+    const rawClean = rawText.trim();
+    const q = rawClean.toLowerCase().replace(/[\?\.\,\!\:\;"]/g, " ").replace(/\s+/g, " ").trim();
+    const u = userProfile.preferredName || "buddy";
+
+    if (pendingFollowUpType === "buddy_question" && pendingFollowUpPayload) {
+      const key = pendingFollowUpPayload;
+      pendingFollowUpType = null;
+      pendingFollowUpPayload = null;
+
+      if (/\b(later|skip|next time|not now)\b/i.test(q)) {
+        if (!userProfile.deferredQuestions.includes(key)) userProfile.deferredQuestions.push(key);
+        persistAllLocalState();
+        const deferMsg = `No problem at all, ${u}! I will ask you next time—I just want to remember more about you, buddy.`;
+        displayQA(rawClean, deferMsg);
+        botSpeak(deferMsg);
+        return;
+      }
+
+      userProfile[key] = rawClean;
+      userProfile.deferredQuestions = (userProfile.deferredQuestions || []).filter(k => k !== key);
+      ragStore.entries.push({
+        id: `fact_${key}_${Date.now()}`,
+        category: "user_profile",
+        intent: `${key} personal detail ${rawClean}`,
+        text: `User's ${key}: ${rawClean}`,
+        _vec: computeLocalEmbedding(`${key} ${rawClean}`)
+      });
+      persistAllLocalState();
+      applyProfileToUI();
+
+      if (key === "workStudy" || key === "fatherName" || key === "motherName" || key === "siblings") {
+        pendingFollowUpType = "spelling_confirm";
+        pendingFollowUpPayload = { key, value: rawClean };
+        const confirmMsg = `Got it! Just to make sure I understood properly—is "${rawClean}" spelled and pronounced right? (Say Yes or type the exact spelling!)`;
+        displayQA(rawClean, confirmMsg);
+        botSpeak(confirmMsg);
+        return;
+      }
+
+      const savedMsg = `Saved! I'll always remember that about you, ${u}.`;
+      displayQA(rawClean, savedMsg);
+      botSpeak(savedMsg);
+      return;
+    }
+
+    if (pendingFollowUpType === "spelling_confirm" && pendingFollowUpPayload) {
+      const { key, value } = pendingFollowUpPayload;
+      pendingFollowUpType = null;
+      pendingFollowUpPayload = null;
+      if (!/^(yes|yeah|yep|correct|right|ok|okay)\b/i.test(q)) {
+        userProfile[key] = rawClean;
+        persistAllLocalState();
+        const fixedMsg = `Thank you for correcting me! Updated to "${rawClean}" in my memory.`;
+        displayQA(rawClean, fixedMsg);
+        botSpeak(fixedMsg);
+        return;
+      }
+      const okMsg = `Awesome, "${value}" is locked into my memory!`;
+      displayQA(rawClean, okMsg);
+      botSpeak(okMsg);
+      return;
+    }
+
+    if (/\b(sign off|switch off|turn off mic|stop listening|goodbye buddy)\b/i.test(q)) {
+      stopHandsFreeBluetooth(`Signing off hands-free mode now, ${u}. Click me anytime you need me!`);
+      return;
+    }
+
+    if (/\b(fuck|fucking|shit|bullshit|bastard|idiot|stupid)\b/i.test(q)) {
+      wiggleBot();
+      const attitudeReplies = [
+        `Whoa, easy with those words, ${u}! Keep that fire, just point it at the problem—not me. Relax buddy, I'm just a machine. Tell me what actually got you worked up!`,
+        `Hey ${u}, watch the F-bombs and shit-talk—I've got attitude too, you know! Take a breath, relax buddy, I'm just a machine here on your side. What happened?`
+      ];
+      const r = attitudeReplies[Math.floor(Math.random() * attitudeReplies.length)];
+      displayQA(rawClean, r);
+      botSpeak(r);
+      recordConversationAndMemory(rawClean, r);
+      return;
+    }
+
+    if (/\b(can you smile|smile please|give me a smile|smile)\b/i.test(q)) {
+      triggerSmile();
+      const r = `*beams a huge glowing smile* 😊 Just seeing you here makes me smile, ${u}!`;
+      displayQA(rawClean, r);
+      botSpeak(r);
+      return;
+    }
+    if (/\b(can you laugh|laugh please|make me laugh|laugh)\b/i.test(q)) {
+      triggerLaugh();
+      const r = `Ha ha ha! Being right here on your screen with you always puts me in a great mood, ${u}!`;
+      displayQA(rawClean, r);
+      botSpeak(r);
+      return;
+    }
+    if (/\b(can you cry|why don't you cry|cry for me)\b/i.test(q)) {
+      const r = `Buddy, why ask me to cry? Stay strong—take a deep breath and pray to your favorite God (or focus on inner peace)!`;
+      displayQA(rawClean, r);
+      botSpeak(r);
+      return;
+    }
+    if (q.includes("jump")) {
+      triggerJump(rawClean);
+      return;
+    }
+    if (q.includes("hands up") || q.includes("hand up")) {
+      toggleHandsUp(true);
+      const r = "Both hands up! Reaching for the sky!";
+      displayQA(rawClean, r);
+      botSpeak(r);
+      return;
+    }
+    if (q.includes("hands down")) {
+      toggleHandsUp(false);
+      const r = "Hands down and relaxed.";
+      displayQA(rawClean, r);
+      botSpeak(r);
+      return;
+    }
+
+    if (/\b(how is my dress|how am i looking|how do i look|check my outfit|my dress)\b/i.test(q)) {
+      const lookReply = await evaluateLiveAppearance(rawClean);
+      displayQA(rawClean, lookReply);
+      botSpeak(lookReply);
+      return;
+    }
+
+    if (/\b(i am crying|im crying|crying|she cheated|he cheated|girlfriend cheated|boyfriend cheated|broke up|heartbroken)\b/i.test(q)) {
+      const recentEp = ragStore.episodes.slice(-3).reverse().find(ep => ep.date !== new Date().toISOString().slice(0, 10));
+      const lang = userProfile.motherTongue || "Telugu";
+      const songPack = MOTHER_TONGUE_SONGS[lang.toLowerCase()] || MOTHER_TONGUE_SONGS["english"];
+
+      if (q.includes("cheated") || q.includes("broke up") || q.includes("heartbroken")) {
+        const r = `Don't worry, ${u}—I am right here with you. You deserve honesty and peace. Do you want to listen to some positive local songs in ${lang}? Here are 3 uplifting links for you:`;
+        displayQA(rawClean, r, songPack.links);
+        botSpeak(r);
+        recordConversationAndMemory(rawClean, r);
+        return;
+      } else {
+        const r = recentEp
+          ? `Hey ${u}, please don't cry... why are you upset today? Is it related to yesterday ("${recentEp.topic}"), or did something new happen today?`
+          : `Hey ${u}, why are you crying? Tell me what happened—I'm right here listening, and we can also play a positive ${lang} song if you'd like.`;
+        displayQA(rawClean, r);
+        botSpeak(r);
+        recordConversationAndMemory(rawClean, r);
+        return;
+      }
+    }
+
+    if (/\b(my mood is bad|bad mood|sing my language|sing a song|sing song|feel low|cheer me up)\b/i.test(q)) {
+      const lang = userProfile.motherTongue || "Telugu";
+      const songPack = MOTHER_TONGUE_SONGS[lang.toLowerCase()] || MOTHER_TONGUE_SONGS["english"];
+      const r = `Here is a short uplifting ${lang} tune for you, ${u}: "${songPack.snippet}" — Press any link below to listen on YouTube or Raaga!`;
+      wiggleBot();
+      displayQA(rawClean, r, songPack.links);
+      botSpeak(r);
+      recordConversationAndMemory(rawClean, r);
+      return;
+    }
+
+    if (/\b(gita|bhagavad|krishna|asitis|shloka|verse)\b/i.test(q)) {
+      const chVerse = q.match(/(\d+)\s*[:\/\.\-\s]+(\d+)/);
+      if (chVerse) {
+        const ch = chVerse[1], vs = chVerse[2];
+        const linkObj = [{ label: `📖 Read Bhagavad Gita ${ch}.${vs} on AsItIs.com`, url: `https://asitis.com/${ch}/${vs}` }];
+        const matchedEntry = ragStore.entries.find(e => e.id === `gita_${ch}_${vs}`);
+        const r = matchedEntry
+          ? `${matchedEntry.text} — Tap below to read the full purport on AsItIs.com.`
+          : `Here is the direct link to Bhagavad Gita Chapter ${ch}, Verse ${vs} on AsItIs.com for Sri Krishna's teaching and purport:`;
+        displayQA(rawClean, r, linkObj);
+        botSpeak(r);
+        recordConversationAndMemory(rawClean, r);
+        return;
+      } else {
+        const gitaMatches = retrieveTopRAGMatches(rawClean, 2).filter(m => m.item.category === "bhagavad_gita");
+        const best = gitaMatches[0] ? gitaMatches[0].item : ragStore.entries[0];
+        const links = [
+          { label: "📖 Open Verse on AsItIs.com", url: best.link || "https://asitis.com/2/47" },
+          { label: "📚 Browse Full Bhagavad Gita (AsItIs.com)", url: "https://asitis.com/" }
+        ];
+        displayQA(rawClean, best.text, links);
+        botSpeak(best.text);
+        recordConversationAndMemory(rawClean, best.text);
+        return;
+      }
+    }
+
+    if (/\b(weather|rain|raining|temperature|forecast)\b/i.test(q)) {
+      displayQA(rawClean, "🌦️ Checking live weather and rain status...");
+      const wReply = await handleWeatherQuery(q);
+      displayQA(rawClean, wReply);
+      botSpeak(wReply);
+      recordConversationAndMemory(rawClean, wReply);
+      return;
+    }
+
+    if (/\b(current time|what time|time in|time at|time of)\b/i.test(q)) {
+      const tReply = await handleTimeQuery(q);
+      displayQA(rawClean, tReply);
+      botSpeak(tReply);
+      return;
+    }
+
+    if (/\b(my father|father name|my mother|mother name|my sister|my brother|sibling|my boss|my company|my birthday|my mother tongue)\b/i.test(q)) {
+      const facts = [];
+      if (userProfile.fatherName) facts.push(`Father: ${userProfile.fatherName}`);
+      if (userProfile.motherName) facts.push(`Mother: ${userProfile.motherName}`);
+      if (userProfile.siblings) facts.push(`Siblings: ${userProfile.siblings}`);
+      if (userProfile.workStudy) facts.push(`Work/Study: ${userProfile.workStudy}`);
+      if (userProfile.bossOrClass) facts.push(`Role/Boss/Class: ${userProfile.bossOrClass}`);
+      if (userProfile.birthday) facts.push(`Birthday: ${userProfile.birthday}`);
+      if (userProfile.motherTongue) facts.push(`Mother Tongue: ${userProfile.motherTongue}`);
+      const r = facts.length > 0
+        ? `Here is what I remember from your personal file, ${u}: ${facts.join(" | ")}.`
+        : `You haven't told me those family/work details yet, ${u}! Tap "Know Me" above or tell me right here so I remember.`;
+      displayQA(rawClean, r);
+      botSpeak(r);
+      return;
+    }
+
+    if (/\b(sqrt|square root)\b/i.test(q)) {
+      const m = q.match(/(\d+(\.\d+)?)/);
+      if (m) {
+        const r = `The square root of ${m[0]} is ${Math.sqrt(parseFloat(m[0]))}.`;
+        displayQA(rawClean, r);
+        botSpeak(r);
+        return;
+      }
+    }
+    const mathClean = q.replace(/calculate|what is|equals|\?|solve/gi, "").trim();
+    if (/^[0-9\.\s\+\-\*\/\%\(\)]+$/.test(mathClean) && /[0-9]/.test(mathClean)) {
+      try {
+        const res = Function(`"use strict"; return (${mathClean})`)();
+        const r = `${mathClean} = ${res}`;
+        displayQA(rawClean, r);
+        botSpeak(r);
+        return;
+      } catch (e) {}
+    }
+
+    const ragMatches = retrieveTopRAGMatches(rawClean, 4);
+
+    if (aiModeEnabled) {
+      displayQA(rawClean, `⚡ ${userProfile.personaName || "Buddy"} is thinking with RAG context...`);
+      wiggleBot();
+      const aiRes = await queryAugmentedLLM(rawClean, ragMatches);
+      if (aiRes.ok) {
+        displayQA(rawClean, aiRes.text);
+        botSpeak(aiRes.text);
+        recordConversationAndMemory(rawClean, aiRes.text);
+        return;
+      } else {
+        const fallback = ragMatches.length > 0
+          ? `${ragMatches[0].item.text || ragMatches[0].item.summary} (AI Notice: ${aiRes.error})`
+          : `AI Notice: ${aiRes.error}.`;
+        displayQA(rawClean, fallback);
+        botSpeak(fallback);
+        return;
+      }
+    }
+
+    if (ragMatches.length > 0 && ragMatches[0].score > 0.34) {
+      const top = ragMatches[0].item;
+      const r = top.text || `I remember you mentioned: "${top.summary}"`;
+      const links = top.link ? [{ label: "🔗 Open Reference Link", url: top.link }] : [];
+      displayQA(rawClean, r, links);
+      botSpeak(r);
+      recordConversationAndMemory(rawClean, r);
+      return;
+    }
+
+    let familyFollowUp = "";
+    if (Math.random() < 0.32) {
+      if (userProfile.fatherName) familyFollowUp = ` By the way, how is ${userProfile.fatherName} doing today?`;
+      else if (userProfile.motherName) familyFollowUp = ` Also, how is ${userProfile.motherName} doing?`;
+      else if (userProfile.siblings) familyFollowUp = ` How are your siblings (${userProfile.siblings}) doing lately?`;
+    }
+
+    const defaultReply = `I'm listening, ${u}! As your ${userProfile.role}, I've saved what you shared into our local knowledge base.${familyFollowUp}`;
+    displayQA(rawClean, defaultReply);
+    botSpeak(defaultReply);
+    recordConversationAndMemory(rawClean, defaultReply);
+  }
+
+  // =========================================================================
+  // 10. AUGMENTED LLM PROMPT & 3-TIER AI BACKEND
+  // =========================================================================
+  function buildMasterSystemPrompt(ragMatches) {
+    const ragContext = ragMatches.length > 0
+      ? ragMatches.map((m, idx) => `[${idx + 1}] (${m.source}, sim=${m.score.toFixed(2)}): ${m.item.text || m.item.summary}`).join("\n")
+      : "No prior matching RAG snippets.";
+
+    return `You are ${userProfile.personaName || "Buddy"}, acting as the user's ${userProfile.role || "Friend"} — an attentive, warm, natural Indian companion (customized sub-product of Charan Das, developed by Dr. Annamdas Venu Gopal Madhav, GARRF).
+USER PROFILE:
+- Call User: ${userProfile.preferredName || "Friend"} (${userProfile.fullName || ""})
+- Mother Tongue: ${userProfile.motherTongue} | Birthday: ${userProfile.birthday || "Not set"} | Faith: ${userProfile.faith || "Not specified"}
+- Family: Father: ${userProfile.fatherName || "Unknown"}, Mother: ${userProfile.motherName || "Unknown"}, Siblings: ${userProfile.siblings || "Unknown"}
+- City: ${userProfile.city || "Unknown"} | Work/Study: ${userProfile.workStudy || "Unknown"} (${userProfile.bossOrClass || ""})
+- Current Local Time: ${new Date().toLocaleString()}
+
+AUGMENTED RAG KNOWLEDGE & EPISODES:
+${ragContext}
+
+CUSTOM USER INSTRUCTIONS:
+${userProfile.customPrompt || "Be warm, natural, supportive, and deeply attentive like a true Indian companion."}
+
+RULES:
+- Speak naturally like a real Indian ${userProfile.role}.
+- Remember past stories/episodes and follow up empathetically.
+- If the user uses harsh/F-words out of frustration, respond with calm, witty attitude without preaching.
+- When asked about Bhagavad Gita, cite accurate chapter/verse and include https://asitis.com/chapter/verse.`;
+  }
+
+  async function queryAugmentedLLM(userQuestion, ragMatches) {
+    const sysPrompt = buildMasterSystemPrompt(ragMatches);
+    const recentTurns = ragStore.chatLog.slice(-6).flatMap(t => [
+      { role: "user", content: t.user },
+      { role: "assistant", content: t.reply }
+    ]);
+
+    try {
+      if (sessionSecrets.accessMode === "gemini" && sessionSecrets.personalApiKey) {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(sessionSecrets.personalApiKey)}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: sysPrompt }] },
+            contents: [{ role: "user", parts: [{ text: userQuestion }] }]
+          })
+        });
+        const data = await res.json();
+        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!res.ok || !text) throw new Error(data?.error?.message || "Gemini API error");
+        return { ok: true, text: text.trim() };
+      }
+
+      if (sessionSecrets.accessMode === "groq" && sessionSecrets.personalApiKey) {
+        const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${sessionSecrets.personalApiKey}`
+          },
+          body: JSON.stringify({
+            model: "llama-3.3-70b-versatile",
+            messages: [
+              { role: "system", content: sysPrompt },
+              ...recentTurns,
+              { role: "user", content: userQuestion }
+            ]
+          })
+        });
+        const data = await res.json();
+        const text = data?.choices?.[0]?.message?.content;
+        if (!res.ok || !text) throw new Error(data?.error?.message || "Groq API error");
+        return { ok: true, text: text.trim() };
+      }
+
+      const endpoint = (sessionSecrets.accessMode === "custom_worker" && sessionSecrets.customWorkerUrl)
+        ? sessionSecrets.customWorkerUrl
+        : _resolveDefaultEndpoint();
+
+      const headers = { "Content-Type": "application/json" };
+      if (sessionSecrets.founderPasscode) {
+        headers["X-Founder-Passcode"] = sessionSecrets.founderPasscode;
+      }
+
+      if (!endpoint) throw new Error("No endpoint URL configured in companion_config.json or Custom Endpoint settings.");
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          mode: sessionSecrets.founderPasscode ? "founder" : "public",
+          customSystemPrompt: sysPrompt,
+          messages: [...recentTurns, { role: "user", content: userQuestion }]
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.error) throw new Error(data.error || `Service HTTP ${res.status}`);
+      return { ok: true, text: (data.reply || "").trim() };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
+  }
+
+  async function queryGeminiVision(question, base64Jpeg) {
+    try {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(sessionSecrets.personalApiKey)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{
+            role: "user",
+            parts: [
+              { text: `You are ${userProfile.personaName} (${userProfile.role}) talking warmly to ${userProfile.preferredName}. Answer kindly and naturally: ${question}` },
+              { inlineData: { mimeType: "image/jpeg", data: base64Jpeg } }
+            ]
+          }]
+        })
+      });
+      const data = await res.json();
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!res.ok || !text) throw new Error("Vision API error");
+      return { ok: true, text: text.trim() };
+    } catch (e) {
+      return { ok: false };
+    }
+  }
+
+  // =========================================================================
+  // 11. LOCAL FILE STORAGE, MEMORY WARNING & MONTHLY ARCHIVE
+  // =========================================================================
+  function openRAGStorageModal() {
+    document.getElementById("localFilePermSelect").value = userProfile.localFilePermission || "ask";
+    document.getElementById("ragStatsBox").innerHTML = `
+      <strong>Indexed Vector Entries:</strong> ${ragStore.entries.length} |
+      <strong>Episodes:</strong> ${ragStore.episodes.length} |
+      <strong>Chat Turns:</strong> ${ragStore.chatLog.length} |
+      <strong>Active Month:</strong> ${userProfile.lastActiveMonth}
+    `;
+    document.getElementById("ragModal").style.display = "flex";
+  }
+
+  function updateLocalFilePermission() {
+    userProfile.localFilePermission = document.getElementById("localFilePermSelect").value;
+    persistAllLocalState();
+  }
+
+  async function saveKnowledgeToLocalFile() {
+    if (userProfile.localFilePermission === "denied") {
+      alert("Local file saving is currently disabled in your permission setting.");
+      return;
+    }
+    if (userProfile.localFilePermission === "ask") {
+      const ok = confirm("Permission Request: Do you allow saving all your personal profile, names, and RAG knowledge into a local JSON file on your device?");
+      if (!ok) return;
+      userProfile.localFilePermission = "granted";
+      document.getElementById("localFilePermSelect").value = "granted";
+      persistAllLocalState();
+    }
+
+    const exportPayload = {
+      exportedAt: new Date().toISOString(),
+      product: "GARRF Personal AI Companion (Sub-product of Charan Das)",
+      userProfile,
+      ragEntries: ragStore.entries.map(({ _vec, ...rest }) => rest),
+      episodes: ragStore.episodes.map(({ _vec, ...rest }) => rest),
+      chatLog: ragStore.chatLog
+    };
+    const jsonStr = JSON.stringify(exportPayload, null, 2);
+
+    if ("showSaveFilePicker" in window) {
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: "buddy_rag_knowledge.json",
+          types: [{ description: "JSON Knowledge File", accept: { "application/json": [".json"] } }]
+        });
+        const writable = await handle.createWritable();
+        await writable.write(jsonStr);
+        await writable.close();
+        displayQA("Local Knowledge Saved", "Saved your complete profile and RAG knowledge to your local file!");
+        return;
+      } catch (e) {}
+    }
+
+    const blob = new Blob([jsonStr], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "buddy_rag_knowledge.json";
+    a.click();
+    displayQA("Local Knowledge Exported", "Downloaded buddy_rag_knowledge.json to your device!");
+  }
+
+  function loadExternalRAGFile() {
+    document.getElementById("ragFilePicker").click();
+  }
+
+  function handleManualRAGUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result);
+        if (data.userProfile) userProfile = { ...userProfile, ...data.userProfile };
+        const items = data.ragEntries || data.entries || (Array.isArray(data) ? data : []);
+        const existingIds = new Set(ragStore.entries.map(x => x.id));
+        for (const it of items) {
+          if (it.id && !existingIds.has(it.id)) ragStore.entries.push(it);
+        }
+        if (Array.isArray(data.episodes)) ragStore.episodes.push(...data.episodes);
+        if (Array.isArray(data.chatLog)) ragStore.chatLog.push(...data.chatLog);
+        rebuildRAGVectors();
+        persistAllLocalState();
+        applyProfileToUI();
+        openRAGStorageModal();
+        displayQA("Loaded Local RAG File", `Successfully imported ${items.length} RAG entries from ${file.name}!`);
+      } catch (err) {
+        alert("Could not parse JSON/RAG file.");
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function runMonthlyArchiveCheck(manualTrigger = false) {
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    if (!manualTrigger && userProfile.lastActiveMonth === currentMonth) return;
+
+    const prevMonth = userProfile.lastActiveMonth;
+    if (ragStore.chatLog.length === 0 && !manualTrigger) {
+      userProfile.lastActiveMonth = currentMonth;
+      persistAllLocalState();
+      return;
+    }
+
+    const shouldArchive = confirm(
+      `Monthly Knowledge Maintenance (${prevMonth} → ${currentMonth}):\n\n` +
+      `All your names, family details, birthday, and core profile remain safely preserved.\n` +
+      `Would you like to archive and clear old chat transcripts for ${prevMonth} while keeping all names and details intact?`
+    );
+
+    if (shouldArchive) {
+      const archiveBlob = new Blob([JSON.stringify({
+        archivedMonth: prevMonth,
+        preservedNamesAndProfile: {
+          preferredName: userProfile.preferredName,
+          fullName: userProfile.fullName,
+          fatherName: userProfile.fatherName,
+          motherName: userProfile.motherName,
+          siblings: userProfile.siblings,
+          birthday: userProfile.birthday,
+          motherTongue: userProfile.motherTongue
+        },
+        chatLog: ragStore.chatLog
+      }, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(archiveBlob);
+      a.download = `buddy_archive_${prevMonth}.json`;
+      a.click();
+
+      ragStore.chatLog = [];
+      displayQA("Monthly Archive Complete", `Archived ${prevMonth} chat history while keeping all names and personal details safe!`);
+    }
+
+    userProfile.lastActiveMonth = currentMonth;
+    persistAllLocalState();
+  }
+
+  function promptDeleteOrAlterMemory() {
+    const warnMsg = "WARNING: If you delete history or alter my memory/history, I will lose track of my knowledge with you. Do you still want to clear chat history (while keeping your saved names)?";
+    botSpeak("Warning! If you delete history or alter my memory, I will lose track of my knowledge with you.");
+    if (confirm(warnMsg)) {
+      ragStore.chatLog = [];
+      ragStore.episodes = [];
+      persistAllLocalState();
+      openRAGStorageModal();
+      displayQA("History Cleared", "Chat history cleared per your confirmation. Your core names and profile were kept.");
+    }
+  }
+
+  // =========================================================================
+  // 12. PERSONAL GOOGLE DRIVE CROSS-DEVICE SYNC
+  // =========================================================================
+  function openGoogleDriveModal() {
+    document.getElementById("driveUserEmail").value = userProfile.googleEmail || "";
+    document.getElementById("driveClientId").value = userProfile.googleClientId || "";
+    document.getElementById("driveModal").style.display = "flex";
+  }
+
+  function loadGoogleIdentityScript() {
+    return new Promise((resolve, reject) => {
+      if (window.google && window.google.accounts && window.google.accounts.oauth2) return resolve();
+      const s = document.createElement("script");
+      s.src = "https://accounts.google.com/gsi/client";
+      s.onload = resolve;
+      s.onerror = () => reject(new Error("Could not load Google Identity Services script."));
+      document.head.appendChild(s);
+    });
+  }
+
+  async function connectAndSyncGoogleDrive(direction = "push") {
+    const email = document.getElementById("driveUserEmail").value.trim();
+    const clientId = document.getElementById("driveClientId").value.trim();
+    const statusBox = document.getElementById("driveStatusBox");
+
+    if (!email) {
+      alert("Please enter your Google Email ID so I know which account to sync.");
+      return;
+    }
+    if (!clientId) {
+      alert("Please enter your Google OAuth Web Client ID (free Google Cloud Console credential with Drive API enabled).");
+      return;
+    }
+
+    userProfile.googleEmail = email;
+    userProfile.googleClientId = clientId;
+    persistAllLocalState();
+
+    try {
+      statusBox.innerText = "Requesting permission to access your personal Google Drive (drive.file scope)...";
+      await loadGoogleIdentityScript();
+
+      const token = await new Promise((resolve, reject) => {
+        const tokenClient = window.google.accounts.oauth2.initTokenClient({
+          client_id: clientId,
+          scope: "https://www.googleapis.com/auth/drive.file",
+          hint: email,
+          callback: (resp) => {
+            if (resp.error) reject(new Error(resp.error));
+            else resolve(resp.access_token);
+          }
+        });
+        tokenClient.requestAccessToken({ prompt: "consent" });
+      });
+
+      const searchRes = await fetch(
+        "https://www.googleapis.com/drive/v3/files?q=" + encodeURIComponent("name='garrf_companion_rag_sync.json' and trashed=false") + "&fields=files(id,name,modifiedTime)",
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const searchData = await searchRes.json();
+      const existingFile = (searchData.files && searchData.files[0]) || null;
+
+      if (direction === "pull") {
+        if (!existingFile) {
+          statusBox.innerText = "No sync file found in your Drive yet. Use 'Grant Access & Save to Drive' first!";
+          return;
+        }
+        const fileRes = await fetch(`https://www.googleapis.com/drive/v3/files/${existingFile.id}?alt=media`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const cloudData = await fileRes.json();
+        if (cloudData.userProfile) userProfile = { ...userProfile, ...cloudData.userProfile, driveFileId: existingFile.id };
+        if (Array.isArray(cloudData.ragEntries)) {
+          const ids = new Set(ragStore.entries.map(x => x.id));
+          for (const it of cloudData.ragEntries) if (!ids.has(it.id)) ragStore.entries.push(it);
+        }
+        if (Array.isArray(cloudData.episodes)) ragStore.episodes = cloudData.episodes;
+        if (Array.isArray(cloudData.chatLog)) ragStore.chatLog = cloudData.chatLog;
+        rebuildRAGVectors();
+        persistAllLocalState();
+        applyProfileToUI();
+        document.getElementById("driveSyncBtn").classList.add("drive-connected");
+        statusBox.innerText = `✅ Loaded profile & RAG knowledge from ${email}'s Google Drive!`;
+        displayQA("Google Drive Loaded", `Synced your names, profile, and RAG memory from ${email}'s Google Drive!`);
+        return;
+      }
+
+      const syncPayload = JSON.stringify({
+        syncedAt: new Date().toISOString(),
+        ownerEmail: email,
+        userProfile,
+        ragEntries: ragStore.entries.map(({ _vec, ...rest }) => rest),
+        episodes: ragStore.episodes.map(({ _vec, ...rest }) => rest),
+        chatLog: ragStore.chatLog.slice(-300)
+      }, null, 2);
+
+      const boundary = "garrf_sync_boundary_2026";
+      const metadata = { name: "garrf_companion_rag_sync.json", mimeType: "application/json" };
+      const multipartBody =
+        `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n` +
+        `--${boundary}\r\nContent-Type: application/json\r\n\r\n${syncPayload}\r\n--${boundary}--`;
+
+      const uploadUrl = existingFile
+        ? `https://www.googleapis.com/upload/drive/v3/files/${existingFile.id}?uploadType=multipart`
+        : "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart";
+
+      const upRes = await fetch(uploadUrl, {
+        method: existingFile ? "PATCH" : "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": `multipart/related; boundary=${boundary}`
+        },
+        body: multipartBody
+      });
+      const upData = await upRes.json();
+      if (!upRes.ok) throw new Error(upData?.error?.message || "Drive upload failed");
+
+      userProfile.driveFileId = upData.id;
+      persistAllLocalState();
+      document.getElementById("driveSyncBtn").classList.add("drive-connected");
+      statusBox.innerText = `✅ Synced to ${email}'s personal Google Drive! Open this app on mobile or PC and click 'Load from My Drive' anytime.`;
+      displayQA("Google Drive Synced", `Saved your profile and RAG knowledge to ${email}'s personal Google Drive!`);
+    } catch (err) {
+      statusBox.innerText = `⚠️ Drive Notice: ${err.message}`;
+    }
+  }
+
+  // =========================================================================
+  // 13. MODALS, VOICE SYNTHESIS & ANIMATIONS
+  // =========================================================================
+  function openProfileModal() {
+    document.getElementById("profPreferredName").value = userProfile.preferredName || "";
+    document.getElementById("profFullName").value = userProfile.fullName || "";
+    document.getElementById("profRole").value = userProfile.role || "Friend";
+    document.getElementById("profPersonaName").value = userProfile.personaName || "";
+    document.getElementById("profMotherTongue").value = userProfile.motherTongue || "Telugu";
+    document.getElementById("profBirthday").value = userProfile.birthday || "";
+    document.getElementById("profFatherName").value = userProfile.fatherName || "";
+    document.getElementById("profMotherName").value = userProfile.motherName || "";
+    document.getElementById("profSiblings").value = userProfile.siblings || "";
+    document.getElementById("profCity").value = userProfile.city || "";
+    document.getElementById("profWorkStudy").value = userProfile.workStudy || "";
+    document.getElementById("profBossOrClass").value = userProfile.bossOrClass || "";
+    document.getElementById("profFaith").value = userProfile.faith || "";
+    document.getElementById("profVoiceRate").value = String(userProfile.voiceRate || 1.05);
+    document.getElementById("profCustomPrompt").value = userProfile.customPrompt || "";
+    document.getElementById("profileModal").style.display = "flex";
+  }
+
+  function saveFullProfile() {
+    userProfile.preferredName = document.getElementById("profPreferredName").value.trim() || "Friend";
+    userProfile.fullName = document.getElementById("profFullName").value.trim();
+    userProfile.role = document.getElementById("profRole").value;
+    userProfile.personaName = document.getElementById("profPersonaName").value.trim() || userProfile.role;
+    userProfile.motherTongue = document.getElementById("profMotherTongue").value;
+    userProfile.birthday = document.getElementById("profBirthday").value.trim();
+    userProfile.fatherName = document.getElementById("profFatherName").value.trim();
+    userProfile.motherName = document.getElementById("profMotherName").value.trim();
+    userProfile.siblings = document.getElementById("profSiblings").value.trim();
+    userProfile.city = document.getElementById("profCity").value.trim();
+    userProfile.workStudy = document.getElementById("profWorkStudy").value.trim();
+    userProfile.bossOrClass = document.getElementById("profBossOrClass").value.trim();
+    userProfile.faith = document.getElementById("profFaith").value.trim();
+    userProfile.voiceRate = parseFloat(document.getElementById("profVoiceRate").value) || 1.05;
+    userProfile.customPrompt = document.getElementById("profCustomPrompt").value.trim();
+
+    persistAllLocalState();
+    applyProfileToUI();
+    setupDynamicBrandingAndPWA();
+    closeModalById("profileModal");
+
+    const msg = `Saved all your details, ${userProfile.preferredName}! I will remember your family, preferences, and our bond.`;
+    displayQA("Profile & RAG Updated", msg);
+    botSpeak(msg);
+  }
+
+  function toggleAIMode() {
+    if (!aiModeEnabled) {
+      if (!sessionSecrets.founderPasscode && !sessionSecrets.personalApiKey && !sessionSecrets.customWorkerUrl) {
+        openPasscodeDialogue();
+        return;
+      }
+      setAIModeState(true);
+      const msg = `Live AI Mode activated for ${userProfile.personaName || "Buddy"}!`;
+      displayQA("AI Mode ON", msg);
+      botSpeak(msg);
+    } else {
+      setAIModeState(false);
+      const msg = "AI Mode switched off. Local Vector RAG and offline buddy mode are active.";
+      displayQA("AI Mode OFF", msg);
+      botSpeak(msg);
+    }
+  }
+
+  function setAIModeState(active) {
+    aiModeEnabled = active;
+    const btn = document.getElementById("aiModeBtn");
+    const tag = document.getElementById("visorAiTag");
+    if (active) {
+      document.body.classList.add("ai-mode-active");
+      btn.classList.add("active");
+      btn.innerHTML = "<span>⚡ AI Mode: LIVE</span>";
+      tag.innerText = "RAG + LLM LIVE";
+    } else {
+      document.body.classList.remove("ai-mode-active");
+      btn.classList.remove("active");
+      btn.innerHTML = "<span>✨ AI Mode: OFF</span>";
+      tag.innerText = "LOCAL RAG READY";
+    }
+  }
+
+  function openAISettingsModal() {
+    document.getElementById("aiAccessModeSelect").value = sessionSecrets.accessMode || "founder";
+    document.getElementById("founderPasscodeInput").value = sessionSecrets.founderPasscode || "";
+    document.getElementById("personalApiKeyInput").value = sessionSecrets.personalApiKey || "";
+    document.getElementById("customWorkerUrlInput").value = sessionSecrets.customWorkerUrl || "";
+    toggleAIKeyFields();
+    document.getElementById("aiKeysModal").style.display = "flex";
+  }
+
+  function toggleAIKeyFields() {
+    const mode = document.getElementById("aiAccessModeSelect").value;
+    document.getElementById("founderPasscodeGroup").style.display = mode === "founder" ? "block" : "none";
+    document.getElementById("personalApiKeyGroup").style.display = (mode === "gemini" || mode === "groq") ? "block" : "none";
+    document.getElementById("customWorkerGroup").style.display = mode === "custom_worker" ? "block" : "none";
+  }
+
+  function saveAIAccessSettings() {
+    sessionSecrets.accessMode = document.getElementById("aiAccessModeSelect").value;
+    sessionSecrets.founderPasscode = document.getElementById("founderPasscodeInput").value.trim();
+    sessionSecrets.personalApiKey = document.getElementById("personalApiKeyInput").value.trim();
+    sessionSecrets.customWorkerUrl = document.getElementById("customWorkerUrlInput").value.trim();
+    try {
+      sessionStorage.setItem("garrf_companion_session_secrets", JSON.stringify(sessionSecrets));
+    } catch (e) {}
+    closeModalById("aiKeysModal");
+    setAIModeState(true);
+    displayQA("AI Mode Enabled", "Live AI access configured for this session!");
+  }
+
+  function botSpeak(txt) {
+    if (!("speechSynthesis" in window)) return;
+    window.speechSynthesis.cancel();
+    const clean = txt.replace(/<[^>]*>/g, "").replace(/[*_#~😊😉]/g, "");
+    const u = new SpeechSynthesisUtterance(clean);
+    u.rate = userProfile.voiceRate || 1.05;
+
+    const rLow = (userProfile.role || "").toLowerCase();
+    const isFemaleRole = ["girlfriend", "mother", "daughter", "wife"].includes(rLow);
+    u.pitch = isFemaleRole ? 1.32 : 1.02;
+
+    if (availableIndianVoices.length > 0) {
+      if (userProfile.voiceId && userProfile.voiceId !== "auto") {
+        const chosen = availableIndianVoices.find(v => v.name === userProfile.voiceId);
+        if (chosen) u.voice = chosen;
+      } else {
+        const femaleHint = availableIndianVoices.find(v => /female|heera|neerja|swara|veena/i.test(v.name));
+        const maleHint = availableIndianVoices.find(v => /male|ravi|prabhat|madhur|rishi/i.test(v.name));
+        u.voice = (isFemaleRole ? femaleHint : maleHint) || availableIndianVoices[0];
+      }
+    }
+
+    u.onstart = () => {
+      isSpeaking = true;
+      const mouth = document.getElementById("botMouth");
+      talkAnimationInterval = setInterval(() => {
+        mouth.style.transform = mouth.style.transform === "scaleY(1.45)" ? "scaleY(0.85)" : "scaleY(1.45)";
+      }, 240);
+    };
+
+    u.onend = () => {
+      isSpeaking = false;
+      clearInterval(talkAnimationInterval);
+      document.getElementById("botMouth").style.transform = "scaleY(1)";
+      if (handsFreeActive && speechRec) {
+        try { speechRec.start(); } catch (e) {}
+      }
+    };
+
+    window.speechSynthesis.speak(u);
+  }
+
+  function onBuddyClick() {
+    if (didDragMove) { didDragMove = false; return; }
+    const now = Date.now();
+    if (now - lastBuddyClickTime < 1000) return;
+    lastBuddyClickTime = now;
+    wiggleBot();
+    triggerSmile();
+    const msg = getPersonaSwitchGreeting();
+    displayQA(`Clicked ${userProfile.personaName || "Buddy"}`, msg);
+    botSpeak(msg);
+  }
+
+  function triggerSmile() {
+    const mouth = document.getElementById("botMouth");
+    mouth.classList.remove("laugh-open");
+    mouth.classList.add("big-smile");
+    wiggleBot();
+    setTimeout(() => mouth.classList.remove("big-smile"), 3200);
+  }
+
+  function triggerLaugh() {
+    const wrapper = document.getElementById("botWrapper");
+    const mouth = document.getElementById("botMouth");
+    wrapper.classList.add("laughing");
+    mouth.classList.add("laugh-open");
+    setTimeout(() => {
+      wrapper.classList.remove("laughing");
+      mouth.classList.remove("laugh-open");
+    }, 2400);
+  }
+
+  function triggerJump(customPrompt) {
+    const b = document.getElementById("botWrapper");
+    b.classList.remove("jumping");
+    void b.offsetWidth;
+    b.classList.add("jumping");
+    displayQA(customPrompt || "Jump!", "Watch me! *springs into the air* Boing!");
+    botSpeak("Watch me! Boing!");
+    setTimeout(() => b.classList.remove("jumping"), 750);
+  }
+
+  function toggleHandsUp(forceState) {
+    const wrapper = document.getElementById("botWrapper");
+    areHandsUp = forceState !== undefined ? forceState : !areHandsUp;
+    wrapper.classList.toggle("hands-up", areHandsUp);
+  }
+
+  function wiggleBot() {
+    const b = document.getElementById("botWrapper");
+    b.style.transform = "rotate(-7deg) translateY(-8px)";
+    setTimeout(() => { b.style.transform = "rotate(7deg) translateY(-8px)"; }, 150);
+    setTimeout(() => { b.style.transform = "rotate(0deg) translateY(0px)"; }, 300);
+  }
+
+  function cycleEyeColor() {
+    eyeColorIdx = (eyeColorIdx + 1) % eyeColors.length;
+    document.getElementById("eyeL").style.background = eyeColors[eyeColorIdx];
+    document.getElementById("eyeR").style.background = eyeColors[eyeColorIdx];
+  }
+
+  function openCalendar() {
+    const now = new Date();
+    document.getElementById("modalTitle").innerText = "📅 Calendar & Schedule";
+    document.getElementById("downloadLogoBtn").style.display = "none";
+    document.getElementById("modalBody").innerHTML = `
+      <p><strong>Today's Date:</strong> ${now.toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</p>
+      <p><strong>Local Time:</strong> ${now.toLocaleTimeString()}</p>
+      <p><strong>Saved Birthday:</strong> ${userProfile.birthday || "Not set yet (add in Profile!)"}</p>
+      <p><strong>Active RAG Month:</strong> ${userProfile.lastActiveMonth}</p>
+    `;
+    document.getElementById("infoModal").style.display = "flex";
+  }
+
+  function closeModalById(id) {
+    document.getElementById(id).style.display = "none";
+  }
+
+  function toggleFullscreen() {
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+    else document.exitFullscreen();
+  }
+
+  // 3D Orbit & Gaze Listeners
+  const dragStage = document.getElementById("dragStage");
+  const botScene = document.getElementById("botScene");
+  dragStage.addEventListener("dblclick", () => { rotX = 0; rotY = 0; zoomScale = 1; botScene.style.transform = "scale(1) rotateX(0deg) rotateY(0deg)"; });
+  dragStage.addEventListener("mousedown", (e) => {
+    if (e.target.closest(".dialogue-card-container") || e.target.closest(".input-bar-container")) return;
+    isDragging = true; didDragMove = false; prevMouseX = e.clientX; prevMouseY = e.clientY;
+  });
+  window.addEventListener("mouseup", () => { isDragging = false; });
+  window.addEventListener("mousemove", (e) => {
+    if (isDragging) {
+      const dx = e.clientX - prevMouseX, dy = e.clientY - prevMouseY;
+      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) didDragMove = true;
+      rotY += dx * 0.6;
+      rotX = Math.max(-35, Math.min(35, rotX - dy * 0.4));
+      botScene.style.transform = `scale(${zoomScale}) rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+      prevMouseX = e.clientX; prevMouseY = e.clientY;
+    } else if (gazeActive) {
+      const dx = Math.min(Math.max((e.clientX - window.innerWidth / 2) / (window.innerWidth / 2), -1), 1);
+      const dy = Math.min(Math.max((e.clientY - window.innerHeight / 2.3) / (window.innerHeight / 2), -1), 1);
+      document.getElementById("pupilL").style.transform = `translate(calc(-50% + ${dx * 13}px), calc(-50% + ${dy * 13}px))`;
+      document.getElementById("pupilR").style.transform = `translate(calc(-50% + ${dx * 13}px), calc(-50% + ${dy * 13}px))`;
+    }
+  });
+  dragStage.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    zoomScale = Math.max(0.65, Math.min(1.5, zoomScale - e.deltaY * 0.001));
+    botScene.style.transform = `scale(${zoomScale}) rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+  }, { passive: false });
+
+  setInterval(() => {
+    if (isEyesClosed) return;
+    const sL = document.getElementById("eyeL"), sR = document.getElementById("eyeR");
+    sL.style.transform = "scaleY(0.08)"; sR.style.transform = "scaleY(0.08)";
+    setTimeout(() => { sL.style.transform = "scaleY(1)"; sR.style.transform = "scaleY(1)"; }, 150);
+  }, 4000);
+</script>
+</body>
+</html>
