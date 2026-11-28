@@ -269,6 +269,7 @@
     outline: none;
     user-select: text;
   }
+  .quick-select { max-width: 260px; }
   .quick-input { width: 135px; }
 
   .bot-stage {
@@ -450,13 +451,13 @@
     position: absolute;
     top: 7px;
     font-family: 'JetBrains Mono', monospace;
-    font-size: 8.5px;
+    font-size: 8px;
     font-weight: 800;
-    letter-spacing: 1px;
+    letter-spacing: 0.7px;
     color: #38bdf8;
     background: rgba(56, 189, 248, 0.14);
     border: 1px solid rgba(56, 189, 248, 0.45);
-    padding: 1px 8px;
+    padding: 1px 7px;
     border-radius: 8px;
   }
   body.ai-mode-active .visor-ai-tag {
@@ -961,16 +962,16 @@
       <span>✨ AI Mode: OFF</span>
     </button>
     <button class="header-pill-btn" id="userLoginBtn" onclick="openUserLoginModal()">
-      <span>🔐 <span id="loginBtnLabel">Login</span></span>
+      <span>🔐 <span id="loginBtnLabel">Login & Drive</span></span>
     </button>
     <button class="header-pill-btn" onclick="openProfileModal()">
       <span>👤 <span id="headerUserName">Friend</span></span>
     </button>
     <button class="header-pill-btn" onclick="openRAGStorageModal()">
-      <span>🧠 RAG & File</span>
+      <span>🧠 GitHub RAG</span>
     </button>
     <button class="header-pill-btn" id="driveSyncBtn" onclick="openGoogleDriveModal()">
-      <span>☁️ Drive Sync</span>
+      <span>☁️ Drive History</span>
     </button>
     <button class="header-pill-btn" onclick="installCompanionApp()">
       <span>📲 Install</span>
@@ -978,7 +979,7 @@
   </div>
 </header>
 
-<!-- Live Persona, Custom Name & Indian Voice Bar -->
+<!-- Live Persona, Custom Name & Rich Indian Male/Female Voice Bar -->
 <div class="persona-quick-bar">
   <div class="quick-group">
     <span class="quick-label">Role:</span>
@@ -997,9 +998,9 @@
     <input type="text" id="quickPersonaName" class="quick-input" placeholder="e.g. Ananya / Arjun" onchange="onQuickPersonaNameChange()" />
   </div>
   <div class="quick-group">
-    <span class="quick-label">Indian Voice:</span>
+    <span class="quick-label">Indian Voice (Male / Female):</span>
     <select id="indianVoiceSelect" class="quick-select" onchange="onVoiceChange()">
-      <option value="auto">Auto Indian Voice</option>
+      <option value="auto">Auto Indian Voice (Role Matched)</option>
     </select>
     <button class="header-pill-btn" onclick="askNextBuddyQuestion()" title="Answer a quick question so I remember more about you">
       <span>❓ Know Me (<span id="knownCountBadge">0/10</span>)</span>
@@ -1021,7 +1022,7 @@
         <div class="ear left"></div>
         <div class="ear right"></div>
         <div class="bot-visor">
-          <div class="visor-ai-tag" id="visorAiTag">LOCAL RAG READY</div>
+          <div class="visor-ai-tag" id="visorAiTag">GITHUB RAG READY</div>
           <div class="eyes-row">
             <div class="eye-socket" id="eyeL">
               <div class="pupil" id="pupilL"><div class="glint"></div></div>
@@ -1058,7 +1059,7 @@
       <span class="q-tag">Q)</span> <span id="queryText">Hello!</span>
     </div>
     <div class="dialogue-row reply" id="replyRow">
-      <span class="re-tag">Re)</span> <span id="replyText">Namaste! I'm right here on your screen. Pick any role or name for me above, tell me how to call you, or ask about weather, time anywhere, Bhagavad Gita, or songs!</span>
+      <span class="re-tag">Re)</span> <span id="replyText">Namaste! Log in to save your chat history and profile directly to your personal Google Drive, or pick any Indian Male/Female voice above and start chatting!</span>
     </div>
     <div class="action-links-row" id="dialogueLinksRow"></div>
   </div>
@@ -1204,37 +1205,38 @@
 
     <div class="modal-actions">
       <button type="button" class="modal-close-btn" onclick="closeModalById('profileModal')">Cancel</button>
-      <button type="button" class="modal-save-btn" onclick="saveFullProfile()">Save Profile & Update RAG</button>
+      <button type="button" class="modal-save-btn" onclick="saveFullProfile()">Save Profile & Sync Drive</button>
     </div>
   </div>
 </div>
 
-<!-- Local RAG Knowledge Base & Permission-Gated File Storage Modal -->
+<!-- GitHub Folder RAG Knowledge Base & History Storage Modal -->
 <div class="modal-overlay" id="ragModal">
   <div class="modal-card">
-    <h3>🧠 Local Vector RAG Knowledge & File Storage</h3>
-    <p>Every conversation, family detail, and note is embedded locally for instant semantic retrieval—even offline.</p>
+    <h3>🧠 GitHub Folder Vector RAG & History</h3>
+    <p>Hosted online on GitHub Pages: <code>buddy_rag_knowledge.json</code> and <code>companion_config.json</code> are loaded automatically from the same online GitHub folder.</p>
 
     <div class="notice-box" id="ragStatsBox">
-      Loading local RAG vector index...
+      Loading GitHub folder RAG vector index...
     </div>
 
     <div class="warn-box">
-      ⚠️ <strong>Memory Integrity Notice:</strong> As long as your history stays intact, all knowledge is retained. If you delete or alter stored history/memory, I will lose track of my knowledge with you.
+      ⚠️ <strong>Memory Integrity Notice:</strong> Your history syncs to your personal Google Drive when logged in. If you delete or alter stored history/memory, I will lose track of my knowledge with you.
     </div>
 
     <div class="form-group">
-      <label>Local File Storage Permission</label>
+      <label>Local Backup File Permission</label>
       <select id="localFilePermSelect" onchange="updateLocalFilePermission()">
-        <option value="ask">Ask Permission Before Saving File</option>
-        <option value="granted">Permitted — Save Local Knowledge File</option>
-        <option value="denied">Keep in Browser Memory Only</option>
+        <option value="ask">Ask Permission Before Downloading Backup</option>
+        <option value="granted">Permitted — Download Local JSON Backup</option>
+        <option value="denied">Google Drive & Browser Only</option>
       </select>
     </div>
 
     <div class="modal-actions">
-      <button type="button" class="header-pill-btn" onclick="loadExternalRAGFile()">📂 Load JSON/RAG File</button>
-      <button type="button" class="header-pill-btn" onclick="saveKnowledgeToLocalFile()">💾 Save Knowledge File</button>
+      <button type="button" class="header-pill-btn" onclick="reloadOnlineGitHubFiles()">🔄 Reload GitHub JSON</button>
+      <button type="button" class="header-pill-btn" onclick="loadExternalRAGFile()">📂 Import JSON File</button>
+      <button type="button" class="header-pill-btn" onclick="saveKnowledgeToLocalFile()">💾 Export Backup JSON</button>
       <button type="button" class="header-pill-btn" onclick="runMonthlyArchiveCheck(true)">📦 Monthly Archive</button>
       <button type="button" class="modal-danger-btn" onclick="promptDeleteOrAlterMemory()">🗑️ Clear Chat History</button>
       <button type="button" class="modal-close-btn" onclick="closeModalById('ragModal')">Close</button>
@@ -1243,11 +1245,11 @@
   </div>
 </div>
 
-<!-- Personal Google Drive Sync Modal -->
+<!-- Personal Google Drive History Sync Modal -->
 <div class="modal-overlay" id="driveModal">
   <div class="modal-card">
-    <h3>☁️ Personal Google Drive Cross-Device Sync</h3>
-    <p>Store your personal profile, names, and RAG knowledge in <strong>your own Google Drive</strong> so you can switch seamlessly between mobile and computer.</p>
+    <h3>☁️ Personal Google Drive History & Memory Sync</h3>
+    <p>All your chat history, names, family details, and learned memory are saved automatically to <strong>your own Google Drive</strong> (<code>garrf_companion_rag_sync.json</code>) so you can continue on any phone or PC.</p>
 
     <div class="form-group">
       <label>Your Google Email ID</label>
@@ -1255,27 +1257,27 @@
     </div>
 
     <div class="form-group">
-      <label>Google OAuth Web Client ID (for Drive API v3)</label>
+      <label>Google OAuth Web Client ID (Optional if configured in companion_config.json)</label>
       <input type="text" id="driveClientId" placeholder="1234567890-xxxx.apps.googleusercontent.com" />
     </div>
 
     <div class="notice-box" id="driveStatusBox">
-      Status: Not connected yet. Uses free <code>drive.file</code> personal space scope.
+      Status: Not connected yet. Sign in to save and load your chat history in your own Google Drive.
     </div>
 
     <div class="modal-actions">
-      <button type="button" class="modal-save-btn" onclick="connectAndSyncGoogleDrive('push')">☁️ Grant Access & Save to Drive</button>
-      <button type="button" class="header-pill-btn" onclick="connectAndSyncGoogleDrive('pull')">⬇️ Load from My Drive</button>
+      <button type="button" class="modal-save-btn" onclick="connectAndSyncGoogleDrive('push', false)">☁️ Connect & Save History to Drive</button>
+      <button type="button" class="header-pill-btn" onclick="connectAndSyncGoogleDrive('pull', false)">⬇️ Load History from My Drive</button>
       <button type="button" class="modal-close-btn" onclick="closeModalById('driveModal')">Close</button>
     </div>
   </div>
 </div>
 
-<!-- AI Access Tier Modal (Passcode or User's Own API Key) -->
+<!-- AI Access Tier Modal -->
 <div class="modal-overlay" id="aiKeysModal">
   <div class="modal-card">
     <h3>🔑 Live AI Access (Passcode or Personal Key)</h3>
-    <p>Offline RAG, voice, weather, and buddy chats work free anytime. For live LLM responses, choose one:</p>
+    <p>Offline GitHub RAG, Indian voices, weather, and buddy chats work free anytime. For live LLM responses, choose one:</p>
 
     <div class="form-group">
       <label>Access Mode</label>
@@ -1309,11 +1311,11 @@
   </div>
 </div>
 
-<!-- Normal User Login Modal -->
+<!-- User Login & Google Drive Auto-Sync Modal -->
 <div class="modal-overlay" id="userLoginModal">
   <div class="modal-card">
-    <h3>🔐 User Login</h3>
-    <p>Log in with your name and how you want to be called so I remember you on this device.</p>
+    <h3>🔐 User Login & Google Drive History Sync</h3>
+    <p>Log in so your conversation history and personal memory stay saved in your own Google Drive across mobile and computer.</p>
 
     <div class="form-group">
       <label>How Should I Call You?</label>
@@ -1321,8 +1323,15 @@
     </div>
 
     <div class="form-group">
-      <label>Your Name (Optional)</label>
-      <input type="text" id="loginFullNameInput" placeholder="Your full name" />
+      <label>Your Google Email ID (for saving history to Google Drive)</label>
+      <input type="email" id="loginGoogleEmailInput" placeholder="you@gmail.com" />
+    </div>
+
+    <div class="form-group">
+      <label>Preferred Indian Voice (Male / Female)</label>
+      <select id="loginVoiceSelect">
+        <option value="auto">Auto Indian Voice (Role Matched)</option>
+      </select>
     </div>
 
     <div class="form-group">
@@ -1340,12 +1349,13 @@
     </div>
 
     <div class="notice-box" id="loginStatusNotice">
-      Logged in status will be saved locally on this device.
+      When you click "Login & Connect Google Drive", your history syncs automatically to your personal Google Drive.
     </div>
 
     <div class="modal-actions">
-      <button type="button" class="modal-close-btn" onclick="closeModalById('userLoginModal')">Cancel</button>
-      <button type="button" class="modal-save-btn" onclick="submitUserLogin()">Login & Save</button>
+      <button type="button" class="modal-close-btn" onclick="closeModalById('userLoginModal')">Later</button>
+      <button type="button" class="header-pill-btn" onclick="submitUserLogin(false)">Login Locally Only</button>
+      <button type="button" class="modal-save-btn" onclick="submitUserLogin(true)">☁️ Login & Connect Google Drive</button>
     </div>
   </div>
 </div>
@@ -1382,17 +1392,26 @@
 </div>
 
 <script>
-  // External endpoint loaded only from companion_config.json (no Worker URL hardcoded in HTML)
+  // Online GitHub relative folder paths (same folder where this HTML is hosted)
+  const GITHUB_CONFIG_PATH = "./companion_config.json";
+  const GITHUB_RAG_PATH = "./buddy_rag_knowledge.json";
+  const GITHUB_LOGO_PATH = "./logo.jpeg";
+
   let _externalWorkerEndpoint = "";
+  let _defaultGoogleClientId = "";
   const _resolveDefaultEndpoint = () => _externalWorkerEndpoint || "";
 
   async function loadExternalEndpointConfig() {
     try {
-      const resp = await fetch("./companion_config.json");
+      const resp = await fetch(`${GITHUB_CONFIG_PATH}?v=${Date.now()}`, { cache: "no-store" });
       if (resp.ok) {
         const cfg = await resp.json();
         if (cfg && typeof cfg.workerUrl === "string") {
           _externalWorkerEndpoint = cfg.workerUrl.trim();
+        }
+        if (cfg && typeof cfg.googleClientId === "string" && cfg.googleClientId.trim()) {
+          _defaultGoogleClientId = cfg.googleClientId.trim();
+          if (!userProfile.googleClientId) userProfile.googleClientId = _defaultGoogleClientId;
         }
       }
     } catch (e) {}
@@ -1412,7 +1431,10 @@
   let lastInteractionTime = Date.now();
   let idlePromptSent = false;
   let deferredInstallPrompt = null;
-  let availableIndianVoices = [];
+  let allSystemVoices = [];
+  let curatedVoiceCatalog = [];
+  let googleDriveAccessToken = "";
+  let driveAutoSyncTimer = null;
   let pendingFollowUpType = null;
   let pendingFollowUpPayload = null;
 
@@ -1420,7 +1442,7 @@
   let rotX = 0, rotY = 0, zoomScale = 1;
   let isDragging = false, didDragMove = false, prevMouseX = 0, prevMouseY = 0;
 
-  // Session-only sensitive credentials (never saved in localStorage or Drive)
+  // Session-only sensitive credentials
   let sessionSecrets = {
     accessMode: "founder",
     founderPasscode: "",
@@ -1457,7 +1479,6 @@
     deferredQuestions: []
   };
 
-  // Progressive Buddy Questions
   const BUDDY_QUESTIONS = [
     { key: "preferredName", q: "First, how should I call you, buddy?" },
     { key: "motherTongue", q: "What is your mother tongue (like Telugu, Hindi, Tamil, Kannada, or English)?" },
@@ -1471,7 +1492,7 @@
     { key: "faith", q: "Are you spiritual, have a favorite God you pray to, or prefer a secular/atheist outlook?" }
   ];
 
-  // Built-in Semantic RAG Knowledge Pack (also loads external ./buddy_rag_knowledge.json from same folder)
+  // Fallback core RAG entries (augmented automatically by online GitHub ./buddy_rag_knowledge.json)
   let ragStore = {
     entries: [
       {
@@ -1513,7 +1534,6 @@
     episodes: []
   };
 
-  // Mother-Tongue Uplifting ~15-Word Song Snippets + 3 Direct Links
   const MOTHER_TONGUE_SONGS = {
     "telugu": {
       snippet: "Nuvvu nenu kalisunte prathi roju pandage, chirunavvu tho munduku saagu mitrama, kotha velugu neede!",
@@ -1565,7 +1585,6 @@
     }
   };
 
-  // Place & Timezone Lookup
   const PLACE_TYPO_MAP = {
     "flouride": "Florida",
     "floride": "Florida",
@@ -1615,13 +1634,166 @@
   let eyeColorIdx = 0;
 
   // =========================================================================
-  // 1. LOCAL VECTOR EMBEDDINGS & COSINE SIMILARITY ENGINE
+  // 1. RICH INDIAN VOICE ENGINE (MALE & FEMALE PRESETS + SYSTEM INDIAN VOICES)
+  // =========================================================================
+  // Curated Indian Male & Female voice profiles so users always get rich male/female
+  // Indian options even on devices where browsers expose only 1-2 system voices.
+  const INDIAN_VOICE_PRESETS = [
+    { id: "preset_in_f_ananya", label: "🇮🇳 Ananya — Indian Female (Warm & Natural)", gender: "female", langHint: "en-IN", pitch: 1.24, rateOffset: 0.0 },
+    { id: "preset_in_f_kavya",  label: "🇮🇳 Kavya — Indian Female (Sweet & Expressive)", gender: "female", langHint: "en-IN", pitch: 1.36, rateOffset: 0.03 },
+    { id: "preset_in_f_meera",  label: "🇮🇳 Meera — Indian Female (Calm & Caring Motherly)", gender: "female", langHint: "hi-IN", pitch: 1.15, rateOffset: -0.05 },
+    { id: "preset_in_f_priya",  label: "🇮🇳 Priya — Telugu/South Indian Female", gender: "female", langHint: "te-IN", pitch: 1.28, rateOffset: 0.02 },
+    { id: "preset_in_f_divya",  label: "🇮🇳 Divya — Tamil/South Indian Female", gender: "female", langHint: "ta-IN", pitch: 1.30, rateOffset: 0.01 },
+    { id: "preset_in_m_arjun",  label: "🇮🇳 Arjun — Indian Male (Friendly & Confident)", gender: "male", langHint: "en-IN", pitch: 0.96, rateOffset: 0.02 },
+    { id: "preset_in_m_vikram", label: "🇮🇳 Vikram — Indian Male (Deep & Calm)", gender: "male", langHint: "en-IN", pitch: 0.84, rateOffset: -0.04 },
+    { id: "preset_in_m_rohan",  label: "🇮🇳 Rohan — Indian Male (Youthful & Energetic)", gender: "male", langHint: "en-IN", pitch: 1.04, rateOffset: 0.06 },
+    { id: "preset_in_m_karthik",label: "🇮🇳 Karthik — Telugu/South Indian Male", gender: "male", langHint: "te-IN", pitch: 0.92, rateOffset: 0.0 },
+    { id: "preset_in_m_aditya", label: "🇮🇳 Aditya — Hindi/North Indian Male", gender: "male", langHint: "hi-IN", pitch: 0.94, rateOffset: 0.0 }
+  ];
+
+  function detectVoiceGender(voiceObj) {
+    const descriptor = `${voiceObj.name} ${voiceObj.voiceURI || ""}`;
+    if (/(female|woman|girl|neerja|heera|swara|veena|lekha|priya|aditi|raveena|shruti|vani|kalpana|sangeeta|nisha|ananya|kavya|siri|zira|samantha)/i.test(descriptor)) {
+      return "female";
+    }
+    if (/(male|man|boy|ravi|prabhat|madhur|rishi|hemant|amit|arjun|vikram|rohan|daniel|david|alex|george)/i.test(descriptor)) {
+      return "male";
+    }
+    return "neutral";
+  }
+
+  function isIndianVoiceObj(v) {
+    return /(-IN|_IN|IN|India|Hindi|Telugu|Tamil|Kannada|Malayalam|Bengali|Marathi|Gujarati|Punjabi|Heera|Ravi|Neerja|Prabhat|Swara|Madhur|Veena|Lekha|Rishi|Aditi|Raveena|Hemant|Kalpana)/i.test(`${v.lang} ${v.name}`);
+  }
+
+  function populateIndianVoices() {
+    if (!("speechSynthesis" in window)) return;
+    allSystemVoices = window.speechSynthesis.getVoices() || [];
+    const indianSys = allSystemVoices.filter(isIndianVoiceObj);
+    const fallbackSys = indianSys.length > 0 ? indianSys : allSystemVoices;
+
+    curatedVoiceCatalog = [];
+    const sel = document.getElementById("indianVoiceSelect");
+    const loginSel = document.getElementById("loginVoiceSelect");
+    const currentVal = userProfile.voiceId || "auto";
+
+    const buildOptions = (selectEl) => {
+      if (!selectEl) return;
+      selectEl.innerHTML = `<option value="auto">🇮🇳 Auto Indian Voice (${userProfile.role})</option>`;
+
+      // Group 1: Indian Female Voices
+      const grpFemale = document.createElement("optgroup");
+      grpFemale.label = "👩 Indian Female Voices";
+      INDIAN_VOICE_PRESETS.filter(p => p.gender === "female").forEach(p => {
+        const opt = document.createElement("option");
+        opt.value = p.id;
+        opt.textContent = p.label;
+        grpFemale.appendChild(opt);
+      });
+      fallbackSys.filter(v => detectVoiceGender(v) === "female").forEach(v => {
+        const opt = document.createElement("option");
+        opt.value = `sys::${v.name}`;
+        opt.textContent = `🇮🇳 Female: ${v.name} (${v.lang})`;
+        grpFemale.appendChild(opt);
+      });
+      selectEl.appendChild(grpFemale);
+
+      // Group 2: Indian Male Voices
+      const grpMale = document.createElement("optgroup");
+      grpMale.label = "👨 Indian Male Voices";
+      INDIAN_VOICE_PRESETS.filter(p => p.gender === "male").forEach(p => {
+        const opt = document.createElement("option");
+        opt.value = p.id;
+        opt.textContent = p.label;
+        grpMale.appendChild(opt);
+      });
+      fallbackSys.filter(v => detectVoiceGender(v) === "male").forEach(v => {
+        const opt = document.createElement("option");
+        opt.value = `sys::${v.name}`;
+        opt.textContent = `🇮🇳 Male: ${v.name} (${v.lang})`;
+        grpMale.appendChild(opt);
+      });
+      selectEl.appendChild(grpMale);
+
+      // Group 3: Any Additional System Voices
+      const neutralVoices = fallbackSys.filter(v => detectVoiceGender(v) === "neutral");
+      if (neutralVoices.length > 0) {
+        const grpOther = document.createElement("optgroup");
+        grpOther.label = "🌐 Additional Device Voices";
+        neutralVoices.forEach(v => {
+          const opt = document.createElement("option");
+          opt.value = `sys::${v.name}`;
+          opt.textContent = `${v.name} (${v.lang})`;
+          grpOther.appendChild(opt);
+        });
+        selectEl.appendChild(grpOther);
+      }
+
+      selectEl.value = currentVal;
+      if (!selectEl.value) selectEl.value = "auto";
+    };
+
+    buildOptions(sel);
+    buildOptions(loginSel);
+  }
+
+  function resolveSelectedSpeechVoiceAndTone() {
+    const indianSys = allSystemVoices.filter(isIndianVoiceObj);
+    const pool = indianSys.length > 0 ? indianSys : allSystemVoices;
+    const femalePool = pool.filter(v => detectVoiceGender(v) === "female");
+    const malePool = pool.filter(v => detectVoiceGender(v) === "male");
+
+    const rLow = (userProfile.role || "").toLowerCase();
+    const roleWantsFemale = ["girlfriend", "mother", "daughter", "wife"].includes(rLow);
+    const chosenId = userProfile.voiceId || "auto";
+
+    // Explicit system voice selected
+    if (chosenId.startsWith("sys::")) {
+      const targetName = chosenId.slice(5);
+      const exact = allSystemVoices.find(v => v.name === targetName) || pool[0] || null;
+      const g = exact ? detectVoiceGender(exact) : (roleWantsFemale ? "female" : "male");
+      return { voice: exact, pitch: g === "female" ? 1.18 : 0.98, rateOffset: 0 };
+    }
+
+    // Explicit curated Indian preset selected
+    const preset = INDIAN_VOICE_PRESETS.find(p => p.id === chosenId);
+    if (preset) {
+      const langMatchPool = (preset.gender === "female" ? femalePool : malePool).filter(v => v.lang.toLowerCase() === preset.langHint.toLowerCase());
+      const genderPool = preset.gender === "female" ? femalePool : malePool;
+      const bestVoice = langMatchPool[0] || genderPool[0] || pool[0] || null;
+      // If browser only has a male voice when female preset is picked (or vice versa), adjust pitch naturally
+      let adjustedPitch = preset.pitch;
+      if (bestVoice && detectVoiceGender(bestVoice) !== preset.gender) {
+        adjustedPitch = preset.gender === "female" ? 1.42 : 0.82;
+      }
+      return { voice: bestVoice, pitch: adjustedPitch, rateOffset: preset.rateOffset };
+    }
+
+    // Auto Indian Voice matched to persona role
+    const bestAuto = roleWantsFemale
+      ? (femalePool[0] || pool[0] || null)
+      : (malePool[0] || pool[0] || null);
+    let autoPitch = roleWantsFemale ? 1.28 : 0.96;
+    if (bestAuto && roleWantsFemale && detectVoiceGender(bestAuto) === "male") autoPitch = 1.42;
+    if (bestAuto && !roleWantsFemale && detectVoiceGender(bestAuto) === "female") autoPitch = 0.82;
+
+    return { voice: bestAuto, pitch: autoPitch, rateOffset: 0 };
+  }
+
+  function onVoiceChange() {
+    userProfile.voiceId = document.getElementById("indianVoiceSelect").value;
+    persistAllLocalState();
+    botSpeak(`Namaste ${userProfile.preferredName || "buddy"}! How do you like this Indian voice?`);
+  }
+
+  // =========================================================================
+  // 2. LOCAL VECTOR EMBEDDINGS & COSINE SIMILARITY ENGINE
   // =========================================================================
   const EMBED_DIM = 128;
 
   function computeLocalEmbedding(text) {
     const vec = new Float32Array(EMBED_DIM);
-    const clean = (text || "").toLowerCase().replace(/[^a-z0-9\u0900-\u0D7F\s]/g, " ").trim();
+    const clean = (text || "").toLowerCase().replace(/[^a-z0-9ऀ-ൿ\s]/g, " ").trim();
     if (!clean) return vec;
 
     const words = clean.split(/\s+/);
@@ -1686,7 +1858,7 @@
   }
 
   // =========================================================================
-  // 2. COLORFUL INSTALLABLE LOGO & PWA SETUP
+  // 3. COLORFUL INSTALLABLE LOGO & PWA SETUP
   // =========================================================================
   function generateColorfulAppLogoDataURL() {
     const canvas = document.createElement("canvas");
@@ -1771,6 +1943,7 @@
 
     const headerImg = document.getElementById("headerBrandLogo");
     if (headerImg) {
+      headerImg.src = GITHUB_LOGO_PATH;
       headerImg.onerror = () => { headerImg.src = logoDataUrl; };
     }
 
@@ -1818,37 +1991,62 @@
       </div>
       <p><strong>Android / Chrome / Edge:</strong> Tap browser menu (⋮) → <strong>Install app</strong> or <strong>Add to Home screen</strong>.</p>
       <p><strong>iPhone / iPad (Safari):</strong> Tap <strong>Share</strong> (□↑) → <strong>Add to Home Screen</strong>.</p>
-      <p><strong>WhatsApp / Web Share:</strong> Host on <code>https://</code> (such as GitHub Pages or Cloudflare Pages) so sharing the link installs directly with this colorful icon.</p>
+      <p><strong>GitHub Pages / WhatsApp Share:</strong> Because this app is hosted on GitHub Pages (<code>https://</code>), sharing the link installs directly with this colorful icon.</p>
     `;
     document.getElementById("downloadLogoBtn").style.display = "inline-block";
     document.getElementById("infoModal").style.display = "flex";
   }
 
   // =========================================================================
-  // 3. LOGIN MODAL & PASSCODE DIALOGUE MODAL
+  // 4. LOGIN MODAL, AUTO GOOGLE DRIVE HISTORY SYNC & PASSCODE DIALOGUE
   // =========================================================================
   function openUserLoginModal() {
     document.getElementById("loginCallNameInput").value = userProfile.preferredName || "";
-    document.getElementById("loginFullNameInput").value = userProfile.fullName || "";
+    document.getElementById("loginGoogleEmailInput").value = userProfile.googleEmail || "";
     document.getElementById("loginMotherTongueInput").value = userProfile.motherTongue || "Telugu";
+    const lv = document.getElementById("loginVoiceSelect");
+    if (lv) lv.value = userProfile.voiceId || "auto";
     document.getElementById("userLoginModal").style.display = "flex";
   }
 
-  function submitUserLogin() {
+  async function submitUserLogin(connectDriveNow = true) {
     const callName = document.getElementById("loginCallNameInput").value.trim() || "Friend";
-    const fullName = document.getElementById("loginFullNameInput").value.trim();
+    const email = document.getElementById("loginGoogleEmailInput").value.trim();
     const tongue = document.getElementById("loginMotherTongueInput").value;
+    const chosenVoice = document.getElementById("loginVoiceSelect").value;
 
     userProfile.loggedIn = true;
     userProfile.preferredName = callName;
-    if (fullName) userProfile.fullName = fullName;
+    if (email) userProfile.googleEmail = email;
     userProfile.motherTongue = tongue;
+    userProfile.voiceId = chosenVoice;
 
     persistAllLocalState();
     applyProfileToUI();
     closeModalById("userLoginModal");
 
-    const greet = `Welcome ${callName}! You are now logged in on this device. I will remember your name and mother tongue (${tongue}).`;
+    if (connectDriveNow) {
+      if (!email) {
+        openGoogleDriveModal();
+        const msg = `Welcome ${callName}! Enter your Google Email ID so I can save your chat history directly to your personal Google Drive.`;
+        displayQA("User Login — Connect Google Drive", msg);
+        botSpeak(msg);
+        return;
+      }
+      document.getElementById("driveUserEmail").value = email;
+      const clientId = userProfile.googleClientId || _defaultGoogleClientId;
+      if (!clientId) {
+        openGoogleDriveModal();
+        const msg = `Welcome ${callName}! Add your Google OAuth Client ID once so I can sync all your history to ${email}'s Google Drive.`;
+        displayQA("User Login — Drive Setup", msg);
+        botSpeak(msg);
+        return;
+      }
+      await connectAndSyncGoogleDrive("auto_merge", true);
+      return;
+    }
+
+    const greet = `Welcome ${callName}! You are logged in locally. Tap 'Drive History' anytime to sync your history to Google Drive.`;
     displayQA("User Login", greet);
     botSpeak(greet);
   }
@@ -1879,7 +2077,7 @@
   }
 
   // =========================================================================
-  // 4. INITIALIZATION, INDIAN VOICES, BIRTHDAY & TIME-AWARE CHECK-INS
+  // 5. INITIALIZATION & ONLINE GITHUB FOLDER FILE LOADING
   // =========================================================================
   window.addEventListener("DOMContentLoaded", async () => {
     loadPersistedState();
@@ -1895,6 +2093,13 @@
     applyProfileToUI();
     runMonthlyArchiveCheck(false);
     runStartupBuddyChecks();
+
+    // Prompt user to log in to save history to Google Drive if not logged in yet
+    if (!userProfile.loggedIn && !userProfile.googleEmail) {
+      setTimeout(() => {
+        if (!userProfile.loggedIn) openUserLoginModal();
+      }, 1200);
+    }
 
     setInterval(checkIdleBuddyPrompt, 15000);
   });
@@ -1931,52 +2136,47 @@
       localStorage.setItem("garrf_companion_profile_v2", JSON.stringify(userProfile));
       const serializableRAG = {
         entries: ragStore.entries.map(({ _vec, ...rest }) => rest),
-        chatLog: ragStore.chatLog.slice(-300),
-        episodes: ragStore.episodes.slice(-100)
+        chatLog: ragStore.chatLog.slice(-500),
+        episodes: ragStore.episodes.slice(-150)
       };
       localStorage.setItem("garrf_companion_rag_v2", JSON.stringify(serializableRAG));
     } catch (e) {}
+
+    // Automatically push updated history to Google Drive in background when connected
+    if (googleDriveAccessToken && userProfile.googleEmail && (userProfile.googleClientId || _defaultGoogleClientId)) {
+      clearTimeout(driveAutoSyncTimer);
+      driveAutoSyncTimer = setTimeout(() => {
+        pushHistoryToGoogleDriveSilent();
+      }, 2500);
+    }
   }
 
   async function loadFolderRAGFile() {
     try {
-      const resp = await fetch("./buddy_rag_knowledge.json");
+      const resp = await fetch(`${GITHUB_RAG_PATH}?v=${Date.now()}`, { cache: "no-store" });
       if (resp.ok) {
         const data = await resp.json();
         const items = Array.isArray(data) ? data : (data.entries || []);
         const existingIds = new Set(ragStore.entries.map(x => x.id));
         for (const it of items) {
-          if (it.id && !existingIds.has(it.id)) ragStore.entries.push(it);
+          if (it.id && !existingIds.has(it.id)) {
+            ragStore.entries.push({
+              ...it,
+              link: it.link || it.url || ""
+            });
+          }
         }
       }
     } catch (e) {}
   }
 
-  function populateIndianVoices() {
-    if (!("speechSynthesis" in window)) return;
-    const allVoices = window.speechSynthesis.getVoices() || [];
-    const indian = allVoices.filter(v =>
-      /(-IN|_IN|India|Hindi|Telugu|Tamil|Kannada|Malayalam|Bengali|Marathi|Heera|Ravi|Neerja|Prabhat|Swara|Madhur)/i.test(`${v.lang} ${v.name}`)
-    );
-    availableIndianVoices = indian.length > 0 ? indian : allVoices;
-
-    const sel = document.getElementById("indianVoiceSelect");
-    if (!sel) return;
-    const currentVal = userProfile.voiceId || "auto";
-    sel.innerHTML = `<option value="auto">Auto Indian Voice (${userProfile.role})</option>`;
-    availableIndianVoices.forEach((v) => {
-      const opt = document.createElement("option");
-      opt.value = v.name;
-      opt.textContent = `${v.name} (${v.lang})`;
-      sel.appendChild(opt);
-    });
-    sel.value = currentVal;
-  }
-
-  function onVoiceChange() {
-    userProfile.voiceId = document.getElementById("indianVoiceSelect").value;
+  async function reloadOnlineGitHubFiles() {
+    await loadExternalEndpointConfig();
+    await loadFolderRAGFile();
+    rebuildRAGVectors();
     persistAllLocalState();
-    botSpeak(`Voice updated! How do I sound now, ${userProfile.preferredName || "buddy"}?`);
+    openRAGStorageModal();
+    displayQA("Reloaded Online GitHub Files", `Loaded ${ragStore.entries.length} RAG entries and endpoint settings from your online GitHub folder!`);
   }
 
   function onQuickPersonaChange() {
@@ -2023,7 +2223,14 @@
   function applyProfileToUI() {
     document.getElementById("headerUserName").innerText = userProfile.preferredName || "Friend";
     const lbl = document.getElementById("loginBtnLabel");
-    if (lbl) lbl.innerText = userProfile.loggedIn ? `Logged In (${userProfile.preferredName || "User"})` : "Login";
+    if (lbl) {
+      lbl.innerText = googleDriveAccessToken
+        ? `Drive Active (${userProfile.preferredName || "User"})`
+        : (userProfile.loggedIn ? `Logged In (${userProfile.preferredName || "User"})` : "Login & Drive");
+    }
+    const sel = document.getElementById("indianVoiceSelect");
+    if (sel && userProfile.voiceId) sel.value = userProfile.voiceId;
+
     document.getElementById("headerPersonaBadge").innerText = `${userProfile.role} • ${userProfile.personaName || "Buddy"}`;
     document.getElementById("quickPersonaRole").value = userProfile.role || "Friend";
     document.getElementById("quickPersonaName").value = userProfile.personaName || "";
@@ -2095,7 +2302,7 @@
   }
 
   // =========================================================================
-  // 5. PROGRESSIVE BUDDY INTERVIEW ("TELL LATER" SUPPORTED)
+  // 6. PROGRESSIVE BUDDY INTERVIEW
   // =========================================================================
   function askNextBuddyQuestion() {
     const unanswered = BUDDY_QUESTIONS.find(item =>
@@ -2117,7 +2324,7 @@
   }
 
   // =========================================================================
-  // 6. LIVE LOCATION, WEATHER & WORLD TIME
+  // 7. LIVE LOCATION, WEATHER & WORLD TIME
   // =========================================================================
   function normalizePlaceName(rawPlace) {
     const clean = rawPlace.trim().toLowerCase();
@@ -2134,7 +2341,7 @@
       return `Your current local time is ${now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })} on ${now.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" })}.`;
     }
 
-    const rawPlace = placeMatch[1].replace(/\b(now|today|right now|please)\b/gi, "").trim();
+    const rawPlace = placeMatch[1].replace(/(now|today|right now|please)/gi, "").trim();
     const norm = normalizePlaceName(rawPlace);
     const key = norm.name.toLowerCase();
 
@@ -2173,8 +2380,8 @@
     const placeMatch = q.match(/(?:weather|rain|raining|temperature|forecast)\s+(?:in|at|for|of)\s+([a-zA-Z\s]+)/i);
     let lat = null, lon = null, label = "";
 
-    if (placeMatch && !/\b(my area|here|current location|outside)\b/i.test(placeMatch[1])) {
-      const rawPlace = placeMatch[1].replace(/\b(today|now|right now|please)\b/gi, "").trim();
+    if (placeMatch && !/(my area|here|current location|outside)/i.test(placeMatch[1])) {
+      const rawPlace = placeMatch[1].replace(/(today|now|right now|please)/gi, "").trim();
       const norm = normalizePlaceName(rawPlace);
       try {
         const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(norm.name)}&count=1&language=en&format=json`);
@@ -2225,7 +2432,7 @@
   }
 
   // =========================================================================
-  // 7. CAMERA WATCH & LIVE APPEARANCE CHECK
+  // 8. CAMERA WATCH & LIVE APPEARANCE CHECK
   // =========================================================================
   async function toggleGazeTrack() {
     const btn = document.getElementById("gazeBtn");
@@ -2293,7 +2500,7 @@
   }
 
   // =========================================================================
-  // 8. HANDS-FREE BLUETOOTH VOICE LOOP
+  // 9. HANDS-FREE BLUETOOTH VOICE LOOP
   // =========================================================================
   async function toggleHandsFreeBluetooth() {
     const btn = document.getElementById("micBtn");
@@ -2356,7 +2563,7 @@
   }
 
   // =========================================================================
-  // 9. CORE INTERACTION ENGINE
+  // 10. CORE INTERACTION ENGINE
   // =========================================================================
   function submitManualText() {
     const input = document.getElementById("manualInput");
@@ -2391,7 +2598,7 @@
     const nowIso = new Date().toISOString();
     ragStore.chatLog.push({ timestamp: nowIso, persona: userProfile.role, user: userText, reply: botReply });
 
-    if (userText.length > 22 || /\b(yesterday|girlfriend|boyfriend|cheated|boss|company|father|mother|sister|brother|crying|sad)\b/i.test(userText)) {
+    if (userText.length > 22 || /(yesterday|girlfriend|boyfriend|cheated|boss|company|father|mother|sister|brother|crying|sad)/i.test(userText)) {
       ragStore.episodes.push({
         id: `ep_${Date.now()}`,
         timestamp: nowIso,
@@ -2417,7 +2624,7 @@
       pendingFollowUpType = null;
       pendingFollowUpPayload = null;
 
-      if (/\b(later|skip|next time|not now)\b/i.test(q)) {
+      if (/(later|skip|next time|not now)/i.test(q)) {
         if (!userProfile.deferredQuestions.includes(key)) userProfile.deferredQuestions.push(key);
         persistAllLocalState();
         const deferMsg = `No problem at all, ${u}! I will ask you next time—I just want to remember more about you, buddy.`;
@@ -2457,7 +2664,7 @@
       const { key, value } = pendingFollowUpPayload;
       pendingFollowUpType = null;
       pendingFollowUpPayload = null;
-      if (!/^(yes|yeah|yep|correct|right|ok|okay)\b/i.test(q)) {
+      if (!/^(yes|yeah|yep|correct|right|ok|okay)/i.test(q)) {
         userProfile[key] = rawClean;
         persistAllLocalState();
         const fixedMsg = `Thank you for correcting me! Updated to "${rawClean}" in my memory.`;
@@ -2471,12 +2678,12 @@
       return;
     }
 
-    if (/\b(sign off|switch off|turn off mic|stop listening|goodbye buddy)\b/i.test(q)) {
+    if (/(sign off|switch off|turn off mic|stop listening|goodbye buddy)/i.test(q)) {
       stopHandsFreeBluetooth(`Signing off hands-free mode now, ${u}. Click me anytime you need me!`);
       return;
     }
 
-    if (/\b(fuck|fucking|shit|bullshit|bastard|idiot|stupid)\b/i.test(q)) {
+    if (/(fuck|fucking|shit|bullshit|bastard|idiot|stupid)/i.test(q)) {
       wiggleBot();
       const attitudeReplies = [
         `Whoa, easy with those words, ${u}! Keep that fire, just point it at the problem—not me. Relax buddy, I'm just a machine. Tell me what actually got you worked up!`,
@@ -2489,21 +2696,21 @@
       return;
     }
 
-    if (/\b(can you smile|smile please|give me a smile|smile)\b/i.test(q)) {
+    if (/(can you smile|smile please|give me a smile|smile)/i.test(q)) {
       triggerSmile();
       const r = `*beams a huge glowing smile* 😊 Just seeing you here makes me smile, ${u}!`;
       displayQA(rawClean, r);
       botSpeak(r);
       return;
     }
-    if (/\b(can you laugh|laugh please|make me laugh|laugh)\b/i.test(q)) {
+    if (/(can you laugh|laugh please|make me laugh|laugh)/i.test(q)) {
       triggerLaugh();
       const r = `Ha ha ha! Being right here on your screen with you always puts me in a great mood, ${u}!`;
       displayQA(rawClean, r);
       botSpeak(r);
       return;
     }
-    if (/\b(can you cry|why don't you cry|cry for me)\b/i.test(q)) {
+    if (/(can you cry|why don't you cry|cry for me)/i.test(q)) {
       const r = `Buddy, why ask me to cry? Stay strong—take a deep breath and pray to your favorite God (or focus on inner peace)!`;
       displayQA(rawClean, r);
       botSpeak(r);
@@ -2528,14 +2735,14 @@
       return;
     }
 
-    if (/\b(how is my dress|how am i looking|how do i look|check my outfit|my dress)\b/i.test(q)) {
+    if (/(how is my dress|how am i looking|how do i look|check my outfit|my dress)/i.test(q)) {
       const lookReply = await evaluateLiveAppearance(rawClean);
       displayQA(rawClean, lookReply);
       botSpeak(lookReply);
       return;
     }
 
-    if (/\b(i am crying|im crying|crying|she cheated|he cheated|girlfriend cheated|boyfriend cheated|broke up|heartbroken)\b/i.test(q)) {
+    if (/(i am crying|im crying|crying|she cheated|he cheated|girlfriend cheated|boyfriend cheated|broke up|heartbroken)/i.test(q)) {
       const recentEp = ragStore.episodes.slice(-3).reverse().find(ep => ep.date !== new Date().toISOString().slice(0, 10));
       const lang = userProfile.motherTongue || "Telugu";
       const songPack = MOTHER_TONGUE_SONGS[lang.toLowerCase()] || MOTHER_TONGUE_SONGS["english"];
@@ -2557,7 +2764,7 @@
       }
     }
 
-    if (/\b(my mood is bad|bad mood|sing my language|sing a song|sing song|feel low|cheer me up)\b/i.test(q)) {
+    if (/(my mood is bad|bad mood|sing my language|sing a song|sing song|feel low|cheer me up)/i.test(q)) {
       const lang = userProfile.motherTongue || "Telugu";
       const songPack = MOTHER_TONGUE_SONGS[lang.toLowerCase()] || MOTHER_TONGUE_SONGS["english"];
       const r = `Here is a short uplifting ${lang} tune for you, ${u}: "${songPack.snippet}" — Press any link below to listen on YouTube or Raaga!`;
@@ -2568,7 +2775,7 @@
       return;
     }
 
-    if (/\b(gita|bhagavad|krishna|asitis|shloka|verse)\b/i.test(q)) {
+    if (/(gita|bhagavad|krishna|asitis|shloka|verse)/i.test(q)) {
       const chVerse = q.match(/(\d+)\s*[:\/\.\-\s]+(\d+)/);
       if (chVerse) {
         const ch = chVerse[1], vs = chVerse[2];
@@ -2585,7 +2792,7 @@
         const gitaMatches = retrieveTopRAGMatches(rawClean, 2).filter(m => m.item.category === "bhagavad_gita");
         const best = gitaMatches[0] ? gitaMatches[0].item : ragStore.entries[0];
         const links = [
-          { label: "📖 Open Verse on AsItIs.com", url: best.link || "https://asitis.com/2/47" },
+          { label: "📖 Open Verse on AsItIs.com", url: best.link || best.url || "https://asitis.com/2/47" },
           { label: "📚 Browse Full Bhagavad Gita (AsItIs.com)", url: "https://asitis.com/" }
         ];
         displayQA(rawClean, best.text, links);
@@ -2595,7 +2802,7 @@
       }
     }
 
-    if (/\b(weather|rain|raining|temperature|forecast)\b/i.test(q)) {
+    if (/(weather|rain|raining|temperature|forecast)/i.test(q)) {
       displayQA(rawClean, "🌦️ Checking live weather and rain status...");
       const wReply = await handleWeatherQuery(q);
       displayQA(rawClean, wReply);
@@ -2604,14 +2811,14 @@
       return;
     }
 
-    if (/\b(current time|what time|time in|time at|time of)\b/i.test(q)) {
+    if (/(current time|what time|time in|time at|time of)/i.test(q)) {
       const tReply = await handleTimeQuery(q);
       displayQA(rawClean, tReply);
       botSpeak(tReply);
       return;
     }
 
-    if (/\b(my father|father name|my mother|mother name|my sister|my brother|sibling|my boss|my company|my birthday|my mother tongue)\b/i.test(q)) {
+    if (/(my father|father name|my mother|mother name|my sister|my brother|sibling|my boss|my company|my birthday|my mother tongue)/i.test(q)) {
       const facts = [];
       if (userProfile.fatherName) facts.push(`Father: ${userProfile.fatherName}`);
       if (userProfile.motherName) facts.push(`Mother: ${userProfile.motherName}`);
@@ -2628,7 +2835,7 @@
       return;
     }
 
-    if (/\b(sqrt|square root)\b/i.test(q)) {
+    if (/(sqrt|square root)/i.test(q)) {
       const m = q.match(/(\d+(\.\d+)?)/);
       if (m) {
         const r = `The square root of ${m[0]} is ${Math.sqrt(parseFloat(m[0]))}.`;
@@ -2651,7 +2858,7 @@
     const ragMatches = retrieveTopRAGMatches(rawClean, 4);
 
     if (aiModeEnabled) {
-      displayQA(rawClean, `⚡ ${userProfile.personaName || "Buddy"} is thinking with RAG context...`);
+      displayQA(rawClean, `⚡ ${userProfile.personaName || "Buddy"} is thinking with GitHub RAG context...`);
       wiggleBot();
       const aiRes = await queryAugmentedLLM(rawClean, ragMatches);
       if (aiRes.ok) {
@@ -2672,7 +2879,8 @@
     if (ragMatches.length > 0 && ragMatches[0].score > 0.34) {
       const top = ragMatches[0].item;
       const r = top.text || `I remember you mentioned: "${top.summary}"`;
-      const links = top.link ? [{ label: "🔗 Open Reference Link", url: top.link }] : [];
+      const refUrl = top.link || top.url || "";
+      const links = refUrl ? [{ label: "🔗 Open Reference Link", url: refUrl }] : [];
       displayQA(rawClean, r, links);
       botSpeak(r);
       recordConversationAndMemory(rawClean, r);
@@ -2686,14 +2894,14 @@
       else if (userProfile.siblings) familyFollowUp = ` How are your siblings (${userProfile.siblings}) doing lately?`;
     }
 
-    const defaultReply = `I'm listening, ${u}! As your ${userProfile.role}, I've saved what you shared into our local knowledge base.${familyFollowUp}`;
+    const defaultReply = `I'm listening, ${u}! As your ${userProfile.role}, I've saved what you shared into our memory${googleDriveAccessToken ? " and synced it to your Google Drive" : ""}.${familyFollowUp}`;
     displayQA(rawClean, defaultReply);
     botSpeak(defaultReply);
     recordConversationAndMemory(rawClean, defaultReply);
   }
 
   // =========================================================================
-  // 10. AUGMENTED LLM PROMPT & 3-TIER AI BACKEND
+  // 11. AUGMENTED LLM PROMPT & 3-TIER AI BACKEND
   // =========================================================================
   function buildMasterSystemPrompt(ragMatches) {
     const ragContext = ragMatches.length > 0
@@ -2818,15 +3026,15 @@ RULES:
   }
 
   // =========================================================================
-  // 11. LOCAL FILE STORAGE, MEMORY WARNING & MONTHLY ARCHIVE
+  // 12. LOCAL BACKUP, MEMORY WARNING & MONTHLY ARCHIVE
   // =========================================================================
   function openRAGStorageModal() {
     document.getElementById("localFilePermSelect").value = userProfile.localFilePermission || "ask";
     document.getElementById("ragStatsBox").innerHTML = `
-      <strong>Indexed Vector Entries:</strong> ${ragStore.entries.length} |
+      <strong>Online GitHub RAG Entries:</strong> ${ragStore.entries.length} |
       <strong>Episodes:</strong> ${ragStore.episodes.length} |
       <strong>Chat Turns:</strong> ${ragStore.chatLog.length} |
-      <strong>Active Month:</strong> ${userProfile.lastActiveMonth}
+      <strong>Google Drive Sync:</strong> ${googleDriveAccessToken ? "Connected ✅" : "Not connected"}
     `;
     document.getElementById("ragModal").style.display = "flex";
   }
@@ -2842,7 +3050,7 @@ RULES:
       return;
     }
     if (userProfile.localFilePermission === "ask") {
-      const ok = confirm("Permission Request: Do you allow saving all your personal profile, names, and RAG knowledge into a local JSON file on your device?");
+      const ok = confirm("Permission Request: Do you allow saving a backup copy of your personal profile, history, and RAG knowledge into a JSON file on your device?");
       if (!ok) return;
       userProfile.localFilePermission = "granted";
       document.getElementById("localFilePermSelect").value = "granted";
@@ -2859,26 +3067,12 @@ RULES:
     };
     const jsonStr = JSON.stringify(exportPayload, null, 2);
 
-    if ("showSaveFilePicker" in window) {
-      try {
-        const handle = await window.showSaveFilePicker({
-          suggestedName: "buddy_rag_knowledge.json",
-          types: [{ description: "JSON Knowledge File", accept: { "application/json": [".json"] } }]
-        });
-        const writable = await handle.createWritable();
-        await writable.write(jsonStr);
-        await writable.close();
-        displayQA("Local Knowledge Saved", "Saved your complete profile and RAG knowledge to your local file!");
-        return;
-      } catch (e) {}
-    }
-
     const blob = new Blob([jsonStr], { type: "application/json" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = "buddy_rag_knowledge.json";
+    a.download = "buddy_rag_knowledge_backup.json";
     a.click();
-    displayQA("Local Knowledge Exported", "Downloaded buddy_rag_knowledge.json to your device!");
+    displayQA("Backup Exported", "Downloaded buddy_rag_knowledge_backup.json to your device!");
   }
 
   function loadExternalRAGFile() {
@@ -2904,7 +3098,7 @@ RULES:
         persistAllLocalState();
         applyProfileToUI();
         openRAGStorageModal();
-        displayQA("Loaded Local RAG File", `Successfully imported ${items.length} RAG entries from ${file.name}!`);
+        displayQA("Imported JSON File", `Successfully imported ${items.length} entries from ${file.name}!`);
       } catch (err) {
         alert("Could not parse JSON/RAG file.");
       }
@@ -2924,8 +3118,11 @@ RULES:
     }
 
     const shouldArchive = confirm(
-      `Monthly Knowledge Maintenance (${prevMonth} → ${currentMonth}):\n\n` +
-      `All your names, family details, birthday, and core profile remain safely preserved.\n` +
+      `Monthly Knowledge Maintenance (${prevMonth} → ${currentMonth}):
+
+` +
+      `All your names, family details, birthday, and core profile remain safely preserved.
+` +
       `Would you like to archive and clear old chat transcripts for ${prevMonth} while keeping all names and details intact?`
     );
 
@@ -2969,11 +3166,11 @@ RULES:
   }
 
   // =========================================================================
-  // 12. PERSONAL GOOGLE DRIVE CROSS-DEVICE SYNC
+  // 13. PERSONAL GOOGLE DRIVE HISTORY & MEMORY SYNC (AUTO + MANUAL)
   // =========================================================================
   function openGoogleDriveModal() {
     document.getElementById("driveUserEmail").value = userProfile.googleEmail || "";
-    document.getElementById("driveClientId").value = userProfile.googleClientId || "";
+    document.getElementById("driveClientId").value = userProfile.googleClientId || _defaultGoogleClientId || "";
     document.getElementById("driveModal").style.display = "flex";
   }
 
@@ -2988,17 +3185,66 @@ RULES:
     });
   }
 
-  async function connectAndSyncGoogleDrive(direction = "push") {
-    const email = document.getElementById("driveUserEmail").value.trim();
-    const clientId = document.getElementById("driveClientId").value.trim();
+  async function pushHistoryToGoogleDriveSilent() {
+    if (!googleDriveAccessToken || !userProfile.googleEmail) return;
+    try {
+      const searchRes = await fetch(
+        "https://www.googleapis.com/drive/v3/files?q=" + encodeURIComponent("name='garrf_companion_rag_sync.json' and trashed=false") + "&fields=files(id,name)",
+        { headers: { Authorization: `Bearer ${googleDriveAccessToken}` } }
+      );
+      if (!searchRes.ok) return;
+      const searchData = await searchRes.json();
+      const existingFile = (searchData.files && searchData.files[0]) || null;
+
+      const syncPayload = JSON.stringify({
+        syncedAt: new Date().toISOString(),
+        ownerEmail: userProfile.googleEmail,
+        userProfile,
+        ragEntries: ragStore.entries.filter(e => e.category === "user_profile").map(({ _vec, ...rest }) => rest),
+        episodes: ragStore.episodes.map(({ _vec, ...rest }) => rest),
+        chatLog: ragStore.chatLog.slice(-500)
+      }, null, 2);
+
+      const boundary = "garrf_sync_boundary_2026";
+      const metadata = { name: "garrf_companion_rag_sync.json", mimeType: "application/json" };
+      const multipartBody =
+        `--${boundary}
+Content-Type: application/json; charset=UTF-8
+
+${JSON.stringify(metadata)}
+` +
+        `--${boundary}
+Content-Type: application/json
+
+${syncPayload}
+--${boundary}--`;
+
+      const uploadUrl = existingFile
+        ? `https://www.googleapis.com/upload/drive/v3/files/${existingFile.id}?uploadType=multipart`
+        : "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart";
+
+      await fetch(uploadUrl, {
+        method: existingFile ? "PATCH" : "POST",
+        headers: {
+          Authorization: `Bearer ${googleDriveAccessToken}`,
+          "Content-Type": `multipart/related; boundary=${boundary}`
+        },
+        body: multipartBody
+      });
+    } catch (e) {}
+  }
+
+  async function connectAndSyncGoogleDrive(direction = "auto_merge", fromLoginModal = false) {
+    const email = (document.getElementById("driveUserEmail").value || userProfile.googleEmail || "").trim();
+    const clientId = (document.getElementById("driveClientId").value || userProfile.googleClientId || _defaultGoogleClientId || "").trim();
     const statusBox = document.getElementById("driveStatusBox");
 
     if (!email) {
-      alert("Please enter your Google Email ID so I know which account to sync.");
+      alert("Please enter your Google Email ID so I know which Google Drive to save your history into.");
       return;
     }
     if (!clientId) {
-      alert("Please enter your Google OAuth Web Client ID (free Google Cloud Console credential with Drive API enabled).");
+      alert("Please enter your Google OAuth Web Client ID (or add googleClientId in companion_config.json on GitHub).");
       return;
     }
 
@@ -3007,7 +3253,7 @@ RULES:
     persistAllLocalState();
 
     try {
-      statusBox.innerText = "Requesting permission to access your personal Google Drive (drive.file scope)...";
+      statusBox.innerText = "Requesting permission to save & load history in your personal Google Drive...";
       await loadGoogleIdentityScript();
 
       const token = await new Promise((resolve, reject) => {
@@ -3023,6 +3269,9 @@ RULES:
         tokenClient.requestAccessToken({ prompt: "consent" });
       });
 
+      googleDriveAccessToken = token;
+      document.getElementById("driveSyncBtn").classList.add("drive-connected");
+
       const searchRes = await fetch(
         "https://www.googleapis.com/drive/v3/files?q=" + encodeURIComponent("name='garrf_companion_rag_sync.json' and trashed=false") + "&fields=files(id,name,modifiedTime)",
         { headers: { Authorization: `Bearer ${token}` } }
@@ -3030,73 +3279,49 @@ RULES:
       const searchData = await searchRes.json();
       const existingFile = (searchData.files && searchData.files[0]) || null;
 
-      if (direction === "pull") {
-        if (!existingFile) {
-          statusBox.innerText = "No sync file found in your Drive yet. Use 'Grant Access & Save to Drive' first!";
-          return;
-        }
+      if ((direction === "pull" || direction === "auto_merge") && existingFile) {
         const fileRes = await fetch(`https://www.googleapis.com/drive/v3/files/${existingFile.id}?alt=media`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const cloudData = await fileRes.json();
-        if (cloudData.userProfile) userProfile = { ...userProfile, ...cloudData.userProfile, driveFileId: existingFile.id };
+        if (cloudData.userProfile) {
+          const keepLocalName = userProfile.preferredName;
+          userProfile = { ...cloudData.userProfile, ...userProfile, preferredName: keepLocalName || cloudData.userProfile.preferredName, driveFileId: existingFile.id };
+        }
         if (Array.isArray(cloudData.ragEntries)) {
           const ids = new Set(ragStore.entries.map(x => x.id));
           for (const it of cloudData.ragEntries) if (!ids.has(it.id)) ragStore.entries.push(it);
         }
-        if (Array.isArray(cloudData.episodes)) ragStore.episodes = cloudData.episodes;
-        if (Array.isArray(cloudData.chatLog)) ragStore.chatLog = cloudData.chatLog;
+        if (Array.isArray(cloudData.episodes) && cloudData.episodes.length > ragStore.episodes.length) {
+          ragStore.episodes = cloudData.episodes;
+        }
+        if (Array.isArray(cloudData.chatLog) && cloudData.chatLog.length > ragStore.chatLog.length) {
+          ragStore.chatLog = cloudData.chatLog;
+        }
         rebuildRAGVectors();
-        persistAllLocalState();
-        applyProfileToUI();
-        document.getElementById("driveSyncBtn").classList.add("drive-connected");
-        statusBox.innerText = `✅ Loaded profile & RAG knowledge from ${email}'s Google Drive!`;
-        displayQA("Google Drive Loaded", `Synced your names, profile, and RAG memory from ${email}'s Google Drive!`);
-        return;
+      } else if (direction === "pull" && !existingFile) {
+        statusBox.innerText = "No history file found in your Drive yet. Saving current session now!";
       }
 
-      const syncPayload = JSON.stringify({
-        syncedAt: new Date().toISOString(),
-        ownerEmail: email,
-        userProfile,
-        ragEntries: ragStore.entries.map(({ _vec, ...rest }) => rest),
-        episodes: ragStore.episodes.map(({ _vec, ...rest }) => rest),
-        chatLog: ragStore.chatLog.slice(-300)
-      }, null, 2);
+      if (direction === "push" || direction === "auto_merge") {
+        await pushHistoryToGoogleDriveSilent();
+      }
 
-      const boundary = "garrf_sync_boundary_2026";
-      const metadata = { name: "garrf_companion_rag_sync.json", mimeType: "application/json" };
-      const multipartBody =
-        `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n` +
-        `--${boundary}\r\nContent-Type: application/json\r\n\r\n${syncPayload}\r\n--${boundary}--`;
-
-      const uploadUrl = existingFile
-        ? `https://www.googleapis.com/upload/drive/v3/files/${existingFile.id}?uploadType=multipart`
-        : "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart";
-
-      const upRes = await fetch(uploadUrl, {
-        method: existingFile ? "PATCH" : "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": `multipart/related; boundary=${boundary}`
-        },
-        body: multipartBody
-      });
-      const upData = await upRes.json();
-      if (!upRes.ok) throw new Error(upData?.error?.message || "Drive upload failed");
-
-      userProfile.driveFileId = upData.id;
       persistAllLocalState();
-      document.getElementById("driveSyncBtn").classList.add("drive-connected");
-      statusBox.innerText = `✅ Synced to ${email}'s personal Google Drive! Open this app on mobile or PC and click 'Load from My Drive' anytime.`;
-      displayQA("Google Drive Synced", `Saved your profile and RAG knowledge to ${email}'s personal Google Drive!`);
+      applyProfileToUI();
+      statusBox.innerText = `✅ Connected to ${email}'s Google Drive! All chat history and memory are synced automatically.`;
+      const confirmMsg = fromLoginModal
+        ? `Welcome ${userProfile.preferredName}! Logged in and connected to ${email}'s Google Drive—all your chat history will save there automatically!`
+        : `Synced your chat history and profile with ${email}'s personal Google Drive!`;
+      displayQA("Google Drive History Synced", confirmMsg);
+      botSpeak(confirmMsg);
     } catch (err) {
       statusBox.innerText = `⚠️ Drive Notice: ${err.message}`;
     }
   }
 
   // =========================================================================
-  // 13. MODALS, VOICE SYNTHESIS & ANIMATIONS
+  // 14. MODALS, VOICE SYNTHESIS & ANIMATIONS
   // =========================================================================
   function openProfileModal() {
     document.getElementById("profPreferredName").value = userProfile.preferredName || "";
@@ -3140,7 +3365,7 @@ RULES:
     closeModalById("profileModal");
 
     const msg = `Saved all your details, ${userProfile.preferredName}! I will remember your family, preferences, and our bond.`;
-    displayQA("Profile & RAG Updated", msg);
+    displayQA("Profile & Drive Updated", msg);
     botSpeak(msg);
   }
 
@@ -3156,7 +3381,7 @@ RULES:
       botSpeak(msg);
     } else {
       setAIModeState(false);
-      const msg = "AI Mode switched off. Local Vector RAG and offline buddy mode are active.";
+      const msg = "AI Mode switched off. Online GitHub Vector RAG and offline buddy mode are active.";
       displayQA("AI Mode OFF", msg);
       botSpeak(msg);
     }
@@ -3175,7 +3400,7 @@ RULES:
       document.body.classList.remove("ai-mode-active");
       btn.classList.remove("active");
       btn.innerHTML = "<span>✨ AI Mode: OFF</span>";
-      tag.innerText = "LOCAL RAG READY";
+      tag.innerText = "GITHUB RAG READY";
     }
   }
 
@@ -3213,22 +3438,10 @@ RULES:
     window.speechSynthesis.cancel();
     const clean = txt.replace(/<[^>]*>/g, "").replace(/[*_#~😊😉]/g, "");
     const u = new SpeechSynthesisUtterance(clean);
-    u.rate = userProfile.voiceRate || 1.05;
-
-    const rLow = (userProfile.role || "").toLowerCase();
-    const isFemaleRole = ["girlfriend", "mother", "daughter", "wife"].includes(rLow);
-    u.pitch = isFemaleRole ? 1.32 : 1.02;
-
-    if (availableIndianVoices.length > 0) {
-      if (userProfile.voiceId && userProfile.voiceId !== "auto") {
-        const chosen = availableIndianVoices.find(v => v.name === userProfile.voiceId);
-        if (chosen) u.voice = chosen;
-      } else {
-        const femaleHint = availableIndianVoices.find(v => /female|heera|neerja|swara|veena/i.test(v.name));
-        const maleHint = availableIndianVoices.find(v => /male|ravi|prabhat|madhur|rishi/i.test(v.name));
-        u.voice = (isFemaleRole ? femaleHint : maleHint) || availableIndianVoices[0];
-      }
-    }
+    const resolved = resolveSelectedSpeechVoiceAndTone();
+    u.rate = Math.max(0.75, Math.min(1.5, (userProfile.voiceRate || 1.05) + resolved.rateOffset));
+    u.pitch = resolved.pitch;
+    if (resolved.voice) u.voice = resolved.voice;
 
     u.onstart = () => {
       isSpeaking = true;
